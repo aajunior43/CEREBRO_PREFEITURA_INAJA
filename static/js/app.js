@@ -909,7 +909,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = document.getElementById('password-input').value;
     if (password === '1999') {
       isAdmAuthenticated = true;
+      sessionStorage.setItem('adm_auth', '1');
       hidePasswordModal();
+      // If redirected from another page, go back there
+      const returnTo = sessionStorage.getItem('adm_return');
+      if (returnTo) {
+        sessionStorage.removeItem('adm_return');
+        window.location.href = returnTo;
+        return;
+      }
       showAdmPanel();
       showToast('Bem-vindo à área administrativa!', 'success');
     } else {
@@ -984,6 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // ADM logout
   document.getElementById('adm-logout').addEventListener('click', () => {
+    sessionStorage.removeItem('adm_auth');
     hideAdmPanel();
     document.querySelector('.nav-tab[data-tab="credores-fixos"]').click();
     showToast('Saiu da área administrativa', 'info');
