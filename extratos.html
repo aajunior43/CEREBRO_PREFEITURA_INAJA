@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organizador de Extratos – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    .ext-wrap { max-width: 960px; margin: 24px auto 60px; padding: 0 24px; }
+    .ext-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 24px; margin-bottom: 20px; }
+    .ext-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .path-input-wrap { display: flex; gap: 10px; align-items: stretch; }
+    .path-input { flex: 1; background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 14px; font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: box-shadow 0.2s; }
+    .path-input:focus { box-shadow: var(--neo-in); }
+    .btn-browse { background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-sm); padding: 10px 16px; font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text-2); cursor: pointer; white-space: nowrap; transition: box-shadow 0.2s; }
+    .btn-browse:hover { box-shadow: var(--neo); }
+    .form-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+    .form-group { margin-bottom: 16px; }
+    .actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+    .btn-ext { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; transition: all 0.2s; }
+    .btn-ext-primary { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: white; box-shadow: 3px 3px 10px rgba(79,128,200,0.4); }
+    .btn-ext-primary:hover { box-shadow: 5px 5px 14px rgba(79,128,200,0.5); transform: translateY(-1px); }
+    .btn-ext-green { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: white; box-shadow: 3px 3px 10px rgba(58,170,110,0.4); }
+    .btn-ext-green:hover { box-shadow: 5px 5px 14px rgba(58,170,110,0.5); transform: translateY(-1px); }
+    .btn-ext-secondary { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); }
+    .btn-ext-secondary:hover { box-shadow: var(--neo); }
+    .btn-ext:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-box { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 16px; text-align: center; }
+    .stat-box .num { font-size: 28px; font-weight: 800; }
+    .stat-box .lbl { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; margin-top: 4px; }
+    .stat-box.total .num { color: var(--blue); }
+    .stat-box.ok .num { color: var(--green-dark); }
+    .stat-box.err .num { color: var(--red); }
+    .resultado-lista { max-height: 420px; overflow-y: auto; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); }
+    .resultado-item { display: grid; grid-template-columns: 24px 1fr auto; gap: 10px; align-items: start; padding: 12px 14px; border-bottom: 1px solid rgba(184,194,204,0.2); font-size: 12px; }
+    .resultado-item:last-child { border-bottom: none; }
+    .resultado-item.sucesso .icone { color: var(--green-dark); font-size: 16px; }
+    .resultado-item.erro .icone { color: var(--red); font-size: 16px; }
+    .resultado-item .nome-orig { font-weight: 600; color: var(--text); }
+    .resultado-item .seta { color: var(--text-3); font-size: 11px; margin: 2px 0; }
+    .resultado-item .nome-novo { color: var(--blue); font-size: 11px; }
+    .resultado-item .erro-msg { color: var(--red); font-size: 11px; }
+    .resultado-item .badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .badge-sim { background: var(--orange-bg); color: var(--orange); }
+    .badge-ok { background: var(--green-bg); color: var(--green-dark); }
+    .badge-err { background: var(--red-bg); color: var(--red); }
+    .empty-ext { text-align: center; padding: 48px 24px; color: var(--text-3); }
+    .empty-ext svg { width: 48px; height: 48px; margin: 0 auto 12px; display: block; opacity: 0.4; }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast-ext { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: none; padding: 12px 20px; border-radius: var(--radius); box-shadow: var(--neo); font-size: 13px; font-weight: 600; max-width: 340px; color: white; }
+    .browser-modal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    .browser-modal.open { display: flex; }
+    .browser-box { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); width: 560px; max-width: 95vw; max-height: 80vh; display: flex; flex-direction: column; }
+    .browser-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(184,194,204,0.2); }
+    .browser-header h4 { font-size: 14px; font-weight: 700; }
+    .browser-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-3); line-height: 1; }
+    .browser-path { padding: 10px 16px; font-size: 11px; color: var(--text-3); background: var(--bg); border-bottom: 1px solid rgba(184,194,204,0.15); font-family: monospace; }
+    .browser-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .browser-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.15s; }
+    .browser-item:hover { background: rgba(79,128,200,0.08); }
+    .browser-item svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--orange); }
+    .browser-footer { padding: 12px 16px; border-top: 1px solid rgba(184,194,204,0.2); display: flex; gap: 10px; justify-content: flex-end; }
+    .info-box { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 14px 16px; font-size: 12px; color: var(--text-3); line-height: 1.7; }
+    .info-box strong { color: var(--text-2); }
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .resultado-item { grid-template-columns: 20px 1fr; }
+      .resultado-item .badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-brand">
+          <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
+          <div class="header-title">
+            <h1>Prefeitura de Inajá</h1>
+            <p>Gestão de Empenhos</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+          </svg>
+          Credores Fixos
+        </a>
+        <a href="index.html#adm" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          ADM
+        </a>
+        <a href="rpa.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          RPA
+        </a>
+        <a href="extratos.html" class="nav-tab active" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          Extratos
+        </a>
+        <a href="cnpj.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          CNPJ
+        </a>
+        <a href="pdf.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </a>
+        <a href="renomear.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Renomear
+        </a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Tarefas
+        </a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+
+      <div class="header-right">
+      </div>
+    </div>
+  </header>
+
+  <div class="ext-wrap">
+
+    <!-- Cabeçalho -->
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:22px;font-weight:800;color:var(--text);">📁 Organizador de Extratos Bancários</h2>
+      <p style="font-size:13px;color:var(--text-3);margin-top:6px;">Detecta automaticamente conta e data nos nomes dos arquivos PDF/OFX e os organiza em pastas estruturadas.</p>
+    </div>
+
+    <!-- Configuração de Pastas -->
+    <div class="ext-card">
+      <h3>⚙️ Configuração de Pastas</h3>
+
+      <div class="form-group">
+        <label class="form-label">Pasta de Origem <span style="color:var(--red)">*</span></label>
+        <div class="path-input-wrap">
+          <input type="text" class="path-input" id="input-origem" placeholder="Ex: C:\Extratos\Pendentes" />
+          <button class="btn-browse" onclick="abrirBrowser('origem')">📂 Procurar</button>
+        </div>
+        <div id="origem-status" style="font-size:11px;margin-top:5px;"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Pasta de Destino <span style="color:var(--red)">*</span></label>
+        <div class="path-input-wrap">
+          <input type="text" class="path-input" id="input-destino" placeholder="Ex: C:\Extratos\Organizados" />
+          <button class="btn-browse" onclick="abrirBrowser('destino')">📂 Procurar</button>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn-ext btn-ext-primary" id="btn-preview" onclick="executarPreview()">
+          🔍 Visualizar Prévia
+        </button>
+        <button class="btn-ext btn-ext-green" id="btn-organizar" onclick="executarOrganizar()" disabled>
+          ✅ Organizar Extratos
+        </button>
+        <button class="btn-ext btn-ext-secondary" onclick="limpar()">
+          🗑️ Limpar
+        </button>
+      </div>
+
+      <!-- IA Options -->
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(184,194,204,0.3);">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);">
+            <input type="checkbox" id="chk-usar-ia" style="width:16px;height:16px;cursor:pointer;" onchange="toggleIA()"/>
+            🤖 Usar IA (OpenRouter)
+          </label>
+        </div>
+        <div id="ia-options" style="display:none;margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;">
+          <div>
+            <label class="form-label">Chave API</label>
+            <div id="ia-key-status" style="font-size:12px;padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);color:var(--text-3);">
+              <span id="ia-key-indicator">🔑 Verificando...</span>
+              <a href="index.html#adm" style="color:var(--blue);font-weight:700;margin-left:6px;font-size:11px;">Configurar no ADM →</a>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Modelo</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" class="path-input" id="ia-modelo" value="openai/gpt-4o-mini" style="flex:1;min-width:0;" />
+              <button class="btn-browse" id="btn-ver-modelos" onclick="consultarModelos()">📋 Ver Modelos</button>
+            </div>
+          </div>
+        </div>
+        <p id="ia-hint" style="display:none;font-size:11px;color:var(--text-3);margin-top:8px;">
+          💡 A IA interpreta os nomes dos arquivos com maior precisão. Fallback automático para detecção local se necessário.
+        </p>
+      </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="ext-card" id="card-resultados" style="display:none;">
+      <h3 id="resultados-titulo">📊 Resultados</h3>
+
+      <div class="stats-row">
+        <div class="stat-box total">
+          <div class="num" id="stat-total">0</div>
+          <div class="lbl">Total de Arquivos</div>
+        </div>
+        <div class="stat-box ok">
+          <div class="num" id="stat-ok">0</div>
+          <div class="lbl">Identificados</div>
+        </div>
+        <div class="stat-box err">
+          <div class="num" id="stat-err">0</div>
+          <div class="lbl">Não Identificados</div>
+        </div>
+      </div>
+
+      <div class="resultado-lista" id="resultado-lista"></div>
+    </div>
+
+    <!-- Como funciona -->
+    <div class="ext-card">
+      <h3>ℹ️ Como Funciona</h3>
+      <div class="info-box">
+        <p>O sistema detecta automaticamente <strong>conta bancária</strong> e <strong>data (mês/ano)</strong> no nome de cada arquivo e os organiza assim:</p>
+        <br/>
+        <p><strong>Estrutura gerada:</strong></p>
+        <p style="font-family:monospace;background:rgba(0,0,0,0.05);padding:10px;border-radius:6px;margin-top:6px;">
+          PASTA_DESTINO/<br/>
+          └── CONTA_12345/<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;└── 2024_06_JUNHO/<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 2024-06_12345_PDF.pdf
+        </p>
+        <br/>
+        <p><strong>Formatos de data detectados:</strong> JUNHO, JUN, 06/2024, 2024/06, 202406, 06/24</p>
+        <p><strong>Formatos de conta detectados:</strong> 12345-6, EXT 12345, Extrato12345, CAIXA JAN 123-4</p>
+        <p><strong>Arquivos suportados:</strong> .pdf e .ofx</p>
+        <p style="margin-top:8px;color:var(--orange);"><strong>⚠️ Os arquivos originais são preservados — apenas copiados para o destino.</strong></p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modal Browser de Pastas -->
+  <div class="browser-modal" id="browser-modal">
+    <div class="browser-box">
+      <div class="browser-header">
+        <h4 id="browser-titulo">Selecionar Pasta</h4>
+        <button class="browser-close" onclick="fecharBrowser()">×</button>
+      </div>
+      <div class="browser-path" id="browser-path-display">—</div>
+      <div class="browser-list" id="browser-list">
+        <div class="empty-ext"><p>Carregando...</p></div>
+      </div>
+      <div class="browser-footer">
+        <button class="btn-ext btn-ext-secondary" onclick="fecharBrowser()">Cancelar</button>
+        <button class="btn-ext btn-ext-primary" onclick="confirmarPasta()">✓ Selecionar esta pasta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Modelos OpenRouter -->
+  <div class="browser-modal" id="modelos-modal">
+    <div class="browser-box" style="width:720px;max-width:96vw;">
+      <div class="browser-header">
+        <h4>📋 Modelos Disponíveis – OpenRouter</h4>
+        <button class="browser-close" onclick="fecharModelos()">×</button>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid rgba(184,194,204,0.15);display:flex;gap:10px;align-items:center;">
+        <span style="font-size:12px;color:var(--text-3);">🔍</span>
+        <input type="text" id="modelos-filtro" class="path-input" placeholder="Filtrar por nome ou id..." style="flex:1;" oninput="filtrarModelos()" />
+        <span id="modelos-count" style="font-size:11px;color:var(--text-3);white-space:nowrap;"></span>
+      </div>
+      <div class="browser-list" id="modelos-lista" style="max-height:55vh;">
+        <div class="empty-ext"><p>Carregando...</p></div>
+      </div>
+      <div class="browser-footer" style="justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--text-3);">Duplo-clique para selecionar o modelo</span>
+        <button class="btn-ext btn-ext-secondary" onclick="fecharModelos()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-ext" id="ext-toast"></div>
+
+  <script>
+    const API = `http://${window.location.hostname}:5000/api`;
+    let browserAlvo = null;
+    let caminhoAtual = '';
+    let ultimoResultado = null;
+    let todosModelos = [];
+
+    // ── Tema ──────────────────────────────────────────────────
+    (function() {
+      const s = localStorage.getItem('theme');
+      if (s === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+
+    // ── Salvar/Restaurar caminhos ─────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const o = localStorage.getItem('ext_origem');
+      const d = localStorage.getItem('ext_destino');
+      const m = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo');
+      const u = localStorage.getItem('ext_usar_ia');
+      if (o) document.getElementById('input-origem').value = o;
+      if (d) document.getElementById('input-destino').value = d;
+      if (m) document.getElementById('ia-modelo').value = m;
+      if (u === '1') { document.getElementById('chk-usar-ia').checked = true; toggleIA(); }
+      // Mostrar status da chave global
+      const k = localStorage.getItem('api_openrouter_key') || '';
+      const ind = document.getElementById('ia-key-indicator');
+      if (ind) ind.textContent = k ? '🟢 Chave configurada (' + k.slice(0,8) + '...)' : '🔴 Chave não configurada';
+    });
+
+    function salvarCaminhos() {
+      localStorage.setItem('ext_origem',  document.getElementById('input-origem').value);
+      localStorage.setItem('ext_destino', document.getElementById('input-destino').value);
+      localStorage.setItem('ext_ia_modelo', document.getElementById('ia-modelo').value);
+      localStorage.setItem('api_openrouter_modelo', document.getElementById('ia-modelo').value);
+      localStorage.setItem('ext_usar_ia', document.getElementById('chk-usar-ia').checked ? '1' : '0');
+    }
+
+    // ── Opções de IA ──────────────────────────────────────────
+    function toggleIA() {
+      const on = document.getElementById('chk-usar-ia').checked;
+      document.getElementById('ia-options').style.display = on ? 'grid' : 'none';
+      document.getElementById('ia-hint').style.display   = on ? 'block' : 'none';
+    }
+
+    function getIAParams() {
+      if (!document.getElementById('chk-usar-ia').checked) return {};
+      return {
+        usar_ia:    true,
+        api_key_ia: localStorage.getItem('api_openrouter_key') || '',
+        modelo_ia:  document.getElementById('ia-modelo').value.trim() || 'openai/gpt-4o-mini'
+      };
+    }
+
+    // ── Consultar Modelos ─────────────────────────────────────
+    async function consultarModelos() {
+      const apiKey = localStorage.getItem('api_openrouter_key') || '';
+      if (!apiKey) { toast('Preencha a Chave API OpenRouter primeiro.', 'error'); return; }
+
+      const btn = document.getElementById('btn-ver-modelos');
+      btn.textContent = '⏳ Buscando...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API}/extratos/modelos-openrouter`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ api_key: apiKey })
+        });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Erro ao buscar modelos.', 'error'); return; }
+        todosModelos = data.modelos || [];
+        renderizarModelos(todosModelos);
+        document.getElementById('modelos-filtro').value = '';
+        document.getElementById('modelos-modal').classList.add('open');
+        toast(`${todosModelos.length} modelos encontrados.`, 'success');
+      } catch { toast('Erro de conexão com o servidor.', 'error'); }
+      finally { btn.textContent = '📋 Ver Modelos'; btn.disabled = false; }
+    }
+
+    function renderizarModelos(lista) {
+      document.getElementById('modelos-count').textContent = `${lista.length} modelos`;
+      const el = document.getElementById('modelos-lista');
+      if (!lista.length) {
+        el.innerHTML = '<div class="empty-ext"><p>Nenhum modelo encontrado.</p></div>'; return;
+      }
+      el.innerHTML = lista.map(m => {
+        const prec = m.pricing || {};
+        const pin  = prec.prompt      ? `$${(parseFloat(prec.prompt)*1e6).toFixed(4)}/M` : '—';
+        const pout = prec.completion  ? `$${(parseFloat(prec.completion)*1e6).toFixed(4)}/M` : '—';
+        const ctx  = m.context_length ? `${m.context_length.toLocaleString()} ctx` : '';
+        return `<div class="browser-item" ondblclick="selecionarModelo('${escJs(m.id)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;color:var(--blue)"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(m.id)}</div>
+            <div style="font-size:11px;color:var(--text-3);">${escHtml(m.name||'')}${ctx?' · '+ctx:''} · in:${pin} out:${pout}</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function filtrarModelos() {
+      const q = document.getElementById('modelos-filtro').value.toLowerCase();
+      const filtrado = q ? todosModelos.filter(m =>
+        (m.id||'').toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q)
+      ) : todosModelos;
+      renderizarModelos(filtrado);
+    }
+
+    function selecionarModelo(id) {
+      document.getElementById('ia-modelo').value = id;
+      fecharModelos();
+      toast(`Modelo selecionado: ${id}`, 'success');
+    }
+
+    function fecharModelos() {
+      document.getElementById('modelos-modal').classList.remove('open');
+    }
+
+    // ── Browser de Pastas ─────────────────────────────────────
+    async function abrirBrowser(alvo) {
+      browserAlvo = alvo;
+      document.getElementById('browser-titulo').textContent =
+        alvo === 'origem' ? '📂 Selecionar Pasta de Origem' : '📂 Selecionar Pasta de Destino';
+      document.getElementById('browser-modal').classList.add('open');
+      const caminho = alvo === 'origem'
+        ? document.getElementById('input-origem').value
+        : document.getElementById('input-destino').value;
+      await navegarPara(caminho || '');
+    }
+
+    function fecharBrowser() {
+      document.getElementById('browser-modal').classList.remove('open');
+      browserAlvo = null;
+    }
+
+    async function navegarPara(caminho) {
+      try {
+        const res = await fetch(`${API}/extratos/listar-pasta`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ caminho })
+        });
+        const data = await res.json();
+        if (data.error) { toast(data.error, 'error'); return; }
+        caminhoAtual = data.caminho_atual;
+        document.getElementById('browser-path-display').textContent = caminhoAtual;
+        renderBrowserList(data);
+      } catch { toast('Erro ao listar pastas.', 'error'); }
+    }
+
+    function renderBrowserList(data) {
+      const el = document.getElementById('browser-list');
+      let html = '';
+
+      if (data.pai && data.pai !== data.caminho_atual) {
+        html += `<div class="browser-item" onclick="navegarPara('${escJs(data.pai)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          <span style="color:var(--text-3);">.. (voltar)</span>
+        </div>`;
+      }
+
+      if (!data.itens.length) {
+        html += '<div style="padding:20px;text-align:center;color:var(--text-3);font-size:12px;">Nenhuma subpasta encontrada</div>';
+      } else {
+        html += data.itens.map(i => `
+          <div class="browser-item" onclick="navegarPara('${escJs(i.caminho)}')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V8a2 2 0 00-2-2h-8l-2-2z"/></svg>
+            <span>${escHtml(i.nome)}</span>
+          </div>`).join('');
+      }
+      el.innerHTML = html;
+    }
+
+    function confirmarPasta() {
+      if (!browserAlvo || !caminhoAtual) return;
+      document.getElementById(`input-${browserAlvo}`).value = caminhoAtual;
+      fecharBrowser();
+      salvarCaminhos();
+    }
+
+    // ── Preview ───────────────────────────────────────────────
+    async function executarPreview() {
+      const origem = document.getElementById('input-origem').value.trim();
+      const destino = document.getElementById('input-destino').value.trim();
+      if (!origem) { toast('Informe a pasta de origem.', 'error'); return; }
+      if (!destino) { toast('Informe a pasta de destino.', 'error'); return; }
+      salvarCaminhos();
+
+      const btn = document.getElementById('btn-preview');
+      btn.innerHTML = '<span class="spinner"></span> Analisando...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API}/extratos/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origem, destino, ...getIAParams() })
+        });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Erro ao analisar.', 'error'); return; }
+        ultimoResultado = data;
+        exibirResultados(data, true);
+        document.getElementById('btn-organizar').disabled = data.sucessos === 0;
+        toast(`Prévia: ${data.sucessos} de ${data.total} arquivos identificados.`, data.erros > 0 ? 'warn' : 'success');
+      } catch { toast('Erro de conexão com o servidor.', 'error'); }
+      finally {
+        btn.innerHTML = '🔍 Visualizar Prévia';
+        btn.disabled = false;
+      }
+    }
+
+    // ── Organizar ─────────────────────────────────────────────
+    async function executarOrganizar() {
+      const origem = document.getElementById('input-origem').value.trim();
+      const destino = document.getElementById('input-destino').value.trim();
+      if (!confirm(`Organizar ${ultimoResultado?.sucessos || ''} arquivos?\n\nOs originais serão preservados — apenas copiados para:\n${destino}`)) return;
+
+      const btn = document.getElementById('btn-organizar');
+      btn.innerHTML = '<span class="spinner"></span> Organizando...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API}/extratos/organizar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ origem, destino, ...getIAParams() })
+        });
+        const data = await res.json();
+        if (!res.ok) { toast(data.error || 'Erro ao organizar.', 'error'); return; }
+        exibirResultados(data, false);
+        toast(`✅ ${data.sucessos} arquivo(s) copiado(s) com sucesso!`, 'success');
+      } catch { toast('Erro de conexão com o servidor.', 'error'); }
+      finally {
+        btn.innerHTML = '✅ Organizar Extratos';
+        btn.disabled = false;
+      }
+    }
+
+    // ── Exibir Resultados ─────────────────────────────────────
+    function exibirResultados(data, isPreview) {
+      document.getElementById('card-resultados').style.display = '';
+      document.getElementById('resultados-titulo').textContent =
+        isPreview ? '🔍 Prévia — Nenhum arquivo foi movido' : '✅ Organização Concluída';
+      document.getElementById('stat-total').textContent = data.total;
+      document.getElementById('stat-ok').textContent = data.sucessos;
+      document.getElementById('stat-err').textContent = data.erros;
+
+      const el = document.getElementById('resultado-lista');
+      if (!data.resultados.length) {
+        el.innerHTML = '<div class="empty-ext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg><p>Nenhum arquivo PDF/OFX encontrado na pasta de origem.</p></div>';
+        return;
+      }
+
+      el.innerHTML = data.resultados.map(r => {
+        if (r.sucesso) {
+          const badge = isPreview
+            ? `<span class="badge badge-sim">SIMULADO</span>`
+            : `<span class="badge badge-ok">COPIADO</span>`;
+          return `<div class="resultado-item sucesso">
+            <span class="icone">✓</span>
+            <div>
+              <div class="nome-orig">${escHtml(r.nome)}</div>
+              <div class="seta">→ ${escHtml(r.estrutura)}/</div>
+              <div class="nome-novo">${escHtml(r.nome_novo)}</div>
+              ${r.banco ? `<div style="font-size:10px;color:var(--text-3);margin-top:2px;">🏦 ${escHtml(r.banco.replace(/_/g,' '))}${r.tipo_conta ? ' · ' + escHtml(r.tipo_conta) : ''}${r.confianca != null ? ' · confiança ' + Math.round(r.confianca*100) + '%' : ''}</div>` : ''}
+            </div>
+            ${badge}
+          </div>`;
+        } else {
+          return `<div class="resultado-item erro">
+            <span class="icone">✗</span>
+            <div>
+              <div class="nome-orig">${escHtml(r.nome)}</div>
+              <div class="erro-msg">⚠️ ${escHtml(r.erro)}</div>
+            </div>
+            <span class="badge badge-err">ERRO</span>
+          </div>`;
+        }
+      }).join('');
+    }
+
+    // ── Limpar ────────────────────────────────────────────────
+    function limpar() {
+      document.getElementById('input-origem').value = '';
+      document.getElementById('input-destino').value = '';
+      document.getElementById('card-resultados').style.display = 'none';
+      document.getElementById('btn-organizar').disabled = true;
+      ultimoResultado = null;
+      localStorage.removeItem('ext_origem');
+      localStorage.removeItem('ext_destino');
+    }
+
+    // ── Toast ─────────────────────────────────────────────────
+    function toast(msg, tipo) {
+      const el = document.getElementById('ext-toast');
+      const cores = { success: '#2d6a4f', error: '#c0392b', warn: '#b7640a', info: '#2c3e50' };
+      el.textContent = msg;
+      el.style.background = cores[tipo] || cores.info;
+      el.style.display = 'block';
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    // ── Utils ─────────────────────────────────────────────────
+    function escHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escJs(s) {
+      return String(s || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    }
+  </script>
+</body>
+</html>

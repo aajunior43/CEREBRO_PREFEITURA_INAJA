@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solicitações de Aquisição – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* ── PAGE ── */
+    .forn-page { min-height: calc(100vh - 64px); padding: 20px 16px 60px; }
+
+    /* ── HERO ── */
+    .forn-hero { display: flex; align-items: center; gap: 14px; max-width: 1200px; margin: 0 auto 18px; }
+    .forn-hero-icon { width: 48px; height: 48px; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); border-radius: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 10px rgba(79,128,200,.3); }
+    .forn-hero-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2; }
+    .forn-hero h2 { font-size: clamp(17px,4vw,22px); font-weight: 800; color: var(--text); margin: 0; }
+    .forn-hero p { font-size: 12px; color: var(--text-3); margin: 2px 0 0; }
+
+    /* ── TABS ── */
+    .forn-tabs { display: flex; gap: 6px; max-width: 1200px; margin: 0 auto 20px; flex-wrap: wrap; }
+    .forn-tab { padding: 9px 20px; border: none; background: var(--bg); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-3); cursor: pointer; border-radius: 50px; box-shadow: var(--neo-sm); transition: all .2s; }
+    .forn-tab.active { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; box-shadow: 3px 3px 8px rgba(79,128,200,.4); }
+    .forn-tab:hover:not(.active) { color: var(--text); box-shadow: var(--neo); }
+    .forn-panel { display: none; max-width: 1200px; margin: 0 auto; }
+    .forn-panel.active { display: block; }
+
+    /* ── STATS BAR ── */
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo-sm); padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 160px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .stat-icon svg { width: 20px; height: 20px; stroke-width: 2; fill: none; }
+    .stat-icon.blue { background: var(--blue-light); }
+    .stat-icon.blue svg { stroke: var(--blue); }
+    .stat-icon.green { background: var(--green-bg); }
+    .stat-icon.green svg { stroke: var(--green); }
+    .stat-icon.orange { background: var(--orange-bg); }
+    .stat-icon.orange svg { stroke: var(--orange); }
+    .stat-val { font-size: 20px; font-weight: 800; color: var(--text); }
+    .stat-lbl { font-size: 11px; color: var(--text-3); }
+
+    /* ── LAYOUT ── */
+    .form-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    @media(max-width:900px) { .form-layout { grid-template-columns: 1fr; } }
+
+    /* ── CARD ── */
+    .forn-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 22px; margin-bottom: 20px; }
+    .forn-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .forn-card h3 svg { width: 18px; height: 18px; stroke: var(--blue); fill: none; stroke-width: 2; }
+
+    /* ── FORM ── */
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
+    .fg input, .fg select, .fg textarea {
+      background: var(--bg); border: none; border-radius: var(--radius-sm);
+      box-shadow: var(--neo-in-sm); padding: 10px 12px; font-family: inherit;
+      font-size: 13px; color: var(--text); outline: none; transition: box-shadow .2s;
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { box-shadow: var(--neo-in); }
+    .fg textarea { resize: vertical; min-height: 60px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .grid4 { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 10px; align-items: end; }
+    .char-counter { font-size: 10px; color: var(--text-3); text-align: right; margin-top: 2px; }
+
+    /* ── ITEMS ── */
+    .item-card { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 14px; margin-bottom: 10px; position: relative; }
+    .item-card .grid4 { margin-bottom: 0; }
+    .item-total { font-size: 13px; font-weight: 700; color: var(--green-dark); margin-top: 8px; text-align: right; }
+    .item-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; color: var(--red); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .item-remove:hover { background: var(--red-bg); }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; transition: all .2s; }
+    .btn-blue { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; box-shadow: 3px 3px 8px rgba(79,128,200,.4); }
+    .btn-blue:hover { box-shadow: 5px 5px 12px rgba(79,128,200,.5); }
+    .btn-green { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; box-shadow: 3px 3px 8px rgba(58,170,110,.4); }
+    .btn-green:hover { box-shadow: 5px 5px 12px rgba(58,170,110,.5); }
+    .btn-orange { background: linear-gradient(135deg, var(--orange), #c06a2a); color: #fff; box-shadow: 3px 3px 8px rgba(217,124,58,.4); }
+    .btn-red { background: var(--bg); color: var(--red); box-shadow: var(--neo-sm); }
+    .btn-red:hover { box-shadow: var(--neo); }
+    .btn-ghost { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); }
+    .btn-ghost:hover { box-shadow: var(--neo); }
+    .btn-sm { padding: 7px 13px; font-size: 12px; border-radius: var(--radius-sm); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── PREVIEW ── */
+    .preview-mini { background: #fff; border-radius: 6px; padding: 16px; font-size: 9px; color: #333; line-height: 1.4; min-height: 200px; border: 1px solid #ddd; }
+    .preview-mini .ph { background: var(--blue); color: #fff; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 10px; border-radius: 4px 4px 0 0; margin: -16px -16px 10px; }
+    .preview-mini table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 8px; }
+    .preview-mini th { background: var(--blue); color: #fff; padding: 3px 4px; text-align: left; font-size: 8px; }
+    .preview-mini td { padding: 3px 4px; border-bottom: 1px solid #eee; }
+    .preview-mini .pf { background: var(--blue); color: #fff; padding: 4px 8px; text-align: center; font-size: 8px; border-radius: 0 0 4px 4px; margin: 10px -16px -16px; }
+
+    /* ── BATCH ── */
+    .batch-result { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 16px; margin-top: 14px; max-height: 400px; overflow-y: auto; }
+    .batch-valid { color: var(--green-dark); font-weight: 600; }
+    .batch-error { color: var(--red); font-weight: 600; }
+    .batch-line { padding: 6px 0; border-bottom: 1px solid rgba(184,194,204,.2); font-size: 12px; }
+
+    /* ── DATA MANAGER ── */
+    .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg); box-shadow: var(--neo-sm); padding: 5px 12px; border-radius: 50px; font-size: 12px; color: var(--text-2); cursor: pointer; transition: all .15s; border: none; font-family: inherit; }
+    .chip:hover { box-shadow: var(--neo); color: var(--blue); }
+    .chip .chip-x { font-size: 14px; color: var(--red); margin-left: 4px; cursor: pointer; }
+    .chip .chip-x:hover { font-weight: 700; }
+
+    .data-section { margin-bottom: 20px; }
+    .data-section h4 { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; margin-bottom: 6px; }
+    .add-row { display: flex; gap: 8px; }
+    .add-row input { flex: 1; }
+
+    /* ── UPLOAD AREA ── */
+    .upload-area { border: 2px dashed var(--shadow-dark); border-radius: var(--radius); padding: 30px; text-align: center; color: var(--text-3); cursor: pointer; transition: all .2s; }
+    .upload-area:hover { border-color: var(--blue); color: var(--blue); }
+    .upload-area svg { width: 36px; height: 36px; margin-bottom: 8px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+      <div class="header-brand">
+        <img id="header-brasao" src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
+        <div class="header-title"><h1>Prefeitura de Inajá</h1><p>Gestão de Empenhos</p></div>
+      </div>
+    </div>
+    <nav class="desktop-nav">
+      <a href="index.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Credores Fixos</a>
+      <a href="rpa.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>RPA</a>
+      <a href="extratos.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>Extratos</a>
+      <a href="cnpj.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>CNPJ</a>
+      <a href="pdf.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</a>
+      <a href="renomear.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Renomear</a>
+      <a href="tarefas.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Tarefas</a>
+      <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+      <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+      <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+      <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+      <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+      <a href="fornecimento.html" class="nav-tab active" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+    </nav>
+    <div class="header-right">
+      <div class="dropdown">
+        <button class="dropdown-toggle" id="dropdown-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+        <div class="dropdown-menu" id="dropdown-menu">
+          <button class="dropdown-item" id="theme-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg><span>Tema</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="forn-page">
+
+  <!-- Hero -->
+  <div class="forn-hero">
+    <div class="forn-hero-icon">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </div>
+    <div>
+      <h2>Sistema de Solicitações de Aquisição</h2>
+      <p>Gerencie solicitações de fornecimento e aquisição de materiais</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="forn-tabs">
+    <button class="forn-tab active" data-panel="tab-form">📝 Formulário</button>
+    <button class="forn-tab" data-panel="tab-batch">📦 Lote</button>
+    <button class="forn-tab" data-panel="tab-data">💾 Dados</button>
+  </div>
+
+  <!-- ════════ TAB 1 – FORMULÁRIO ════════ -->
+  <div class="forn-panel active" id="tab-form">
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon blue"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+        <div><div class="stat-val" id="stat-items">0</div><div class="stat-lbl">Itens</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><div class="stat-val" id="stat-total">R$ 0,00</div><div class="stat-lbl">Total</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div><div class="stat-val" id="stat-status">0%</div><div class="stat-lbl">Preenchimento</div></div>
+      </div>
+    </div>
+
+    <div class="form-layout">
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- Form Fields -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Dados da Solicitação</h3>
+          <div class="grid2" style="margin-bottom:14px;">
+            <div class="fg">
+              <label>Solicitante</label>
+              <input type="text" id="f-solicitante" placeholder="Nome do solicitante" />
+            </div>
+            <div class="fg">
+              <label>Empresa</label>
+              <input type="text" id="f-empresa" placeholder="Nome da empresa" />
+            </div>
+          </div>
+          <div class="grid2" style="margin-bottom:14px;">
+            <div class="fg">
+              <label>Data</label>
+              <input type="text" id="f-data" placeholder="DD/MM/AAAA" />
+            </div>
+            <div class="fg" style="position:relative;">
+              <label>Observações <span class="char-counter" id="obs-counter">0/500</span></label>
+              <textarea id="f-obs" maxlength="500" placeholder="Observações opcionais..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Section -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Itens da Solicitação</h3>
+          <div id="items-container"></div>
+          <button class="btn btn-blue btn-sm" id="btn-add-item" style="margin-top:10px;">+ Adicionar Item</button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+        <!-- Actions -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Ações</h3>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn btn-blue" id="btn-export-pdf">📄 Exportar PDF</button>
+            <button class="btn btn-red" id="btn-clear">🗑 Limpar</button>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg> Pré-visualização</h3>
+          <div class="preview-mini" id="preview-box">
+            <div class="ph">PREFEITURA MUNICIPAL DE INAJÁ</div>
+            <div style="text-align:center;font-size:8px;color:#666;margin-bottom:6px;">Estado do Paraná</div>
+            <div id="preview-info" style="margin-bottom:6px;"></div>
+            <table><thead><tr><th>Item</th><th>Descrição</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead><tbody id="preview-tbody"></tbody></table>
+            <div id="preview-total" style="text-align:right;font-weight:700;margin:4px 0;"></div>
+            <div id="preview-obs" style="font-size:8px;color:#666;margin-top:4px;"></div>
+            <div class="pf">Documento gerado eletronicamente</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 2 – LOTE ════════ -->
+  <div class="forn-panel" id="tab-batch">
+    <div class="forn-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar Lote</h3>
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:14px;">Formato: <code>SOLICITANTE|EMPRESA|OBS|ITEM:DESC:QTD:VALOR;ITEM:DESC:QTD:VALOR</code></p>
+      <div class="btn-row" style="margin-bottom:16px;">
+        <button class="btn btn-ghost btn-sm" id="btn-download-template">📥 Baixar Template</button>
+      </div>
+      <div class="upload-area" id="batch-upload-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div>Clique ou arraste um arquivo .txt aqui</div>
+        <input type="file" id="batch-file-input" accept=".txt" style="display:none;" />
+      </div>
+      <div id="batch-results" class="hidden"></div>
+    </div>
+
+    <!-- Batch Summary & Actions -->
+    <div class="forn-card hidden" id="batch-actions-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Resultado do Lote</h3>
+      <div id="batch-summary" style="margin-bottom:14px;"></div>
+      <div class="btn-row">
+        <button class="btn btn-blue" id="btn-batch-pdf">📄 Exportar Lote PDF</button>
+        <button class="btn btn-green" id="btn-batch-json">💾 Exportar JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 3 – DADOS ════════ -->
+  <div class="forn-panel" id="tab-data">
+    <div class="form-layout">
+      <div>
+        <!-- Data Manager -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Gerenciador de Dados</h3>
+
+          <div class="data-section">
+            <h4>Solicitantes</h4>
+            <div class="add-row">
+              <input type="text" id="add-solic-input" placeholder="Novo solicitante..." class="fg" style="padding:8px 10px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+              <button class="btn btn-blue btn-sm" id="btn-add-solic">+</button>
+            </div>
+            <div class="chip-list" id="solic-chips"></div>
+          </div>
+
+          <div class="data-section">
+            <h4>Empresas</h4>
+            <div class="add-row">
+              <input type="text" id="add-emp-input" placeholder="Nova empresa..." class="fg" style="padding:8px 10px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+              <button class="btn btn-blue btn-sm" id="btn-add-emp">+</button>
+            </div>
+            <div class="chip-list" id="emp-chips"></div>
+          </div>
+
+          <div class="data-section">
+            <h4>Observações</h4>
+            <div class="add-row">
+              <input type="text" id="add-obs-input" placeholder="Nova observação..." class="fg" style="padding:8px 10px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+              <button class="btn btn-blue btn-sm" id="btn-add-obs">+</button>
+            </div>
+            <div class="chip-list" id="obs-chips"></div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--shadow-dark);margin:18px 0;" />
+          <div class="btn-row">
+            <button class="btn btn-green btn-sm" id="btn-export-data">📤 Exportar Dados</button>
+            <button class="btn btn-ghost btn-sm" id="btn-import-data">📥 Importar Dados</button>
+            <button class="btn btn-red btn-sm" id="btn-clear-data">🗑 Limpar Tudo</button>
+            <input type="file" id="import-data-file" accept=".json" style="display:none;" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Template Manager -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Gerenciador de Templates</h3>
+          <div class="fg" style="margin-bottom:12px;">
+            <label>Nome do Template</label>
+            <input type="text" id="template-name" placeholder="Ex: Fornecimento mensal..." />
+          </div>
+          <div class="btn-row" style="margin-bottom:16px;">
+            <button class="btn btn-blue btn-sm" id="btn-save-template">💾 Salvar Template</button>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--shadow-dark);margin:14px 0;" />
+          <div class="fg">
+            <label>Carregar Template</label>
+            <div class="upload-area" id="template-upload-area" style="padding:20px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div style="font-size:12px;">Carregar arquivo JSON</div>
+              <input type="file" id="template-file-input" accept=".json" style="display:none;" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ═══════════ THEME & NAV ═══════════ */
+const saved = localStorage.getItem('theme');
+if (saved) document.documentElement.setAttribute('data-theme', saved);
+document.getElementById('theme-toggle')?.addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+});
+const dt = document.getElementById('dropdown-toggle');
+const dm = document.getElementById('dropdown-menu');
+dt?.addEventListener('click', (e) => { e.stopPropagation(); dm.classList.toggle('open'); });
+document.addEventListener('click', () => dm?.classList.remove('open'));
+
+/* Hamburger */
+const hamburger = document.getElementById('hamburger');
+const desktopNav = document.querySelector('.desktop-nav');
+hamburger?.addEventListener('click', () => { desktopNav?.classList.toggle('open'); });
+
+/* ═══════════ TAB SWITCHING ═══════════ */
+document.querySelectorAll('.forn-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.panel)?.classList.add('active');
+  });
+});
+
+/* ═══════════ HELPERS ═══════════ */
+function fmtMoney(v) {
+  return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function parseMoney(s) {
+  if (!s) return 0;
+  return parseFloat(String(s).replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+}
+function todayStr() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+}
+function download(filename, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ═══════════ STATE ═══════════ */
+let items = [];
+let itemIdCounter = 0;
+let processedRequests = [];
+
+/* ═══════════ TAB 1 – FORMULÁRIO ═══════════ */
+const $sol = document.getElementById('f-solicitante');
+const $emp = document.getElementById('f-empresa');
+const $dat = document.getElementById('f-data');
+const $obs = document.getElementById('f-obs');
+const $itemsC = document.getElementById('items-container');
+
+// Auto-fill date
+$dat.value = todayStr();
+
+// Char counter
+$obs.addEventListener('input', () => {
+  document.getElementById('obs-counter').textContent = $obs.value.length + '/500';
+});
+
+// Add item
+function createItemId() { return ++itemIdCounter; }
+
+function addItem(data) {
+  const id = createItemId();
+  const item = { id, nome: data?.nome || '', desc: data?.desc || '', qtd: data?.qtd || '', preco: data?.preco || '' };
+  items.push(item);
+  renderItems();
+  return id;
+}
+
+function removeItem(id) {
+  items = items.filter(i => i.id !== id);
+  renderItems();
+}
+
+function renderItems() {
+  $itemsC.innerHTML = '';
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item-card';
+    const qtd = parseFloat(item.qtd) || 0;
+    const preco = parseMoney(item.preco);
+    const total = qtd * preco;
+    div.innerHTML = `
+      <button class="item-remove" data-id="${item.id}">&times;</button>
+      <div class="grid4">
+        <div class="fg"><label>Item</label><input type="text" value="${esc(item.nome)}" data-field="nome" data-id="${item.id}" /></div>
+        <div class="fg"><label>Descrição</label><input type="text" value="${esc(item.desc)}" data-field="desc" data-id="${item.id}" /></div>
+        <div class="fg"><label>Qtd</label><input type="number" min="0" step="1" value="${esc(item.qtd)}" data-field="qtd" data-id="${item.id}" /></div>
+        <div class="fg"><label>Preço Unit.</label><input type="text" value="${esc(item.preco)}" data-field="preco" data-id="${item.id}" /></div>
+      </div>
+      <div class="item-total">Total: ${fmtMoney(total)}</div>
+    `;
+    $itemsC.appendChild(div);
+  });
+
+  // Bind events
+  $itemsC.querySelectorAll('.item-remove').forEach(btn => {
+    btn.addEventListener('click', () => removeItem(Number(btn.dataset.id)));
+  });
+  $itemsC.querySelectorAll('input[data-field]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const it = items.find(i => i.id === Number(inp.dataset.id));
+      if (it) { it[inp.dataset.field] = inp.value; }
+      updateTotals();
+      updatePreview();
+    });
+  });
+
+  updateTotals();
+  updatePreview();
+}
+
+function esc(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+function getGrandTotal() {
+  return items.reduce((s, i) => s + (parseFloat(i.qtd) || 0) * parseMoney(i.preco), 0);
+}
+
+function updateTotals() {
+  // Re-render totals inside item cards
+  $itemsC.querySelectorAll('.item-card').forEach(card => {
+    const id = Number(card.querySelector('.item-remove').dataset.id);
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const total = (parseFloat(it.qtd) || 0) * parseMoney(it.preco);
+    card.querySelector('.item-total').textContent = 'Total: ' + fmtMoney(total);
+  });
+
+  document.getElementById('stat-items').textContent = items.length;
+  document.getElementById('stat-total').textContent = fmtMoney(getGrandTotal());
+
+  // Completion
+  let filled = 0, total = 3;
+  if ($sol.value.trim()) filled++;
+  if ($emp.value.trim()) filled++;
+  if (items.length > 0) filled++;
+  document.getElementById('stat-status').textContent = Math.round(filled / total * 100) + '%';
+}
+
+function updatePreview() {
+  const info = document.getElementById('preview-info');
+  info.innerHTML = `<b>Solicitante:</b> ${esc($sol.value) || '—'} &nbsp; <b>Empresa:</b> ${esc($emp.value) || '—'} &nbsp; <b>Data:</b> ${esc($dat.value) || '—'}`;
+
+  const tbody = document.getElementById('preview-tbody');
+  tbody.innerHTML = items.map(i => {
+    const t = (parseFloat(i.qtd) || 0) * parseMoney(i.preco);
+    return `<tr><td>${esc(i.nome)}</td><td>${esc(i.desc)}</td><td>${esc(i.qtd)}</td><td>${esc(i.preco)}</td><td>${fmtMoney(t)}</td></tr>`;
+  }).join('');
+
+  document.getElementById('preview-total').textContent = items.length ? 'TOTAL: ' + fmtMoney(getGrandTotal()) : '';
+  const obsEl = document.getElementById('preview-obs');
+  obsEl.textContent = $obs.value ? 'Obs: ' + $obs.value : '';
+}
+
+// Listen for form changes
+[$sol, $emp, $dat, $obs].forEach(el => el.addEventListener('input', () => { updateTotals(); updatePreview(); }));
+
+document.getElementById('btn-add-item').addEventListener('click', () => addItem());
+
+// Clear
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Limpar todo o formulário?')) return;
+  $sol.value = ''; $emp.value = ''; $dat.value = todayStr(); $obs.value = '';
+  document.getElementById('obs-counter').textContent = '0/500';
+  items = [];
+  renderItems();
+});
+
+/* ═══════════ AUTO-SAVE ═══════════ */
+setInterval(() => {
+  localStorage.setItem('inaja-form-autosave', JSON.stringify({
+    solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value
+  }));
+  localStorage.setItem('inaja-items-autosave', JSON.stringify(items));
+}, 2000);
+
+// Restore
+(function restoreAutoSave() {
+  try {
+    const f = JSON.parse(localStorage.getItem('inaja-form-autosave'));
+    if (f) {
+      $sol.value = f.solicitante || '';
+      $emp.value = f.empresa || '';
+      $dat.value = f.data || todayStr();
+      $obs.value = f.obs || '';
+      document.getElementById('obs-counter').textContent = ($obs.value.length) + '/500';
+    }
+    const saved = JSON.parse(localStorage.getItem('inaja-items-autosave'));
+    if (saved && saved.length) {
+      saved.forEach(i => {
+        itemIdCounter = Math.max(itemIdCounter, i.id || 0);
+        items.push(i);
+      });
+      renderItems();
+    }
+  } catch(e) {}
+  updateTotals();
+  updatePreview();
+})();
+
+/* ═══════════ PDF EXPORT ═══════════ */
+function generatePDF(req) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const W = 210, M = 15;
+  const pw = W - 2 * M;
+  const blue = [79, 128, 200];
+  const lightBlue = [221, 233, 255];
+  const white = [255, 255, 255];
+  const dark = [30, 42, 56];
+  const gray = [107, 127, 150];
+
+  let y = 0;
+
+  // Header bar
+  doc.setFillColor(...blue);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(...white);
+  doc.text('PREFEITURA MUNICIPAL DE INAJÁ', W / 2, 10, { align: 'center' });
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Estado do Paraná', W / 2, 16, { align: 'center' });
+  doc.setFontSize(7);
+  doc.text('Rua Juvenal Lioto, 22 – Centro – CEP 87.670-000 – Inajá – PR', W / 2, 20, { align: 'center' });
+  y = 28;
+
+  // Title
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...dark);
+  doc.text('SOLICITAÇÃO DE AQUISIÇÃO / FORNECIMENTO', W / 2, y, { align: 'center' });
+  y += 10;
+
+  // Info box
+  doc.setDrawColor(...blue);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(M, y, pw, 22, 2, 2, 'S');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...dark);
+  doc.text('Solicitante:', M + 4, y + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text(req.solicitante || '—', M + 30, y + 7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Empresa:', M + 4, y + 14);
+  doc.setFont('helvetica', 'normal');
+  doc.text(req.empresa || '—', M + 25, y + 14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Data:', pw - 10, y + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text(req.data || '—', pw + 2, y + 7);
+  y += 28;
+
+  // Items table
+  const cols = [
+    { label: '#', w: 10 },
+    { label: 'Item', w: 40 },
+    { label: 'Descrição', w: 55 },
+    { label: 'Qtd', w: 15 },
+    { label: 'Preço Unit.', w: 25 },
+    { label: 'Total', w: 25 },
+  ];
+  // Adjust last col to fill
+  cols[cols.length - 1].w = pw - cols.slice(0, -1).reduce((s, c) => s + c.w, 0);
+
+  // Header row
+  doc.setFillColor(...blue);
+  doc.rect(M, y, pw, 8, 'F');
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...white);
+  let cx = M;
+  cols.forEach(c => {
+    doc.text(c.label, cx + 2, y + 5.5);
+    cx += c.w;
+  });
+  y += 8;
+
+  // Data rows
+  const rowItems = req.items || [];
+  let grandTotal = 0;
+  rowItems.forEach((item, idx) => {
+    const qtd = parseFloat(item.qtd) || 0;
+    const preco = parseMoney(item.preco);
+    const total = qtd * preco;
+    grandTotal += total;
+    const bg = idx % 2 === 0 ? lightBlue : white;
+    doc.setFillColor(...bg);
+    doc.rect(M, y, pw, 7, 'F');
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...dark);
+    cx = M;
+    const vals = [String(idx + 1), item.nome || '', item.desc || '', String(qtd), fmtMoney(preco), fmtMoney(total)];
+    cols.forEach((c, ci) => {
+      doc.text(String(vals[ci]).substring(0, Math.floor(c.w / 1.8)), cx + 2, y + 5);
+      cx += c.w;
+    });
+    y += 7;
+    if (y > 270) { doc.addPage(); y = 15; }
+  });
+
+  // Total row
+  doc.setFillColor(...blue);
+  doc.rect(M, y, pw, 8, 'F');
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...white);
+  doc.text('TOTAL', M + 4, y + 5.5);
+  doc.text(fmtMoney(grandTotal), M + pw - 4, y + 5.5, { align: 'right' });
+  y += 14;
+
+  // Observations
+  if (req.obs) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...dark);
+    doc.text('Observações:', M, y);
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...gray);
+    const lines = doc.splitTextToSize(req.obs, pw);
+    doc.text(lines, M, y);
+    y += lines.length * 4 + 6;
+  }
+
+  // Signature
+  if (y > 250) { doc.addPage(); y = 30; }
+  y = Math.max(y, 220);
+  doc.setDrawColor(...dark);
+  doc.setLineWidth(0.3);
+  doc.line(W / 2 - 40, y, W / 2 + 40, y);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...dark);
+  doc.text(req.solicitante || 'Solicitante', W / 2, y + 5, { align: 'center' });
+  doc.setFontSize(7);
+  doc.setTextColor(...gray);
+  doc.text('Assinatura do Solicitante', W / 2, y + 9, { align: 'center' });
+
+  // Footer bar
+  doc.setFillColor(...blue);
+  doc.rect(0, 289, W, 8, 'F');
+  doc.setFontSize(7);
+  doc.setTextColor(...white);
+  doc.text('Prefeitura Municipal de Inajá – Sistema de Solicitações de Aquisição', W / 2, 294, { align: 'center' });
+
+  return doc;
+}
+
+document.getElementById('btn-export-pdf').addEventListener('click', () => {
+  const req = {
+    solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value,
+    items: items.map(i => ({ nome: i.nome, desc: i.desc, qtd: i.qtd, preco: i.preco }))
+  };
+  if (!req.items.length) { alert('Adicione pelo menos um item.'); return; }
+  const doc = generatePDF(req);
+  doc.save('solicitacao_' + (req.solicitante || 'doc').replace(/\s+/g, '_') + '.pdf');
+});
+
+/* ═══════════ TAB 2 – LOTE ═══════════ */
+// Download template
+document.getElementById('btn-download-template').addEventListener('click', () => {
+  const tmpl = 'João Silva|Empresa XPTO|Material para escritório|Caneta:Caneta azul:10:2.50;Papel:Resma A4:5:25.00\nMaria Souza|Fornecedora ABC|Itens de limpeza|Detergente:500ml:20:3.00;Pano:Multiuso:30:1.50';
+  download('template_lote.txt', tmpl, 'text/plain');
+});
+
+// Upload area
+const batchArea = document.getElementById('batch-upload-area');
+const batchInput = document.getElementById('batch-file-input');
+batchArea.addEventListener('click', () => batchInput.click());
+batchArea.addEventListener('dragover', e => { e.preventDefault(); batchArea.style.borderColor = 'var(--blue)'; });
+batchArea.addEventListener('dragleave', () => { batchArea.style.borderColor = ''; });
+batchArea.addEventListener('drop', e => {
+  e.preventDefault();
+  batchArea.style.borderColor = '';
+  if (e.dataTransfer.files[0]) processBatchFile(e.dataTransfer.files[0]);
+});
+batchInput.addEventListener('change', () => {
+  if (batchInput.files[0]) processBatchFile(batchInput.files[0]);
+});
+
+function parseBatchLine(line, lineNum) {
+  const parts = line.split('|');
+  if (parts.length < 4) return { error: `Linha ${lineNum}: esperado 4 campos separados por |, encontrado ${parts.length}` };
+  const [solicitante, empresa, obs, itemsStr] = parts;
+  if (!solicitante.trim()) return { error: `Linha ${lineNum}: solicitante vazio` };
+  if (!itemsStr.trim()) return { error: `Linha ${lineNum}: nenhum item encontrado` };
+  const rawItems = itemsStr.split(';').filter(s => s.trim());
+  const parsedItems = [];
+  for (let ii = 0; ii < rawItems.length; ii++) {
+    const fields = rawItems[ii].split(':');
+    if (fields.length < 4) return { error: `Linha ${lineNum}, item ${ii + 1}: esperado 4 campos (ITEM:DESC:QTD:VALOR)` };
+    parsedItems.push({ nome: fields[0].trim(), desc: fields[1].trim(), qtd: fields[2].trim(), preco: fields[3].trim() });
+  }
+  return { solicitante: solicitante.trim(), empresa: empresa.trim(), obs: obs.trim(), data: todayStr(), items: parsedItems };
+}
+
+function processBatchFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
+    const results = { valid: [], errors: [] };
+    lines.forEach((line, idx) => {
+      const r = parseBatchLine(line, idx + 1);
+      if (r.error) results.errors.push(r.error);
+      else results.valid.push(r);
+    });
+
+    processedRequests = results.valid;
+    const resDiv = document.getElementById('batch-results');
+    resDiv.classList.remove('hidden');
+    resDiv.innerHTML = `
+      <div class="batch-result">
+        <p><span class="batch-valid">✓ ${results.valid.length} solicitações válidas</span> &nbsp; <span class="batch-error">✗ ${results.errors.length} erros</span></p>
+        ${results.errors.map(e => `<div class="batch-line" style="color:var(--red);">⚠ ${esc(e)}</div>`).join('')}
+        ${results.valid.map((v, i) => `<div class="batch-line">✓ <b>${esc(v.solicitante)}</b> – ${esc(v.empresa)} – ${v.items.length} itens</div>`).join('')}
+      </div>
+    `;
+
+    // Show actions
+    const actionsCard = document.getElementById('batch-actions-card');
+    if (results.valid.length) {
+      actionsCard.classList.remove('hidden');
+      const total = results.valid.reduce((s, r) => s + r.items.reduce((si, it) => si + (parseFloat(it.qtd) || 0) * parseMoney(it.preco), 0), 0);
+      const totalItems = results.valid.reduce((s, r) => s + r.items.length, 0);
+      document.getElementById('batch-summary').innerHTML = `
+        <div class="stats-bar">
+          <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="stat-val">${results.valid.length}</div><div class="stat-lbl">Solicitações</div></div></div>
+          <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div><div class="stat-val">${totalItems}</div><div class="stat-lbl">Total de Itens</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><div class="stat-val">${fmtMoney(total)}</div><div class="stat-lbl">Valor Total</div></div></div>
+        </div>
+      `;
+    } else {
+      actionsCard.classList.add('hidden');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Batch PDF
+document.getElementById('btn-batch-pdf').addEventListener('click', () => {
+  if (!processedRequests.length) { alert('Nenhuma solicitação processada.'); return; }
+  const { jsPDF } = window.jspdf;
+  let doc = null;
+  processedRequests.forEach((req, idx) => {
+    const page = generatePDF(req);
+    if (idx === 0) {
+      doc = page;
+    } else {
+      const pageCount = page.internal.getNumberOfPages();
+      for (let p = 1; p <= pageCount; p++) {
+        doc.addPage();
+        const srcPage = page.internal.pages[p];
+        doc.internal.pages[doc.internal.getNumberOfPages()] = srcPage;
+      }
+    }
+  });
+  if (doc) doc.save('lote_solicitacoes.pdf');
+});
+
+// Batch JSON
+document.getElementById('btn-batch-json').addEventListener('click', () => {
+  if (!processedRequests.length) { alert('Nenhuma solicitação processada.'); return; }
+  download('lote_solicitacoes.json', JSON.stringify(processedRequests, null, 2), 'application/json');
+});
+
+/* ═══════════ TAB 3 – DADOS ═══════════ */
+function getDataManager() {
+  try { return JSON.parse(localStorage.getItem('inaja-data-manager')) || { solicitantes: [], empresas: [], observacoes: [] }; }
+  catch { return { solicitantes: [], empresas: [], observacoes: [] }; }
+}
+function saveDataManager(d) { localStorage.setItem('inaja-data-manager', JSON.stringify(d)); }
+
+function renderChips() {
+  const data = getDataManager();
+  renderChipList('solic-chips', data.solicitantes, 'solicitantes', $sol);
+  renderChipList('emp-chips', data.empresas, 'empresas', $emp);
+  renderChipList('obs-chips', data.observacoes, 'observacoes', $obs);
+}
+
+function renderChipList(containerId, arr, key, targetInput) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  arr.forEach((val, idx) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.innerHTML = `${esc(val)} <span class="chip-x" data-key="${key}" data-idx="${idx}">&times;</span>`;
+    chip.addEventListener('click', (e) => {
+      if (e.target.classList.contains('chip-x')) return;
+      targetInput.value = val;
+      targetInput.dispatchEvent(new Event('input'));
+      // Switch to form tab
+      document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-panel="tab-form"]').classList.add('active');
+      document.getElementById('tab-form').classList.add('active');
+    });
+    container.appendChild(chip);
+  });
+
+  // Remove handlers
+  container.querySelectorAll('.chip-x').forEach(x => {
+    x.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const d = getDataManager();
+      d[x.dataset.key].splice(Number(x.dataset.idx), 1);
+      saveDataManager(d);
+      renderChips();
+    });
+  });
+}
+
+function addDataItem(key, inputId) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim();
+  if (!val) return;
+  const d = getDataManager();
+  if (!d[key].includes(val)) d[key].push(val);
+  saveDataManager(d);
+  inp.value = '';
+  renderChips();
+}
+
+document.getElementById('btn-add-solic').addEventListener('click', () => addDataItem('solicitantes', 'add-solic-input'));
+document.getElementById('btn-add-emp').addEventListener('click', () => addDataItem('empresas', 'add-emp-input'));
+document.getElementById('btn-add-obs').addEventListener('click', () => addDataItem('observacoes', 'add-obs-input'));
+
+// Enter key support for add inputs
+['add-solic-input', 'add-emp-input', 'add-obs-input'].forEach((id, i) => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      ['btn-add-solic', 'btn-add-emp', 'btn-add-obs'][i] && document.getElementById(['btn-add-solic', 'btn-add-emp', 'btn-add-obs'][i]).click();
+    }
+  });
+});
+
+// Export / Import data
+document.getElementById('btn-export-data').addEventListener('click', () => {
+  download('dados_fornecimento.json', JSON.stringify(getDataManager(), null, 2), 'application/json');
+});
+
+const importDataFile = document.getElementById('import-data-file');
+document.getElementById('btn-import-data').addEventListener('click', () => importDataFile.click());
+importDataFile.addEventListener('change', () => {
+  const file = importDataFile.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (d.solicitantes || d.empresas || d.observacoes) {
+        saveDataManager({
+          solicitantes: d.solicitantes || [],
+          empresas: d.empresas || [],
+          observacoes: d.observacoes || []
+        });
+        renderChips();
+        alert('Dados importados com sucesso!');
+      } else {
+        alert('Formato inválido.');
+      }
+    } catch { alert('Erro ao ler arquivo JSON.'); }
+  };
+  reader.readAsText(file);
+  importDataFile.value = '';
+});
+
+document.getElementById('btn-clear-data').addEventListener('click', () => {
+  if (!confirm('Limpar todos os dados salvos?')) return;
+  localStorage.removeItem('inaja-data-manager');
+  renderChips();
+});
+
+renderChips();
+
+/* ═══════════ TEMPLATE MANAGER ═══════════ */
+document.getElementById('btn-save-template').addEventListener('click', () => {
+  const name = document.getElementById('template-name').value.trim() || 'template';
+  const tmpl = {
+    name,
+    form: { solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value },
+    items: items.map(i => ({ nome: i.nome, desc: i.desc, qtd: i.qtd, preco: i.preco }))
+  };
+  download(name.replace(/\s+/g, '_') + '.json', JSON.stringify(tmpl, null, 2), 'application/json');
+});
+
+const tmplUpload = document.getElementById('template-upload-area');
+const tmplInput = document.getElementById('template-file-input');
+tmplUpload.addEventListener('click', () => tmplInput.click());
+tmplInput.addEventListener('change', () => {
+  const file = tmplInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const tmpl = JSON.parse(e.target.result);
+      if (tmpl.form) {
+        $sol.value = tmpl.form.solicitante || '';
+        $emp.value = tmpl.form.empresa || '';
+        $dat.value = tmpl.form.data || todayStr();
+        $obs.value = tmpl.form.obs || '';
+        document.getElementById('obs-counter').textContent = $obs.value.length + '/500';
+      }
+      if (tmpl.items && tmpl.items.length) {
+        items = [];
+        itemIdCounter = 0;
+        tmpl.items.forEach(i => addItem(i));
+      }
+      updateTotals();
+      updatePreview();
+      // Switch to form tab
+      document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-panel="tab-form"]').classList.add('active');
+      document.getElementById('tab-form').classList.add('active');
+      alert('Template carregado com sucesso!');
+    } catch { alert('Erro ao ler template.'); }
+  };
+  reader.readAsText(file);
+  tmplInput.value = '';
+});
+</script>
+</body>
+</html>

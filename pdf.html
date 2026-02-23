@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Master – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* Layout */
+    .pdf-wrap { display: flex; height: calc(100vh - 64px); overflow: hidden; }
+
+    /* Sidebar */
+    .pdf-sidebar { width: 190px; flex-shrink: 0; background: var(--bg); box-shadow: var(--neo-sm); display: flex; flex-direction: column; overflow-y: auto; padding: 10px 8px; gap: 2px; z-index: 1; }
+    .pdf-sidebar-title { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin: 10px 0 4px 6px; }
+    .pdf-tool-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 10px; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text-2); font-family: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: all .15s; text-align: left; }
+    .pdf-tool-btn:hover { background: rgba(0,0,0,.05); color: var(--text); }
+    .pdf-tool-btn.active { background: var(--blue); color: white; box-shadow: 2px 2px 8px rgba(79,128,200,.4); }
+    .pdf-tool-btn svg { flex-shrink: 0; opacity: .8; }
+    .pdf-divider { height: 1px; background: rgba(0,0,0,.07); margin: 6px 4px; }
+
+    /* Main */
+    .pdf-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .pdf-toolbar { background: var(--bg); box-shadow: var(--neo-sm); padding: 8px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; z-index: 1; }
+    .pdf-file-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .pdf-file-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+    .pdf-file-size { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+    .pdf-action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600; background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); transition: all .15s; white-space: nowrap; }
+    .pdf-action-btn:hover { box-shadow: var(--neo); color: var(--text); }
+    .pdf-action-btn.primary { background: linear-gradient(135deg,var(--blue),var(--blue-dark)); color: white; box-shadow: 2px 2px 8px rgba(79,128,200,.4); }
+    .pdf-action-btn.primary:hover { box-shadow: 3px 3px 12px rgba(79,128,200,.5); }
+    .pdf-zoom { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+    .pdf-zoom-btn { width: 28px; height: 28px; border-radius: 6px; border: none; background: var(--bg); box-shadow: var(--neo-sm); cursor: pointer; font-size: 18px; font-weight: 700; color: var(--text-2); display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .pdf-zoom-btn:hover { box-shadow: var(--neo); }
+    .pdf-zoom-val { font-size: 12px; font-weight: 600; color: var(--text-2); min-width: 44px; text-align: center; }
+
+    /* Viewer */
+    .pdf-viewer-wrap { flex: 1; position: relative; overflow: hidden; background: #d0d4db; }
+    .pdf-viewer-inner { position: absolute; inset: 0; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px; }
+    .pdf-frame-wrap { position: relative; display: inline-block; box-shadow: 0 6px 32px rgba(0,0,0,.3); flex-shrink: 0; }
+    .pdf-iframe { display: block; border: none; background: white; }
+    .pdf-ann-overlay { position: absolute; inset: 0; pointer-events: none; }
+    .pdf-ann-overlay.active { pointer-events: auto; }
+    .pdf-draw-canvas { position: absolute; inset: 0; pointer-events: none; display: block; }
+    .pdf-draw-canvas.active { pointer-events: auto; cursor: crosshair; }
+    .tool-indicator { position: absolute; top: 10px; left: 10px; background: var(--blue); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; pointer-events: none; z-index: 20; display: none; }
+
+    /* Annotations */
+    .ann-note { position: absolute; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 8px 10px; max-width: 180px; font-size: 12px; box-shadow: 2px 2px 8px rgba(0,0,0,.15); cursor: move; user-select: none; z-index: 10; }
+    .ann-note .ann-head { font-size: 10px; font-weight: 700; color: #92400e; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }
+    .ann-text { position: absolute; font-size: 14px; font-weight: 600; color: #111; cursor: move; user-select: none; z-index: 10; white-space: nowrap; background: rgba(255,255,255,.85); padding: 2px 6px; border-radius: 4px; }
+    .ann-sig { position: absolute; border: 2px dashed var(--blue); border-radius: 6px; cursor: move; user-select: none; z-index: 10; overflow: hidden; }
+    .ann-del { background: none; border: none; cursor: pointer; color: #999; font-size: 13px; padding: 0 2px; line-height: 1; }
+    .ann-del:hover { color: var(--red,#e11d48); }
+
+    /* Upload screen */
+    .pdf-upload-screen { min-height: calc(100vh - 64px); display: flex; align-items: center; justify-content: center; padding: 32px 20px; background: var(--bg-2,#f4f5f7); }
+    .pdf-drop-zone { border: 2px dashed rgba(79,128,200,.4); border-radius: var(--radius); padding: 40px 32px; text-align: center; cursor: pointer; transition: all .2s; max-width: 580px; width: 100%; background: var(--bg); box-shadow: var(--neo); }
+    .pdf-drop-zone:hover, .pdf-drop-zone.drag-over { border-color: var(--blue); background: rgba(79,128,200,.04); box-shadow: var(--neo-sm); }
+    .pdf-features { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 24px; }
+    .pdf-feature { background: var(--bg); box-shadow: var(--neo-sm); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+
+    /* Modals */
+    .pdf-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .pdf-modal-bg.open { display: flex; }
+    .pdf-modal { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 28px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; position: relative; }
+    .pdf-modal h3 { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .pdf-modal .modal-sub { font-size: 13px; color: var(--text-3); margin-bottom: 20px; }
+    .pdf-modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text-3); line-height: 1; }
+    .pdf-modal-close:hover { color: var(--text); }
+    .pdf-form-group { margin-bottom: 16px; }
+    .pdf-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 6px; }
+    .pdf-input { width: 100%; background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 14px; font-family: inherit; font-size: 14px; color: var(--text); outline: none; box-sizing: border-box; }
+    .pdf-input:focus { box-shadow: var(--neo-in); }
+    .pdf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; background: linear-gradient(135deg,var(--blue),var(--blue-dark)); color: white; box-shadow: 3px 3px 10px rgba(79,128,200,.4); transition: all .2s; width: 100%; }
+    .pdf-btn:hover { box-shadow: 5px 5px 14px rgba(79,128,200,.5); transform: translateY(-1px); }
+    .pdf-btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+    /* Progress */
+    .progress-wrap { display: none; margin-bottom: 14px; }
+    .progress-wrap.show { display: block; }
+    .progress-label { font-size: 12px; color: var(--text-3); margin-bottom: 6px; }
+    .progress-bar { height: 6px; background: rgba(79,128,200,.2); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .25s; }
+
+    /* Signature canvas */
+    .sig-canvas-wrap { border-radius: var(--radius-sm); box-shadow: var(--neo-in); overflow: hidden; background: white; margin-bottom: 14px; }
+    #sig-canvas { display: block; cursor: crosshair; touch-action: none; }
+    .sig-btns { display: flex; gap: 8px; }
+    .sig-btn-clear { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); flex: 1; }
+    .sig-btn-clear:hover { box-shadow: var(--neo); }
+
+    /* Merge file list */
+    .merge-file-list { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 14px; margin-bottom: 14px; max-height: 140px; overflow-y: auto; }
+    .merge-file-item { font-size: 12px; color: var(--text-2); padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,.05); display: flex; justify-content: space-between; }
+    .merge-file-item:last-child { border-bottom: none; }
+
+    @media (max-width: 860px) {
+      .pdf-sidebar { display: none; }
+      .pdf-file-name { max-width: 130px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-brand">
+          <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
+          <div class="header-title">
+            <h1>Prefeitura de Inajá</h1>
+            <p>Gestão de Empenhos</p>
+          </div>
+        </div>
+      </div>
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Credores Fixos
+        </a>
+        <a href="index.html#adm" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          ADM
+        </a>
+        <a href="rpa.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          RPA
+        </a>
+        <a href="extratos.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+          Extratos
+        </a>
+        <a href="cnpj.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          CNPJ
+        </a>
+        <a href="pdf.html" class="nav-tab active" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </a>
+        <a href="renomear.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Renomear
+        </a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Tarefas
+        </a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+      <div class="header-right"></div>
+    </div>
+  </header>
+
+  <!-- ===== UPLOAD SCREEN ===== -->
+  <div id="screen-upload" class="pdf-upload-screen">
+    <div style="max-width:620px;width:100%;">
+      <div style="text-align:center;margin-bottom:28px;">
+        <div style="width:76px;height:76px;background:linear-gradient(135deg,var(--blue),#7c3aed);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:4px 4px 16px rgba(79,128,200,.4);">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h2 style="font-size:26px;font-weight:800;color:var(--text);">PDF Master Pro</h2>
+        <p style="font-size:14px;color:var(--text-3);margin-top:8px;">Visualize, anote, mescle, divida e proteja documentos PDF</p>
+      </div>
+
+      <div class="pdf-drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" style="margin:0 auto 14px;display:block;opacity:.7;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p style="font-size:17px;font-weight:700;color:var(--text);margin-bottom:6px;">Arraste um PDF aqui</p>
+        <p style="font-size:13px;color:var(--text-3);margin-bottom:20px;">ou clique para selecionar · máximo 50 MB</p>
+        <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none;" />
+        <span style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:var(--radius);background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:white;font-weight:700;font-size:14px;box-shadow:3px 3px 10px rgba(79,128,200,.4);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Selecionar PDF
+        </span>
+      </div>
+
+      <div class="pdf-features">
+        <div class="pdf-feature">📝 Notas adesivas</div>
+        <div class="pdf-feature">✍️ Assinatura digital</div>
+        <div class="pdf-feature">🖊️ Texto sobre PDF</div>
+        <div class="pdf-feature">✏️ Desenho livre</div>
+        <div class="pdf-feature">🔗 Mesclar PDFs</div>
+        <div class="pdf-feature">✂️ Dividir páginas</div>
+        <div class="pdf-feature">🔒 Senha / Proteção</div>
+        <div class="pdf-feature">🔍 Zoom 50–200%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== WORKSPACE ===== -->
+  <div id="screen-workspace" class="pdf-wrap" style="display:none;">
+
+    <!-- Sidebar -->
+    <aside class="pdf-sidebar">
+      <div class="pdf-sidebar-title">Ferramentas</div>
+      <button class="pdf-tool-btn active" data-tool="select" onclick="setTool('select',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-7 1-4 7z"/></svg>
+        Selecionar
+      </button>
+      <button class="pdf-tool-btn" data-tool="text" onclick="setTool('text',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        Texto
+      </button>
+      <button class="pdf-tool-btn" data-tool="note" onclick="setTool('note',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Nota
+      </button>
+      <button class="pdf-tool-btn" data-tool="draw" onclick="setTool('draw',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Desenhar
+      </button>
+      <button class="pdf-tool-btn" data-tool="signature" onclick="setTool('signature',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l4-8 4 8M5.5 13h3M17 3v14M14 14l3 3 3-3"/></svg>
+        Assinatura
+      </button>
+
+      <div class="pdf-divider"></div>
+      <div class="pdf-sidebar-title">Ações</div>
+
+      <button class="pdf-tool-btn" onclick="baixarPDF()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar
+      </button>
+      <button class="pdf-tool-btn" onclick="abrirModal('modal-mesclar')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m10 0h3a2 2 0 0 0 2-2v-3"/></svg>
+        Mesclar
+      </button>
+      <button class="pdf-tool-btn" onclick="abrirModal('modal-dividir')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="7" x2="3" y2="7"/><line x1="17" y1="17" x2="3" y2="17"/><path d="M21 12H9m0 0l4-4m-4 4l4 4"/></svg>
+        Dividir
+      </button>
+      <button class="pdf-tool-btn" onclick="abrirModal('modal-proteger')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Proteger
+      </button>
+
+      <div class="pdf-divider"></div>
+      <button class="pdf-tool-btn" onclick="limparAnotacoes()" style="color:var(--red,#e11d48);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Limpar Notas
+      </button>
+      <button class="pdf-tool-btn" onclick="trocarArquivo()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Abrir outro
+      </button>
+    </aside>
+
+    <!-- Main area -->
+    <div class="pdf-main">
+      <!-- Toolbar -->
+      <div class="pdf-toolbar">
+        <div class="pdf-file-info">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span class="pdf-file-name" id="toolbar-fname">—</span>
+          <span class="pdf-file-size" id="toolbar-fsize"></span>
+        </div>
+        <button class="pdf-action-btn primary" onclick="baixarPDF()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+          Baixar
+        </button>
+        <button class="pdf-action-btn" onclick="abrirModal('modal-mesclar')">🔗 Mesclar</button>
+        <button class="pdf-action-btn" onclick="abrirModal('modal-dividir')">✂️ Dividir</button>
+        <button class="pdf-action-btn" onclick="abrirModal('modal-proteger')">🔒 Proteger</button>
+        <div class="pdf-zoom">
+          <button class="pdf-zoom-btn" onclick="changeZoom(-10)">−</button>
+          <span class="pdf-zoom-val" id="zoom-val">100%</span>
+          <button class="pdf-zoom-btn" onclick="changeZoom(10)">+</button>
+        </div>
+      </div>
+
+      <!-- Viewer -->
+      <div class="pdf-viewer-wrap">
+        <div class="pdf-viewer-inner" id="viewer-inner">
+          <div class="pdf-frame-wrap" id="frame-wrap">
+            <iframe id="pdf-iframe" class="pdf-iframe" title="Visualizador PDF"></iframe>
+            <div class="pdf-ann-overlay" id="ann-overlay" onclick="onOverlayClick(event)"></div>
+            <canvas id="draw-canvas" class="pdf-draw-canvas"></canvas>
+            <div class="tool-indicator" id="tool-indicator"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Mesclar ===== -->
+  <div class="pdf-modal-bg" id="modal-mesclar">
+    <div class="pdf-modal">
+      <button class="pdf-modal-close" onclick="fecharModal('modal-mesclar')">✕</button>
+      <h3>🔗 Mesclar PDFs</h3>
+      <p class="modal-sub">Selecione 2 ou mais arquivos PDF para combinar em um único documento.</p>
+      <div class="pdf-form-group">
+        <label class="pdf-label">Arquivos PDF</label>
+        <input type="file" id="merge-files" multiple accept=".pdf,application/pdf"
+               style="display:block;width:100%;padding:10px;background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);cursor:pointer;box-sizing:border-box;font-family:inherit;font-size:12px;" />
+      </div>
+      <div id="merge-list"></div>
+      <div class="progress-wrap" id="merge-prog-wrap">
+        <p class="progress-label">Mesclando...</p>
+        <div class="progress-bar"><div class="progress-fill" id="merge-prog-fill" style="width:0%"></div></div>
+      </div>
+      <button class="pdf-btn" onclick="executarMesclar()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m10 0h3a2 2 0 0 0 2-2v-3"/></svg>
+        Mesclar e Baixar
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Dividir ===== -->
+  <div class="pdf-modal-bg" id="modal-dividir">
+    <div class="pdf-modal">
+      <button class="pdf-modal-close" onclick="fecharModal('modal-dividir')">✕</button>
+      <h3>✂️ Dividir PDF</h3>
+      <p class="modal-sub">Informe os intervalos de páginas a extrair. Com múltiplos intervalos, gera um ZIP.</p>
+      <div class="pdf-form-group">
+        <label class="pdf-label">Intervalos de páginas</label>
+        <input class="pdf-input" type="text" id="split-ranges" placeholder="Ex: 1-3, 5, 8-10" />
+        <p style="font-size:11px;color:var(--text-3);margin-top:6px;">Use vírgulas para múltiplos intervalos. Ex: <strong>1-3, 5, 8-10</strong></p>
+      </div>
+      <div class="progress-wrap" id="split-prog-wrap">
+        <p class="progress-label">Dividindo...</p>
+        <div class="progress-bar"><div class="progress-fill" id="split-prog-fill" style="width:0%"></div></div>
+      </div>
+      <button class="pdf-btn" onclick="executarDividir()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="7" x2="3" y2="7"/><line x1="17" y1="17" x2="3" y2="17"/><path d="M21 12H9m0 0l4-4m-4 4l4 4"/></svg>
+        Dividir e Baixar
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Proteger ===== -->
+  <div class="pdf-modal-bg" id="modal-proteger">
+    <div class="pdf-modal">
+      <button class="pdf-modal-close" onclick="fecharModal('modal-proteger')">✕</button>
+      <h3>🔒 Proteger com Senha</h3>
+      <p class="modal-sub">O arquivo baixado exigirá senha para ser aberto.</p>
+      <div class="pdf-form-group">
+        <label class="pdf-label">Senha</label>
+        <input class="pdf-input" type="password" id="protect-senha" placeholder="Digite a senha" />
+      </div>
+      <div class="pdf-form-group">
+        <label class="pdf-label">Confirmar senha</label>
+        <input class="pdf-input" type="password" id="protect-senha2" placeholder="Repita a senha" />
+      </div>
+      <div class="progress-wrap" id="protect-prog-wrap">
+        <p class="progress-label">Protegendo...</p>
+        <div class="progress-bar"><div class="progress-fill" id="protect-prog-fill" style="width:0%"></div></div>
+      </div>
+      <button class="pdf-btn" onclick="executarProteger()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Proteger e Baixar
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: Assinatura ===== -->
+  <div class="pdf-modal-bg" id="modal-assinatura">
+    <div class="pdf-modal" style="max-width:500px;">
+      <button class="pdf-modal-close" onclick="fecharModal('modal-assinatura')">✕</button>
+      <h3>✍️ Criar Assinatura</h3>
+      <p class="modal-sub">Desenhe sua assinatura no espaço abaixo.</p>
+      <div class="sig-canvas-wrap">
+        <canvas id="sig-canvas" width="444" height="160"></canvas>
+      </div>
+      <div class="sig-btns">
+        <button class="pdf-btn sig-btn-clear" onclick="limparSig()" style="background:var(--bg);color:var(--text-2);box-shadow:var(--neo-sm);">Limpar</button>
+        <button class="pdf-btn" onclick="confirmarSig()" style="flex:2;">Usar Assinatura</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-input-trocar" accept=".pdf,application/pdf" style="display:none;" />
+
+  <script src="/static/js/brasao_b64.js"></script>
+  <script>
+    // ===================== STATE =====================
+    let pdfFile = null, pdfUrl = '';
+    let currentTool = 'select';
+    let zoom = 100;
+    let isDrawing = false;
+    let signatureDataUrl = null;
+    let sigDrawing = false;
+
+    // ===================== FILE LOADING =====================
+    function loadPDF(file) {
+      if (!file || !file.type.includes('pdf')) { alert('Selecione um arquivo PDF válido.'); return; }
+      if (file.size > 52428800) { alert('Arquivo muito grande. Máximo 50 MB.'); return; }
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      pdfFile = file;
+      pdfUrl = URL.createObjectURL(file);
+      document.getElementById('pdf-iframe').src = pdfUrl;
+      document.getElementById('toolbar-fname').textContent = file.name;
+      document.getElementById('toolbar-fsize').textContent = (file.size / 1048576).toFixed(1) + ' MB';
+      document.getElementById('screen-upload').style.display = 'none';
+      document.getElementById('screen-workspace').style.display = 'flex';
+      setZoom(100);
+      limparAnotacoes();
+    }
+
+    document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) loadPDF(e.target.files[0]); });
+    document.getElementById('file-input-trocar').addEventListener('change', e => { if (e.target.files[0]) loadPDF(e.target.files[0]); });
+
+    function trocarArquivo() { document.getElementById('file-input-trocar').click(); }
+
+    // Drag & drop
+    const dropZone = document.getElementById('drop-zone');
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadPDF(e.dataTransfer.files[0]); });
+
+    // ===================== TOOLS =====================
+    function setTool(tool, btn) {
+      currentTool = tool;
+      document.querySelectorAll('.pdf-tool-btn[data-tool]').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const overlay = document.getElementById('ann-overlay');
+      const canvas = document.getElementById('draw-canvas');
+      const indicator = document.getElementById('tool-indicator');
+
+      overlay.classList.toggle('active', ['text','note','signature'].includes(tool));
+      canvas.classList.toggle('active', tool === 'draw');
+
+      const labels = { text:'Texto', note:'Nota', signature:'Assinatura', draw:'Desenhar' };
+      if (tool !== 'select') {
+        indicator.textContent = '🖊 Ferramenta: ' + (labels[tool] || tool);
+        indicator.style.display = 'block';
+      } else {
+        indicator.style.display = 'none';
+      }
+
+      if (tool === 'signature' && !signatureDataUrl) {
+        abrirModal('modal-assinatura');
+      }
+    }
+
+    // ===================== ZOOM =====================
+    function setZoom(val) {
+      zoom = Math.max(50, Math.min(200, val));
+      const fw = Math.round(850 * zoom / 100);
+      const fh = Math.round(1100 * zoom / 100);
+      const iframe = document.getElementById('pdf-iframe');
+      iframe.style.width = fw + 'px';
+      iframe.style.height = fh + 'px';
+      const canvas = document.getElementById('draw-canvas');
+      canvas.width = fw;
+      canvas.height = fh;
+      document.getElementById('zoom-val').textContent = zoom + '%';
+    }
+    function changeZoom(d) { setZoom(zoom + d); }
+
+    // ===================== ANNOTATIONS =====================
+    function onOverlayClick(e) {
+      if (e.target !== document.getElementById('ann-overlay')) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      if (currentTool === 'note') {
+        const txt = prompt('Conteúdo da nota:');
+        if (txt) addNote(x, y, txt);
+      } else if (currentTool === 'text') {
+        const txt = prompt('Texto a inserir:');
+        if (txt) addText(x, y, txt);
+      } else if (currentTool === 'signature') {
+        if (!signatureDataUrl) { abrirModal('modal-assinatura'); return; }
+        addSignature(x, y);
+      }
+    }
+
+    function makeDraggable(el) {
+      let sx, sy, ox, oy;
+      el.addEventListener('mousedown', e => {
+        if (e.target.classList.contains('ann-del')) return;
+        e.stopPropagation();
+        sx = e.clientX; sy = e.clientY;
+        ox = parseInt(el.style.left || 0); oy = parseInt(el.style.top || 0);
+        const mv = ev => { el.style.left = (ox + ev.clientX - sx) + 'px'; el.style.top = (oy + ev.clientY - sy) + 'px'; };
+        const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); };
+        document.addEventListener('mousemove', mv);
+        document.addEventListener('mouseup', up);
+      });
+    }
+
+    function addNote(x, y, content) {
+      const id = 'a' + Date.now();
+      const el = document.createElement('div');
+      el.className = 'ann-note'; el.id = id;
+      el.style.cssText = `left:${x}px;top:${y}px;`;
+      el.innerHTML = `<div class="ann-head">📝 Nota <button class="ann-del" onclick="document.getElementById('${id}').remove()">✕</button></div><div>${esc(content)}</div>`;
+      document.getElementById('ann-overlay').appendChild(el);
+      makeDraggable(el);
+    }
+
+    function addText(x, y, content) {
+      const id = 'a' + Date.now();
+      const el = document.createElement('div');
+      el.className = 'ann-text'; el.id = id;
+      el.style.cssText = `left:${x}px;top:${y}px;`;
+      el.innerHTML = `${esc(content)} <button class="ann-del" onclick="document.getElementById('${id}').remove()">✕</button>`;
+      document.getElementById('ann-overlay').appendChild(el);
+      makeDraggable(el);
+    }
+
+    function addSignature(x, y) {
+      const id = 'a' + Date.now();
+      const el = document.createElement('div');
+      el.className = 'ann-sig'; el.id = id;
+      el.style.cssText = `left:${x}px;top:${y}px;width:190px;height:72px;`;
+      el.innerHTML = signatureDataUrl
+        ? `<img src="${signatureDataUrl}" style="width:100%;height:100%;object-fit:contain;" /><button class="ann-del" onclick="document.getElementById('${id}').remove()" style="position:absolute;top:2px;right:2px;background:white;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;">✕</button>`
+        : `✍️ Assinatura <button class="ann-del" onclick="document.getElementById('${id}').remove()">✕</button>`;
+      document.getElementById('ann-overlay').appendChild(el);
+      makeDraggable(el);
+    }
+
+    function limparAnotacoes() {
+      document.getElementById('ann-overlay').innerHTML = '';
+      const c = document.getElementById('draw-canvas');
+      c.getContext('2d').clearRect(0, 0, c.width, c.height);
+    }
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // ===================== DRAW CANVAS =====================
+    const drawCanvas = document.getElementById('draw-canvas');
+    const dctx = drawCanvas.getContext('2d');
+
+    drawCanvas.addEventListener('mousedown', e => {
+      if (currentTool !== 'draw') return;
+      isDrawing = true;
+      const r = drawCanvas.getBoundingClientRect();
+      dctx.beginPath(); dctx.moveTo(e.clientX - r.left, e.clientY - r.top);
+      dctx.strokeStyle = '#e11d48'; dctx.lineWidth = 3; dctx.lineCap = 'round'; dctx.lineJoin = 'round';
+    });
+    drawCanvas.addEventListener('mousemove', e => {
+      if (!isDrawing) return;
+      const r = drawCanvas.getBoundingClientRect();
+      dctx.lineTo(e.clientX - r.left, e.clientY - r.top); dctx.stroke();
+    });
+    drawCanvas.addEventListener('mouseup', () => { isDrawing = false; });
+    drawCanvas.addEventListener('mouseleave', () => { isDrawing = false; });
+
+    // ===================== SIGNATURE PAD =====================
+    const sigCanvas = document.getElementById('sig-canvas');
+    const sctx = sigCanvas.getContext('2d');
+    sctx.strokeStyle = '#1e3a5f'; sctx.lineWidth = 2.5; sctx.lineCap = 'round'; sctx.lineJoin = 'round';
+
+    function sigPos(e) {
+      const r = sigCanvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return [src.clientX - r.left, src.clientY - r.top];
+    }
+    sigCanvas.addEventListener('mousedown', e => { sigDrawing = true; const [x,y]=sigPos(e); sctx.beginPath(); sctx.moveTo(x,y); });
+    sigCanvas.addEventListener('mousemove', e => { if (!sigDrawing) return; const [x,y]=sigPos(e); sctx.lineTo(x,y); sctx.stroke(); });
+    sigCanvas.addEventListener('mouseup', () => { sigDrawing = false; });
+    sigCanvas.addEventListener('mouseleave', () => { sigDrawing = false; });
+    sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); sigDrawing = true; const [x,y]=sigPos(e); sctx.beginPath(); sctx.moveTo(x,y); }, {passive:false});
+    sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); if (!sigDrawing) return; const [x,y]=sigPos(e); sctx.lineTo(x,y); sctx.stroke(); }, {passive:false});
+    sigCanvas.addEventListener('touchend', () => { sigDrawing = false; });
+
+    function limparSig() { sctx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); }
+    function confirmarSig() {
+      signatureDataUrl = sigCanvas.toDataURL('image/png');
+      fecharModal('modal-assinatura');
+    }
+
+    // ===================== MODALS =====================
+    function abrirModal(id) { document.getElementById(id).classList.add('open'); }
+    function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+    document.querySelectorAll('.pdf-modal-bg').forEach(m => {
+      m.addEventListener('click', e => { if (e.target === m) fecharModal(m.id); });
+    });
+
+    // ===================== DOWNLOAD =====================
+    function baixarPDF() {
+      if (!pdfFile) return;
+      const a = document.createElement('a'); a.href = pdfUrl; a.download = pdfFile.name; a.click();
+    }
+
+    // ===================== MESCLAR =====================
+    document.getElementById('merge-files').addEventListener('change', function() {
+      const files = Array.from(this.files);
+      const list = document.getElementById('merge-list');
+      if (!files.length) { list.innerHTML = ''; return; }
+      list.innerHTML = `<div class="merge-file-list">${files.map((f,i) => `<div class="merge-file-item"><span>${i+1}. ${f.name}</span><span>${(f.size/1048576).toFixed(1)} MB</span></div>`).join('')}</div>`;
+    });
+
+    async function executarMesclar() {
+      const files = document.getElementById('merge-files').files;
+      if (files.length < 2) { alert('Selecione ao menos 2 arquivos PDF.'); return; }
+      const prog = document.getElementById('merge-prog-wrap');
+      const fill = document.getElementById('merge-prog-fill');
+      prog.classList.add('show'); fill.style.width = '30%';
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append('pdfs', f));
+      try {
+        fill.style.width = '60%';
+        const res = await fetch('/api/pdf/mesclar', { method: 'POST', body: fd });
+        fill.style.width = '90%';
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        fill.style.width = '100%';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'mesclado.pdf'; a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); fecharModal('modal-mesclar'); prog.classList.remove('show'); fill.style.width = '0%'; document.getElementById('merge-files').value = ''; document.getElementById('merge-list').innerHTML = ''; }, 1500);
+      } catch(e) { alert('Erro ao mesclar: ' + e.message); prog.classList.remove('show'); }
+    }
+
+    // ===================== DIVIDIR =====================
+    async function executarDividir() {
+      if (!pdfFile) { alert('Carregue um PDF primeiro.'); return; }
+      const ranges = document.getElementById('split-ranges').value.trim();
+      if (!ranges) { alert('Informe os intervalos de página.'); return; }
+      const prog = document.getElementById('split-prog-wrap');
+      const fill = document.getElementById('split-prog-fill');
+      prog.classList.add('show'); fill.style.width = '30%';
+      const fd = new FormData();
+      fd.append('pdf', pdfFile); fd.append('ranges', ranges);
+      try {
+        fill.style.width = '65%';
+        const res = await fetch('/api/pdf/dividir', { method: 'POST', body: fd });
+        fill.style.width = '90%';
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        fill.style.width = '100%';
+        const cd = res.headers.get('Content-Disposition') || '';
+        const name = cd.match(/filename="?([^";]+)"?/)?.[1] || (blob.type.includes('zip') ? 'dividido.zip' : 'paginas.pdf');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); fecharModal('modal-dividir'); prog.classList.remove('show'); fill.style.width = '0%'; }, 1500);
+      } catch(e) { alert('Erro ao dividir: ' + e.message); prog.classList.remove('show'); }
+    }
+
+    // ===================== PROTEGER =====================
+    async function executarProteger() {
+      if (!pdfFile) { alert('Carregue um PDF primeiro.'); return; }
+      const s1 = document.getElementById('protect-senha').value;
+      const s2 = document.getElementById('protect-senha2').value;
+      if (!s1) { alert('Digite uma senha.'); return; }
+      if (s1 !== s2) { alert('As senhas não coincidem.'); return; }
+      const prog = document.getElementById('protect-prog-wrap');
+      const fill = document.getElementById('protect-prog-fill');
+      prog.classList.add('show'); fill.style.width = '40%';
+      const fd = new FormData();
+      fd.append('pdf', pdfFile); fd.append('senha', s1);
+      try {
+        fill.style.width = '75%';
+        const res = await fetch('/api/pdf/proteger', { method: 'POST', body: fd });
+        fill.style.width = '100%';
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'protegido.pdf'; a.click();
+        setTimeout(() => { URL.revokeObjectURL(url); fecharModal('modal-proteger'); prog.classList.remove('show'); fill.style.width = '0%'; document.getElementById('protect-senha').value = ''; document.getElementById('protect-senha2').value = ''; }, 1500);
+      } catch(e) { alert('Erro ao proteger: ' + e.message); prog.classList.remove('show'); }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Banco de dados (dados locais — não versionados)
+empenhos.db
+empenhos.db-shm
+empenhos.db-wal
+
+# Logs
+*.log
+
+# Excel / dados importados
+*.xlsx
+*.xls
+DADOS/
+
+# Ambientes virtuais
+venv/
+.venv/
+env/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

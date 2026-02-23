@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Tarefas Kanban – Prefeitura de Inajá</title>
+    <link rel="stylesheet" href="/static/css/index.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        /* ── PAGE ── */
+        .kb-page {
+            min-height: calc(100vh - 64px);
+            padding: 20px 16px 60px;
+            background: var(--bg-2, #f4f5f7)
+        }
+
+        /* ── HERO ── */
+        .kb-hero {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            max-width: 1100px;
+            margin: 0 auto 18px
+        }
+
+        .kb-hero-icon {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #06b6d4, #7c3aed);
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 2px 10px rgba(6, 182, 212, .3)
+        }
+
+        .kb-hero h2 {
+            font-size: clamp(17px, 4vw, 22px);
+            font-weight: 800;
+            color: var(--text);
+            margin: 0
+        }
+
+        .kb-hero p {
+            font-size: 12px;
+            color: var(--text-3);
+            margin: 2px 0 0
+        }
+
+        /* ── TOOLBAR ── */
+        .kb-toolbar {
+            max-width: 1100px;
+            margin: 0 auto 18px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .kb-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all .15s;
+            min-height: 40px;
+            white-space: nowrap
+        }
+
+        .kb-btn-cyan {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: #fff;
+            box-shadow: 2px 2px 8px rgba(6, 182, 212, .4)
+        }
+
+        .kb-btn-cyan:hover {
+            box-shadow: 3px 3px 12px rgba(6, 182, 212, .5);
+            transform: translateY(-1px)
+        }
+
+        .kb-btn-violet {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            color: #fff;
+            box-shadow: 2px 2px 8px rgba(124, 58, 237, .4)
+        }
+
+        .kb-btn-violet:hover {
+            box-shadow: 3px 3px 12px rgba(124, 58, 237, .5);
+            transform: translateY(-1px)
+        }
+
+        .kb-btn-emerald {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 2px 2px 8px rgba(16, 185, 129, .4)
+        }
+
+        .kb-btn-emerald:hover {
+            box-shadow: 3px 3px 12px rgba(16, 185, 129, .5);
+            transform: translateY(-1px)
+        }
+
+        .kb-btn-ghost {
+            background: var(--bg);
+            color: var(--text-2);
+            box-shadow: var(--neo-sm)
+        }
+
+        .kb-btn-ghost:hover {
+            box-shadow: var(--neo);
+            color: var(--text)
+        }
+
+        .kb-stats {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+            font-size: 12px
+        }
+
+        .kb-stat {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+            box-shadow: var(--neo-sm);
+            text-align: center
+        }
+
+        .kb-stat-v {
+            font-weight: 800;
+            font-size: 16px
+        }
+
+        .kb-stat-l {
+            color: var(--text-3);
+            font-size: 10px
+        }
+
+        /* ── COLUMNS ── */
+        .kb-grid {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px
+        }
+
+        @media(max-width:700px) {
+            .kb-grid {
+                grid-template-columns: 1fr
+            }
+
+            .kb-stats {
+                display: none
+            }
+        }
+
+        .kb-col {
+            border-radius: var(--radius);
+            box-shadow: var(--neo);
+            overflow: hidden;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            min-height: 300px
+        }
+
+        .kb-col-head {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, .07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .kb-col-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text)
+        }
+
+        .kb-col-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, .07);
+            color: var(--text-3)
+        }
+
+        .kb-col-todo .kb-col-head {
+            border-top: 3px solid #06b6d4
+        }
+
+        .kb-col-progress .kb-col-head {
+            border-top: 3px solid #f59e0b
+        }
+
+        .kb-col-done .kb-col-head {
+            border-top: 3px solid #10b981
+        }
+
+        .kb-col-body {
+            flex: 1;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 80px
+        }
+
+        .kb-col-body.drag-over {
+            background: rgba(6, 182, 212, .04)
+        }
+
+        .kb-empty {
+            text-align: center;
+            color: var(--text-3);
+            font-size: 12px;
+            padding: 20px;
+            opacity: .6
+        }
+
+        /* ── CARDS ── */
+        .kb-card {
+            background: var(--bg-2, #f4f5f7);
+            border-radius: var(--radius-sm);
+            padding: 13px;
+            border-left: 4px solid transparent;
+            box-shadow: var(--neo-sm);
+            cursor: grab;
+            transition: all .15s;
+            user-select: none;
+            position: relative
+        }
+
+        .kb-card:hover {
+            box-shadow: var(--neo);
+            transform: translateY(-1px)
+        }
+
+        .kb-card.dragging {
+            opacity: .55;
+            transform: scale(1.02);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .18);
+            cursor: grabbing
+        }
+
+        .kb-card.drag-ghost {
+            opacity: .3
+        }
+
+        .kb-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            margin-bottom: 4px
+        }
+
+        .kb-card-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.4;
+            flex: 1
+        }
+
+        .kb-card-desc {
+            font-size: 12px;
+            color: var(--text-3);
+            line-height: 1.5;
+            margin-bottom: 6px
+        }
+
+        .kb-card-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .kb-priority {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px
+        }
+
+        .kb-prio-high {
+            background: rgba(239, 68, 68, .12);
+            color: #dc2626
+        }
+
+        .kb-prio-medium {
+            background: rgba(245, 158, 11, .12);
+            color: #d97706
+        }
+
+        .kb-prio-low {
+            background: rgba(16, 185, 129, .12);
+            color: #059669
+        }
+
+        .kb-card-actions {
+            display: flex;
+            gap: 4px
+        }
+
+        .kb-icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 5px;
+            font-size: 14px;
+            opacity: .5;
+            transition: opacity .15s;
+            line-height: 1
+        }
+
+        .kb-icon-btn:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, .06)
+        }
+
+        /* ── BORDER COLOR BY PRIORITY ── */
+        .kb-prio-border-high {
+            border-left-color: #ef4444
+        }
+
+        .kb-prio-border-medium {
+            border-left-color: #f59e0b
+        }
+
+        .kb-prio-border-low {
+            border-left-color: #10b981
+        }
+
+        /* ── MODAL ── */
+        .kb-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            z-index: 5000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px
+        }
+
+        .kb-modal {
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, .22);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden
+        }
+
+        .kb-modal-head {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid rgba(0, 0, 0, .07);
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .kb-modal-head h3 {
+            font-size: 16px;
+            font-weight: 800;
+            margin: 0;
+            color: var(--text)
+        }
+
+        .kb-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: var(--text-3);
+            line-height: 1
+        }
+
+        .kb-modal-body {
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px
+        }
+
+        .kb-modal-foot {
+            padding: 12px 20px;
+            border-top: 1px solid rgba(0, 0, 0, .07);
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end
+        }
+
+        .kb-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-2);
+            margin-bottom: 5px
+        }
+
+        .kb-input,
+        .kb-textarea,
+        .kb-select {
+            width: 100%;
+            padding: 9px 11px;
+            border: 1px solid rgba(0, 0, 0, .12);
+            border-radius: 7px;
+            font-family: inherit;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color .15s
+        }
+
+        .kb-input:focus,
+        .kb-textarea:focus,
+        .kb-select:focus {
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, .1)
+        }
+
+        .kb-textarea {
+            min-height: 80px;
+            resize: vertical
+        }
+
+        /* ── CONFIRM MODAL ── */
+        .kb-confirm-modal {
+            max-width: 380px
+        }
+
+        .kb-confirm-msg {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.6
+        }
+
+        /* ── BACKUP HISTORY ── */
+        .kb-hist {
+            max-width: 1100px;
+            margin: 20px auto 0
+        }
+
+        .kb-hist-head {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-2);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .kb-hist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 8px
+        }
+
+        .kb-hist-item {
+            background: var(--bg);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--neo-sm);
+            padding: 10px 13px;
+            font-size: 12px
+        }
+
+        .kb-hist-ts {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 11px
+        }
+
+        .kb-hist-meta {
+            color: var(--text-3);
+            font-size: 10px;
+            margin-top: 2px
+        }
+
+        /* ── TOAST ── */
+        #kb-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+            max-width: 90vw;
+            text-align: center;
+            transition: opacity .3s
+        }
+
+        /* ── ENCRYPT BADGE ── */
+        .kb-enc-on {
+            background: rgba(124, 58, 237, .12);
+            color: #7c3aed;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            font-family: inherit
+        }
+
+        .kb-enc-off {
+            background: rgba(0, 0, 0, .07);
+            color: var(--text-3);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            font-family: inherit
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .spin {
+            display: inline-block;
+            animation: spin .7s linear infinite
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <div class="header-brand">
+                    <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
+                    <div class="header-title">
+                        <h1>Prefeitura de Inajá</h1>
+                        <p>Gestão de Empenhos</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="desktop-nav">
+                <a href="index.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                    </svg>Credores Fixos</a>
+                <a href="index.html#adm" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>ADM</a>
+                <a href="rpa.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>RPA</a>
+                <a href="extratos.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>Extratos</a>
+                <a href="cnpj.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>CNPJ</a>
+                <a href="pdf.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>PDF</a>
+                <a href="renomear.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>Renomear</a>
+                <a href="tarefas.html" class="nav-tab active" style="text-decoration:none;"><svg viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>Tarefas</a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+            </nav>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <div class="kb-page">
+        <!-- Hero -->
+        <div class="kb-hero">
+            <div class="kb-hero-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
+                    stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                </svg></div>
+            <div>
+                <h2>Tarefas • Kanban</h2>
+                <p>Organize seu dia com arrastar e soltar · Prioridades · Backup com criptografia AES-GCM</p>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="kb-toolbar">
+            <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
+            <button class="kb-btn kb-btn-violet" onclick="exportBackup()">⬇️ Exportar Backup</button>
+            <label style="cursor:pointer"><input type="file" accept="application/json" id="import-inp"
+                    style="display:none" onchange="handleImportFile(event)" /><span class="kb-btn kb-btn-emerald"
+                    onclick="document.getElementById('import-inp').click()">⬆️ Importar Backup</span></label>
+            <button id="enc-btn" class="kb-enc-off" onclick="toggleEncryption()"
+                title="Ativar/desativar criptografia AES-GCM no backup">🔒 Criptografia: OFF</button>
+            <div class="kb-stats">
+                <div class="kb-stat">
+                    <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
+                    <div class="kb-stat-l">A Fazer</div>
+                </div>
+                <div class="kb-stat">
+                    <div class="kb-stat-v" id="st-prog" style="color:#f59e0b">0</div>
+                    <div class="kb-stat-l">Em Progresso</div>
+                </div>
+                <div class="kb-stat">
+                    <div class="kb-stat-v" id="st-done" style="color:#10b981">0</div>
+                    <div class="kb-stat-l">Concluídas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Board -->
+        <div class="kb-grid" id="kb-grid">
+            <div class="kb-col kb-col-todo" id="col-todo">
+                <div class="kb-col-head"><span class="kb-col-title">📋 A Fazer</span><span class="kb-col-badge"
+                        id="badge-todo">0</span></div>
+                <div class="kb-col-body" id="body-todo" ondragover="onColDragOver(event,'todo')"
+                    ondragleave="onColDragLeave(event,'todo')" ondrop="onColDrop(event,'todo')"></div>
+            </div>
+            <div class="kb-col kb-col-progress" id="col-in-progress">
+                <div class="kb-col-head"><span class="kb-col-title">⚡ Em Progresso</span><span class="kb-col-badge"
+                        id="badge-in-progress">0</span></div>
+                <div class="kb-col-body" id="body-in-progress" ondragover="onColDragOver(event,'in-progress')"
+                    ondragleave="onColDragLeave(event,'in-progress')" ondrop="onColDrop(event,'in-progress')"></div>
+            </div>
+            <div class="kb-col kb-col-done" id="col-done">
+                <div class="kb-col-head"><span class="kb-col-title">✅ Concluído</span><span class="kb-col-badge"
+                        id="badge-done">0</span></div>
+                <div class="kb-col-body" id="body-done" ondragover="onColDragOver(event,'done')"
+                    ondragleave="onColDragLeave(event,'done')" ondrop="onColDrop(event,'done')"></div>
+            </div>
+        </div>
+
+        <!-- Backup History -->
+        <div class="kb-hist" id="hist-section" style="display:none">
+            <div class="kb-hist-head">🕐 Histórico de Backups <span id="hist-count"
+                    style="background:rgba(0,0,0,.07);border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700"></span>
+            </div>
+            <div class="kb-hist-grid" id="hist-grid"></div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="kb-overlay" id="task-modal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
+        <div class="kb-modal">
+            <div class="kb-modal-head">
+                <h3 id="modal-title">✏️ Nova Tarefa</h3><button class="kb-close" onclick="closeTaskModal()">✕</button>
+            </div>
+            <div class="kb-modal-body">
+                <div><label class="kb-label">Título *</label><input class="kb-input" id="t-title"
+                        placeholder="Ex: Revisar relatório mensal" /></div>
+                <div><label class="kb-label">Descrição</label><textarea class="kb-textarea" id="t-desc"
+                        placeholder="Detalhes opcionais…"></textarea></div>
+                <div style="display:flex;gap:12px">
+                    <div style="flex:1"><label class="kb-label">Status</label>
+                        <select class="kb-select" id="t-status">
+                            <option value="todo">A Fazer</option>
+                            <option value="in-progress">Em Progresso</option>
+                            <option value="done">Concluído</option>
+                        </select>
+                    </div>
+                    <div style="flex:1"><label class="kb-label">Prioridade</label>
+                        <select class="kb-select" id="t-prio">
+                            <option value="high">🔴 Alta</option>
+                            <option value="medium" selected>🟡 Média</option>
+                            <option value="low">🟢 Baixa</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="kb-modal-foot">
+                <button class="kb-btn kb-btn-ghost" onclick="closeTaskModal()">Cancelar</button>
+                <button class="kb-btn kb-btn-cyan" id="modal-save-btn" onclick="saveTask()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="kb-overlay" id="confirm-modal" style="display:none">
+        <div class="kb-modal kb-confirm-modal">
+            <div class="kb-modal-head">
+                <h3>⚠️ Confirmar exclusão</h3><button class="kb-close" onclick="closeConfirm()">✕</button>
+            </div>
+            <div class="kb-modal-body">
+                <p class="kb-confirm-msg">Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="kb-modal-foot">
+                <button class="kb-btn kb-btn-ghost" onclick="closeConfirm()">Cancelar</button>
+                <button class="kb-btn" style="background:#ef4444;color:#fff" onclick="executeDelete()">🗑
+                    Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Passphrase Modal -->
+    <div class="kb-overlay" id="pass-modal" style="display:none">
+        <div class="kb-modal" style="max-width:360px">
+            <div class="kb-modal-head">
+                <h3>🔑 Senha para criptografia</h3><button class="kb-close" onclick="closePassModal()">✕</button>
+            </div>
+            <div class="kb-modal-body">
+                <p style="font-size:13px;color:var(--text-2);margin:0 0 8px">Esta senha será usada para
+                    criptografar/descriptografar o backup com AES-GCM-256.</p>
+                <div><label class="kb-label">Senha</label><input class="kb-input" type="password" id="passphrase-inp"
+                        placeholder="Mínimo 6 caracteres" /></div>
+            </div>
+            <div class="kb-modal-foot">
+                <button class="kb-btn kb-btn-ghost" onclick="closePassModal()">Cancelar</button>
+                <button class="kb-btn kb-btn-violet" onclick="confirmPassphrase()">✅ Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="kb-toast"></div>
+
+    <script>
+        // ── STATE ──────────────────────────────────────────────────────────────────
+        const TASKS_KEY = 'kanban-tasks-v2';
+        const HIST_KEY = 'kanban-backup-history';
+        let tasks = [];
+        let backupHistory = [];
+        let editingId = null;
+        let deletingId = null;
+        let useEncryption = false;
+        let passphrase = '';
+        let dragTaskId = null;
+        let passphraseCallback = null;
+
+        // ── INIT ───────────────────────────────────────────────────────────────────
+        function loadAll() {
+            try { tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); } catch (e) { tasks = []; }
+            try { backupHistory = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { backupHistory = []; }
+        }
+        function saveAll() {
+            try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch (e) { }
+            try { localStorage.setItem(HIST_KEY, JSON.stringify(backupHistory)); } catch (e) { }
+        }
+
+        loadAll();
+        renderBoard();
+
+        // ── RENDER ─────────────────────────────────────────────────────────────────
+        function renderBoard() {
+            const cols = ['todo', 'in-progress', 'done'];
+            const prioOrder = { high: 3, medium: 2, low: 1 };
+            cols.forEach(col => {
+                const body = document.getElementById(`body-${col}`);
+                const colTasks = tasks.filter(t => t.status === col).sort((a, b) => prioOrder[b.priority] - prioOrder[a.priority]);
+                document.getElementById(`badge-${col}`).textContent = colTasks.length;
+                body.innerHTML = '';
+                if (!colTasks.length) {
+                    body.innerHTML = '<div class="kb-empty">Nenhuma tarefa aqui.<br>Arraste uma card ou crie uma nova.</div>';
+                }
+                colTasks.forEach(task => {
+                    const card = createCard(task);
+                    body.appendChild(card);
+                });
+            });
+            updateStats();
+            renderHistSection();
+        }
+
+        function createCard(task) {
+            const card = document.createElement('div');
+            card.className = `kb-card kb-prio-border-${task.priority}`;
+            card.draggable = true;
+            card.dataset.id = task.id;
+            const prioLabel = { high: '🔴 Alta', medium: '🟡 Média', low: '🟢 Baixa' };
+            const prioClass = { high: 'kb-prio-high', medium: 'kb-prio-medium', low: 'kb-prio-low' };
+            card.innerHTML = `
+      <div class="kb-card-top">
+        <div class="kb-card-title">${esc(task.title)}</div>
+        <div class="kb-card-actions">
+          <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar">✏️</button>
+          <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${task.id}')" title="Excluir">🗑</button>
+        </div>
+      </div>
+      ${task.description ? `<div class="kb-card-desc">${esc(task.description)}</div>` : ''}
+      <div class="kb-card-foot">
+        <span class="kb-priority ${prioClass[task.priority]}">${prioLabel[task.priority]}</span>
+      </div>`;
+            card.addEventListener('dragstart', e => { dragTaskId = task.id; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+            card.addEventListener('dragend', () => { dragTaskId = null; card.classList.remove('dragging'); document.querySelectorAll('.kb-col-body').forEach(b => b.classList.remove('drag-over')); });
+            return card;
+        }
+
+        function updateStats() {
+            ['todo', 'in-progress', 'done'].forEach(col => {
+                const ids = { todo: 'st-todo', 'in-progress': 'st-prog', done: 'st-done' };
+                document.getElementById(ids[col]).textContent = tasks.filter(t => t.status === col).length;
+            });
+        }
+
+        function renderHistSection() {
+            const sec = document.getElementById('hist-section');
+            if (!backupHistory.length) { sec.style.display = 'none'; return; }
+            sec.style.display = '';
+            document.getElementById('hist-count').textContent = backupHistory.length;
+            document.getElementById('hist-grid').innerHTML = backupHistory.map(b => `
+      <div class="kb-hist-item">
+        <div class="kb-hist-ts">📅 ${new Date(b.timestamp).toLocaleString('pt-BR')}</div>
+        <div class="kb-hist-meta">${b.count} tarefa(s) · ${b.encrypted ? '🔒 Criptografado' : '📄 Sem criptografia'}</div>
+      </div>`).join('');
+        }
+
+        // ── DRAG & DROP ────────────────────────────────────────────────────────────
+        function onColDragOver(e, col) {
+            e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+            document.getElementById(`body-${col}`).classList.add('drag-over');
+        }
+        function onColDragLeave(e, col) { document.getElementById(`body-${col}`).classList.remove('drag-over'); }
+        function onColDrop(e, col) {
+            e.preventDefault();
+            document.getElementById(`body-${col}`).classList.remove('drag-over');
+            if (!dragTaskId) return;
+            const task = tasks.find(t => t.id === dragTaskId);
+            if (task && task.status !== col) { task.status = col; saveAll(); renderBoard(); showToast(`Tarefa movida para "${colName(col)}"`, 'success'); }
+        }
+        function colName(c) { return { todo: 'A Fazer', 'in-progress': 'Em Progresso', done: 'Concluído' }[c] || c; }
+
+        // ── CRUD ───────────────────────────────────────────────────────────────────
+        function openTaskModal() { editingId = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; document.getElementById('t-title').value = ''; document.getElementById('t-desc').value = ''; document.getElementById('t-status').value = 'todo'; document.getElementById('t-prio').value = 'medium'; document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
+        function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; }
+
+        function openEdit(id) {
+            const task = tasks.find(t => t.id === id); if (!task) return;
+            editingId = id;
+            document.getElementById('modal-title').textContent = '✏️ Editar Tarefa';
+            document.getElementById('t-title').value = task.title;
+            document.getElementById('t-desc').value = task.description || '';
+            document.getElementById('t-status').value = task.status;
+            document.getElementById('t-prio').value = task.priority;
+            document.getElementById('task-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('t-title').focus(), 100);
+        }
+
+        function saveTask() {
+            const title = document.getElementById('t-title').value.trim();
+            if (!title) { showToast('O título é obrigatório', 'error'); return; }
+            const desc = document.getElementById('t-desc').value.trim();
+            const status = document.getElementById('t-status').value;
+            const priority = document.getElementById('t-prio').value;
+            if (editingId) {
+                const i = tasks.findIndex(t => t.id === editingId);
+                if (i > -1) tasks[i] = { ...tasks[i], title, description: desc, status, priority };
+                showToast('Tarefa atualizada!', 'success');
+            } else {
+                tasks.push({ id: uid(), title, description: desc, status, priority });
+                showToast('Tarefa criada!', 'success');
+            }
+            saveAll(); renderBoard(); closeTaskModal();
+        }
+
+        function confirmDelete(id) { deletingId = id; document.getElementById('confirm-modal').style.display = 'flex'; }
+        function closeConfirm() { document.getElementById('confirm-modal').style.display = 'none'; deletingId = null; }
+        function executeDelete() { if (deletingId) { tasks = tasks.filter(t => t.id !== deletingId); saveAll(); renderBoard(); showToast('Tarefa excluída', 'success'); } closeConfirm(); }
+
+        // ── ENCRYPTION ─────────────────────────────────────────────────────────────
+        function toggleEncryption() {
+            if (!useEncryption) {
+                openPassphrase(() => { useEncryption = true; updateEncBtn(); showToast('Criptografia AES-GCM ativada 🔒', 'success'); });
+            } else {
+                useEncryption = false; passphrase = ''; updateEncBtn(); showToast('Criptografia desativada', 'success');
+            }
+        }
+        function updateEncBtn() {
+            const btn = document.getElementById('enc-btn');
+            btn.textContent = useEncryption ? '🔒 Criptografia: ON' : '🔒 Criptografia: OFF';
+            btn.className = useEncryption ? 'kb-enc-on' : 'kb-enc-off';
+        }
+        function openPassphrase(cb) {
+            passphraseCallback = cb;
+            document.getElementById('passphrase-inp').value = '';
+            document.getElementById('pass-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('passphrase-inp').focus(), 100);
+        }
+        function closePassModal() { document.getElementById('pass-modal').style.display = 'none'; passphraseCallback = null; }
+        function confirmPassphrase() {
+            const val = document.getElementById('passphrase-inp').value;
+            if (val.length < 6) { showToast('A senha deve ter pelo menos 6 caracteres', 'error'); return; }
+            passphrase = val; closePassModal();
+            if (passphraseCallback) { passphraseCallback(); passphraseCallback = null; }
+        }
+
+        // ── BACKUP CRYPTO ──────────────────────────────────────────────────────────
+        const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+        async function deriveKey(secret, salt) {
+            const enc = new TextEncoder();
+            const km = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'PBKDF2' }, false, ['deriveKey']);
+            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        }
+        async function encryptData(data, secret) {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveKey(secret, salt);
+            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(data)));
+            return { alg: 'AES-GCM', salt: toB64(salt.buffer), iv: toB64(iv.buffer), ciphertext: toB64(ct) };
+        }
+        async function decryptData(payload, secret) {
+            const key = await deriveKey(secret, fromB64(payload.salt));
+            const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(payload.iv) }, key, fromB64(payload.ciphertext));
+            return JSON.parse(new TextDecoder().decode(dec));
+        }
+
+        // ── EXPORT BACKUP ──────────────────────────────────────────────────────────
+        async function exportBackup() {
+            try {
+                const doExport = async () => {
+                    const data = useEncryption && passphrase ? await encryptData({ tasks }, passphrase) : { tasks };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                    a.download = `kanban-backup-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                    a.click(); URL.revokeObjectURL(a.href);
+                    backupHistory = [{ id: uid(), timestamp: Date.now(), count: tasks.length, encrypted: useEncryption && !!passphrase }, ...backupHistory].slice(0, 20);
+                    saveAll(); renderHistSection();
+                    showToast('Backup exportado com sucesso! ⬇️', 'success');
+                };
+                if (useEncryption && !passphrase) { openPassphrase(doExport); } else { await doExport(); }
+            } catch (e) { showToast('Erro ao exportar: ' + e.message, 'error'); }
+        }
+
+        // ── IMPORT BACKUP ──────────────────────────────────────────────────────────
+        async function handleImportFile(e) {
+            const file = e.target.files[0]; if (!file) return;
+            e.target.value = '';
+            try {
+                const text = await file.text();
+                const json = JSON.parse(text);
+                const doImport = async (pass) => {
+                    let imported;
+                    if (json.ciphertext) {
+                        if (!pass) throw new Error('Backup criptografado requer senha.');
+                        imported = await decryptData(json, pass);
+                    } else { imported = json; }
+                    const raw = (imported.tasks ?? imported);
+                    if (!Array.isArray(raw)) throw new Error('Estrutura de backup inválida.');
+                    const valid = raw.filter(t => t && t.id && t.title && ['todo', 'in-progress', 'done'].includes(t.status));
+                    tasks = valid.map(t => ({ id: t.id, title: t.title, description: t.description || '', status: t.status, priority: t.priority || 'medium' }));
+                    backupHistory = [{ id: uid(), timestamp: Date.now(), count: tasks.length, encrypted: !!json.ciphertext }, ...backupHistory].slice(0, 20);
+                    saveAll(); renderBoard();
+                    showToast(`Backup importado: ${tasks.length} tarefa(s) ✅`, 'success');
+                };
+                if (json.ciphertext) {
+                    openPassphrase(async () => { try { await doImport(passphrase); } catch (err) { showToast('Erro: ' + err.message, 'error'); } });
+                } else { await doImport(''); }
+            } catch (e) { showToast('Erro ao importar: ' + e.message, 'error'); }
+        }
+
+        // ── KEY SHORTCUT ───────────────────────────────────────────────────────────
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openTaskModal(); }
+            if (e.key === 'Escape') {
+                document.getElementById('task-modal').style.display = 'none';
+                document.getElementById('confirm-modal').style.display = 'none';
+                document.getElementById('pass-modal').style.display = 'none';
+            }
+        });
+
+        // ── UTILS ──────────────────────────────────────────────────────────────────
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function showToast(msg, type) {
+            const t = document.getElementById('kb-toast'); t.textContent = msg;
+            t.style.background = type === 'error' ? '#e11d48' : type === 'success' ? '#16a34a' : '#1e40af';
+            t.style.display = 'block'; t.style.opacity = '1';
+            clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
+        }
+    </script>
+</body>
+
+</html>

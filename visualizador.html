@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizador de Empenhos – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-treemap@3.0.0/dist/chartjs-chart-treemap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <style>
+  /* ===== Visualizador Scoped Styles ===== */
+  .viz-app {
+    --viz-primary: #3b82f6;
+    --viz-primary-hover: #2563eb;
+    --viz-secondary: #9ca3af;
+    --viz-bg: #111827;
+    --viz-card: #1f2937;
+    --viz-text: #f3f4f6;
+    --viz-border: #374151;
+    --viz-input: #374151;
+    --viz-hover: #374151;
+    --viz-sidebar-w: 300px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--viz-text);
+    background-color: var(--viz-bg);
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 80px);
+  }
+  .viz-app *, .viz-app *::before, .viz-app *::after { box-sizing: border-box; }
+
+  .viz-header {
+    background-color: var(--viz-card);
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .viz-header .logo-area { display: flex; align-items: center; gap: 1rem; }
+  .viz-header .logo-area h1 { font-size: 1.5rem; color: var(--viz-primary); line-height: 1.2; margin: 0; }
+  .viz-header .logo-area p { font-size: 0.9rem; color: var(--viz-secondary); margin: 0; }
+  .viz-header .brasao-placeholder img { height: 48px; width: auto; }
+
+  .viz-app .app-container { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  .viz-app .sidebar {
+    width: var(--viz-sidebar-w);
+    background-color: var(--viz-card);
+    border-right: 1px solid var(--viz-border);
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .viz-app .sidebar-header { display: flex; justify-content: space-between; align-items: center; }
+  .viz-app .sidebar-header h3 { margin: 0; }
+  .viz-app .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
+  .viz-app .filter-group label { font-weight: 600; font-size: 0.9rem; color: var(--viz-text); }
+  .viz-app .filter-group input,
+  .viz-app .filter-group select {
+    padding: 0.5rem;
+    border: 1px solid var(--viz-border);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background-color: var(--viz-input);
+    color: var(--viz-text);
+  }
+  .viz-app .range-inputs { display: flex; gap: 0.5rem; align-items: center; }
+  .viz-app .range-inputs input { width: 100%; }
+  .viz-app .range-inputs span { color: var(--viz-secondary); }
+  .viz-app .hint { font-size: 0.8rem; color: var(--viz-secondary); }
+
+  /* Custom Multiselect */
+  .viz-app .custom-multiselect { position: relative; width: 100%; }
+  .viz-app .select-box {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.5rem; border: 1px solid var(--viz-border); border-radius: 4px;
+    cursor: pointer; background-color: var(--viz-input); color: var(--viz-text); font-size: 0.9rem;
+  }
+  .viz-app .select-box:hover { border-color: var(--viz-primary); }
+  .viz-app .select-box .selected-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90%; }
+  .viz-app .dropdown-content {
+    display: none; position: absolute; top: 100%; left: 0; width: 100%;
+    max-height: 300px; background-color: var(--viz-card); border: 1px solid var(--viz-border);
+    border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100;
+    margin-top: 4px; flex-direction: column;
+  }
+  .viz-app .dropdown-content.show { display: flex; }
+  .viz-app .dropdown-search { padding: 0.5rem; border-bottom: 1px solid var(--viz-border); }
+  .viz-app .dropdown-search input {
+    width: 100%; padding: 0.4rem; border: 1px solid var(--viz-border);
+    border-radius: 4px; background-color: var(--viz-input); color: var(--viz-text);
+  }
+  .viz-app .dropdown-list { overflow-y: auto; padding: 0.5rem 0; max-height: 250px; }
+  .viz-app .dropdown-item { display: flex; align-items: center; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.9rem; }
+  .viz-app .dropdown-item:hover { background-color: var(--viz-hover); }
+  .viz-app .dropdown-item input[type="checkbox"] { margin-right: 0.5rem; width: auto; }
+  .viz-app .dropdown-item label { cursor: pointer; width: 100%; font-weight: normal; }
+
+  /* Main Content */
+  .viz-app .main-content {
+    flex: 1; display: flex; flex-direction: column;
+    padding: 0.5rem; overflow: hidden;
+  }
+  .viz-app .stats-bar {
+    background-color: var(--viz-card); padding: 0.5rem 1rem; border-radius: 4px;
+    border: 1px solid var(--viz-border); margin-bottom: 0.5rem;
+    display: flex; justify-content: space-between; font-weight: 600; font-size: 0.9rem;
+    color: var(--viz-text);
+  }
+  .viz-app .table-container {
+    flex: 1; overflow: auto; background-color: var(--viz-card);
+    border: 1px solid var(--viz-border); border-radius: 4px; min-height: 0;
+  }
+  .viz-app table { width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed; }
+  .viz-app th, .viz-app td {
+    padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--viz-border);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--viz-text);
+  }
+  .viz-app th:nth-child(1) { width: 90px; }
+  .viz-app th:nth-child(2) { width: 100px; }
+  .viz-app th:nth-child(3) { width: 220px; }
+  .viz-app th:nth-child(4) { width: auto; }
+  .viz-app th:nth-child(5) { width: 120px; }
+  .viz-app th:nth-child(6) { width: 130px; }
+  .viz-app th:nth-child(7) { width: 70px; }
+  .viz-app th:nth-child(8) { width: 80px; }
+  .viz-app th {
+    background-color: var(--viz-card); position: sticky; top: 0; z-index: 1;
+    font-weight: 600; cursor: pointer; user-select: none;
+  }
+  .viz-app th:hover { background-color: var(--viz-hover); }
+  .viz-app th[data-sort]::after { content: '↕'; margin-left: 0.5rem; opacity: 0.3; }
+  .viz-app th.sort-asc::after { content: '↑'; opacity: 1; }
+  .viz-app th.sort-desc::after { content: '↓'; opacity: 1; }
+  .viz-app tr:hover { background-color: var(--viz-hover); }
+  .viz-app .amount-col { font-family: 'Consolas', monospace; font-weight: 600; text-align: right; white-space: nowrap; }
+  .viz-app .status-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+  .viz-app .status-empenhado { background-color: rgba(220,53,69,0.2); color: #f87171; }
+  .viz-app .status-liquidado { background-color: rgba(13,110,253,0.2); color: #60a5fa; }
+  .viz-app .status-pago { background-color: rgba(25,135,84,0.2); color: #4ade80; }
+  .viz-app .status-em-liquidacao { background-color: rgba(255,193,7,0.2); color: #facc15; }
+  .viz-app .status-pagamento-parcial { background-color: rgba(25,135,84,0.2); color: #4ade80; border: 1px solid #198754; }
+
+  /* Pagination */
+  .viz-app .pagination { padding: 1rem; border-top: 1px solid var(--viz-border); display: flex; justify-content: center; gap: 0.25rem; }
+  .viz-app .page-btn {
+    padding: 0.5rem 0.75rem; border: 1px solid var(--viz-border);
+    background: var(--viz-card); color: var(--viz-text); cursor: pointer; border-radius: 4px;
+  }
+  .viz-app .page-btn.active { background-color: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+  .viz-app .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Buttons */
+  .viz-app .vbtn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer;
+    font-weight: 500; font-family: inherit; transition: background-color 0.2s; font-size: 0.9rem;
+  }
+  .viz-app .vbtn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+  .viz-app .vbtn-xs { padding: 0.2rem 0.4rem; font-size: 0.7rem; }
+  .viz-app .vbtn-primary { background-color: var(--viz-primary); color: white; }
+  .viz-app .vbtn-primary:hover { background-color: var(--viz-primary-hover); }
+  .viz-app .vbtn-secondary { background-color: var(--viz-secondary); color: white; }
+  .viz-app .vbtn-secondary:hover { background-color: #6b7280; }
+  .viz-app .vbtn-outline { background-color: transparent; border: 1px solid var(--viz-border); color: var(--viz-text); }
+  .viz-app .vbtn-outline:hover { background-color: var(--viz-hover); }
+
+  .viz-app .date-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+  .viz-app .date-shortcut-btn.active { background-color: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+  .viz-app .vw-100 { width: 100%; }
+  .viz-app .vmt-2 { margin-top: 0.5rem; }
+
+  .viz-app .checkbox-wrapper { display: flex; align-items: center; gap: 0.3rem; }
+  .viz-app .checkbox-wrapper input[type="checkbox"] { width: auto; }
+
+  /* Modal */
+  .viz-app .viz-modal {
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+    width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow: auto;
+  }
+  .viz-app .viz-modal-content {
+    background-color: var(--viz-card); margin: 5% auto; width: 90%; max-width: 800px;
+    border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: flex; flex-direction: column;
+  }
+  .viz-app .viz-modal-header {
+    padding: 1.5rem; border-bottom: 1px solid var(--viz-border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .viz-app .viz-modal-header h2 { margin: 0; color: var(--viz-text); }
+  .viz-app .close-modal { font-size: 1.5rem; cursor: pointer; color: var(--viz-secondary); background: none; border: none; }
+  .viz-app .close-modal:hover { color: var(--viz-text); }
+  .viz-app .viz-modal-body { padding: 2rem; }
+  .viz-app .viz-modal-footer {
+    padding: 1rem 2rem; border-top: 1px solid var(--viz-border);
+    display: flex; justify-content: flex-end; gap: 1rem;
+  }
+  .viz-app .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+  .viz-app .detail-item { display: flex; flex-direction: column; gap: 0.5rem; }
+  .viz-app .detail-item.full-width { grid-column: span 2; }
+  .viz-app .detail-item label { font-size: 0.85rem; color: var(--viz-secondary); text-transform: uppercase; font-weight: 600; }
+  .viz-app .detail-item p { font-size: 1rem; color: var(--viz-text); margin: 0; }
+  .viz-app .empty-state { text-align: center; color: var(--viz-secondary); padding: 3rem !important; }
+
+  /* Active Filters */
+  .viz-app .active-filters-container {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem 1rem;
+    background-color: var(--viz-card); border-bottom: 1px solid var(--viz-border); min-height: 40px;
+  }
+  .viz-app .active-filters-container:empty { display: none; }
+  .viz-app .filter-chip {
+    display: flex; align-items: center; gap: 0.5rem;
+    background-color: var(--viz-bg); border: 1px solid var(--viz-primary);
+    color: var(--viz-text); padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem;
+  }
+  .viz-app .filter-chip .close-chip {
+    cursor: pointer; font-weight: bold; display: flex; align-items: center;
+    justify-content: center; width: 16px; height: 16px; border-radius: 50%;
+    font-size: 1rem; line-height: 1;
+  }
+  .viz-app .filter-chip .close-chip:hover { background-color: var(--viz-border); }
+
+  /* Flowchart */
+  .viz-app .flowchart-container { margin-bottom: 2rem; padding: 1rem 0; border-bottom: 1px solid var(--viz-border); }
+  .viz-app .flowchart { display: flex; justify-content: space-between; position: relative; max-width: 90%; margin: 0 auto; }
+  .viz-app .flowchart::before {
+    content: ''; position: absolute; top: 24px; left: 0; width: 100%; height: 4px;
+    background-color: var(--viz-border); z-index: 1;
+  }
+  .viz-app .flow-step { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 30%; text-align: center; }
+  .viz-app .step-circle {
+    width: 50px; height: 50px; border-radius: 50%; background-color: var(--viz-card);
+    border: 4px solid var(--viz-border); display: flex; align-items: center;
+    justify-content: center; font-weight: bold; color: var(--viz-secondary); transition: all 0.3s;
+  }
+  .viz-app .flow-step.active .step-circle { border-color: var(--viz-primary); color: var(--viz-primary); }
+  .viz-app .flow-step.completed .step-circle { background-color: var(--viz-primary); border-color: var(--viz-primary); color: white; }
+  .viz-app .step-label { font-weight: 600; font-size: 0.9rem; color: var(--viz-text); }
+  .viz-app .step-value { font-size: 0.85rem; color: var(--viz-secondary); }
+  .viz-app .step-sub-value { font-size: 0.75rem; color: #f87171; margin-top: 2px; }
+  .viz-app .step-sub-value.green { color: #4ade80; }
+
+  /* Footer */
+  .viz-app .viz-footer {
+    background-color: var(--viz-card); padding: 0.5rem; text-align: center;
+    border-top: 1px solid var(--viz-border); font-size: 0.8rem;
+    color: var(--viz-secondary); margin-top: auto;
+  }
+
+  /* Dashboard */
+  .viz-app .dashboard-container { flex: 1; overflow-y: auto; padding: 0 0 1rem 0; }
+  .viz-app .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+  .viz-app .summary-card {
+    background-color: var(--viz-card); border: 1px solid var(--viz-border); border-radius: 8px;
+    padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
+  }
+  .viz-app .summary-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .viz-app .summary-icon svg { width: 24px; height: 24px; }
+  .viz-app .icon-empenhado { background-color: rgba(59,130,246,0.1); color: #3b82f6; }
+  .viz-app .icon-liquidado { background-color: rgba(255,193,7,0.1); color: #f59e0b; }
+  .viz-app .icon-pago { background-color: rgba(16,185,129,0.1); color: #10b981; }
+  .viz-app .icon-execucao { background-color: rgba(139,92,246,0.1); color: #8b5cf6; }
+  .viz-app .summary-info { display: flex; flex-direction: column; }
+  .viz-app .summary-label { font-size: 0.85rem; color: var(--viz-secondary); margin-bottom: 0.25rem; }
+  .viz-app .summary-value { font-size: 1.25rem; font-weight: 700; color: var(--viz-text); }
+  .viz-app .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+  .viz-app .dashboard-card {
+    background-color: var(--viz-card); border: 1px solid var(--viz-border); border-radius: 8px;
+    padding: 1rem; display: flex; flex-direction: column; gap: 1rem;
+  }
+  .viz-app .dashboard-card.full-width { grid-column: 1 / -1; }
+  .viz-app .dashboard-card h3 { font-size: 1.1rem; color: var(--viz-primary); font-weight: 600; border-bottom: 1px solid var(--viz-border); padding-bottom: 0.5rem; margin: 0; }
+  .viz-app .chart-container { height: 300px; width: 100%; position: relative; display: block; }
+
+  /* Print */
+  .viz-app .print-header { display: none; }
+  .viz-app .modal-print-header { display: none; }
+
+  @media print {
+    .viz-app .sidebar, .viz-app .viz-header, .viz-app .pagination, .viz-app .vbtn,
+    .viz-app .viz-modal-footer, .viz-app .close-modal, .viz-app .filter-group,
+    .header { display: none !important; }
+    .viz-app .print-header {
+      display: flex !important; align-items: center; justify-content: center;
+      gap: 1.5rem; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem;
+    }
+    .viz-app .print-header img { height: 80px; width: auto; }
+    .viz-app .print-header .print-title { text-align: center; }
+    .viz-app .print-header .print-title h1 { font-size: 18pt; margin: 0; color: black; text-transform: uppercase; }
+    .viz-app .print-header .print-title h2 { font-size: 14pt; margin: 0; color: #333; font-weight: normal; }
+    .viz-app .viz-footer { display: block !important; position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; border-top: 1px solid #ccc; padding: 10px; background: white; color: black; }
+    .viz-app, .viz-app .app-container, .viz-app .main-content, .viz-app .table-container {
+      height: auto !important; overflow: visible !important; display: block !important;
+      background-color: white !important; color: black !important;
+    }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .viz-app .main-content { padding: 0; }
+    .viz-app .table-container { border: none; }
+    .viz-app table { font-size: 10pt; border: 1px solid #000; }
+    .viz-app th, .viz-app td { border: 1px solid #000; color: black !important; white-space: normal; overflow: visible; }
+    .viz-app th { background-color: #eee !important; }
+    body.modal-open > *:not(.viz-modal):not(.print-header) { display: none !important; }
+    body.modal-open .viz-footer { display: block !important; z-index: 2000; }
+    body.modal-open .viz-modal { position: relative; left: auto; top: auto; width: 100%; height: auto; background: transparent; display: block !important; padding: 0; }
+    .viz-app .viz-modal-content { box-shadow: none; margin: 0; width: 100%; max-width: 100%; border: none; background-color: white !important; color: black !important; }
+    .viz-app .detail-item label { color: #333 !important; }
+    .viz-app .detail-item p { color: black !important; }
+    .viz-app .modal-print-header {
+      display: flex !important; align-items: center; justify-content: flex-start;
+      margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem;
+    }
+    .viz-app .modal-print-header img { height: 60px; width: auto; margin-right: 1rem; }
+    .viz-app .modal-print-header .header-text { text-align: left; }
+    .viz-app .modal-print-header h1 { font-size: 14pt; margin: 0; color: #000; text-transform: uppercase; }
+    .viz-app .modal-print-header h2 { font-size: 12pt; margin: 0; color: #333; font-weight: normal; }
+    .viz-app .flowchart-container { page-break-inside: avoid; break-inside: avoid; }
+    .viz-app .detail-grid { display: grid !important; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .viz-app .detail-item { break-inside: avoid; page-break-inside: avoid; }
+    .viz-app .detail-item.full-width { grid-column: 1 / -1; }
+  }
+  </style>
+</head>
+<body>﻿
+  <!-- HEADER (shared nav bar from index.css) -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+        <div class="header-brand">
+          <img id="header-brasao" src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
+          <div class="header-title"><h1>Prefeitura de Inajá</h1><p>Gestão de Empenhos</p></div>
+        </div>
+      </div>
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Credores Fixos</a>
+        <a href="rpa.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>RPA</a>
+        <a href="extratos.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>Extratos</a>
+        <a href="cnpj.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>CNPJ</a>
+        <a href="pdf.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</a>
+        <a href="renomear.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Renomear</a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Tarefas</a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab active" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+      <div class="header-right">
+        <div class="dropdown">
+          <button class="dropdown-toggle" id="dropdown-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+          </button>
+          <div class="dropdown-menu" id="dropdown-menu">
+            <button class="dropdown-item" id="theme-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg><span>Tema</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Visualizador App -->
+  <div class="viz-app">
+
+    <div class="viz-header">
+      <div class="logo-area">
+        <div class="brasao-placeholder">
+          <img src="/static/img/brasao.png" alt="Brasão Inajá">
+        </div>
+        <div>
+          <h1>Empenhos</h1>
+          <p>Município de Inajá - PR</p>
+        </div>
+      </div>
+      <div class="actions" style="display:flex;align-items:center;gap:0.5rem;">
+        <button id="toggleViewBtn" class="vbtn vbtn-outline" style="margin-right: 1rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Dashboard
+        </button>
+        <label for="csvFile" class="vbtn vbtn-primary" style="cursor:pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          Carregar CSV
+        </label>
+        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+      </div>
+    </div>
+
+    <div class="print-header" style="display: none;">
+      <img src="/static/img/brasao.png" alt="Brasão Inajá">
+      <div class="print-title">
+        <h1>Município de Inajá - PR</h1>
+        <h2>Relatório de Empenhos</h2>
+      </div>
+    </div>
+
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h3>Filtros</h3>
+          <button id="clearFilters" class="vbtn vbtn-sm vbtn-outline">Limpar</button>
+        </div>
+
+        <div class="filter-group">
+          <label for="searchGlobal">Busca Textual</label>
+          <input type="text" id="searchGlobal" placeholder="Buscar em todos os campos...">
+        </div>
+
+        <div class="filter-group">
+          <label>Data de Emissão</label>
+          <div class="range-inputs">
+            <input type="text" id="startDate" placeholder="DD/MM/AAAA" maxlength="10" aria-label="Data Inicial">
+            <span>até</span>
+            <input type="text" id="endDate" placeholder="DD/MM/AAAA" maxlength="10" aria-label="Data Final">
+          </div>
+          <div class="date-shortcuts">
+            <button class="vbtn vbtn-xs vbtn-outline date-shortcut-btn" data-range="last30">Últimos 30 dias</button>
+            <button class="vbtn vbtn-xs vbtn-outline date-shortcut-btn" data-range="thisMonth">Este Mês</button>
+            <button class="vbtn vbtn-xs vbtn-outline date-shortcut-btn" data-range="thisYear">Este Ano</button>
+            <button class="vbtn vbtn-xs vbtn-outline date-shortcut-btn" data-range="lastYear">Ano Passado</button>
+          </div>
+          <div id="dateError" class="hint error-message" style="display: none; color: #dc3545;">Data inicial deve ser menor que a final.</div>
+        </div>
+
+        <div class="filter-group">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <input type="checkbox" id="checkAtraso" style="width: auto;">
+            <label for="checkAtraso" style="margin: 0; cursor: pointer;">Apenas Atrasos de Pagamento</label>
+          </div>
+          <div id="atrasoInputContainer" style="display: none;">
+            <label for="daysAtraso" style="font-size: 0.85rem;">Considerar atraso após (dias):</label>
+            <input type="number" id="daysAtraso" value="30" min="1" class="vw-100">
+            <p class="hint">Liquidados e não pagos há mais de X dias úteis.</p>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Valor do Empenho (R$)</label>
+          <div class="range-inputs">
+            <input type="number" id="minVal" placeholder="Mín">
+            <span>até</span>
+            <input type="number" id="maxVal" placeholder="Máx">
+          </div>
+          <div class="checkbox-group" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem;">
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="valRange1" value="low">
+              <label for="valRange1" style="font-size: 0.85rem;">Pequeno (&lt; R$ 1k)</label>
+            </div>
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="valRange2" value="medium">
+              <label for="valRange2" style="font-size: 0.85rem;">Médio (R$ 1k - 10k)</label>
+            </div>
+            <div class="checkbox-wrapper">
+              <input type="checkbox" id="valRange3" value="high">
+              <label for="valRange3" style="font-size: 0.85rem;">Alto (&gt; R$ 10k)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label>Execução Financeira (Mínima)</label>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <input type="range" id="execSlider" min="0" max="100" value="0" style="flex: 1;">
+            <span id="execValue" style="min-width: 3ch; text-align: right;">0%</span>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="despesaFilter">Natureza da Despesa</label>
+          <select id="despesaFilter" class="vw-100">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="credorTypeFilter">Tipo de Credor</label>
+          <select id="credorTypeFilter" class="vw-100">
+            <option value="">Todos</option>
+            <option value="PF">Pessoa Física</option>
+            <option value="PJ">Pessoa Jurídica</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Credor / Fornecedor</label>
+          <div class="custom-multiselect" id="credorMultiselect">
+            <div class="select-box" id="credorSelectBox">
+              <span class="selected-text">Selecionar Credores</span>
+              <span class="arrow">▼</span>
+            </div>
+            <div class="dropdown-content" id="credorDropdown">
+              <div class="dropdown-search">
+                <input type="text" id="credorSearchInput" placeholder="Buscar credor...">
+              </div>
+              <div class="dropdown-list" id="credorList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <label for="unidadeFilter">Unidade Orçamentária</label>
+          <select id="unidadeFilter" class="vw-100">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="statusFilter">Situação</label>
+          <select id="statusFilter">
+            <option value="">Todas</option>
+          </select>
+        </div>
+
+        <button id="printList" class="vbtn vbtn-secondary vw-100 vmt-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Imprimir Lista
+        </button>
+      </aside>
+
+      <main class="main-content">
+        <div id="activeFilters" class="active-filters-container"></div>
+        <div class="stats-bar" id="statsBar" style="display: none;">
+          <span id="totalRecords">0 registros encontrados</span>
+          <span id="totalValue">Total: R$ 0,00</span>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="dashboard-container" style="display: none;">
+          <div class="summary-cards">
+            <div class="summary-card">
+              <div class="summary-icon icon-empenhado">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+              </div>
+              <div class="summary-info"><span class="summary-label">Total Empenhado</span><span class="summary-value" id="kpiEmpenhado">R$ 0,00</span></div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon icon-liquidado">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+              <div class="summary-info"><span class="summary-label">Total Liquidado</span><span class="summary-value" id="kpiLiquidado">R$ 0,00</span></div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon icon-pago">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
+              <div class="summary-info"><span class="summary-label">Total Pago</span><span class="summary-value" id="kpiPago">R$ 0,00</span></div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon icon-execucao">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 12l-4-4-4 4"></path><path d="M12 16V8"></path></svg>
+              </div>
+              <div class="summary-info"><span class="summary-label">% Execução</span><span class="summary-value" id="kpiExecucao">0%</span></div>
+            </div>
+          </div>
+          <div class="dashboard-grid">
+            <div class="dashboard-card full-width"><h3>Evolução Temporal (Linha do Tempo)</h3><div id="timelineChart" class="chart-container"></div></div>
+            <div class="dashboard-card full-width"><h3>Distribuição por Valor (Histograma)</h3><div id="histogramChart" class="chart-container"></div></div>
+            <div class="dashboard-card full-width"><h3>Mapa de Calor (Top Despesas)</h3><div id="treemapChart" class="chart-container"></div></div>
+            <div class="dashboard-card full-width"><h3>Comparativo Mensal</h3><div id="monthlyChart" class="chart-container"></div></div>
+          </div>
+        </div>
+
+        <div id="tableView" class="table-container">
+          <table id="empenhosTable">
+            <thead>
+              <tr>
+                <th data-sort="numeroEmpenho">Nº Empenho</th>
+                <th data-sort="data">Data</th>
+                <th data-sort="nomeCredor">Credor</th>
+                <th data-sort="especificacao">Histórico</th>
+                <th data-sort="valorEmpenhadoBruto">Valor</th>
+                <th data-sort="status">Situação</th>
+                <th>Dias</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="8" class="empty-state">Nenhum arquivo carregado. Importe um CSV para começar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </main>
+    </div>
+
+    <footer class="viz-footer">
+      <p>Desenvolvido por <strong>Aleksandro Alves</strong></p>
+    </footer>
+
+    <!-- Modal Detalhes -->
+    <div id="detailModal" class="viz-modal">
+      <div class="viz-modal-content">
+        <div class="viz-modal-header">
+          <h2 id="modalTitle">Detalhes do Empenho</h2>
+          <span class="close-modal">&times;</span>
+        </div>
+        <div class="viz-modal-body" id="modalBody"></div>
+        <div class="viz-modal-footer">
+          <button id="printDetail" class="vbtn vbtn-secondary">Imprimir</button>
+          <button class="vbtn vbtn-primary close-modal-btn">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>﻿
+  <script>
+  // ===== UTILS =====
+  window.App = window.App || {};
+
+  window.App.utils = {
+    formatCurrency: (value) => {
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    },
+    formatCompact: (val) => {
+      if (val >= 1000000) return 'R$ ' + (val/1000000).toFixed(1) + 'M';
+      if (val >= 1000) return 'R$ ' + (val/1000).toFixed(0) + 'k';
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
+    },
+    formatDate: (dateString) => {
+      if (!dateString) return '-';
+      if (dateString instanceof Date) return dateString.toLocaleDateString('pt-BR');
+      const parts = dateString.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        let year = parseInt(parts[2]);
+        if (year < 100) year += 2000;
+        return parts[0] + '/' + parts[1] + '/' + year;
+      }
+      return dateString;
+    },
+    parseBRL: (valueStr) => {
+      if (typeof valueStr === 'number') return valueStr;
+      if (!valueStr) return 0;
+      const cleanStr = valueStr.replace(/\./g, '').replace(',', '.');
+      const num = parseFloat(cleanStr);
+      return isNaN(num) ? 0 : num;
+    },
+    debounce: (func, wait) => {
+      let timeout;
+      return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+      };
+    },
+    getDateRange: (type) => {
+      const today = new Date();
+      let start, end;
+      switch (type) {
+        case 'last30':
+          end = new Date(today); end.setDate(today.getDate() - 1);
+          start = new Date(end); start.setDate(end.getDate() - 29);
+          break;
+        case 'thisMonth':
+          start = new Date(today.getFullYear(), today.getMonth(), 1);
+          end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          break;
+        case 'thisYear':
+          start = new Date(today.getFullYear(), 0, 1);
+          end = new Date(today.getFullYear(), 11, 31);
+          break;
+        case 'lastYear':
+          start = new Date(today.getFullYear() - 1, 0, 1);
+          end = new Date(today.getFullYear() - 1, 11, 31);
+          break;
+        default: return null;
+      }
+      const formatDate = (date) => {
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear();
+        return d + '/' + m + '/' + y;
+      };
+      return { start: formatDate(start), end: formatDate(end) };
+    },
+    getBusinessDays: (startDate, endDate) => {
+      if (!startDate || !endDate) return 0;
+      let s = new Date(startDate); let e = new Date(endDate);
+      s.setHours(0,0,0,0); e.setHours(0,0,0,0);
+      if (s > e) return 0;
+      let count = 0;
+      const cur = new Date(s);
+      const msPerDay = 86400000;
+      const diffDays = Math.floor((e - s) / msPerDay);
+      if (diffDays > 14) {
+        const weeks = Math.floor(diffDays / 7);
+        count += weeks * 5;
+        cur.setDate(cur.getDate() + (weeks * 7));
+      }
+      while (cur <= e) {
+        const day = cur.getDay();
+        if (day !== 0 && day !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      return count;
+    }
+  };
+
+  // ===== STATE =====
+  window.App.state = {
+    data: [],
+    filteredData: [],
+    filters: {
+      globalSearch: '', minVal: null, maxVal: null,
+      startDate: null, endDate: null,
+      credor: [], unidade: '', status: '',
+      atraso: false, daysAtraso: 30,
+      valRanges: [], minExec: 0, despesa: '', credorType: ''
+    },
+    pagination: { currentPage: 1, itemsPerPage: 100, totalPages: 0 },
+    sorting: { column: 'data', direction: 'desc' }
+  };
+
+  window.App.stateManager = {
+    setData: (newData) => {
+      window.App.state.data = newData;
+      window.App.state.filteredData = [...newData];
+      window.App.stateManager.updatePagination();
+    },
+    updateFilteredData: (newData) => {
+      window.App.state.filteredData = newData;
+      window.App.state.pagination.currentPage = 1;
+      window.App.stateManager.updatePagination();
+    },
+    updatePagination: () => {
+      window.App.state.pagination.totalPages = Math.ceil(window.App.state.filteredData.length / window.App.state.pagination.itemsPerPage);
+    },
+    getPaginatedData: () => {
+      const start = (window.App.state.pagination.currentPage - 1) * window.App.state.pagination.itemsPerPage;
+      const end = start + window.App.state.pagination.itemsPerPage;
+      return window.App.state.filteredData.slice(start, end);
+    }
+  };
+
+  // ===== LOGIC =====
+  window.App.logic = {
+    applyFilters: () => {
+      const { data, filters, sorting } = window.App.state;
+      let result = data.filter(item => {
+        if (filters.globalSearch) {
+          const searchLower = filters.globalSearch.toLowerCase();
+          const terms = searchLower.split(/\s+/).filter(t => t.length > 0);
+          const positiveTerms = terms.filter(t => !t.startsWith('-'));
+          const negativeTerms = terms.filter(t => t.startsWith('-') && t.length > 1).map(t => t.slice(1));
+          const searchable = [item.id, item.credor, item.historico, item.processo, item.unidade, item.situacao].join(' ').toLowerCase();
+          const matchesPositive = positiveTerms.length === 0 || positiveTerms.every(term => searchable.includes(term));
+          const matchesNegative = negativeTerms.some(term => searchable.includes(term));
+          if (!matchesPositive || matchesNegative) return false;
+        }
+        if (filters.valRanges && filters.valRanges.length > 0) {
+          let inRange = false;
+          const v = item.valor;
+          if (filters.valRanges.includes('low') && v < 1000) inRange = true;
+          if (filters.valRanges.includes('medium') && v >= 1000 && v <= 10000) inRange = true;
+          if (filters.valRanges.includes('high') && v > 10000) inRange = true;
+          if (!inRange) return false;
+        }
+        if (filters.minExec > 0) {
+          const exec = item.valor > 0 ? (item.valorPago / item.valor) * 100 : 0;
+          if (exec < filters.minExec) return false;
+        }
+        if (filters.despesa) {
+          const rawCode = item.raw && item.raw['numNaturezaDesp'] ? item.raw['numNaturezaDesp'] : '';
+          const code = rawCode.replace(/\D/g, '').substring(0, 6);
+          if (code !== filters.despesa) return false;
+        }
+        if (filters.credorType) {
+          const digits = item.credor.replace(/\D/g, '');
+          let type = 'PF';
+          if (digits.length === 14) type = 'PJ';
+          else if (digits.length === 11) type = 'PF';
+          else {
+            const pjKeywords = ['LTDA','ME','EPP','S.A','SA','EIRELI','INSTITUTO','ASSOCIACAO','ASSOCIAÇÃO','CONDOMINIO','PREFEITURA','MUNICIPIO','SECRETARIA','FUNDO','IGREJA','BANCO','COOPERATIVA'];
+            const upperName = item.credor.toUpperCase();
+            if (pjKeywords.some(k => upperName.includes(k))) type = 'PJ';
+          }
+          if (type !== filters.credorType) return false;
+        }
+        if (filters.minVal !== null && filters.minVal !== '') { if (item.valor < parseFloat(filters.minVal)) return false; }
+        if (filters.maxVal !== null && filters.maxVal !== '') { if (item.valor > parseFloat(filters.maxVal)) return false; }
+        if (filters.startDate || filters.endDate) {
+          const itemDate = window.App.logic.parseDateForSort(item.data);
+          if (filters.startDate) { const start = window.App.logic.parseDateInput(filters.startDate); if (start && itemDate < start) return false; }
+          if (filters.endDate) { const end = window.App.logic.parseDateInput(filters.endDate); if (end && itemDate > end) return false; }
+        }
+        if (filters.credor && filters.credor.length > 0) { if (!filters.credor.includes(item.credor)) return false; }
+        if (filters.unidade) { if (item.unidade !== filters.unidade) return false; }
+        if (filters.status) { if (item.situacao !== filters.status) return false; }
+        if (filters.atraso) {
+          const valorLiquidado = item.valorLiquidado || 0;
+          const valorPago = item.valorPago || 0;
+          if (valorLiquidado <= 0) return false;
+          if (valorPago >= (valorLiquidado - 0.01)) return false;
+          let referenceDateTs = 0;
+          if (item.dataLiquidacao) { referenceDateTs = window.App.logic.parseDateForSort(item.dataLiquidacao); }
+          else { referenceDateTs = window.App.logic.parseDateForSort(item.data); }
+          const itemDate = new Date(referenceDateTs);
+          const today = new Date();
+          const days = window.App.utils.getBusinessDays(itemDate, today);
+          if (days <= filters.daysAtraso) return false;
+        }
+        return true;
+      });
+      if (sorting.column) {
+        result.sort((a, b) => {
+          let valA = a[sorting.column]; let valB = b[sorting.column];
+          if (sorting.column === 'data') { valA = window.App.logic.parseDateForSort(valA); valB = window.App.logic.parseDateForSort(valB); }
+          if (valA < valB) return sorting.direction === 'asc' ? -1 : 1;
+          if (valA > valB) return sorting.direction === 'asc' ? 1 : -1;
+          return 0;
+        });
+      }
+      window.App.stateManager.updateFilteredData(result);
+    },
+    parseDateForSort: (dateStr) => {
+      if (!dateStr) return 0;
+      const parts = dateStr.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        let year = parseInt(parts[2]);
+        if (year < 100) year += 2000;
+        return new Date(year, parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
+      }
+      return 0;
+    },
+    parseDateInput: (dateStr) => {
+      if (!dateStr || dateStr.length !== 10) return null;
+      const parts = dateStr.split('/');
+      if (parts.length === 3) return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0])).getTime();
+      return null;
+    },
+    getUniqueValues: (field) => {
+      const values = new Set(window.App.state.data.map(item => item[field]));
+      return Array.from(values).sort();
+    }
+  };
+
+  // ===== CSV PARSER =====
+  window.App.csv = {
+    parseCSV: (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const text = e.target.result;
+            const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+            if (lines.length < 2) { reject(new Error('Arquivo CSV vazio ou sem dados.')); return; }
+
+            // Auto-detect delimiter
+            const firstLine = lines[0];
+            const semicolonCount = (firstLine.match(/;/g) || []).length;
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const delimiter = semicolonCount >= commaCount ? ';' : ',';
+
+            const parseCSVLine = (line, delim) => {
+              const result = [];
+              let current = '';
+              let inQuotes = false;
+              for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (inQuotes) {
+                  if (ch === '"') {
+                    if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+                    else { inQuotes = false; }
+                  } else { current += ch; }
+                } else {
+                  if (ch === '"') { inQuotes = true; }
+                  else if (ch === delim) { result.push(current.trim()); current = ''; }
+                  else { current += ch; }
+                }
+              }
+              result.push(current.trim());
+              return result;
+            };
+
+            const headers = parseCSVLine(lines[0], delimiter).map(h => h.replace(/^["']|["']$/g, '').trim());
+
+            // Column mapping (case-insensitive, flexible)
+            const findCol = (patterns) => {
+              for (const p of patterns) {
+                const idx = headers.findIndex(h => {
+                  const hl = h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                  const pl = p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                  return hl.includes(pl) || hl === pl;
+                });
+                if (idx !== -1) return idx;
+              }
+              return -1;
+            };
+
+            const colMap = {
+              id: findCol(['numero empenho', 'num empenho', 'nro empenho', 'empenho', 'numempenho', 'numero_empenho']),
+              data: findCol(['data emissao', 'data de emissao', 'dt emissao', 'dataemissao', 'data']),
+              credor: findCol(['credor', 'fornecedor', 'nome credor', 'nomecredor', 'nome fornecedor', 'razao social']),
+              historico: findCol(['especificacao', 'historico', 'descricao', 'especificação', 'histórico', 'descrição', 'objeto']),
+              valor: findCol(['valor empenhado', 'valorempenhadob', 'vl empenhado', 'valor', 'vlrempenhado']),
+              valorLiquidado: findCol(['valor liquidado', 'vl liquidado', 'vlrliquidado']),
+              valorPago: findCol(['valor pago', 'vl pago', 'vlrpago']),
+              situacao: findCol(['situacao', 'situação', 'status', 'fase']),
+              processo: findCol(['processo', 'num processo', 'nro processo']),
+              unidade: findCol(['unidade', 'unidade orcamentaria', 'orgao']),
+              funcao: findCol(['funcao', 'função']),
+              subfuncao: findCol(['subfuncao', 'subfunção', 'sub funcao']),
+              naturezaDesp: findCol(['natureza despesa', 'natureza', 'elemento despesa', 'numnaturezadesp']),
+              dataLiquidacao: findCol(['data liquidacao', 'dt liquidacao', 'dataliquidacao'])
+            };
+
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+              const fields = parseCSVLine(lines[i], delimiter);
+              if (fields.length < 3) continue;
+
+              const raw = {};
+              headers.forEach((h, idx) => { if (idx < fields.length) raw[h] = fields[idx]; });
+
+              const getField = (key) => {
+                const idx = colMap[key];
+                return idx !== -1 && idx < fields.length ? fields[idx].replace(/^["']|["']$/g, '').trim() : '';
+              };
+
+              const valorStr = getField('valor');
+              const valor = window.App.utils.parseBRL(valorStr);
+
+              const item = {
+                id: getField('id') || String(i),
+                data: getField('data') || '',
+                credor: getField('credor') || 'Desconhecido',
+                historico: getField('historico') || '',
+                processo: getField('processo') || '',
+                unidade: getField('unidade') || '',
+                situacao: getField('situacao') || 'Empenhado',
+                valor: valor,
+                valorLiquidado: window.App.utils.parseBRL(getField('valorLiquidado')),
+                valorPago: window.App.utils.parseBRL(getField('valorPago')),
+                funcao: getField('funcao') || '',
+                subfuncao: getField('subfuncao') || '',
+                dataLiquidacao: getField('dataLiquidacao') || '',
+                raw: raw
+              };
+
+              if (colMap.naturezaDesp !== -1 && colMap.naturezaDesp < fields.length) {
+                raw['numNaturezaDesp'] = fields[colMap.naturezaDesp].replace(/^["']|["']$/g, '').trim();
+              }
+
+              data.push(item);
+            }
+            resolve(data);
+          } catch (err) { reject(err); }
+        };
+        reader.onerror = () => reject(new Error('Erro ao ler o arquivo.'));
+        reader.readAsText(file, 'UTF-8');
+      });
+    }
+  };
+  </script>﻿
+  <script>
+  // ===== UI =====
+  window.App.ui = {
+    renderTable: () => {
+      const tbody = document.querySelector('#empenhosTable tbody');
+      const data = window.App.stateManager.getPaginatedData();
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(item => {
+        let daysRefDate = item.data;
+        let daysLabel = 'Dias desde Empenho';
+        const isLiquidated = (item.valorLiquidado || 0) > 0;
+        const isPaid = (item.valorPago || 0) >= ((item.valorLiquidado || 0) - 0.01);
+        if (isLiquidated && !isPaid && item.dataLiquidacao) {
+          daysRefDate = item.dataLiquidacao;
+          daysLabel = 'Dias de Atraso (desde Liquidação)';
+        }
+        const itemDateTs = window.App.logic.parseDateForSort(daysRefDate);
+        const days = window.App.utils.getBusinessDays(new Date(itemDateTs), new Date());
+        const statusClass = 'status-' + item.situacao.toLowerCase().replace(/ /g, '-').replace(/ç/g, 'c').replace(/ã/g, 'a');
+        return '<tr data-id="' + item.id + '">' +
+          '<td>' + item.id + '</td>' +
+          '<td>' + window.App.utils.formatDate(item.data) + '</td>' +
+          '<td style="font-weight:500;" title="' + item.credor + '">' + item.credor + '</td>' +
+          '<td title="' + item.historico.replace(/"/g, '&quot;') + '">' + item.historico + '</td>' +
+          '<td class="amount-col">' + window.App.utils.formatCurrency(item.valor) + '</td>' +
+          '<td><span class="status-badge ' + statusClass + '">' + item.situacao + '</span></td>' +
+          '<td class="text-center" title="' + daysLabel + '">' + days + '</td>' +
+          '<td><button class="vbtn vbtn-sm vbtn-outline view-details" data-id="' + item.id + '">Ver</button></td>' +
+          '</tr>';
+      }).join('');
+    },
+
+    renderFilters: () => {
+      const credorList = document.getElementById('credorList');
+      const credores = window.App.logic.getUniqueValues('credor');
+      credorList.innerHTML = credores.map((c, index) =>
+        '<div class="dropdown-item">' +
+        '<input type="checkbox" id="credor-' + index + '" value="' + c + '" class="credor-checkbox">' +
+        '<label for="credor-' + index + '">' + c + '</label></div>'
+      ).join('');
+      document.querySelectorAll('.credor-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          window.App.main.updateCredorSelectionDisplay();
+          window.App.main.handleFilterChange();
+        });
+      });
+
+      // Unidade options
+      const unidadeSelect = document.getElementById('unidadeFilter');
+      const unidades = window.App.logic.getUniqueValues('unidade');
+      unidadeSelect.innerHTML = '<option value="">Todas</option>' + unidades.map(u => '<option value="' + u + '">' + u + '</option>').join('');
+
+      // Status options
+      const statusSelect = document.getElementById('statusFilter');
+      const status = window.App.logic.getUniqueValues('situacao');
+      statusSelect.innerHTML = '<option value="">Todas</option>' + status.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+    },
+
+    populateDespesaFilter: (data) => {
+      const select = document.getElementById('despesaFilter');
+      if (!select) return;
+      const codes = new Set();
+      data.forEach(item => {
+        if (item.raw && item.raw['numNaturezaDesp']) {
+          const rawVal = String(item.raw['numNaturezaDesp']);
+          const code = rawVal.replace(/\D/g, '').substring(0, 6);
+          if (code.length === 6) codes.add(code);
+        }
+      });
+      select.innerHTML = '<option value="">Todas</option>';
+      const names = {
+        '319004': 'Contratação por Tempo Determinado', '319011': 'Vencimentos e Vantagens Fixas',
+        '319013': 'Obrigações Patronais', '319016': 'Outras Despesas Variáveis',
+        '319091': 'Sentenças Judiciais', '319092': 'Despesas de Exercícios Anteriores',
+        '319094': 'Indenizações Trabalhistas', '339014': 'Diárias - Civil',
+        '339030': 'Material de Consumo', '339033': 'Passagens e Locomoção',
+        '339035': 'Serviços de Consultoria', '339036': 'Serviços Terceiros - PF',
+        '339039': 'Serviços Terceiros - PJ', '339040': 'Serviços TIC - PJ',
+        '339046': 'Auxílio-Alimentação', '339047': 'Obrigações Tributárias',
+        '339048': 'Outros Auxílios PF', '339049': 'Auxílio-Transporte',
+        '339092': 'Despesas Exercícios Anteriores', '339093': 'Indenizações e Restituições',
+        '449051': 'Obras e Instalações', '449052': 'Equipamentos e Material Permanente'
+      };
+      Array.from(codes).sort().forEach(code => {
+        const name = names[code] || 'Natureza Desconhecida';
+        const formatted = code.substring(0,1) + '.' + code.substring(1,2) + '.' + code.substring(2,4) + '.' + code.substring(4,6);
+        const opt = document.createElement('option');
+        opt.value = code; opt.textContent = formatted + ' - ' + name;
+        select.appendChild(opt);
+      });
+    },
+
+    updateCredorList: () => {
+      const { data, filters } = window.App.state;
+      let contextData = data;
+      if (filters.unidade) { contextData = data.filter(d => d.unidade === filters.unidade); }
+      const credors = new Set(contextData.map(item => item.credor));
+      const sortedCredors = Array.from(credors).sort();
+      const credorList = document.getElementById('credorList');
+      if (!credorList) return;
+      const currentSelection = filters.credor || [];
+      credorList.innerHTML = sortedCredors.map((c, index) => {
+        const isChecked = currentSelection.includes(c) ? 'checked' : '';
+        return '<div class="dropdown-item"><input type="checkbox" id="credor-' + index + '" value="' + c + '" class="credor-checkbox" ' + isChecked + '>' +
+          '<label for="credor-' + index + '">' + c + '</label></div>';
+      }).join('');
+      document.querySelectorAll('.credor-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          window.App.main.updateCredorSelectionDisplay();
+          window.App.main.handleFilterChange();
+        });
+      });
+      const newSelection = currentSelection.filter(c => sortedCredors.includes(c));
+      if (newSelection.length !== currentSelection.length) {
+        window.App.state.filters.credor = newSelection;
+        window.App.main.updateCredorSelectionDisplay();
+      }
+    },
+
+    renderActiveFilters: () => {
+      const container = document.getElementById('activeFilters');
+      if (!container) return;
+      const { filters } = window.App.state;
+      const chips = [];
+      const addChip = (label, type) => { chips.push({ label, type }); };
+      if (filters.globalSearch) addChip('Busca: "' + filters.globalSearch + '"', 'globalSearch');
+      if (filters.minVal) addChip('Mín: ' + window.App.utils.formatCurrency(filters.minVal), 'minVal');
+      if (filters.maxVal) addChip('Máx: ' + window.App.utils.formatCurrency(filters.maxVal), 'maxVal');
+      if (filters.startDate) addChip('De: ' + filters.startDate, 'startDate');
+      if (filters.endDate) addChip('Até: ' + filters.endDate, 'endDate');
+      if (filters.credor && filters.credor.length > 0) {
+        const label = filters.credor.length === 1 ? filters.credor[0] : filters.credor.length + ' Credores';
+        addChip(label, 'credor');
+      }
+      if (filters.unidade) addChip('Unidade: ' + filters.unidade, 'unidade');
+      if (filters.status) addChip('Status: ' + filters.status, 'status');
+      if (filters.atraso) addChip('Atraso > ' + filters.daysAtraso + 'd', 'atraso');
+      if (filters.valRanges && filters.valRanges.length > 0) {
+        const labels = filters.valRanges.map(r => r === 'low' ? '<1k' : r === 'medium' ? '1k-10k' : '>10k');
+        addChip('Faixas: ' + labels.join(', '), 'valRanges');
+      }
+      if (filters.minExec > 0) addChip('Execução > ' + filters.minExec + '%', 'minExec');
+      if (filters.despesa) addChip('Natureza: ' + filters.despesa, 'despesa');
+      if (filters.credorType) addChip('Tipo: ' + filters.credorType, 'credorType');
+      container.innerHTML = chips.map((chip) =>
+        '<div class="filter-chip"><span>' + chip.label + '</span>' +
+        '<span class="close-chip" data-type="' + chip.type + '">&times;</span></div>'
+      ).join('');
+      container.querySelectorAll('.close-chip').forEach(btn => {
+        btn.addEventListener('click', (e) => { window.App.main.removeFilter(e.target.dataset.type); });
+      });
+    },
+
+    renderPagination: () => {
+      const pagination = document.getElementById('pagination');
+      const { currentPage, totalPages } = window.App.state.pagination;
+      let html = '<button class="page-btn" ' + (currentPage === 1 ? 'disabled' : '') + ' onclick="window.App.main.changePage(' + (currentPage - 1) + ')">&laquo;</button>';
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, startPage + 4);
+      if (endPage - startPage < 4) startPage = Math.max(1, endPage - 4);
+      for (let i = startPage; i <= endPage; i++) {
+        html += '<button class="page-btn ' + (i === currentPage ? 'active' : '') + '" onclick="window.App.main.changePage(' + i + ')">' + i + '</button>';
+      }
+      html += '<button class="page-btn" ' + (currentPage === totalPages ? 'disabled' : '') + ' onclick="window.App.main.changePage(' + (currentPage + 1) + ')">&raquo;</button>';
+      pagination.innerHTML = html;
+    },
+
+    renderStats: () => {
+      const totalRecords = document.getElementById('totalRecords');
+      const totalValue = document.getElementById('totalValue');
+      const statsBar = document.getElementById('statsBar');
+      if (window.App.state.data.length > 0) {
+        statsBar.style.display = 'flex';
+        totalRecords.textContent = window.App.state.filteredData.length + ' registros encontrados';
+        const sum = window.App.state.filteredData.reduce((acc, item) => acc + item.valor, 0);
+        totalValue.textContent = 'Total: ' + window.App.utils.formatCurrency(sum);
+      } else { statsBar.style.display = 'none'; }
+    },
+
+    openModal: (item) => {
+      const modal = document.getElementById('detailModal');
+      const modalBody = document.getElementById('modalBody');
+      const empenhado = item.valor;
+      const liquidado = item.valorLiquidado || 0;
+      const pago = item.valorPago || 0;
+      const aLiquidar = Math.max(0, empenhado - liquidado);
+      const aPagar = Math.max(0, liquidado - pago);
+      const isLiquidado = liquidado > 0;
+      const isPago = pago > 0;
+      const isFullyPaid = pago >= empenhado - 0.01;
+      const isFullyLiquidated = liquidado >= empenhado - 0.01;
+      const statusClass = 'status-' + item.situacao.toLowerCase().replace(/ /g, '-').replace(/ç/g, 'c').replace(/ã/g, 'a');
+
+      modalBody.innerHTML =
+        '<div class="modal-print-header"><img src="/static/img/brasao.png" alt="Brasão Inajá"><div class="header-text"><h1>Município de Inajá - PR</h1><h2>Detalhes do Empenho</h2></div></div>' +
+        '<div class="flowchart-container"><div class="flowchart">' +
+        '<div class="flow-step completed"><div class="step-circle">1</div><div class="step-label">Empenhado</div><div class="step-value">' + window.App.utils.formatCurrency(empenhado) + '</div><div class="step-sub-value">' + window.App.utils.formatDate(item.data) + '</div></div>' +
+        '<div class="flow-step ' + (isLiquidado ? 'completed' : 'active') + '"><div class="step-circle">2</div><div class="step-label">Liquidado</div><div class="step-value">' + window.App.utils.formatCurrency(liquidado) + '</div>' +
+        (!isFullyLiquidated ? '<div class="step-sub-value">A Liquidar: ' + window.App.utils.formatCurrency(aLiquidar) + '</div>' : '<div class="step-sub-value green">Totalmente Liquidado</div>') + '</div>' +
+        '<div class="flow-step ' + (isPago ? 'completed' : (isLiquidado ? 'active' : '')) + '"><div class="step-circle">3</div><div class="step-label">Pago</div><div class="step-value">' + window.App.utils.formatCurrency(pago) + '</div>' +
+        (!isFullyPaid ? '<div class="step-sub-value">A Pagar: ' + window.App.utils.formatCurrency(aPagar) + '</div>' : '<div class="step-sub-value green">Totalmente Pago</div>') + '</div>' +
+        '</div></div>' +
+        '<div class="detail-grid">' +
+        '<div class="detail-item"><label>Número do Empenho</label><p>' + item.id + '</p></div>' +
+        '<div class="detail-item"><label>Data de Emissão</label><p>' + window.App.utils.formatDate(item.data) + '</p></div>' +
+        '<div class="detail-item full-width"><label>Credor / Fornecedor</label><p>' + item.credor + '</p></div>' +
+        '<div class="detail-item"><label>Situação</label><p><span class="status-badge ' + statusClass + '">' + item.situacao + '</span></p></div>' +
+        '<div class="detail-item"><label>Número do Processo</label><p>' + item.processo + '</p></div>' +
+        '<div class="detail-item"><label>Unidade Orçamentária</label><p>' + item.unidade + '</p></div>' +
+        '<div class="detail-item"><label>Função / Subfunção</label><p>' + item.funcao + ' / ' + item.subfuncao + '</p></div>' +
+        '<div class="detail-item full-width"><label>Histórico / Descrição</label><p style="white-space:pre-wrap;">' + item.historico + '</p></div>' +
+        '</div>';
+
+      modal.style.display = 'block';
+      document.body.classList.add('modal-open');
+      document.getElementById('printDetail').onclick = () => { window.print(); };
+    }
+  };
+  </script>﻿
+  <script>
+  // ===== CHARTS =====
+  window.App.charts = {
+    instances: {},
+    init: () => {
+      Chart.defaults.font.family = "'Inter', sans-serif";
+      Chart.defaults.color = '#e5e7eb';
+      Chart.defaults.borderColor = '#374151';
+      Chart.defaults.plugins.tooltip.backgroundColor = '#1f2937';
+      Chart.defaults.plugins.tooltip.titleColor = '#f3f4f6';
+      Chart.defaults.plugins.tooltip.bodyColor = '#d1d5db';
+      Chart.defaults.plugins.tooltip.borderColor = '#4b5563';
+      Chart.defaults.plugins.tooltip.borderWidth = 1;
+    },
+    renderAll: (data) => {
+      if (!data && window.App.state && window.App.state.filteredData) data = window.App.state.filteredData;
+      if (!data) return;
+      window.App.charts.init();
+      window.App.charts.renderSummary(data);
+      window.App.charts.renderHistogram(data);
+      window.App.charts.renderTreemap(data);
+      window.App.charts.renderTimeline(data);
+      window.App.charts.renderMonthly(data);
+    },
+    renderSummary: (data) => {
+      const totalEmpenhado = data.reduce((acc, item) => acc + item.valor, 0);
+      const totalLiquidado = data.reduce((acc, item) => acc + (item.valorLiquidado || 0), 0);
+      const totalPago = data.reduce((acc, item) => acc + (item.valorPago || 0), 0);
+      let percentExec = totalEmpenhado > 0 ? (totalPago / totalEmpenhado) * 100 : 0;
+      const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setVal('kpiEmpenhado', window.App.utils.formatCurrency(totalEmpenhado));
+      setVal('kpiLiquidado', window.App.utils.formatCurrency(totalLiquidado));
+      setVal('kpiPago', window.App.utils.formatCurrency(totalPago));
+      setVal('kpiExecucao', percentExec.toFixed(2) + '%');
+    },
+    destroy: (id) => {
+      if (window.App.charts.instances[id]) { window.App.charts.instances[id].destroy(); delete window.App.charts.instances[id]; }
+    },
+    createCanvas: (containerId) => {
+      const container = document.getElementById(containerId);
+      if (!container) return null;
+      window.App.charts.destroy(containerId);
+      container.innerHTML = '';
+      const canvas = document.createElement('canvas');
+      container.appendChild(canvas);
+      return canvas;
+    },
+    renderHistogram: (data) => {
+      const ctx = window.App.charts.createCanvas('histogramChart');
+      if (!ctx || data.length === 0) return;
+      const values = data.map(d => d.valor).sort((a, b) => a - b);
+      const count = values.length;
+      const total = values.reduce((a, b) => a + b, 0);
+      const avg = total / count;
+      const median = values[Math.floor(count / 2)];
+      const minVal = values[0]; const maxVal = values[count - 1];
+      const p95Index = Math.floor(count * 0.95);
+      const p95Val = values[p95Index];
+      let upperLimit = maxVal; let isOutlierMode = false;
+      if (maxVal > p95Val * 1.5 && p95Val > 0) { upperLimit = p95Val; isOutlierMode = true; }
+      const binCount = 20;
+      const binSize = (upperLimit - minVal) / (isOutlierMode ? (binCount - 1) : binCount) || 1;
+      const bins = new Array(binCount).fill(0);
+      const binRanges = [];
+      for (let i = 0; i < binCount; i++) {
+        let start = minVal + (i * binSize); let end = start + binSize;
+        if (isOutlierMode && i === binCount - 1) { start = upperLimit; end = maxVal; }
+        binRanges.push({ start, end, isOverflow: isOutlierMode && i === binCount - 1 });
+      }
+      values.forEach(v => {
+        if (isOutlierMode && v >= upperLimit) { bins[binCount - 1]++; }
+        else {
+          let idx = Math.floor((v - minVal) / binSize);
+          if (idx >= (isOutlierMode ? binCount - 1 : binCount)) idx = (isOutlierMode ? binCount - 2 : binCount - 1);
+          if (idx < 0) idx = 0;
+          bins[idx]++;
+        }
+      });
+      const fmtCompact = (val) => {
+        if (val >= 1000000) return 'R$ ' + (val/1000000).toFixed(1) + 'M';
+        if (val >= 1000) return 'R$ ' + (val/1000).toFixed(0) + 'k';
+        return window.App.utils.formatCurrency(val).replace(',00', '');
+      };
+      const labels = binRanges.map(r => r.isOverflow ? '> ' + fmtCompact(r.start) : fmtCompact(r.start) + ' - ' + fmtCompact(r.end));
+      const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+      gradient.addColorStop(0, 'rgba(59, 130, 246, 0.7)'); gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)');
+      window.App.charts.instances['histogramChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: 'Quantidade de Empenhos', data: bins, backgroundColor: gradient, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.5)' }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            subtitle: { display: true, text: 'Média: ' + window.App.utils.formatCurrency(avg) + ' | Mediana: ' + window.App.utils.formatCurrency(median), color: '#9ca3af', font: { size: 12, style: 'italic' }, padding: { bottom: 10 } },
+            tooltip: { callbacks: {
+              title: (items) => { const idx = items[0].dataIndex; const r = binRanges[idx]; return r.isOverflow ? 'Maior que ' + window.App.utils.formatCurrency(r.start) : window.App.utils.formatCurrency(r.start) + ' até ' + window.App.utils.formatCurrency(r.end); },
+              label: (item) => item.raw + ' empenhos'
+            }}
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#9ca3af', maxRotation: 45, minRotation: 0, autoSkip: true, maxTicksLimit: 10 } },
+            y: { grid: { color: 'rgba(55, 65, 81, 0.3)' }, ticks: { color: '#9ca3af', precision: 0 } }
+          },
+          onClick: (e, elements) => {
+            if (elements.length > 0) {
+              const idx = elements[0].index; const r = binRanges[idx];
+              document.getElementById('minVal').value = Math.floor(r.start);
+              document.getElementById('maxVal').value = Math.ceil(r.end);
+              window.App.main.handleFilterChange();
+            }
+          }
+        }
+      });
+    },
+    renderTreemap: (data) => {
+      const ctx = window.App.charts.createCanvas('treemapChart');
+      if (!ctx || data.length === 0) return;
+      const aggregated = {};
+      data.forEach(item => {
+        const key = (item.unidade || 'Sem Unidade') + '||' + item.credor;
+        if (!aggregated[key]) { aggregated[key] = { unidade: item.unidade || 'Sem Unidade', credor: item.credor, value: 0, count: 0 }; }
+        aggregated[key].value += item.valor; aggregated[key].count++;
+      });
+      const treeData = Object.values(aggregated);
+      const totalValue = treeData.reduce((acc, item) => acc + item.value, 0);
+      const uniqueUnidades = [...new Set(treeData.map(d => d.unidade))].sort();
+      const unidadeColors = {};
+      uniqueUnidades.forEach((u, i) => { unidadeColors[u] = (i * 360 / uniqueUnidades.length) % 360; });
+      window.App.charts.instances['treemapChart'] = new Chart(ctx, {
+        type: 'treemap',
+        data: { datasets: [{ tree: treeData, key: 'value', groups: ['unidade', 'credor'], spacing: 1, borderWidth: 1, borderColor: '#1f2937',
+          backgroundColor: (ctx) => {
+            const item = ctx.raw; if (!item) return '#333';
+            let uName = '';
+            if (item._data && item._data.unidade) uName = item._data.unidade;
+            else if (item.g && uniqueUnidades.includes(item.g)) uName = item.g;
+            if (uName && unidadeColors[uName] !== undefined) return 'hsla(' + unidadeColors[uName] + ', 70%, 50%, 0.8)';
+            return '#3b82f6';
+          },
+          labels: { display: true,
+            formatter: (ctx) => {
+              const item = ctx.raw;
+              if (item.v / totalValue < 0.01) return '';
+              if (item._data && item._data.credor) return [item.g, window.App.utils.formatCurrency(item.v)];
+              return item.g;
+            },
+            color: '#fff', font: { size: 11, family: 'Inter' }, position: 'top'
+          },
+          captions: { display: true, color: '#fff', font: { size: 14, weight: 'bold' }, padding: 5 }
+        }] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: {
+              title: (items) => { const item = items[0].raw; if (item._data && item._data.unidade) return item._data.unidade + ' > ' + item.g; return item.g; },
+              label: (item) => { const val = window.App.utils.formatCurrency(item.raw.v); const count = item.raw._data ? item.raw._data.count : '?'; return ['Valor: ' + val, 'Empenhos: ' + count]; }
+            }}
+          },
+          onClick: (e, elements) => {
+            if (elements.length > 0) {
+              const item = elements[0].element.$context.raw;
+              if (item._data && item._data.credor) {
+                document.getElementById('searchGlobal').value = item._data.credor;
+                window.App.main.handleFilterChange();
+              }
+            }
+          }
+        }
+      });
+    },
+    renderTimeline: (data) => {
+      const ctx = window.App.charts.createCanvas('timelineChart');
+      if (!ctx || data.length === 0) return;
+      // Sort data by date
+      const sorted = [...data].sort((a, b) => window.App.logic.parseDateForSort(a.data) - window.App.logic.parseDateForSort(b.data));
+      let cumEmpenhado = 0, cumLiquidado = 0, cumPago = 0;
+      const empData = [], liqData = [], pagData = [];
+      sorted.forEach(item => {
+        const ts = window.App.logic.parseDateForSort(item.data);
+        if (ts === 0) return;
+        cumEmpenhado += item.valor;
+        cumLiquidado += (item.valorLiquidado || 0);
+        cumPago += (item.valorPago || 0);
+        const dateStr = new Date(ts).toISOString().split('T')[0];
+        empData.push({ x: dateStr, y: cumEmpenhado });
+        liqData.push({ x: dateStr, y: cumLiquidado });
+        pagData.push({ x: dateStr, y: cumPago });
+      });
+      window.App.charts.instances['timelineChart'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            { label: 'Empenhado', data: empData, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Liquidado', data: liqData, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+            { label: 'Pago', data: pagData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, padding: 15 } },
+            tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + window.App.utils.formatCurrency(ctx.parsed.y) } }
+          },
+          scales: {
+            x: { type: 'time', time: { unit: 'month', tooltipFormat: 'dd/MM/yyyy', displayFormats: { month: 'MMM yyyy' } }, grid: { display: false }, ticks: { color: '#9ca3af' } },
+            y: { grid: { color: 'rgba(55,65,81,0.3)' }, ticks: { color: '#9ca3af', callback: (val) => window.App.utils.formatCompact(val) } }
+          }
+        }
+      });
+    },
+    renderMonthly: (data) => {
+      const ctx = window.App.charts.createCanvas('monthlyChart');
+      if (!ctx || data.length === 0) return;
+      // Aggregate by month
+      const monthly = {};
+      data.forEach(item => {
+        const ts = window.App.logic.parseDateForSort(item.data);
+        if (ts === 0) return;
+        const d = new Date(ts);
+        const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (!monthly[key]) monthly[key] = { empenhado: 0, liquidado: 0, pago: 0 };
+        monthly[key].empenhado += item.valor;
+        monthly[key].liquidado += (item.valorLiquidado || 0);
+        monthly[key].pago += (item.valorPago || 0);
+      });
+      const sortedKeys = Object.keys(monthly).sort();
+      const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const labels = sortedKeys.map(k => { const parts = k.split('-'); return monthNames[parseInt(parts[1]) - 1] + '/' + parts[0].slice(2); });
+      window.App.charts.instances['monthlyChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Empenhado', data: sortedKeys.map(k => monthly[k].empenhado), backgroundColor: 'rgba(59,130,246,0.7)', borderRadius: 4 },
+            { label: 'Liquidado', data: sortedKeys.map(k => monthly[k].liquidado), backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 4 },
+            { label: 'Pago', data: sortedKeys.map(k => monthly[k].pago), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { usePointStyle: true, padding: 15 } },
+            tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + window.App.utils.formatCurrency(ctx.parsed.y) } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#9ca3af' } },
+            y: { grid: { color: 'rgba(55,65,81,0.3)' }, ticks: { color: '#9ca3af', callback: (val) => window.App.utils.formatCompact(val) } }
+          }
+        }
+      });
+    }
+  };
+
+  // ===== MAIN =====
+  window.App.main = {
+    init: () => {
+      document.getElementById('csvFile').addEventListener('change', window.App.main.handleFileUpload);
+      const toggleViewBtn = document.getElementById('toggleViewBtn');
+      if (toggleViewBtn) {
+        toggleViewBtn.addEventListener('click', () => {
+          const dashboardView = document.getElementById('dashboardView');
+          const tableView = document.getElementById('tableView');
+          if (dashboardView.style.display === 'none') {
+            dashboardView.style.display = 'block'; tableView.style.display = 'none';
+            toggleViewBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> Lista';
+            if (window.App.charts) window.App.charts.renderAll(window.App.state.filteredData);
+          } else {
+            dashboardView.style.display = 'none'; tableView.style.display = 'block';
+            toggleViewBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Dashboard';
+          }
+        });
+      }
+      document.getElementById('searchGlobal').addEventListener('input', window.App.utils.debounce(window.App.main.handleFilterChange, 300));
+      document.getElementById('minVal').addEventListener('input', window.App.utils.debounce(window.App.main.handleFilterChange, 300));
+      document.getElementById('maxVal').addEventListener('input', window.App.utils.debounce(window.App.main.handleFilterChange, 300));
+      document.querySelectorAll('input[id^="valRange"]').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const ranges = [];
+          if (document.getElementById('valRange1').checked) ranges.push('low');
+          if (document.getElementById('valRange2').checked) ranges.push('medium');
+          if (document.getElementById('valRange3').checked) ranges.push('high');
+          window.App.state.filters.valRanges = ranges;
+          window.App.main.handleFilterChange();
+        });
+      });
+      const execSlider = document.getElementById('execSlider');
+      const execValue = document.getElementById('execValue');
+      if (execSlider && execValue) {
+        execSlider.addEventListener('input', (e) => {
+          execValue.textContent = e.target.value + '%';
+          window.App.state.filters.minExec = parseInt(e.target.value);
+          window.App.main.handleFilterChange();
+        });
+      }
+      const despesaFilter = document.getElementById('despesaFilter');
+      if (despesaFilter) despesaFilter.addEventListener('change', (e) => { window.App.state.filters.despesa = e.target.value; window.App.main.handleFilterChange(); });
+      const credorTypeFilter = document.getElementById('credorTypeFilter');
+      if (credorTypeFilter) credorTypeFilter.addEventListener('change', (e) => { window.App.state.filters.credorType = e.target.value; window.App.main.handleFilterChange(); });
+      const startDateInput = document.getElementById('startDate');
+      const endDateInput = document.getElementById('endDate');
+      const handleDateInput = (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length > 8) value = value.slice(0, 8);
+        if (value.length >= 5) value = value.slice(0, 2) + '/' + value.slice(2, 4) + '/' + value.slice(4);
+        else if (value.length >= 3) value = value.slice(0, 2) + '/' + value.slice(2);
+        e.target.value = value;
+        document.querySelectorAll('.date-shortcut-btn').forEach(btn => btn.classList.remove('active'));
+        window.App.main.validateAndApplyDateFilter();
+      };
+      startDateInput.addEventListener('input', handleDateInput);
+      endDateInput.addEventListener('input', handleDateInput);
+      document.querySelectorAll('.date-shortcut-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const range = window.App.utils.getDateRange(btn.dataset.range);
+          if (range) {
+            startDateInput.value = range.start; endDateInput.value = range.end;
+            document.querySelectorAll('.date-shortcut-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            window.App.main.validateAndApplyDateFilter();
+          }
+        });
+      });
+      const selectBox = document.getElementById('credorSelectBox');
+      const dropdown = document.getElementById('credorDropdown');
+      const searchInput = document.getElementById('credorSearchInput');
+      selectBox.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); if (dropdown.classList.contains('show')) searchInput.focus(); });
+      document.addEventListener('click', (e) => { if (!selectBox.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); });
+      searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+          const label = item.querySelector('label').textContent.toLowerCase();
+          item.style.display = label.includes(term) ? 'flex' : 'none';
+        });
+      });
+      document.getElementById('unidadeFilter').addEventListener('change', (e) => {
+        window.App.state.filters.unidade = e.target.value;
+        if (window.App.ui.updateCredorList) window.App.ui.updateCredorList();
+        window.App.main.handleFilterChange();
+      });
+      document.getElementById('statusFilter').addEventListener('change', window.App.main.handleFilterChange);
+      const checkAtraso = document.getElementById('checkAtraso');
+      const daysAtrasoInput = document.getElementById('daysAtraso');
+      const atrasoContainer = document.getElementById('atrasoInputContainer');
+      checkAtraso.addEventListener('change', (e) => {
+        window.App.state.filters.atraso = e.target.checked;
+        atrasoContainer.style.display = e.target.checked ? 'block' : 'none';
+        window.App.main.handleFilterChange();
+      });
+      daysAtrasoInput.addEventListener('input', window.App.utils.debounce((e) => {
+        const val = parseInt(e.target.value);
+        window.App.state.filters.daysAtraso = isNaN(val) ? 0 : val;
+        window.App.main.handleFilterChange();
+      }, 300));
+      document.getElementById('clearFilters').addEventListener('click', window.App.main.clearFilters);
+      document.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+          const column = th.dataset.sort;
+          const { sorting } = window.App.state;
+          if (sorting.column === column) sorting.direction = sorting.direction === 'asc' ? 'desc' : 'asc';
+          else { sorting.column = column; sorting.direction = 'asc'; }
+          document.querySelectorAll('th').forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+          th.classList.add('sort-' + sorting.direction);
+          window.App.logic.applyFilters(); window.App.ui.renderTable(); window.App.ui.renderPagination();
+        });
+      });
+      document.querySelector('.close-modal').addEventListener('click', window.App.main.closeModal);
+      document.querySelector('.close-modal-btn').addEventListener('click', window.App.main.closeModal);
+      window.addEventListener('click', (e) => { if (e.target === document.getElementById('detailModal')) window.App.main.closeModal(); });
+      document.getElementById('printList').addEventListener('click', () => { window.print(); });
+      document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.view-details');
+        if (btn) {
+          e.preventDefault(); e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          const item = window.App.state.filteredData.find(i => String(i.id).trim() === String(id).trim());
+          if (item) window.App.ui.openModal(item);
+        }
+      });
+      document.querySelector('#empenhosTable tbody').addEventListener('click', (e) => {
+        const tr = e.target.closest('tr');
+        if (tr && !tr.querySelector('.empty-state')) {
+          if (e.target.closest('button') || e.target.closest('.view-details') || e.target.tagName === 'INPUT') return;
+          const id = tr.getAttribute('data-id');
+          const item = window.App.state.filteredData.find(i => String(i.id).trim() === String(id).trim());
+          if (item) window.App.ui.openModal(item);
+        }
+      });
+    },
+    handleFileUpload: async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const data = await window.App.csv.parseCSV(file);
+        if (data && data.length > 0) {
+          window.App.stateManager.setData(data);
+          window.App.ui.renderFilters();
+          window.App.ui.populateDespesaFilter(data);
+          window.App.logic.applyFilters();
+          window.App.ui.renderTable();
+          window.App.ui.renderPagination();
+          window.App.ui.renderStats();
+          e.target.value = '';
+        } else { alert('Nenhum dado válido encontrado no arquivo CSV.'); }
+      } catch (err) { console.error(err); alert('Erro ao processar o arquivo CSV: ' + err.message); }
+    },
+    validateAndApplyDateFilter: () => {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const errorMsg = document.getElementById('dateError');
+      let isValid = true;
+      if (startDate.length === 10 && endDate.length === 10) {
+        const start = window.App.logic.parseDateInput(startDate);
+        const end = window.App.logic.parseDateInput(endDate);
+        if (start && end && start > end) { isValid = false; errorMsg.style.display = 'block'; }
+        else errorMsg.style.display = 'none';
+      } else errorMsg.style.display = 'none';
+      if (isValid) {
+        window.App.state.filters.startDate = startDate.length === 10 ? startDate : null;
+        window.App.state.filters.endDate = endDate.length === 10 ? endDate : null;
+        window.App.main.handleFilterChange();
+      }
+    },
+    handleFilterChange: () => {
+      const { filters } = window.App.state;
+      filters.globalSearch = document.getElementById('searchGlobal').value;
+      filters.minVal = document.getElementById('minVal').value;
+      filters.maxVal = document.getElementById('maxVal').value;
+      if (document.getElementById('credorTypeFilter')) filters.credorType = document.getElementById('credorTypeFilter').value;
+      if (document.getElementById('despesaFilter')) filters.despesa = document.getElementById('despesaFilter').value;
+      const selectedCheckboxes = document.querySelectorAll('.credor-checkbox:checked');
+      filters.credor = Array.from(selectedCheckboxes).map(cb => cb.value);
+      filters.unidade = document.getElementById('unidadeFilter').value;
+      filters.status = document.getElementById('statusFilter').value;
+      window.App.logic.applyFilters();
+      window.App.ui.renderTable();
+      window.App.ui.renderPagination();
+      window.App.ui.renderStats();
+      if (window.App.ui.renderActiveFilters) window.App.ui.renderActiveFilters();
+      const dashboardView = document.getElementById('dashboardView');
+      if (dashboardView && dashboardView.style.display !== 'none' && window.App.charts) window.App.charts.renderAll();
+    },
+    updateCredorSelectionDisplay: () => {
+      const selectedCheckboxes = document.querySelectorAll('.credor-checkbox:checked');
+      const count = selectedCheckboxes.length;
+      const selectedTextSpan = document.querySelector('.selected-text');
+      if (count === 0) selectedTextSpan.textContent = 'Selecionar Credores';
+      else if (count === 1) selectedTextSpan.textContent = selectedCheckboxes[0].value;
+      else selectedTextSpan.textContent = count + ' selecionados';
+    },
+    clearFilters: () => {
+      document.getElementById('searchGlobal').value = '';
+      document.getElementById('minVal').value = '';
+      document.getElementById('maxVal').value = '';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+      document.getElementById('dateError').style.display = 'none';
+      document.querySelectorAll('.date-shortcut-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.credor-checkbox').forEach(cb => cb.checked = false);
+      window.App.main.updateCredorSelectionDisplay();
+      document.getElementById('credorSearchInput').value = '';
+      document.querySelectorAll('.dropdown-item').forEach(item => item.style.display = 'flex');
+      document.getElementById('unidadeFilter').value = '';
+      document.getElementById('statusFilter').value = '';
+      const checkAtraso = document.getElementById('checkAtraso');
+      checkAtraso.checked = false;
+      document.getElementById('atrasoInputContainer').style.display = 'none';
+      document.getElementById('daysAtraso').value = '30';
+      window.App.state.filters.atraso = false;
+      window.App.state.filters.daysAtraso = 30;
+      document.querySelectorAll('input[id^="valRange"]').forEach(chk => chk.checked = false);
+      window.App.state.filters.valRanges = [];
+      const execSlider = document.getElementById('execSlider');
+      if (execSlider) { execSlider.value = 0; document.getElementById('execValue').textContent = '0%'; window.App.state.filters.minExec = 0; }
+      const despesaFilter = document.getElementById('despesaFilter');
+      if (despesaFilter) { despesaFilter.value = ''; window.App.state.filters.despesa = ''; }
+      const credorTypeFilter = document.getElementById('credorTypeFilter');
+      if (credorTypeFilter) { credorTypeFilter.value = ''; window.App.state.filters.credorType = ''; }
+      window.App.main.handleFilterChange();
+    },
+    closeModal: () => { document.getElementById('detailModal').style.display = 'none'; document.body.classList.remove('modal-open'); },
+    removeFilter: (type) => {
+      const { filters } = window.App.state;
+      switch (type) {
+        case 'globalSearch': document.getElementById('searchGlobal').value = ''; filters.globalSearch = ''; break;
+        case 'minVal': document.getElementById('minVal').value = ''; filters.minVal = null; break;
+        case 'maxVal': document.getElementById('maxVal').value = ''; filters.maxVal = null; break;
+        case 'startDate': case 'endDate':
+          document.getElementById('startDate').value = ''; document.getElementById('endDate').value = '';
+          filters.startDate = null; filters.endDate = null;
+          document.querySelectorAll('.date-shortcut-btn').forEach(btn => btn.classList.remove('active')); break;
+        case 'credor':
+          document.querySelectorAll('.credor-checkbox').forEach(cb => cb.checked = false);
+          filters.credor = []; window.App.main.updateCredorSelectionDisplay(); break;
+        case 'unidade':
+          document.getElementById('unidadeFilter').value = ''; filters.unidade = '';
+          if (window.App.ui.updateCredorList) window.App.ui.updateCredorList(); break;
+        case 'status': document.getElementById('statusFilter').value = ''; filters.status = ''; break;
+        case 'atraso':
+          document.getElementById('checkAtraso').checked = false;
+          document.getElementById('atrasoInputContainer').style.display = 'none';
+          filters.atraso = false; break;
+        case 'valRanges':
+          document.querySelectorAll('input[id^="valRange"]').forEach(chk => chk.checked = false);
+          filters.valRanges = []; break;
+        case 'minExec':
+          const slider = document.getElementById('execSlider');
+          if (slider) { slider.value = 0; document.getElementById('execValue').textContent = '0%'; }
+          filters.minExec = 0; break;
+        case 'despesa': document.getElementById('despesaFilter').value = ''; filters.despesa = ''; break;
+        case 'credorType': document.getElementById('credorTypeFilter').value = ''; filters.credorType = ''; break;
+      }
+      window.App.main.handleFilterChange();
+    },
+    changePage: (page) => {
+      window.App.state.pagination.currentPage = page;
+      window.App.ui.renderTable(); window.App.ui.renderPagination();
+      document.querySelector('.table-container').scrollTop = 0;
+    }
+  };
+  document.addEventListener('DOMContentLoaded', window.App.main.init);
+  </script>
+
+  <!-- Theme toggle + hamburger (shared with other pages) -->
+  <script>
+  const saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+  const dt = document.getElementById('dropdown-toggle');
+  const dm = document.getElementById('dropdown-menu');
+  dt?.addEventListener('click', (e) => { e.stopPropagation(); dm.classList.toggle('open'); });
+  document.addEventListener('click', () => dm?.classList.remove('open'));
+
+  // Hamburger menu (mobile sidebar toggle pattern from main project)
+  const hamburger = document.getElementById('hamburger');
+  if (hamburger) {
+    hamburger.addEventListener('click', () => {
+      const sidebar = document.querySelector('.viz-app .sidebar');
+      if (sidebar) sidebar.classList.toggle('mobile-open');
+    });
+  }
+  </script>
+</body>
+</html>

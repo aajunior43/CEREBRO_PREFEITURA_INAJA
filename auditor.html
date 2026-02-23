@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Auditor de NF – Prefeitura de Inajá</title>
+    <link rel="stylesheet" href="/static/css/index.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        /* ── PAGE ── */
+        .aud-page {
+            min-height: calc(100vh - 64px);
+            padding: 24px 16px 60px;
+            background: var(--bg-2, #f4f5f7)
+        }
+
+        /* ── HERO ── */
+        .aud-hero {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            max-width: 960px;
+            margin: 0 auto 22px
+        }
+
+        .aud-hero-icon {
+            width: 52px;
+            height: 52px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #6d5dfc, #a855f7);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(109, 93, 252, .35)
+        }
+
+        .aud-hero h2 {
+            font-size: clamp(18px, 4vw, 24px);
+            font-weight: 800;
+            color: var(--text);
+            margin: 0
+        }
+
+        .aud-hero p {
+            font-size: 12px;
+            color: var(--text-3);
+            margin: 3px 0 0
+        }
+
+        /* ── API KEY BANNER ── */
+        .aud-key-banner {
+            max-width: 960px;
+            margin: 0 auto 18px;
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: var(--neo-sm);
+            padding: 14px 18px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .aud-key-banner label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-2);
+            white-space: nowrap
+        }
+
+        .aud-key-inp {
+            flex: 1;
+            min-width: 220px;
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 0, 0, .12);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            background: var(--bg);
+            color: var(--text);
+            outline: none
+        }
+
+        .aud-key-inp:focus {
+            border-color: #6d5dfc;
+            box-shadow: 0 0 0 3px rgba(109, 93, 252, .1)
+        }
+
+        .aud-key-save {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #6d5dfc, #a855f7);
+            color: #fff;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        .aud-key-save:hover {
+            opacity: .9
+        }
+
+        .aud-key-status {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px
+        }
+
+        .aud-key-ok {
+            background: rgba(16, 185, 129, .12);
+            color: #059669
+        }
+
+        .aud-key-no {
+            background: rgba(239, 68, 68, .1);
+            color: #dc2626
+        }
+
+        /* ── UPLOAD CARD ── */
+        .aud-card {
+            max-width: 960px;
+            margin: 0 auto 20px;
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: var(--neo);
+            overflow: hidden
+        }
+
+        .aud-card-head {
+            padding: 16px 22px;
+            border-bottom: 1px solid rgba(0, 0, 0, .07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .aud-card-head h3 {
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0
+        }
+
+        .aud-card-body {
+            padding: 24px 22px
+        }
+
+        /* ── DROP ZONE ── */
+        .aud-drop {
+            border: 2px dashed rgba(109, 93, 252, .35);
+            border-radius: 14px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: rgba(109, 93, 252, .02)
+        }
+
+        .aud-drop:hover,
+        .aud-drop.drag-active {
+            border-color: #6d5dfc;
+            background: rgba(109, 93, 252, .06)
+        }
+
+        .aud-drop-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #6d5dfc, #a855f7);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 16px rgba(109, 93, 252, .3)
+        }
+
+        .aud-drop h4 {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0 0 6px
+        }
+
+        .aud-drop p {
+            font-size: 13px;
+            color: var(--text-3);
+            margin: 0
+        }
+
+        .aud-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 11px 22px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all .15s;
+            margin-top: 16px
+        }
+
+        .aud-btn-violet {
+            background: linear-gradient(135deg, #6d5dfc, #a855f7);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(109, 93, 252, .4)
+        }
+
+        .aud-btn-violet:hover {
+            box-shadow: 0 5px 16px rgba(109, 93, 252, .5);
+            transform: translateY(-1px)
+        }
+
+        .aud-btn-ghost {
+            background: var(--bg);
+            color: var(--text-2);
+            box-shadow: var(--neo-sm)
+        }
+
+        .aud-btn-ghost:hover {
+            box-shadow: var(--neo);
+            color: var(--text)
+        }
+
+        .aud-btn-green {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(16, 185, 129, .4)
+        }
+
+        .aud-btn-green:hover {
+            box-shadow: 0 5px 16px rgba(16, 185, 129, .5);
+            transform: translateY(-1px)
+        }
+
+        .aud-btn-red {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            box-shadow: 0 3px 10px rgba(239, 68, 68, .4)
+        }
+
+        /* ── PREVIEW ── */
+        .aud-preview-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px
+        }
+
+        .aud-preview-img {
+            max-height: 300px;
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: var(--neo-sm);
+            object-fit: contain
+        }
+
+        .aud-preview-pdf {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #6d5dfc;
+            padding: 20px
+        }
+
+        .aud-preview-pdf svg {
+            width: 64px;
+            height: 64px
+        }
+
+        .aud-preview-pdf span {
+            font-weight: 800;
+            font-size: 16px
+        }
+
+        .aud-preview-name {
+            font-size: 12px;
+            color: var(--text-3)
+        }
+
+        .aud-preview-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center
+        }
+
+        /* ── LOADING ── */
+        .aud-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 32px
+        }
+
+        .aud-spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 4px solid rgba(109, 93, 252, .15);
+            border-top-color: #6d5dfc;
+            animation: aud-spin .8s linear infinite
+        }
+
+        @keyframes aud-spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .aud-loading-msg {
+            font-size: 15px;
+            font-weight: 700;
+            color: #6d5dfc
+        }
+
+        .aud-loading-sub {
+            font-size: 11px;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .06em
+        }
+
+        .aud-progress-bar {
+            width: 260px;
+            height: 6px;
+            background: rgba(109, 93, 252, .12);
+            border-radius: 8px;
+            overflow: hidden
+        }
+
+        .aud-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6d5dfc, #a855f7);
+            border-radius: 8px;
+            animation: aud-prog 12s linear forwards
+        }
+
+        @keyframes aud-prog {
+            from {
+                width: 0
+            }
+
+            to {
+                width: 92%
+            }
+        }
+
+        /* ── RESULT ── */
+        .aud-result {
+            max-width: 960px;
+            margin: 0 auto
+        }
+
+        .aud-result-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px
+        }
+
+        .aud-result-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text);
+            margin: 0
+        }
+
+        /* Score Card */
+        .aud-score-card {
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: var(--neo);
+            padding: 24px;
+            margin-bottom: 20px;
+            border-left: 6px solid #6d5dfc
+        }
+
+        .aud-score-card.risk-high {
+            border-left-color: #ef4444
+        }
+
+        .aud-score-card.risk-ok {
+            border-left-color: #10b981
+        }
+
+        .aud-score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px
+        }
+
+        .aud-score-num {
+            font-size: 56px;
+            font-weight: 900;
+            line-height: 1;
+            color: #6d5dfc
+        }
+
+        .aud-score-num.risk-high {
+            color: #ef4444
+        }
+
+        .aud-score-num.risk-ok {
+            color: #10b981
+        }
+
+        .aud-score-suffix {
+            font-size: 24px;
+            opacity: .4
+        }
+
+        .aud-score-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-top: 4px
+        }
+
+        .aud-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px
+        }
+
+        .aud-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .04em
+        }
+
+        .aud-badge-risk-alto,
+        .aud-badge-risk-crítico {
+            background: rgba(239, 68, 68, .12);
+            color: #dc2626
+        }
+
+        .aud-badge-risk-médio {
+            background: rgba(245, 158, 11, .12);
+            color: #d97706
+        }
+
+        .aud-badge-risk-baixo {
+            background: rgba(16, 185, 129, .12);
+            color: #059669
+        }
+
+        .aud-badge-neutral {
+            background: rgba(0, 0, 0, .07);
+            color: var(--text-3)
+        }
+
+        .aud-recommendation {
+            margin-top: 18px;
+            padding: 14px 16px;
+            background: rgba(109, 93, 252, .06);
+            border-radius: 10px;
+            border: 1px solid rgba(109, 93, 252, .15)
+        }
+
+        .aud-recommendation h4 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-2);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin: 0 0 6px
+        }
+
+        .aud-recommendation p {
+            font-size: 14px;
+            font-style: italic;
+            color: var(--text);
+            margin: 0;
+            line-height: 1.6
+        }
+
+        /* Detail grid */
+        .aud-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px
+        }
+
+        @media(max-width:640px) {
+            .aud-detail-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .aud-detail-card {
+            background: var(--bg);
+            border-radius: var(--radius);
+            box-shadow: var(--neo);
+            padding: 20px
+        }
+
+        .aud-detail-card h4 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6d5dfc;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            margin: 0 0 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, .07)
+        }
+
+        .aud-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            background: rgba(0, 0, 0, .025)
+        }
+
+        .aud-detail-row:last-child {
+            margin-bottom: 0
+        }
+
+        .aud-detail-label {
+            font-size: 12px;
+            color: var(--text-3);
+            font-weight: 600
+        }
+
+        .aud-detail-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text)
+        }
+
+        .aud-detail-value.total {
+            font-size: 16px;
+            color: #6d5dfc
+        }
+
+        /* Items table */
+        .aud-table-wrap {
+            overflow-x: auto
+        }
+
+        table.aud-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px
+        }
+
+        .aud-table thead th {
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            background: rgba(0, 0, 0, .03);
+            border-bottom: 2px solid rgba(109, 93, 252, .15)
+        }
+
+        .aud-table tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, .05);
+            color: var(--text)
+        }
+
+        .aud-table tbody tr:hover {
+            background: rgba(109, 93, 252, .03)
+        }
+
+        .aud-table tfoot td {
+            padding: 10px 12px;
+            font-weight: 800;
+            color: #6d5dfc;
+            border-top: 2px solid rgba(109, 93, 252, .2)
+        }
+
+        /* Reasoning */
+        .aud-reasoning {
+            background: rgba(0, 0, 0, .025);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.7
+        }
+
+        /* Anomalies */
+        .aud-anomaly-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .aud-anomaly-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(239, 68, 68, .05);
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, .15);
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.5
+        }
+
+        .aud-anomaly-bullet {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            flex-shrink: 0;
+            margin-top: 4px
+        }
+
+        .aud-ok-msg {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(16, 185, 129, .07);
+            border-radius: 8px;
+            border: 1px solid rgba(16, 185, 129, .2);
+            font-size: 13px;
+            color: #059669;
+            font-weight: 600
+        }
+
+        /* ── TOAST ── */
+        #aud-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: none;
+            padding: 12px 22px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+            max-width: 90vw;
+            text-align: center;
+            transition: opacity .3s
+        }
+
+        /* ── CHART BAR (CSS-only) ── */
+        .aud-chart {
+            margin-top: 16px
+        }
+
+        .aud-chart-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 12px
+        }
+
+        .aud-chart-label {
+            width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-3);
+            flex-shrink: 0
+        }
+
+        .aud-chart-bar-wrap {
+            flex: 1;
+            height: 16px;
+            background: rgba(0, 0, 0, .06);
+            border-radius: 8px;
+            overflow: hidden
+        }
+
+        .aud-chart-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6d5dfc, #a855f7);
+            border-radius: 8px;
+            transition: width .6s ease
+        }
+
+        .aud-chart-val {
+            width: 70px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--text);
+            flex-shrink: 0
+        }
+
+        /* ── EMPTY ── */
+        .aud-empty {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-3);
+            font-size: 13px
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <div class="header-brand">
+                    <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
+                    <div class="header-title">
+                        <h1>Prefeitura de Inajá</h1>
+                        <p>Gestão de Empenhos</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="desktop-nav">
+                <a href="index.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                    </svg>Credores Fixos
+                </a>
+                <a href="index.html#adm" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>ADM
+                </a>
+                <a href="rpa.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>RPA
+                </a>
+                <a href="extratos.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>Extratos
+                </a>
+                <a href="cnpj.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="7" width="20" height="14" rx="2" />
+                        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+                    </svg>CNPJ
+                </a>
+                <a href="pdf.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                    </svg>PDF
+                </a>
+                <a href="renomear.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>Renomear
+                </a>
+                <a href="tarefas.html" class="nav-tab" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>Tarefas
+                </a>
+                <a href="auditor.html" class="nav-tab active" style="text-decoration:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>Auditor NF
+                </a>
+                <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+            </nav>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <div class="aud-page">
+        <!-- Hero -->
+        <div class="aud-hero">
+            <div class="aud-hero-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <h2>Auditor de Notas Fiscais · IA</h2>
+                <p>Envie uma NF-e, NFS-e, DANFE ou imagem digitalizada — a IA Gemini analisa fraudes, superfaturamento e
+                    inconsistências</p>
+            </div>
+        </div>
+
+        <!-- API Key Banner -->
+        <div class="aud-key-banner">
+            <label>🔑 Chave API Gemini:</label>
+            <input class="aud-key-inp" type="password" id="api-key-inp"
+                placeholder="Cole sua API Key do Google AI Studio aqui…" />
+            <button class="aud-key-save" onclick="saveApiKey()">Salvar</button>
+            <span class="aud-key-status" id="key-status">⚪ Não configurada</span>
+            <a href="https://aistudio.google.com/apikey" target="_blank"
+                style="font-size:11px;color:#6d5dfc;text-decoration:none;font-weight:600;">Obter chave grátis →</a>
+        </div>
+
+        <!-- Upload / Loading Card -->
+        <div class="aud-card" id="upload-section">
+            <div class="aud-card-head">
+                <h3>📄 Documento para Auditoria</h3>
+                <span id="file-badge" style="font-size:11px;color:var(--text-3);font-weight:600"></span>
+            </div>
+            <div class="aud-card-body" id="card-body">
+
+                <!-- Drop Zone -->
+                <div id="view-drop">
+                    <div class="aud-drop" id="drop-zone">
+                        <div class="aud-drop-icon">
+                            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                        </div>
+                        <h4>Arraste o arquivo aqui</h4>
+                        <p>Suporta PDF, JPG, PNG, WebP (NFS-e, DANFE, Recibos)</p>
+                        <input type="file" id="file-inp" accept="image/*,application/pdf" style="display:none"
+                            onchange="onFileSelect(event)" />
+                        <button class="aud-btn aud-btn-violet" onclick="document.getElementById('file-inp').click()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="17 8 12 3 7 8" />
+                                <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            Selecionar arquivo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview -->
+                <div id="view-preview" style="display:none">
+                    <div class="aud-preview-wrap">
+                        <div id="preview-area"></div>
+                        <div class="aud-preview-actions">
+                            <button class="aud-btn aud-btn-green" onclick="startAudit()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                Iniciar Auditoria
+                            </button>
+                            <button class="aud-btn aud-btn-ghost" onclick="resetAll()">↺ Trocar arquivo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div id="view-loading" style="display:none">
+                    <div class="aud-loading">
+                        <div class="aud-spinner"></div>
+                        <div class="aud-progress-bar">
+                            <div class="aud-progress-fill" id="prog-fill"></div>
+                        </div>
+                        <p class="aud-loading-msg" id="loading-msg">Processando arquivo digital...</p>
+                        <p class="aud-loading-sub">Auditoria IA em andamento · Gemini 2.5 Flash</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="aud-result" id="result-section" style="display:none">
+
+            <!-- Actions bar -->
+            <div class="aud-result-actions">
+                <p class="aud-result-title">📊 Resultado da Auditoria</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <button class="aud-btn aud-btn-violet" onclick="downloadPDF()">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Baixar Relatório PDF
+                    </button>
+                    <button class="aud-btn aud-btn-ghost" onclick="resetAll()">↺ Nova Auditoria</button>
+                </div>
+            </div>
+
+            <!-- Score card -->
+            <div class="aud-score-card" id="score-card">
+                <div class="aud-score-header">
+                    <div>
+                        <p style="font-size:13px;font-weight:700;color:var(--text-2);margin:0 0 4px">Relatório de
+                            Auditoria Fiscal</p>
+                        <p style="font-size:11px;color:var(--text-3);margin:0" id="result-id"></p>
+                    </div>
+                    <div style="text-align:right">
+                        <p
+                            style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">
+                            Pontuação de Risco</p>
+                        <div class="aud-score-num" id="score-num">0<span class="aud-score-suffix">/100</span></div>
+                    </div>
+                </div>
+                <div class="aud-badges" id="result-badges"></div>
+                <div class="aud-recommendation" id="result-rec">
+                    <h4>Recomendação do Auditor IA</h4>
+                    <p id="rec-text"></p>
+                </div>
+            </div>
+
+            <!-- Detail grid -->
+            <div class="aud-detail-grid">
+                <!-- Financeiro -->
+                <div class="aud-detail-card">
+                    <h4>💰 Dados Financeiros</h4>
+                    <div id="financials-rows"></div>
+                    <!-- Mini chart -->
+                    <div id="chart-wrap" style="display:none">
+                        <p
+                            style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin:16px 0 8px">
+                            Distribuição de Itens</p>
+                        <div class="aud-chart" id="chart-area"></div>
+                    </div>
+                    <!-- Items toggle -->
+                    <div style="margin-top:16px">
+                        <button onclick="toggleItems()"
+                            style="width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:none;cursor:pointer;padding:8px 0;border-top:1px solid rgba(0,0,0,.07)">
+                            <span
+                                style="font-size:11px;font-weight:700;color:#6d5dfc;text-transform:uppercase;letter-spacing:.06em">Itens
+                                Identificados</span>
+                            <svg id="items-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2.5" style="transition:transform .2s">
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+                        <div class="aud-table-wrap" id="items-table-wrap">
+                            <table class="aud-table" id="items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Descrição</th>
+                                        <th>Qtd</th>
+                                        <th>Unit.</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="items-tbody"></tbody>
+                                <tfoot>
+                                    <tr id="items-tfoot"></tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análise IA -->
+                <div class="aud-detail-card">
+                    <h4>🤖 Análise Inteligente</h4>
+                    <p
+                        style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px">
+                        Raciocínio Técnico</p>
+                    <div class="aud-reasoning" id="reasoning-text"></div>
+
+                    <div style="margin-top:20px">
+                        <button onclick="toggleAnomalies()"
+                            style="width:100%;display:flex;justify-content:space-between;align-items:center;background:none;border:none;cursor:pointer;padding:8px 0;border-top:1px solid rgba(0,0,0,.07)">
+                            <span
+                                style="font-size:11px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.06em">⚠
+                                Anomalias Detectadas</span>
+                            <svg id="ano-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2.5" style="transition:transform .2s">
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+                        <div id="anomalies-wrap">
+                            <div class="aud-anomaly-list" id="anomalies-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /result-section -->
+    </div><!-- /aud-page -->
+
+    <div id="aud-toast"></div>
+
+    <script>
+        // ── STATE ────────────────────────────────────────────────
+        const KEY_STORE = 'auditor-gemini-key';
+        let apiKey = localStorage.getItem(KEY_STORE) || '';
+        let fileDataUrl = null;
+        let fileMime = null;
+        let fileName = '';
+        let lastResult = null;
+        let itemsOpen = true;
+        let anosOpen = true;
+
+        // ── INIT ─────────────────────────────────────────────────
+        (function init() {
+            if (apiKey) {
+                document.getElementById('api-key-inp').value = apiKey;
+                setKeyStatus(true);
+            }
+            setupDrop();
+        })();
+
+        function saveApiKey() {
+            const v = document.getElementById('api-key-inp').value.trim();
+            if (!v) { toast('Cole uma API Key válida', 'error'); return; }
+            apiKey = v;
+            localStorage.setItem(KEY_STORE, v);
+            setKeyStatus(true);
+            toast('API Key salva com sucesso! 🔑', 'success');
+        }
+
+        function setKeyStatus(ok) {
+            const el = document.getElementById('key-status');
+            el.textContent = ok ? '✅ Configurada' : '⚪ Não configurada';
+            el.className = 'aud-key-status ' + (ok ? 'aud-key-ok' : 'aud-key-no');
+        }
+
+        // ── DRAG & DROP ──────────────────────────────────────────
+        function setupDrop() {
+            const zone = document.getElementById('drop-zone');
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-active'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-active'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault(); zone.classList.remove('drag-active');
+                const f = e.dataTransfer.files[0];
+                if (f) loadFile(f);
+            });
+        }
+
+        function onFileSelect(e) { const f = e.target.files[0]; if (f) loadFile(f); }
+
+        function loadFile(f) {
+            if (!f.type.startsWith('image/') && f.type !== 'application/pdf') {
+                toast('Envie apenas PDF ou imagem (JPG, PNG, WebP)', 'error'); return;
+            }
+            fileName = f.name;
+            fileMime = f.type;
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                fileDataUrl = reader.result;
+                showPreview();
+            };
+            reader.readAsDataURL(f);
+        }
+
+        function showPreview() {
+            show('view-drop', false); show('view-loading', false); show('view-preview', true);
+            hide('result-section');
+            document.getElementById('file-badge').textContent = fileName;
+            const area = document.getElementById('preview-area');
+            if (fileMime === 'application/pdf') {
+                area.innerHTML = `<div class="aud-preview-pdf">
+        <svg viewBox="0 0 20 20" fill="#6d5dfc">
+          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
+        </svg>
+        <span>PDF Selecionado</span>
+        <p class="aud-preview-name">${esc(fileName)}</p>
+      </div>`;
+            } else {
+                area.innerHTML = `<img src="${fileDataUrl}" class="aud-preview-img" alt="Preview NF"/>
+        <p class="aud-preview-name">${esc(fileName)}</p>`;
+            }
+        }
+
+        // ── AUDIT ────────────────────────────────────────────────
+        const STAGES = [
+            'Processando arquivo digital...',
+            'Identificando campos da nota...',
+            'Analisando dados e valores...',
+            'Verificando regras fiscais...',
+            'Gerando relatório final...'
+        ];
+
+        async function startAudit() {
+            if (!apiKey) { toast('Configure a API Key do Gemini antes de auditar', 'error'); return; }
+            if (!fileDataUrl) { toast('Selecione um arquivo primeiro', 'error'); return; }
+
+            show('view-preview', false); show('view-drop', false); show('view-loading', true);
+            hide('result-section');
+
+            // Cycling messages
+            let si = 0;
+            setMsg(STAGES[0]);
+            const iv = setInterval(() => { si++; if (si < STAGES.length) setMsg(STAGES[si]); }, 2500);
+
+            try {
+                const result = await callGemini(fileDataUrl, fileMime);
+                lastResult = result;
+                renderResult(result);
+                toast('Auditoria concluída! ✅', 'success');
+            } catch (err) {
+                toast('Falha na auditoria: ' + err.message, 'error');
+                console.error(err);
+                show('view-preview', true); show('view-loading', false);
+            } finally {
+                clearInterval(iv);
+                show('view-loading', false);
+            }
+        }
+
+        function setMsg(m) { document.getElementById('loading-msg').textContent = m; }
+
+        // ── GEMINI API ───────────────────────────────────────────
+        const SYSTEM_PROMPT = `Você é um Auditor Fiscal Sênior de uma Prefeitura Municipal Brasileira.
+Analise a imagem/PDF da Nota Fiscal fornecida com rigor, buscando fraudes, superfaturamento e inconsistências.
+
+Regras:
+1. Extraia os dados com precisão (fornecedor, CNPJ, data, itens, valores).
+2. Verifique matematicamente: Quantidade × Preço Unitário = Total do Item; soma dos itens = Total da Nota.
+3. Descrições genéricas ("serviços diversos") são suspeitas.
+4. Notas muito antigas ou emitidas em fins de semana para serviços de escritório são suspeitas.
+5. Calcule riskScore 0–100 (0=seguro, 100=fraude quase certa).
+6. Retorne APENAS JSON válido, sem markdown, sem explicações extras.`;
+
+        async function callGemini(dataUrl, mime) {
+            const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+            if (!matches) throw new Error('Formato de arquivo inválido.');
+            const b64 = matches[2];
+            const today = new Date().toLocaleDateString('pt-BR');
+
+            const body = {
+                system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { text: `Hoje é ${today}. Analise esta nota fiscal e retorne SOMENTE o JSON conforme o schema.` },
+                        { inline_data: { mime_type: mime, data: b64 } }
+                    ]
+                }],
+                generationConfig: {
+                    response_mime_type: 'application/json',
+                    temperature: 0.2,
+                    response_schema: {
+                        type: 'OBJECT',
+                        properties: {
+                            supplierName: { type: 'STRING' },
+                            cnpj: { type: 'STRING' },
+                            invoiceDate: { type: 'STRING' },
+                            totalAmount: { type: 'NUMBER' },
+                            items: {
+                                type: 'ARRAY',
+                                items: {
+                                    type: 'OBJECT',
+                                    properties: {
+                                        description: { type: 'STRING' },
+                                        quantity: { type: 'NUMBER' },
+                                        unitPrice: { type: 'NUMBER' },
+                                        totalPrice: { type: 'NUMBER' }
+                                    }
+                                }
+                            },
+                            anomalies: { type: 'ARRAY', items: { type: 'STRING' } },
+                            riskScore: { type: 'NUMBER' },
+                            riskLevel: { type: 'STRING', enum: ['BAIXO', 'MÉDIO', 'ALTO', 'CRÍTICO'] },
+                            auditRecommendation: { type: 'STRING' },
+                            reasoning: { type: 'STRING' }
+                        },
+                        required: ['supplierName', 'totalAmount', 'riskScore', 'riskLevel', 'auditRecommendation', 'anomalies', 'reasoning']
+                    }
+                }
+            };
+
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+            );
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err?.error?.message || `HTTP ${res.status}`);
+            }
+            const data = await res.json();
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error('Resposta vazia da API Gemini.');
+            return JSON.parse(text);
+        }
+
+        // ── RENDER RESULT ────────────────────────────────────────
+        function renderResult(r) {
+            const isHigh = r.riskLevel === 'ALTO' || r.riskLevel === 'CRÍTICO';
+            const scoreEl = document.getElementById('score-num');
+            scoreEl.innerHTML = `${r.riskScore}<span class="aud-score-suffix">/100</span>`;
+            scoreEl.className = 'aud-score-num ' + (isHigh ? 'risk-high' : (r.riskScore < 30 ? 'risk-ok' : ''));
+            const sc = document.getElementById('score-card');
+            sc.className = 'aud-score-card ' + (isHigh ? 'risk-high' : (r.riskScore < 30 ? 'risk-ok' : ''));
+            document.getElementById('result-id').textContent = 'ID: ' + uid().toUpperCase();
+
+            // Badges
+            const lvlClass = 'aud-badge aud-badge-risk-' + (r.riskLevel || '').toLowerCase();
+            document.getElementById('result-badges').innerHTML = `
+      <span class="${lvlClass}">Risco: ${r.riskLevel || '—'}</span>
+      ${r.invoiceDate ? `<span class="aud-badge aud-badge-neutral">📅 ${r.invoiceDate}</span>` : ''}
+      ${r.cnpj ? `<span class="aud-badge aud-badge-neutral">CNPJ: ${r.cnpj}</span>` : ''}
+    `;
+
+            // Recommendation
+            document.getElementById('rec-text').textContent = r.auditRecommendation || '—';
+
+            // Financials
+            const fmt = v => v != null ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
+            document.getElementById('financials-rows').innerHTML = `
+      <div class="aud-detail-row"><span class="aud-detail-label">Fornecedor</span><span class="aud-detail-value">${esc(r.supplierName || '—')}</span></div>
+      <div class="aud-detail-row"><span class="aud-detail-label">CNPJ</span><span class="aud-detail-value">${esc(r.cnpj || '—')}</span></div>
+      <div class="aud-detail-row"><span class="aud-detail-label">Data Emissão</span><span class="aud-detail-value">${esc(r.invoiceDate || '—')}</span></div>
+      <div class="aud-detail-row"><span class="aud-detail-label">Valor Total</span><span class="aud-detail-value total">${fmt(r.totalAmount)}</span></div>
+    `;
+
+            // Chart
+            const items = r.items || [];
+            if (items.length > 0) {
+                const max = Math.max(...items.map(i => i.totalPrice || 0), 1);
+                document.getElementById('chart-wrap').style.display = '';
+                document.getElementById('chart-area').innerHTML = items.map(i => {
+                    const pct = Math.round(((i.totalPrice || 0) / max) * 100);
+                    const lbl = (i.description || '').substring(0, 12) + (i.description?.length > 12 ? '…' : '');
+                    return `<div class="aud-chart-row">
+          <span class="aud-chart-label" title="${esc(i.description)}">${esc(lbl)}</span>
+          <div class="aud-chart-bar-wrap"><div class="aud-chart-bar-fill" style="width:${pct}%"></div></div>
+          <span class="aud-chart-val">${fmt(i.totalPrice)}</span>
+        </div>`;
+                }).join('');
+            }
+
+            // Items table
+            const tbody = document.getElementById('items-tbody');
+            if (items.length) {
+                tbody.innerHTML = items.map(i => `<tr>
+        <td>${esc(i.description || '—')}</td>
+        <td style="text-align:center">${i.quantity ?? '—'}</td>
+        <td style="text-align:right">${fmt(i.unitPrice)}</td>
+        <td style="text-align:right;font-weight:700">${fmt(i.totalPrice)}</td>
+      </tr>`).join('');
+                document.getElementById('items-tfoot').innerHTML =
+                    `<td colspan="3" style="text-align:right">Total da Nota</td><td style="text-align:right">${fmt(r.totalAmount)}</td>`;
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" class="aud-empty">Nenhum item identificado</td></tr>`;
+            }
+
+            // Reasoning
+            document.getElementById('reasoning-text').textContent = r.reasoning || '—';
+
+            // Anomalies
+            const anos = r.anomalies || [];
+            const alist = document.getElementById('anomalies-list');
+            if (anos.length) {
+                alist.innerHTML = anos.map(a => `<div class="aud-anomaly-item"><div class="aud-anomaly-bullet"></div><span>${esc(a)}</span></div>`).join('');
+            } else {
+                alist.innerHTML = `<div class="aud-ok-msg"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>Nenhuma anomalia crítica detectada.</div>`;
+            }
+
+            show('result-section', true);
+        }
+
+        // ── TOGGLE ───────────────────────────────────────────────
+        function toggleItems() {
+            itemsOpen = !itemsOpen;
+            document.getElementById('items-table-wrap').style.display = itemsOpen ? '' : 'none';
+            document.getElementById('items-chevron').style.transform = itemsOpen ? '' : 'rotate(-90deg)';
+        }
+        function toggleAnomalies() {
+            anosOpen = !anosOpen;
+            document.getElementById('anomalies-wrap').style.display = anosOpen ? '' : 'none';
+            document.getElementById('ano-chevron').style.transform = anosOpen ? '' : 'rotate(-90deg)';
+        }
+
+        // ── RESET ────────────────────────────────────────────────
+        function resetAll() {
+            fileDataUrl = null; fileMime = null; fileName = ''; lastResult = null;
+            document.getElementById('file-inp').value = '';
+            document.getElementById('file-badge').textContent = '';
+            show('view-drop', true); show('view-preview', false); show('view-loading', false);
+            hide('result-section');
+        }
+
+        // ── DOWNLOAD PDF ─────────────────────────────────────────
+        function downloadPDF() {
+            if (!lastResult) { toast('Sem resultado para exportar', 'error'); return; }
+            const r = lastResult;
+            const fmt = v => v != null ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
+            const lines = [];
+            lines.push('AUDITORIA FISCAL - AuditAI Municipal');
+            lines.push('Prefeitura de Inajá · ' + new Date().toLocaleString('pt-BR'));
+            lines.push('');
+            lines.push('=== RESULTADO ===');
+            lines.push(`Pontuação de Risco: ${r.riskScore}/100`);
+            lines.push(`Nível de Risco: ${r.riskLevel}`);
+            lines.push(`Recomendação: ${r.auditRecommendation}`);
+            lines.push('');
+            lines.push('=== DADOS DO DOCUMENTO ===');
+            lines.push(`Fornecedor: ${r.supplierName}`);
+            lines.push(`CNPJ: ${r.cnpj || '—'}`);
+            lines.push(`Data Emissão: ${r.invoiceDate || '—'}`);
+            lines.push(`Valor Total: ${fmt(r.totalAmount)}`);
+            lines.push('');
+            lines.push('=== PARECER TÉCNICO ===');
+            lines.push(r.reasoning || '—');
+            if (r.items?.length) {
+                lines.push('');
+                lines.push('=== ITENS IDENTIFICADOS ===');
+                r.items.forEach(i => lines.push(`  ${i.description} | Qtd: ${i.quantity} | Unit: ${fmt(i.unitPrice)} | Total: ${fmt(i.totalPrice)}`));
+            }
+            if (r.anomalies?.length) {
+                lines.push('');
+                lines.push('=== ANOMALIAS ===');
+                r.anomalies.forEach(a => lines.push(`  • ${a}`));
+            } else {
+                lines.push(''); lines.push('=== ANOMALIAS ===');
+                lines.push('  Nenhuma anomalia crítica detectada.');
+            }
+            lines.push('');
+            lines.push('Documento Confidencial - Uso Interno da Controladoria Municipal');
+
+            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `AuditNF_${(r.cnpj || 'relatorio').replace(/\D/g, '')}_${new Date().toISOString().slice(0, 10)}.txt`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast('Relatório exportado ⬇️', 'success');
+        }
+
+        // ── UTILS ────────────────────────────────────────────────
+        function show(id, visible) { document.getElementById(id).style.display = visible ? '' : 'none'; }
+        function hide(id) { document.getElementById(id).style.display = 'none'; }
+        function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function toast(msg, type) {
+            const t = document.getElementById('aud-toast');
+            t.textContent = msg;
+            t.style.background = type === 'error' ? '#e11d48' : type === 'success' ? '#16a34a' : '#1e40af';
+            t.style.display = 'block'; t.style.opacity = '1';
+            clearTimeout(t._t);
+            t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
+        }
+    </script>
+</body>
+
+</html>

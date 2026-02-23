@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Renomear com IA – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    .ren-page {
+      background: var(--bg-2, #f4f5f7);
+      min-height: calc(100vh - 64px);
+      padding: 20px 16px 60px
+    }
+
+    .ren-hero {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      max-width: 960px;
+      margin: 0 auto 14px
+    }
+
+    .ren-hero-icon {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--blue), #7c3aed);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 10px rgba(79, 128, 200, .3)
+    }
+
+    .ren-hero h2 {
+      font-size: clamp(17px, 4vw, 22px);
+      font-weight: 800;
+      color: var(--text);
+      margin: 0
+    }
+
+    .ren-hero p {
+      font-size: 12px;
+      color: var(--text-3);
+      margin: 2px 0 0
+    }
+
+    /* Stats bar */
+    .ren-stats {
+      max-width: 960px;
+      margin: 0 auto 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .ren-stat {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-sm);
+      padding: 10px 16px;
+      flex: 1;
+      min-width: 100px;
+      text-align: center
+    }
+
+    .ren-stat-v {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--blue)
+    }
+
+    .ren-stat-l {
+      font-size: 10px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .5px
+    }
+
+    /* Warn */
+    .ren-warn {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      font-size: 13px;
+      color: #92400e;
+      margin: 0 auto 14px;
+      max-width: 960px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5
+    }
+
+    .ren-warn a {
+      color: #92400e;
+      font-weight: 700
+    }
+
+    /* Drop zone */
+    .ren-drop {
+      border: 2px dashed rgba(79, 128, 200, .35);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      background: var(--bg);
+      box-shadow: var(--neo);
+      max-width: 960px;
+      margin: 0 auto 14px
+    }
+
+    .ren-drop:hover,
+    .ren-drop.drag-over {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, .04)
+    }
+
+    .ren-drop-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--blue), #7c3aed);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      box-shadow: 2px 2px 10px rgba(79, 128, 200, .3)
+    }
+
+    .ren-drop-title {
+      font-size: clamp(14px, 3.5vw, 17px);
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 4px
+    }
+
+    .ren-drop-sub {
+      font-size: 12px;
+      color: var(--text-3);
+      margin: 0
+    }
+
+    .ren-drop-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--blue);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 2px 2px 8px rgba(79, 128, 200, .35)
+    }
+
+    /* Progress */
+    .ren-prog-wrap {
+      max-width: 960px;
+      margin: 0 auto 10px
+    }
+
+    .ren-prog-label {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between
+    }
+
+    .ren-prog-bar {
+      height: 6px;
+      background: rgba(79, 128, 200, .15);
+      border-radius: 3px;
+      overflow: hidden
+    }
+
+    .ren-prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), #7c3aed);
+      border-radius: 3px;
+      transition: width .3s
+    }
+
+    /* Toolbar */
+    .ren-toolbar {
+      max-width: 960px;
+      margin: 0 auto 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .ren-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all .15s;
+      min-height: 40px;
+      white-space: nowrap
+    }
+
+    .ren-btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark, #3563b8));
+      color: white;
+      box-shadow: 2px 2px 8px rgba(79, 128, 200, .4)
+    }
+
+    .ren-btn-primary:hover {
+      box-shadow: 3px 3px 12px rgba(79, 128, 200, .5);
+      transform: translateY(-1px)
+    }
+
+    .ren-btn-primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none !important
+    }
+
+    .ren-btn-secondary {
+      background: var(--bg);
+      color: var(--text-2);
+      box-shadow: var(--neo-sm)
+    }
+
+    .ren-btn-secondary:hover {
+      box-shadow: var(--neo);
+      color: var(--text)
+    }
+
+    .ren-btn-danger {
+      background: var(--bg);
+      color: var(--red, #e11d48);
+      box-shadow: var(--neo-sm);
+      margin-left: auto
+    }
+
+    .ren-btn-danger:hover {
+      box-shadow: var(--neo)
+    }
+
+    .ren-model-info {
+      font-size: 11px;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    .ren-model-badge {
+      background: rgba(79, 128, 200, .12);
+      color: var(--blue);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    /* Table */
+    .ren-table-wrap {
+      max-width: 960px;
+      margin: 0 auto 14px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo);
+      overflow: hidden;
+      display: none
+    }
+
+    @media(min-width:640px) {
+      .ren-table-wrap {
+        display: block
+      }
+
+      .ren-cards {
+        display: none !important
+      }
+
+      .ren-page {
+        padding: 24px 20px 80px
+      }
+    }
+
+    .ren-table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    .ren-table th {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 0, 0, .07);
+      background: var(--bg)
+    }
+
+    .ren-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+      vertical-align: middle;
+      font-size: 13px
+    }
+
+    .ren-table tr:last-child td {
+      border-bottom: none
+    }
+
+    .ren-table tr:hover td {
+      background: rgba(79, 128, 200, .025)
+    }
+
+    /* Badges */
+    .ren-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap
+    }
+
+    .ren-badge-wait {
+      background: rgba(0, 0, 0, .06);
+      color: var(--text-3)
+    }
+
+    .ren-badge-proc {
+      background: rgba(79, 128, 200, .12);
+      color: var(--blue)
+    }
+
+    .ren-badge-done {
+      background: rgba(34, 197, 94, .12);
+      color: #15803d
+    }
+
+    .ren-badge-err {
+      background: rgba(239, 68, 68, .1);
+      color: var(--red, #e11d48)
+    }
+
+    /* Input name */
+    .ren-inp {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      width: 100%;
+      outline: none;
+      transition: all .15s
+    }
+
+    .ren-inp:focus {
+      background: var(--bg);
+      border-color: var(--blue);
+      box-shadow: var(--neo-in-sm, inset 0 1px 4px rgba(0, 0, 0, .08))
+    }
+
+    /* Action Buttons */
+    .ren-act {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 9px;
+      min-height: 34px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      transition: all .15s;
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      color: var(--text-2)
+    }
+
+    .ren-act:hover {
+      box-shadow: var(--neo);
+      color: var(--text)
+    }
+
+    .ren-act:disabled {
+      opacity: .4;
+      cursor: not-allowed
+    }
+
+    .ren-act-dl {
+      color: var(--blue)
+    }
+
+    .ren-act-rm {
+      color: var(--red, #e11d48)
+    }
+
+    .ren-act-fb {
+      color: #f59e0b
+    }
+
+    /* Cards mobile */
+    .ren-cards {
+      max-width: 960px;
+      margin: 0 auto 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .ren-card {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-sm);
+      padding: 13px
+    }
+
+    .ren-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap
+    }
+
+    /* Spinner */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .spin {
+      display: inline-block;
+      animation: spin .7s linear infinite
+    }
+
+    /* Modal overlay */
+    .ren-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 5000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px
+    }
+
+    .ren-modal {
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .22);
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column
+    }
+
+    .ren-modal-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, .07);
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .ren-modal-head h3 {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text)
+    }
+
+    .ren-modal-body {
+      overflow-y: auto;
+      padding: 16px 20px;
+      flex: 1
+    }
+
+    .ren-modal-foot {
+      padding: 12px 20px;
+      border-top: 1px solid rgba(0, 0, 0, .07);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end
+    }
+
+    .ren-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text-3);
+      line-height: 1
+    }
+
+    /* Template list */
+    .tpl-item {
+      border: 1px solid rgba(0, 0, 0, .08);
+      border-radius: var(--radius-sm);
+      padding: 11px 13px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all .15s;
+      background: var(--bg)
+    }
+
+    .tpl-item:hover {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, .04)
+    }
+
+    .tpl-item.active {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, .08)
+    }
+
+    .tpl-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .tpl-desc {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 2px
+    }
+
+    .tpl-cat {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 700;
+      background: rgba(79, 128, 200, .12);
+      color: var(--blue);
+      display: inline-block;
+      margin-top: 4px
+    }
+
+    .tpl-form label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-2);
+      margin-bottom: 4px;
+      margin-top: 12px
+    }
+
+    .tpl-form input,
+    .tpl-form select,
+    .tpl-form textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid rgba(0, 0, 0, .12);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      box-sizing: border-box
+    }
+
+    .tpl-form textarea {
+      min-height: 120px;
+      resize: vertical
+    }
+
+    .tpl-form input:focus,
+    .tpl-form select:focus,
+    .tpl-form textarea:focus {
+      border-color: var(--blue)
+    }
+
+    /* History */
+    .hist-item {
+      padding: 10px 13px;
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+      font-size: 12px
+    }
+
+    .hist-item:last-child {
+      border-bottom: none
+    }
+
+    .hist-orig {
+      color: var(--text-3);
+      text-decoration: line-through;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .hist-new {
+      color: var(--text);
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 2px
+    }
+
+    .hist-meta {
+      color: var(--text-3);
+      font-size: 10px;
+      margin-top: 2px
+    }
+
+    /* Feedback */
+    .fb-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      opacity: .5;
+      transition: opacity .15s;
+      padding: 2px 4px
+    }
+
+    .fb-btn:hover {
+      opacity: 1
+    }
+
+    .fb-btn.active {
+      opacity: 1
+    }
+
+    /* Retry badge */
+    .ren-retry-badge {
+      font-size: 10px;
+      color: var(--blue);
+      background: rgba(79, 128, 200, .1);
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px
+    }
+
+    /* Cache badge */
+    .ren-cache-badge {
+      font-size: 10px;
+      color: #15803d;
+      background: rgba(34, 197, 94, .1);
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px
+    }
+  </style>
+</head>
+
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-brand">
+          <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
+          <div class="header-title">
+            <h1>Prefeitura de Inajá</h1>
+            <p>Gestão de Empenhos</p>
+          </div>
+        </div>
+      </div>
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>Credores Fixos</a>
+        <a href="index.html#adm" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>ADM</a>
+        <a href="rpa.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>RPA</a>
+        <a href="extratos.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>Extratos</a>
+        <a href="cnpj.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" />
+            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+          </svg>CNPJ</a>
+        <a href="pdf.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>PDF</a>
+        <a href="renomear.html" class="nav-tab active" style="text-decoration:none;"><svg viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>Renomear</a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Tarefas</a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+      <div class="header-right"></div>
+    </div>
+  </header>
+
+  <div class="ren-page">
+    <div class="ren-hero">
+      <div class="ren-hero-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
+          stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg></div>
+      <div>
+        <h2>Renomeador de Documentos com IA</h2>
+        <p>OpenRouter analisa o conteúdo e sugere nomes profissionais · PDF, Word, Imagens · Retry automático · Cache ·
+          Histórico</p>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="ren-stats">
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-total">0</div>
+        <div class="ren-stat-l">Total</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-ok" style="color:#15803d">0</div>
+        <div class="ren-stat-l">Concluídos</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-err" style="color:var(--red,#e11d48)">0</div>
+        <div class="ren-stat-l">Erros</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-cache" style="color:#7c3aed">0</div>
+        <div class="ren-stat-l">Do Cache</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-hist">0</div>
+        <div class="ren-stat-l">Histórico</div>
+      </div>
+    </div>
+
+    <div id="warn-key" class="ren-warn" style="display:none">⚠️ <span>Chave OpenRouter não configurada. <a
+          href="index.html" onclick="sessionStorage.setItem('openAdm','1')">Configure no ADM →</a></span></div>
+
+    <div class="ren-drop" id="drop-zone" onclick="document.getElementById('file-inp').click()"
+      ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <div class="ren-drop-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
+          stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg></div>
+      <p class="ren-drop-title">Arraste arquivos aqui</p>
+      <p class="ren-drop-sub">PDF · Word (.docx) · Imagens (JPEG, PNG, WebP) · Múltiplos arquivos</p>
+      <span class="ren-drop-btn">📂 Selecionar arquivos</span>
+    </div>
+    <input type="file" id="file-inp"
+      accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+      multiple style="display:none" onchange="onFileInput(event)" />
+
+    <div class="ren-prog-wrap" id="prog-wrap" style="display:none">
+      <div class="ren-prog-label"><span id="prog-txt">Processando…</span><span id="prog-pct">0%</span></div>
+      <div class="ren-prog-bar">
+        <div class="ren-prog-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="ren-toolbar" id="toolbar" style="display:none">
+      <button class="ren-btn ren-btn-primary" id="btn-all" onclick="processAll()">✨ Processar Todos</button>
+      <button class="ren-btn ren-btn-secondary" id="btn-dl-all" onclick="downloadAll()">⬇️ Baixar Todos</button>
+      <button class="ren-btn ren-btn-secondary" onclick="openTemplates()">📝 Templates</button>
+      <button class="ren-btn ren-btn-secondary" onclick="openHistory()">🕐 Histórico</button>
+      <div class="ren-model-info">Modelo:&nbsp;<span class="ren-model-badge" id="model-badge">—</span><a
+          href="index.html" style="font-size:11px;color:var(--blue);"
+          onclick="sessionStorage.setItem('openAdm','1')">trocar</a></div>
+      <button class="ren-btn ren-btn-danger" onclick="clearAll()">🗑 Limpar</button>
+    </div>
+
+    <div class="ren-table-wrap" id="table-wrap">
+      <table class="ren-table">
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Arquivo Original</th>
+            <th>Nome Sugerido pela IA</th>
+            <th style="width:100px">Status</th>
+            <th style="width:170px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="file-tbody"></tbody>
+      </table>
+    </div>
+    <div class="ren-cards" id="file-cards"></div>
+  </div>
+
+  <div id="toast"
+    style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:none;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:90vw;text-align:center;transition:opacity .3s">
+  </div>
+
+  <!-- Templates Modal -->
+  <div class="ren-overlay" id="modal-tpl" style="display:none" onclick="if(event.target===this)closeTpl()">
+    <div class="ren-modal">
+      <div class="ren-modal-head">
+        <h3>📝 Templates de Prompt</h3><button class="ren-close" onclick="closeTpl()">✕</button>
+      </div>
+      <div class="ren-modal-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="ren-btn ren-btn-secondary" style="font-size:12px;padding:7px 12px" onclick="showTplList()">Ver
+            Templates</button>
+          <button class="ren-btn ren-btn-primary" style="font-size:12px;padding:7px 12px" onclick="showTplForm()">➕ Novo
+            Template</button>
+        </div>
+        <div id="tpl-list"></div>
+        <div id="tpl-form" style="display:none">
+          <div class="tpl-form">
+            <label>Nome do Template</label>
+            <input id="tf-name" placeholder="Ex: Notas Fiscais Municipais">
+            <label>Descrição</label>
+            <input id="tf-desc" placeholder="Descrição curta">
+            <label>Categoria</label>
+            <select id="tf-cat">
+              <option value="geral">Geral</option>
+              <option value="fiscal">Fiscal</option>
+              <option value="juridico">Jurídico</option>
+              <option value="corporativo">Corporativo</option>
+              <option value="pessoal">Pessoal</option>
+              <option value="academico">Acadêmico</option>
+            </select>
+            <label>Prompt (use [FILETYPE] para o tipo de arquivo)</label>
+            <textarea id="tf-prompt" placeholder="ANALISE este documento [FILETYPE] e crie um nome..."></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="ren-modal-foot">
+        <button class="ren-btn ren-btn-secondary" onclick="closeTpl()">Fechar</button>
+        <button class="ren-btn ren-btn-primary" id="tpl-save-btn" onclick="saveTpl()" style="display:none">💾 Salvar
+          Template</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="ren-overlay" id="modal-hist" style="display:none" onclick="if(event.target===this)closeHist()">
+    <div class="ren-modal">
+      <div class="ren-modal-head">
+        <h3>🕐 Histórico de Renomeações</h3><button class="ren-close" onclick="closeHist()">✕</button>
+      </div>
+      <div class="ren-modal-body" id="hist-body"></div>
+      <div class="ren-modal-foot">
+        <button class="ren-btn ren-btn-danger" onclick="clearHistory()">🗑 Limpar</button>
+        <button class="ren-btn ren-btn-secondary" onclick="exportHistory()">⬇️ Exportar JSON</button>
+        <button class="ren-btn ren-btn-secondary" onclick="closeHist()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // ── CACHE ──────────────────────────────────────────────────────────────────
+    const aiCache = new Map(); // key: name+size+templateId → suggestedName
+    function cacheKey(file, tplId) { return `${file.name}|${file.size}|${tplId}`; }
+
+    // ── HISTORY ────────────────────────────────────────────────────────────────
+    const HIST_KEY = 'renamer_history_v2';
+    function loadHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { return []; } }
+    function saveHistory(h) { try { localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, 200))); } catch (e) { } }
+    function addHistory(orig, newn, type, size) {
+      const h = loadHistory();
+      h.unshift({ id: Date.now() + '-' + Math.random().toString(36).slice(2), orig, newn, type, size, ts: new Date().toISOString() });
+      saveHistory(h);
+      updateCounters();
+    }
+
+    // ── TEMPLATES ──────────────────────────────────────────────────────────────
+    const TPL_KEY = 'renamer_templates_v2';
+    const DEFAULT_TEMPLATES = [
+      {
+        id: 'tpl_geral', name: 'Geral Inteligente', desc: 'Template versátil para qualquer documento', cat: 'geral', isDefault: true,
+        prompt: `ANALISE DETALHADAMENTE este documento [FILETYPE] e crie um nome de arquivo PROFISSIONAL.\nREGRAS:\n- Use APENAS letras maiúsculas, números e underscore\n- Formato: TIPO_ENTIDADE_DATA_REFERENCIA\n- Máximo 80 caracteres, SEM espaços, SEM acentos, SEM extensão\nRESPONDA APENAS COM O NOME.`
+      },
+      {
+        id: 'tpl_fiscal', name: 'Documentos Fiscais', desc: 'Notas fiscais, recibos, comprovantes', cat: 'fiscal', isDefault: true,
+        prompt: `ANALISE este documento fiscal [FILETYPE].\nFormato: TIPO_EMPRESA_NUMERO_DATA\nTipos: NOTA_FISCAL, RECIBO, COMPROVANTE_PAGAMENTO, CUPOM_FISCAL\nExemplos: NOTA_FISCAL_EMPRESA_ABC_001234_20240315\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
+      },
+      {
+        id: 'tpl_juridico', name: 'Documentos Jurídicos', desc: 'Contratos, certidões, procurações', cat: 'juridico', isDefault: true,
+        prompt: `ANALISE este documento jurídico [FILETYPE].\nFormato: TIPO_PARTES_DATA\nTipos: CONTRATO, CERTIDAO, PROCURACAO, ESCRITURA, PETICAO\nExemplos: CONTRATO_LOCACAO_JOAO_SILVA_20240315\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
+      },
+      {
+        id: 'tpl_corporativo', name: 'Documentos Corporativos', desc: 'Relatórios, apresentações, memorandos', cat: 'corporativo', isDefault: true,
+        prompt: `ANALISE este documento corporativo [FILETYPE].\nFormato: TIPO_PERIODO_DEPARTAMENTO\nTipos: RELATORIO, APRESENTACAO, MEMORANDO, ATA\nExemplos: RELATORIO_MENSAL_VENDAS_2024\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
+      },
+      {
+        id: 'tpl_pessoal', name: 'Documentos Pessoais', desc: 'RG, CPF, comprovantes', cat: 'pessoal', isDefault: true,
+        prompt: `ANALISE este documento pessoal [FILETYPE].\nFormato: TIPO_NOME_DATA\nTipos: RG, CPF, CNH, COMPROVANTE_RESIDENCIA\nExemplos: RG_JOAO_SILVA_20240315\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
+      },
+      {
+        id: 'tpl_academico', name: 'Documentos Acadêmicos', desc: 'Diplomas, certificados, históricos', cat: 'academico', isDefault: true,
+        prompt: `ANALISE este documento acadêmico [FILETYPE].\nFormato: TIPO_CURSO_INSTITUICAO_ANO\nTipos: DIPLOMA, CERTIFICADO, HISTORICO, DECLARACAO\nExemplos: DIPLOMA_ENGENHARIA_CIVIL_UFMG_2024\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
+      },
+      {
+        id: 'tpl_prefeitura', name: 'Documentos Municipais', desc: 'Empenhos, contratos públicos, atos', cat: 'corporativo', isDefault: true,
+        prompt: `ANALISE este documento da administração pública brasileira [FILETYPE].\nFormato sugerido: TIPO_ENTIDADE_DATA_REFERENCIA\nExemplos:\n  EMPENHO_2024_001234_FORNECEDOR_ABC\n  CONTRATO_PREFEITURA_INAJA_SERVICOS_2024\n  EXTRATO_BB_CONTA_0001_JANEIRO_2024\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
+      }
+    ];
+    function loadTemplates() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(TPL_KEY) || 'null');
+        if (!saved) { localStorage.setItem(TPL_KEY, JSON.stringify(DEFAULT_TEMPLATES)); return DEFAULT_TEMPLATES; }
+        // merge defaults if missing
+        const ids = saved.map(t => t.id);
+        DEFAULT_TEMPLATES.forEach(d => { if (!ids.includes(d.id)) saved.unshift(d); });
+        return saved;
+      } catch (e) { return DEFAULT_TEMPLATES; }
+    }
+    function saveTemplates(t) { try { localStorage.setItem(TPL_KEY, JSON.stringify(t)); } catch (e) { } }
+    let templates = loadTemplates();
+    let activeTemplateId = localStorage.getItem('renamer_active_tpl') || 'tpl_geral';
+
+    // ── STATE ──────────────────────────────────────────────────────────────────
+    const files = []; // {file,origName,type,sugName,status,error,fromCache,retries,feedback}
+    let processing = false;
+    let editingTplId = null;
+
+    // ── INIT ───────────────────────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+      const k = localStorage.getItem('api_openrouter_key') || '';
+      document.getElementById('warn-key').style.display = k ? 'none' : 'flex';
+      updateModelBadge();
+      updateCounters();
+    });
+    function updateModelBadge() {
+      const m = localStorage.getItem('api_openrouter_modelo') || 'openai/gpt-4o-mini';
+      document.getElementById('model-badge').textContent = m;
+    }
+    function updateCounters() {
+      document.getElementById('stat-total').textContent = files.length || '0';
+      document.getElementById('stat-ok').textContent = files.filter(f => f.status === 'done').length || '0';
+      document.getElementById('stat-err').textContent = files.filter(f => f.status === 'error').length || '0';
+      document.getElementById('stat-cache').textContent = files.filter(f => f.fromCache).length || '0';
+      document.getElementById('stat-hist').textContent = loadHistory().length || '0';
+    }
+
+    // ── FILE TYPE UTILS ────────────────────────────────────────────────────────
+    function getFileType(file) {
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return 'PDF';
+      if (file.type.includes('word') || file.name.toLowerCase().match(/\.docx?$/)) return 'Word';
+      if (file.type.startsWith('image/')) return 'Imagem';
+      return 'documento';
+    }
+    function isAccepted(file) {
+      return getFileType(file) !== 'documento' || file.type === 'application/pdf';
+    }
+    function fileIcon(type) { return { PDF: '📄', Word: '📝', Imagem: '🖼️' }[type] || '📁'; }
+
+    // ── DRAG & DROP ────────────────────────────────────────────────────────────
+    function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+    function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+    function onDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over'); addFiles(Array.from(e.dataTransfer.files)); }
+    function onFileInput(e) { addFiles(Array.from(e.target.files)); e.target.value = ''; }
+
+    function addFiles(list) {
+      const valid = list.filter(f => isAccepted(f));
+      if (!valid.length) { showToast('Formato não suportado. Use PDF, Word ou Imagem.', 'error'); return; }
+      for (const f of valid) {
+        files.push({ file: f, origName: f.name, type: getFileType(f), sugName: '', status: 'wait', error: '', fromCache: false, retries: 0, feedback: null });
+      }
+      renderAll();
+      showToast(`${valid.length} arquivo(s) adicionado(s)`, 'success');
+    }
+
+    // ── RENDER ─────────────────────────────────────────────────────────────────
+    function renderAll() {
+      const show = files.length > 0;
+      document.getElementById('toolbar').style.display = show ? 'flex' : 'none';
+      renderTable(); renderCards(); updateModelBadge(); updateCounters();
+    }
+    function renderTable() {
+      const tb = document.getElementById('file-tbody'); tb.innerHTML = '';
+      files.forEach((item, idx) => {
+        const tr = document.createElement('tr'); tr.id = `trow-${idx}`;
+        const cacheB = item.fromCache ? `<span class="ren-cache-badge">cache</span>` : '';
+        const retryB = item.retries > 0 ? `<span class="ren-retry-badge">${item.retries}× retry</span>` : '';
+        tr.innerHTML = `
+        <td style="color:var(--text-3);font-size:12px">${idx + 1}</td>
+        <td><div style="font-size:12.5px;font-weight:500;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(item.origName)}">${fileIcon(item.type)} ${esc(item.origName)}</div>
+            <div style="font-size:10px;color:var(--text-3)">${item.type} · ${fmtSize(item.file.size)}${cacheB}${retryB}</div></td>
+        <td>${nameCell(item, idx)}</td>
+        <td>${badgeHtml(item.status)}</td>
+        <td style="white-space:nowrap">${actionsHtml(item, idx)}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+    function renderCards() {
+      const c = document.getElementById('file-cards'); c.innerHTML = '';
+      files.forEach((item, idx) => {
+        const card = document.createElement('div'); card.className = 'ren-card'; card.id = `card-${idx}`;
+        card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <div style="overflow:hidden"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fileIcon(item.type)} ${esc(item.origName)}</div>
+          <div style="font-size:11px;color:var(--text-3)">${fmtSize(item.file.size)} · ${badgeHtml(item.status)}</div></div>
+        </div>
+        ${item.status === 'done' ? `<div style="font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:4px">Nome Sugerido</div>
+          <input class="ren-inp" style="background:var(--bg);border:1px solid rgba(79,128,200,.3);border-radius:6px;padding:7px 9px;font-size:12px" value="${esc(item.sugName)}" id="cinp-${idx}" onchange="files[${idx}].sugName=this.value"/>`
+            : item.status === 'proc' ? `<div style="font-size:12px;color:var(--blue)"><span class="spin">⚙️</span> Analisando…</div>`
+              : item.status === 'error' ? `<div style="font-size:12px;color:var(--red,#e11d48)" title="${esc(item.error)}">❌ ${esc(item.error.substring(0, 80))}</div>` : ''}
+        <div class="ren-card-actions">
+          <button class="ren-btn ren-btn-primary" onclick="processSingle(${idx})" ${processing || item.status === 'proc' ? 'disabled' : ''} style="font-size:12px;padding:8px 10px;flex:1">✨ Analisar</button>
+          ${item.status === 'done' ? `<button class="ren-btn ren-btn-secondary" onclick="downloadOne(${idx})" style="font-size:12px;padding:8px 10px">⬇️ Baixar</button>` : ''}
+          <button class="ren-btn ren-btn-danger" onclick="removeFile(${idx})" style="font-size:12px;padding:8px 10px">✕</button>
+        </div>`;
+        c.appendChild(card);
+      });
+    }
+    function nameCell(item, idx) {
+      if (item.status === 'wait') return `<span style="font-size:12px;color:var(--text-3);font-style:italic">—</span>`;
+      if (item.status === 'proc') return `<span class="spin">⚙️</span> <span style="font-size:12px;color:var(--blue)">Analisando…</span>`;
+      if (item.status === 'done') return `<input class="ren-inp" id="inp-${idx}" value="${esc(item.sugName)}" onchange="files[${idx}].sugName=this.value"/>`;
+      return `<span style="font-size:12px;color:var(--red,#e11d48)" title="${esc(item.error)}">❌ ${esc(item.error.substring(0, 55))}</span>`;
+    }
+    function actionsHtml(item, idx) {
+      const fb = item.status === 'done' ? `<button class="fb-btn${item.feedback === 1 ? ' active' : ''}" onclick="setFeedback(${idx},1)" title="Bom">👍</button><button class="fb-btn${item.feedback === -1 ? ' active' : ''}" onclick="setFeedback(${idx},-1)" title="Ruim">👎</button>` : '';
+      return `<button class="ren-act" onclick="processSingle(${idx})" ${processing || item.status === 'proc' ? 'disabled' : ''} title="Analisar">✨</button>` +
+        (item.status === 'done' ? `<button class="ren-act ren-act-dl" onclick="downloadOne(${idx})" title="Baixar">⬇️</button>` : '')
+        + fb + `<button class="ren-act ren-act-rm" onclick="removeFile(${idx})" title="Remover">✕</button>`;
+    }
+    function badgeHtml(st) {
+      const cls = { wait: 'ren-badge-wait', proc: 'ren-badge-proc', done: 'ren-badge-done', error: 'ren-badge-err' };
+      const lbl = { wait: 'Aguardando', proc: 'Processando', done: 'Concluído', error: 'Erro' };
+      return `<span class="ren-badge ${cls[st] || ''}">${lbl[st] || st}</span>`;
+    }
+    function setFeedback(idx, v) { files[idx].feedback = v; renderAll(); }
+
+    // ── TEXT EXTRACTION ────────────────────────────────────────────────────────
+    async function extractText(file) {
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      let text = '';
+      for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+        const pg = await pdf.getPage(i);
+        const c = await pg.getTextContent();
+        text += c.items.map(it => it.str).join(' ') + '\n';
+      }
+      return text.trim();
+    }
+    async function pdfFirstPageImage(file) {
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      return canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    }
+    async function fileToBase64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader(); r.readAsDataURL(file);
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = e => rej(e);
+      });
+    }
+
+    // ── RETRY LOGIC ────────────────────────────────────────────────────────────
+    async function withRetry(fn, maxAttempts = 3, baseDelay = 1500) {
+      let lastErr;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try { return await fn(attempt); }
+        catch (e) {
+          lastErr = e;
+          const msg = (e.message || '').toLowerCase();
+          const isOverload = msg.includes('overload') || msg.includes('503') || msg.includes('502') || msg.includes('rate') || msg.includes('429');
+          if (!isOverload || attempt >= maxAttempts) throw e;
+          const delay = baseDelay * Math.pow(2, attempt - 1) + (Math.random() * 500);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+      throw lastErr;
+    }
+
+    // ── CALL OPENROUTER ────────────────────────────────────────────────────────
+    async function callAPI(content, attempt) {
+      const key = localStorage.getItem('api_openrouter_key') || '';
+      if (!key) throw new Error('Chave OpenRouter não configurada (ADM → OpenRouter)');
+      const model = localStorage.getItem('api_openrouter_modelo') || 'openai/gpt-4o-mini';
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': window.location.origin, 'X-Title': 'Prefeitura de Inajá – Renomeador' },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content }], max_tokens: 120, temperature: 0.2 })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || `Erro HTTP ${res.status}`);
+      if (!data.choices?.length) throw new Error('API não retornou resposta');
+      return data.choices[0].message.content.trim();
+    }
+
+    // ── GET ACTIVE PROMPT ──────────────────────────────────────────────────────
+    function getActivePrompt(fileType) {
+      const tpl = templates.find(t => t.id === activeTemplateId) || templates.find(t => t.id === 'tpl_geral') || templates[0];
+      return (tpl.prompt || '').replace(/\[FILETYPE\]/g, fileType);
+    }
+
+    // ── CLEAN NAME ─────────────────────────────────────────────────────────────
+    function cleanName(raw) {
+      return (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\.PDF$/i, '').replace(/[^A-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 80) || 'DOCUMENTO';
+    }
+
+    // ── PROCESS SINGLE ─────────────────────────────────────────────────────────
+    async function processSingle(idx) {
+      if (files[idx].status === 'proc') return;
+      const item = files[idx];
+      // check cache
+      const ck = cacheKey(item.file, activeTemplateId);
+      if (aiCache.has(ck)) {
+        item.sugName = aiCache.get(ck); item.status = 'done'; item.fromCache = true;
+        renderAll(); showToast('✅ Nome obtido do cache', 'success'); return;
+      }
+      item.status = 'proc'; item.retries = 0; renderAll();
+      try {
+        let msgContent;
+        if (item.type === 'PDF') {
+          const text = await extractText(item.file);
+          if (text.length < 50) {
+            const img = await pdfFirstPageImage(item.file);
+            msgContent = [{ type: 'text', text: getActivePrompt('PDF') }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img}` } }];
+          } else {
+            msgContent = getActivePrompt('PDF') + '\n\nCONTEÚDO:\n' + text.substring(0, 4000);
+          }
+        } else if (item.type === 'Imagem') {
+          const b64 = await fileToBase64(item.file);
+          const mime = item.file.type || 'image/jpeg';
+          msgContent = [{ type: 'text', text: getActivePrompt('Imagem') }, { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } }];
+        } else {
+          // Word or other - just use name as hint
+          msgContent = getActivePrompt('Word') + `\n\nNome original do arquivo: ${item.origName}`;
+        }
+        let retryCount = 0;
+        const suggestion = await withRetry(async (attempt) => {
+          retryCount = attempt - 1;
+          item.retries = retryCount; renderTable();
+          return callAPI(msgContent, attempt);
+        }, 3, 1500);
+        item.sugName = cleanName(suggestion); item.status = 'done'; item.fromCache = false; item.retries = retryCount;
+        aiCache.set(ck, item.sugName);
+        addHistory(item.origName, item.sugName, item.type, item.file.size);
+      } catch (e) {
+        item.status = 'error'; item.error = e.message;
+        showToast(e.message, 'error');
+      }
+      renderAll();
+    }
+
+    // ── PROCESS ALL ────────────────────────────────────────────────────────────
+    async function processAll() {
+      if (processing) return;
+      const key = localStorage.getItem('api_openrouter_key') || '';
+      if (!key) { document.getElementById('warn-key').style.display = 'flex'; showToast('Configure a chave OpenRouter no ADM primeiro', 'error'); return; }
+      processing = true; const btn = document.getElementById('btn-all');
+      btn.disabled = true; btn.innerHTML = '<span class="spin">⚙️</span> Processando…';
+      const queue = files.filter(f => f.status !== 'done');
+      const total = queue.length || files.length;
+      const toRun = queue.length ? queue : [...files];
+      let done = 0;
+      document.getElementById('prog-wrap').style.display = ''; setProgress(0, total);
+      for (const item of toRun) { await processSingle(files.indexOf(item)); done++; setProgress(done, total); }
+      document.getElementById('prog-wrap').style.display = 'none';
+      processing = false; btn.disabled = false; btn.innerHTML = '✨ Processar Todos'; renderAll();
+      const ok = files.filter(f => f.status === 'done').length;
+      const err = files.filter(f => f.status === 'error').length;
+      showToast(`✅ ${ok} concluído(s)${err ? ` · ❌ ${err} erro(s)` : ''}`, err ? 'error' : 'success');
+    }
+    function setProgress(done, total) {
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById('prog-fill').style.width = pct + '%';
+      document.getElementById('prog-txt').textContent = `Processando ${done} / ${total}…`;
+      document.getElementById('prog-pct').textContent = pct + '%';
+    }
+
+    // ── DOWNLOAD ───────────────────────────────────────────────────────────────
+    function downloadOne(idx) {
+      const item = files[idx]; if (item.status !== 'done') return;
+      const inp = document.getElementById(`inp-${idx}`) || document.getElementById(`cinp-${idx}`);
+      const name = cleanName((inp ? inp.value : '') || item.sugName || 'DOCUMENTO');
+      const ext = item.type === 'PDF' ? '.pdf' : item.type === 'Word' ? '.docx' : getImageExt(item.file);
+      const url = URL.createObjectURL(item.file);
+      const a = document.createElement('a'); a.href = url; a.download = name + ext; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+    function getImageExt(file) { const m = file.type || ''; if (m.includes('png')) return '.png'; if (m.includes('webp')) return '.webp'; return '.jpg'; }
+    function downloadAll() {
+      const done = files.filter(f => f.status === 'done');
+      if (!done.length) { showToast('Nenhum arquivo processado ainda', 'error'); return; }
+      done.forEach(item => downloadOne(files.indexOf(item)));
+      showToast(`⬇️ ${done.length} download(s) iniciado(s)`, 'success');
+    }
+
+    // ── CLEAR ──────────────────────────────────────────────────────────────────
+    function removeFile(idx) { files.splice(idx, 1); renderAll(); }
+    function clearAll() {
+      if (!files.length) return; files.length = 0; aiCache.clear();
+      document.getElementById('toolbar').style.display = 'none';
+      document.getElementById('file-tbody').innerHTML = '';
+      document.getElementById('file-cards').innerHTML = '';
+      document.getElementById('prog-wrap').style.display = 'none';
+      updateCounters();
+    }
+
+    // ── TEMPLATES MODAL ────────────────────────────────────────────────────────
+    function openTemplates() { renderTplList(); document.getElementById('modal-tpl').style.display = 'flex'; }
+    function closeTpl() { document.getElementById('modal-tpl').style.display = 'none'; editingTplId = null; }
+    function showTplList() {
+      document.getElementById('tpl-list').style.display = '';
+      document.getElementById('tpl-form').style.display = 'none';
+      document.getElementById('tpl-save-btn').style.display = 'none';
+      editingTplId = null; renderTplList();
+    }
+    function showTplForm(editId) {
+      editingTplId = editId || null;
+      document.getElementById('tpl-list').style.display = 'none';
+      document.getElementById('tpl-form').style.display = '';
+      document.getElementById('tpl-save-btn').style.display = '';
+      if (editId) {
+        const t = templates.find(x => x.id === editId) || {};
+        document.getElementById('tf-name').value = t.name || '';
+        document.getElementById('tf-desc').value = t.desc || t.description || '';
+        document.getElementById('tf-cat').value = t.cat || 'geral';
+        document.getElementById('tf-prompt').value = t.prompt || '';
+      } else {
+        document.getElementById('tf-name').value = '';
+        document.getElementById('tf-desc').value = '';
+        document.getElementById('tf-cat').value = 'geral';
+        document.getElementById('tf-prompt').value = '';
+      }
+    }
+    function renderTplList() {
+      const el = document.getElementById('tpl-list'); el.innerHTML = '';
+      templates.forEach(t => {
+        const d = document.createElement('div'); d.className = 'tpl-item' + (t.id === activeTemplateId ? ' active' : '');
+        const catEmoji = { fiscal: '🧾', juridico: '⚖️', corporativo: '🏢', pessoal: '👤', academico: '🎓', geral: '📄' }[t.cat || 'geral'] || '📄';
+        d.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div class="tpl-name">${catEmoji} ${esc(t.name)}</div><div class="tpl-desc">${esc(t.desc || t.description || '')}</div>
+        <span class="tpl-cat">${t.cat || 'geral'}</span>${t.isDefault ? '<span class="tpl-cat" style="background:rgba(34,197,94,.12);color:#15803d;margin-left:4px">padrão</span>' : ''}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          ${!t.isDefault ? `<button class="ren-act" onclick="showTplForm('${t.id}');event.stopPropagation()" title="Editar" style="padding:4px 7px;font-size:11px">✏️</button>
+          <button class="ren-act ren-act-rm" onclick="deleteTpl('${t.id}');event.stopPropagation()" title="Excluir" style="padding:4px 7px;font-size:11px">✕</button>` : ''}
+        </div></div>`;
+        d.addEventListener('click', () => { activeTemplateId = t.id; localStorage.setItem('renamer_active_tpl', t.id); renderTplList(); showToast(`Template "${t.name}" ativo`, 'success'); });
+        el.appendChild(d);
+      });
+    }
+    function saveTpl() {
+      const name = document.getElementById('tf-name').value.trim();
+      const desc = document.getElementById('tf-desc').value.trim();
+      const cat = document.getElementById('tf-cat').value;
+      const prompt = document.getElementById('tf-prompt').value.trim();
+      if (!name || !prompt) { showToast('Preencha nome e prompt', 'error'); return; }
+      if (editingTplId) {
+        const i = templates.findIndex(t => t.id === editingTplId);
+        if (i > -1) { templates[i] = { ...templates[i], name, desc, cat, prompt }; }
+      } else {
+        templates.push({ id: 'tpl_' + Date.now(), name, desc, cat, prompt, isDefault: false });
+      }
+      saveTemplates(templates); showTplList(); showToast('Template salvo!', 'success');
+    }
+    function deleteTpl(id) {
+      const t = templates.find(x => x.id === id); if (!t || t.isDefault) { showToast('Templates padrão não podem ser excluídos', 'error'); return; }
+      templates = templates.filter(x => x.id !== id); saveTemplates(templates);
+      if (activeTemplateId === id) { activeTemplateId = 'tpl_geral'; localStorage.setItem('renamer_active_tpl', 'tpl_geral'); }
+      renderTplList(); showToast('Template excluído', 'success');
+    }
+
+    // ── HISTORY MODAL ──────────────────────────────────────────────────────────
+    function openHistory() { renderHistModal(); document.getElementById('modal-hist').style.display = 'flex'; }
+    function closeHist() { document.getElementById('modal-hist').style.display = 'none'; }
+    function renderHistModal() {
+      const h = loadHistory(); const el = document.getElementById('hist-body');
+      if (!h.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-3);padding:30px">Nenhuma renomeação realizada ainda.</div>'; return; }
+      el.innerHTML = h.map(e => `<div class="hist-item">
+      <div class="hist-orig">${esc(e.orig)}</div>
+      <div class="hist-new">→ ${esc(e.newn)}</div>
+      <div class="hist-meta">${e.type || 'PDF'} · ${fmtSize(e.size || 0)} · ${fmtDate(e.ts)}</div>
+    </div>`).join('');
+    }
+    function clearHistory() { saveHistory([]); closeHist(); updateCounters(); showToast('Histórico limpo', 'success'); }
+    function exportHistory() {
+      const h = loadHistory(); if (!h.length) { showToast('Histórico vazio', 'error'); return; }
+      const blob = new Blob([JSON.stringify(h, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'historico_renomeacoes.json'; a.click();
+      showToast('Histórico exportado!', 'success');
+    }
+
+    // ── UTILS ──────────────────────────────────────────────────────────────────
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : b > 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B'; }
+    function fmtDate(ts) { try { const d = new Date(ts); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+    function showToast(msg, type) {
+      const t = document.getElementById('toast'); t.textContent = msg;
+      t.style.background = type === 'error' ? '#e11d48' : type === 'success' ? '#16a34a' : '#1e40af';
+      t.style.display = 'block'; t.style.opacity = '1';
+      clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
+    }
+  </script>
+</body>
+
+</html>

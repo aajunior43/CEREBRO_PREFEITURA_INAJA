@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controle de Empenhos Mensais – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <button class="hamburger" id="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="header-brand">
+          <img id="header-brasao" src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
+          <div class="header-title">
+            <h1>Prefeitura de Inajá</h1>
+            <p>Gestão de Empenhos</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav">
+        <button class="nav-tab active" data-tab="credores-fixos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Credores Fixos
+        </button>
+        <button class="nav-tab" data-tab="adm" data-requires-auth="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        ADM
+      </button>
+      <a href="rpa.html" class="nav-tab" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        RPA
+      </a>
+      <a href="extratos.html" class="nav-tab" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        Extratos
+      </a>
+      <a href="cnpj.html" class="nav-tab" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        CNPJ
+      </a>
+        <a href="pdf.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </a>
+        <a href="renomear.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Renomear
+        </a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Tarefas
+        </a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+
+      <div class="header-right">
+        <div class="month-nav">
+          <button class="nav-btn" id="btn-prev-month" title="Mês anterior">&#8249;</button>
+          <div class="month-display">
+            <span class="month-name" id="current-month-name">Fevereiro</span>
+            <span class="month-year" id="current-month-year">2026</span>
+          </div>
+          <button class="nav-btn" id="btn-next-month" title="Próximo mês">&#8250;</button>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropdown-toggle" id="dropdown-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+          <div class="dropdown-menu" id="dropdown-menu">
+            <button class="dropdown-item" id="btn-logs">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Logs
+            </button>
+            <button class="dropdown-item" id="theme-toggle">
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+              <span class="theme-label">Tema Claro</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Navigation -->
+  <div class="mobile-nav" id="mobile-nav">
+    <div class="mobile-nav-header">
+      <span>Menu</span>
+      <button class="mobile-nav-close" id="mobile-nav-close">&times;</button>
+    </div>
+    <button class="mobile-nav-item active" data-tab="credores-fixos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+      </svg>
+      Credores Fixos
+    </button>
+    <button class="mobile-nav-item" data-tab="adm" data-requires-auth="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    ADM
+  </button>
+  <a href="rpa.html" class="mobile-nav-item" style="text-decoration:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    RPA
+  </a>
+  <a href="extratos.html" class="mobile-nav-item" style="text-decoration:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+    </svg>
+    Extratos
+  </a>
+  <a href="cnpj.html" class="mobile-nav-item" style="text-decoration:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+    CNPJ
+  </a>
+  <a href="tarefas.html" class="mobile-nav-item" style="text-decoration:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    Tarefas
+  </a>
+  <div class="mobile-nav-divider"></div>
+  <button class="mobile-nav-item" id="mobile-logs">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    Logs
+  </button>
+</div>
+<div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-card stat-total">
+      <div class="stat-icon">📋</div>
+      <div class="stat-info">
+        <span class="stat-label">Total</span>
+        <span class="stat-value" id="stat-total">0</span>
+      </div>
+    </div>
+    <div class="stat-card stat-done">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <span class="stat-label">Empenhados</span>
+        <span class="stat-value" id="stat-done">0</span>
+      </div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <span class="stat-label">Pendentes</span>
+        <span class="stat-value" id="stat-pending">0</span>
+      </div>
+    </div>
+    <div class="stat-card stat-valor">
+      <div class="stat-icon">💰</div>
+      <div class="stat-info">
+        <span class="stat-label">Valor Empenhado</span>
+        <span class="stat-value" id="stat-valor">R$ 0</span>
+      </div>
+    </div>
+    <div class="stat-card stat-restante">
+      <div class="stat-icon">📌</div>
+      <div class="stat-info">
+        <span class="stat-label">Restante</span>
+        <span class="stat-value" id="stat-restante">R$ 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="progress-section">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+    <span class="progress-label" id="progress-label">0% concluído</span>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+      <input type="text" id="search-input" placeholder="Pesquisar credor..." autocomplete="off" />
+    </div>
+
+    <div class="filter-group">
+      <select id="filter-dept" class="select-filter">
+        <option value="">Todos os Departamentos</option>
+        <option value="ADMINISTRAÇÃO">Administração</option>
+        <option value="ASSISTÊNCIA SOCIAL">Assistência Social</option>
+        <option value="EDUCAÇÃO">Educação</option>
+        <option value="SAÚDE">Saúde</option>
+      </select>
+
+      <select id="filter-status" class="select-filter">
+        <option value="">Todos os Status</option>
+        <option value="pendente">Pendentes</option>
+        <option value="empenhado">Empenhados</option>
+      </select>
+    </div>
+
+    <div class="toolbar-actions">
+      <button class="btn btn-secondary" id="btn-expand-all" title="Expandir todos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+        </svg>
+        Expandir
+      </button>
+      <button class="btn btn-secondary" id="btn-print-lote" title="Imprimir todos em lote">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <rect x="6" y="14" width="12" height="8" />
+        </svg>
+        Imprimir Lote
+      </button>
+      <button class="btn btn-primary" id="btn-add-credor" title="Adicionar credor">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Novo Credor
+      </button>
+    </div>
+  </div>
+
+  <!-- EMPENHOS LIST -->
+  <main class="main-content">
+    <!-- Cabeçalho das colunas -->
+    <div class="list-header">
+      <span>Credor / Descrição</span>
+      <span>Departamento</span>
+      <span>Valor</span>
+      <span>Tipo</span>
+      <span style="text-align:right">Ação</span>
+    </div>
+    <div class="empenhos-list" id="empenhos-grid">
+      <!-- Linhas inseridas pelo JS -->
+    </div>
+    <div class="empty-state" id="empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 12h8M12 8v8" />
+      </svg>
+      <p>Nenhum credor encontrado.</p>
+    </div>
+  </main>
+
+  <!-- MODAL: Adicionar / Editar Credor -->
+  <div class="modal-overlay" id="modal-overlay" style="display:none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Novo Credor</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form class="modal-form" id="credor-form" autocomplete="off">
+        <input type="hidden" id="form-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-nome">Nome do Credor *</label>
+            <input type="text" id="form-nome" placeholder="Ex: PRODASP" required />
+          </div>
+          <div class="form-group">
+            <label for="form-dept">Departamento</label>
+            <select id="form-dept">
+              <option value="ADMINISTRAÇÃO">Administração</option>
+              <option value="ASSISTÊNCIA SOCIAL">Assistência Social</option>
+              <option value="EDUCAÇÃO">Educação</option>
+              <option value="SAÚDE">Saúde</option>
+              <option value="">Outro</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-valor">Valor (R$)</label>
+            <input type="number" id="form-valor" step="0.01" min="0" placeholder="0,00" />
+          </div>
+          <div class="form-group">
+            <label for="form-tipo">Tipo de Valor</label>
+            <select id="form-tipo">
+              <option value="FIXO">Fixo</option>
+              <option value="VARIÁVEL">Variável</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-descricao">Descrição</label>
+            <input type="text" id="form-descricao" placeholder="Ex: Locação de impressoras" />
+          </div>
+          <div class="form-group">
+            <label for="form-cnpj">CNPJ</label>
+            <input type="text" id="form-cnpj" placeholder="00.000.000/0001-00" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-email">E-mail</label>
+            <input type="email" id="form-email" placeholder="contato@empresa.com.br" />
+          </div>
+          <div class="form-group">
+            <label for="form-pagamento">Prazo Pagamento (dias)</label>
+            <input type="text" id="form-pagamento" placeholder="Ex: 10" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="form-validade">Validade do Contrato</label>
+            <input type="date" id="form-validade" />
+          </div>
+          <div class="form-group">
+            <label for="form-obs">Observações</label>
+            <input type="text" id="form-obs" placeholder="Ex: VENCIDO, urgente..." />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="btn-delete-credor" style="display:none;">Excluir</button>
+          <div class="modal-footer-right">
+            <button type="button" class="btn btn-ghost" id="btn-modal-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Logs -->
+  <div class="modal-overlay" id="logs-overlay" style="display:none;">
+    <div class="modal" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>Histórico de Ações</h2>
+        <button class="modal-close" id="logs-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="logs-list" id="logs-list">
+          <!-- Logs inserted by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Password for ADM -->
+  <div class="modal-overlay" id="password-overlay" style="display:none;">
+    <div class="modal" style="max-width: 360px;">
+      <div class="modal-header">
+        <h2>Acesso ADM</h2>
+        <button class="modal-close" id="password-close">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <p style="color:var(--text-2);margin-bottom:16px;">Digite a senha para acessar a área administrativa</p>
+        <input type="password" id="password-input" placeholder="Senha" style="width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);color:var(--text);font-size:14px;text-align:center;outline:none;" />
+        <p id="password-error" style="color:var(--red);font-size:12px;margin-top:10px;display:none;">Senha incorreta</p>
+        <button class="btn btn-primary" id="password-submit" style="width:100%;margin-top:16px;">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADM Panel -->
+  <div class="adm-panel" id="adm-panel" style="display:none;">
+    <div class="adm-header">
+      <h2>Área Administrativa</h2>
+      <button class="btn btn-secondary" id="adm-logout">Sair</button>
+    </div>
+    <div class="adm-content">
+      <div class="adm-section">
+        <h3>🔑 Chaves de API</h3>
+        <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Configure as integrações utilizadas nos módulos do sistema.</p>
+
+        <!-- OpenRouter -->
+        <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <span style="font-size:14px;font-weight:700;color:var(--text);">🤖 OpenRouter</span>
+            <span style="font-size:10px;background:rgba(79,128,200,.15);color:var(--blue);padding:2px 8px;border-radius:20px;font-weight:700;">IA</span>
+            <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: Extratos</span>
+          </div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chave API</label>
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input type="password" id="adm-or-key" placeholder="sk-or-v1-..."
+              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+            <button onclick="admToggleKey()" title="Mostrar/ocultar chave"
+              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
+              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
+          </div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Modelo Padrão</label>
+          <div style="display:flex;gap:8px;margin-bottom:18px;">
+            <input type="text" id="adm-or-modelo" placeholder="openai/gpt-4o-mini"
+              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+            <button onclick="admVerModelos()" id="adm-btn-modelos"
+              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap;transition:box-shadow .15s;"
+              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">📋 Ver Modelos</button>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="admSalvarChaves()" style="padding:10px 22px;font-size:13px;">💾 Salvar</button>
+            <button class="btn btn-secondary" onclick="admTestarChave()" id="adm-btn-testar" style="padding:10px 18px;font-size:13px;">🔌 Testar Conexão</button>
+          </div>
+
+          <div id="adm-key-status" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);font-weight:600;"></div>
+
+          <p style="font-size:11px;color:var(--text-3);margin-top:12px;">
+            Obtenha sua chave em <strong>openrouter.ai</strong> → Dashboard → API Keys
+          </p>
+        </div>
+
+        <!-- CNPJá -->
+        <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:18px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <span style="font-size:14px;font-weight:700;color:var(--text);">🏢 CNPJá</span>
+            <span style="font-size:10px;background:rgba(58,170,110,.15);color:var(--green-dark);padding:2px 8px;border-radius:20px;font-weight:700;">Opcional</span>
+            <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: Consulta CNPJ</span>
+          </div>
+
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.5;">
+            Sem chave: gratuito com limite de <strong>5 consultas/min</strong>.<br/>
+            Com chave: sem limite de taxa (plano pago em <strong>cnpja.com</strong>).
+          </p>
+
+          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chave API CNPJá <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <input type="password" id="adm-cnpja-key" placeholder="Deixe em branco para usar grátis"
+              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+            <button onclick="admToggleCnpjaKey()" title="Mostrar/ocultar"
+              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
+              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="admSalvarCnpja()" style="padding:10px 22px;font-size:13px;">💾 Salvar</button>
+            <button class="btn btn-secondary" onclick="admTestarCnpja()" id="adm-btn-testar-cnpja" style="padding:10px 18px;font-size:13px;">🔌 Testar</button>
+          </div>
+
+          <div id="adm-cnpja-status" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);font-weight:600;"></div>
+        </div>
+
+        <!-- Google Gemini → agora usa OpenRouter (bloco apenas informativo) -->
+        <div style="background:rgba(79,128,200,.06);border:1px solid rgba(79,128,200,.2);border-radius:var(--radius-sm);padding:14px 18px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:22px;">✨</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;">Renomeador de PDFs com IA</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.5;">
+              Utiliza a chave <strong>OpenRouter</strong> já configurada acima. Nenhuma chave extra necessária.
+            </div>
+            <a href="renomear.html" style="display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;font-weight:700;color:var(--blue);text-decoration:none;">
+              ✨ Abrir Renomeador de PDFs →
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="loading-overlay"
+    style="display:none; position:fixed; inset:0; background:rgba(11,17,32,0.75); backdrop-filter:blur(3px); z-index:500; align-items:center; justify-content:center; flex-direction:column; gap:14px;">
+    <div class="spinner"></div>
+    <span style="color:#94a3b8; font-size:14px; font-weight:500;">Carregando...</span>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>Desenvolvido por <strong>Aleksandro Alves</strong></p>
+  </footer>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Modal Modelos OpenRouter (ADM) -->
+  <div id="adm-modelos-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;align-items:center;justify-content:center;">
+    <div style="background:var(--bg);border-radius:var(--radius);box-shadow:var(--neo);width:560px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(184,194,204,.2);">
+        <span style="font-size:14px;font-weight:700;color:var(--text);">📋 Modelos – OpenRouter</span>
+        <button onclick="document.getElementById('adm-modelos-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-3);">×</button>
+      </div>
+      <div style="padding:10px 16px;border-bottom:1px solid rgba(184,194,204,.15);display:flex;gap:8px;align-items:center;">
+        <input type="text" id="adm-modelos-filtro" placeholder="Filtrar modelos..." oninput="admFiltrarModelos()"
+          style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:8px 12px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+        <span id="adm-modelos-count" style="font-size:11px;color:var(--text-3);white-space:nowrap;"></span>
+      </div>
+      <div id="adm-modelos-lista" style="flex:1;overflow-y:auto;padding:8px;max-height:50vh;"></div>
+      <div style="padding:12px 16px;border-top:1px solid rgba(184,194,204,.2);display:flex;justify-content:flex-end;">
+        <button onclick="document.getElementById('adm-modelos-modal').style.display='none'"
+          style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-2);">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let _admTodosModelos = [];
+
+    function admCarregarChaves() {
+      const keyEl  = document.getElementById('adm-or-key');
+      const modEl  = document.getElementById('adm-or-modelo');
+      const cnpjaEl = document.getElementById('adm-cnpja-key');
+      if (!keyEl) return;
+      keyEl.value  = localStorage.getItem('api_openrouter_key')    || '';
+      modEl.value  = localStorage.getItem('api_openrouter_modelo') || 'openai/gpt-4o-mini';
+      if (cnpjaEl) cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
+    }
+
+    function admSalvarChaves() {
+      const k = document.getElementById('adm-or-key').value.trim();
+      const m = document.getElementById('adm-or-modelo').value.trim() || 'openai/gpt-4o-mini';
+      localStorage.setItem('api_openrouter_key',    k);
+      localStorage.setItem('api_openrouter_modelo', m);
+      // manter compat com chaves antigas usadas em extratos.html
+      localStorage.setItem('ext_ia_key',    k);
+      localStorage.setItem('ext_ia_modelo', m);
+      showToast('Configurações salvas!', 'success');
+      admStatusMsg('✅ Salvo com sucesso', 'success');
+    }
+
+    function admToggleKey() {
+      const inp = document.getElementById('adm-or-key');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    async function admTestarChave() {
+      const k = document.getElementById('adm-or-key').value.trim();
+      if (!k) { showToast('Preencha a chave primeiro', 'error'); return; }
+      const btn = document.getElementById('adm-btn-testar');
+      btn.textContent = '⏳ Testando...'; btn.disabled = true;
+      admStatusMsg('', '');
+      try {
+        const res = await fetch('/api/extratos/modelos-openrouter', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ api_key: k })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro na resposta');
+        const n = (data.modelos || []).length;
+        admStatusMsg(`✅ Conexão OK — ${n} modelos disponíveis`, 'success');
+        showToast(`Chave válida · ${n} modelos`, 'success');
+      } catch(e) {
+        admStatusMsg('❌ ' + e.message, 'error');
+        showToast('Chave inválida: ' + e.message, 'error');
+      } finally {
+        btn.textContent = '🔌 Testar Conexão'; btn.disabled = false;
+      }
+    }
+
+    async function admVerModelos() {
+      const k = document.getElementById('adm-or-key').value.trim();
+      if (!k) { showToast('Preencha a chave API primeiro', 'error'); return; }
+      const btn = document.getElementById('adm-btn-modelos');
+      btn.textContent = '⏳...'; btn.disabled = true;
+      try {
+        const res = await fetch('/api/extratos/modelos-openrouter', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ api_key: k })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro');
+        _admTodosModelos = data.modelos || [];
+        admRenderModelos(_admTodosModelos);
+        document.getElementById('adm-modelos-filtro').value = '';
+        document.getElementById('adm-modelos-modal').style.display = 'flex';
+      } catch(e) {
+        showToast('Erro: ' + e.message, 'error');
+      } finally {
+        btn.textContent = '📋 Ver Modelos'; btn.disabled = false;
+      }
+    }
+
+    function admRenderModelos(lista) {
+      document.getElementById('adm-modelos-count').textContent = lista.length + ' modelos';
+      const el = document.getElementById('adm-modelos-lista');
+      if (!lista.length) { el.innerHTML = '<p style="padding:20px;color:var(--text-3);text-align:center;">Nenhum modelo.</p>'; return; }
+      el.innerHTML = lista.map(m => `
+        <div ondblclick="admSelecionarModelo('${m.id.replace(/'/g,"\\'")}'')"
+          style="display:flex;align-items:flex-start;justify-content:space-between;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;gap:8px;"
+          onmouseover="this.style.background='rgba(79,128,200,.08)'" onmouseout="this.style.background=''"
+          title="Duplo-clique para selecionar">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);">${m.name || m.id}</div>
+            <div style="font-size:11px;color:var(--text-3);font-family:monospace;">${m.id}</div>
+          </div>
+          <span style="font-size:10px;color:var(--text-3);white-space:nowrap;margin-top:2px;">${m.context_length ? m.context_length.toLocaleString()+' ctx' : ''}</span>
+        </div>`).join('');
+    }
+
+    function admFiltrarModelos() {
+      const q = document.getElementById('adm-modelos-filtro').value.toLowerCase();
+      admRenderModelos(q ? _admTodosModelos.filter(m => (m.name||'').toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) : _admTodosModelos);
+    }
+
+    function admSelecionarModelo(id) {
+      document.getElementById('adm-or-modelo').value = id;
+      document.getElementById('adm-modelos-modal').style.display = 'none';
+      showToast('Modelo selecionado: ' + id, 'success');
+    }
+
+    function admStatusMsg(msg, type) {
+      const el = document.getElementById('adm-key-status');
+      if (!el) return;
+      el.style.display = msg ? '' : 'none';
+      el.textContent = msg;
+      const colors = { success: ['var(--green-bg)','var(--green-dark)'], error: ['var(--red-bg)','var(--red)'], '': ['',''] };
+      const [bg, fg] = colors[type] || colors[''];
+      el.style.background = bg; el.style.color = fg;
+    }
+
+    function admToggleCnpjaKey() {
+      const inp = document.getElementById('adm-cnpja-key');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    function admSalvarCnpja() {
+      const k = document.getElementById('adm-cnpja-key').value.trim();
+      localStorage.setItem('api_cnpja_key', k);
+      showToast('Chave CNPJá salva!', 'success');
+      admCnpjaStatus('✅ Salvo com sucesso', 'success');
+    }
+
+    async function admTestarCnpja() {
+      const k = document.getElementById('adm-cnpja-key').value.trim();
+      const btn = document.getElementById('adm-btn-testar-cnpja');
+      btn.textContent = '⏳ Testando...'; btn.disabled = true;
+      admCnpjaStatus('', '');
+      try {
+        const res = await fetch('/api/cnpj/buscar', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ cnpj: '00000000000191', api_key_cnpja: k })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro');
+        admCnpjaStatus(`✅ OK — ${data.razao_social || 'Conexão bem-sucedida'}`, 'success');
+        showToast('CNPJá: conexão OK', 'success');
+      } catch(e) {
+        admCnpjaStatus('❌ ' + e.message, 'error');
+        showToast('Erro: ' + e.message, 'error');
+      } finally {
+        btn.textContent = '🔌 Testar'; btn.disabled = false;
+      }
+    }
+
+    function admCnpjaStatus(msg, type) {
+      const el = document.getElementById('adm-cnpja-status');
+      if (!el) return;
+      el.style.display = msg ? '' : 'none';
+      el.textContent = msg;
+      const colors = { success: ['var(--green-bg)','var(--green-dark)'], error: ['var(--red-bg)','var(--red)'] };
+      const [bg, fg] = colors[type] || ['',''];
+      el.style.background = bg; el.style.color = fg;
+    }
+
+    // Carregar chaves quando painel ADM abrir
+    document.addEventListener('DOMContentLoaded', () => {
+      const obs = new MutationObserver(() => {
+        const panel = document.getElementById('adm-panel');
+        if (panel && panel.style.display !== 'none') admCarregarChaves();
+      });
+      const panel = document.getElementById('adm-panel');
+      if (panel) obs.observe(panel, { attributes: true, attributeFilter: ['style'] });
+    });
+  </script>
+
+  <script src="/static/js/brasao_b64.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+
+</html>

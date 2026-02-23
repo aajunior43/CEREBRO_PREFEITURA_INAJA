@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendário de Pagamentos – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Calendário Layout ── */
+    .cal-wrap {
+      max-width: 1200px;
+      margin: 24px auto 60px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .cal-wrap { grid-template-columns: 1fr; }
+    }
+
+    /* ── Legend ── */
+    .legend-bar {
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo-sm);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .legend-bar h3 { font-size: 13px; font-weight: 700; color: var(--text-3); margin-right: 4px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Calendar Grid ── */
+    .cal-grid-wrap {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--neo);
+      overflow: hidden;
+    }
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: rgba(0,0,0,0.04);
+    }
+    [data-theme="dark"] .cal-weekdays { background: rgba(255,255,255,0.03); }
+    .cal-weekday {
+      text-align: center;
+      padding: 12px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .cal-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+    }
+    .cal-day {
+      min-height: 90px;
+      padding: 10px 8px;
+      border-right: 1px solid rgba(0,0,0,0.06);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.15s;
+      position: relative;
+    }
+    [data-theme="dark"] .cal-day {
+      border-color: rgba(255,255,255,0.05);
+    }
+    .cal-day:hover { background: rgba(0,0,0,0.03); }
+    [data-theme="dark"] .cal-day:hover { background: rgba(255,255,255,0.04); }
+    .cal-day.other-month { opacity: 0.35; }
+    .cal-day.is-weekend .cal-day-num { color: var(--text-3); }
+    .cal-day.is-holiday { background: var(--orange-bg); }
+    .cal-day.is-payment { background: var(--red-bg); }
+    .cal-day.is-commitment { background: var(--purple-bg); }
+    .cal-day.is-today .cal-day-num {
+      background: var(--blue);
+      color: white;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .cal-day.is-selected {
+      box-shadow: inset 0 0 0 2px var(--blue);
+      background: var(--blue-light);
+    }
+    .cal-day.is-selected.is-payment { box-shadow: inset 0 0 0 2px var(--red); }
+    .cal-day.is-selected.is-commitment { box-shadow: inset 0 0 0 2px var(--purple); }
+    .cal-day-num {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cal-day-badge {
+      margin-top: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 6px;
+      border-radius: 6px;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .badge-payment {
+      background: var(--red);
+      color: white;
+    }
+    .badge-commitment {
+      background: var(--purple);
+      color: white;
+    }
+    .badge-holiday {
+      background: transparent;
+      color: var(--orange);
+      font-size: 9px;
+      padding: 2px 0;
+    }
+
+    /* ── Info Panel ── */
+    .info-panel {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--neo);
+      padding: 28px 24px;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+    }
+    .info-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 12px;
+    }
+    .info-empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+    }
+    .info-empty-icon svg { width: 32px; height: 32px; color: var(--text-3); }
+    .info-empty h3 { font-size: 16px; font-weight: 700; color: var(--text-2); }
+    .info-empty p { font-size: 13px; color: var(--text-3); max-width: 200px; line-height: 1.5; }
+    .info-empty-footer { margin-top: auto; padding-top: 24px; }
+    .info-empty-footer p { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-empty-footer strong { font-size: 24px; font-weight: 800; color: var(--red); }
+
+    .info-detail { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .info-detail-date {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: capitalize;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      padding-bottom: 14px;
+    }
+    [data-theme="dark"] .info-detail-date { border-color: rgba(255,255,255,0.08); }
+    .info-detail-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      flex: 1;
+    }
+    .info-hero-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: var(--bg);
+      box-shadow: var(--neo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .info-hero-icon svg { width: 36px; height: 36px; }
+    .info-hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .info-hero-sub { font-size: 15px; font-weight: 500; color: var(--text-2); }
+    .info-commitment-list {
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo-in-sm);
+      padding: 14px 16px;
+      width: 100%;
+      text-align: left;
+    }
+    .info-commitment-list p.label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .info-commitment-list ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .info-commitment-list li {
+      font-size: 13px;
+      color: var(--text-2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-commitment-list li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--purple);
+      flex-shrink: 0;
+    }
+    .info-footer-card {
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo-in-sm);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .info-footer-card .label-sm { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .info-footer-card .label-md { font-size: 13px; color: var(--text-2); }
+    .info-footer-card .big-num { font-size: 28px; font-weight: 800; color: var(--red); }
+
+    /* ── PDF Button ── */
+    .cal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+    .btn-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 20px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--red), #a33);
+      color: white;
+      box-shadow: 3px 3px 8px rgba(199,74,74,0.35);
+      transition: box-shadow 0.2s, opacity 0.2s;
+    }
+    .btn-pdf:hover { box-shadow: 5px 5px 14px rgba(199,74,74,0.5); }
+    .btn-pdf:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Header month nav ── */
+    .cal-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cal-month-nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo-sm);
+      padding: 4px;
+    }
+    .cal-nav-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-2);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .cal-nav-btn:hover { background: rgba(0,0,0,0.06); }
+    [data-theme="dark"] .cal-nav-btn:hover { background: rgba(255,255,255,0.08); }
+    .cal-nav-btn svg { width: 18px; height: 18px; }
+    .cal-month-label {
+      min-width: 180px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: capitalize;
+      padding: 0 8px;
+    }
+
+    /* ── Printable (hidden) ── */
+    #printable-cal { display: none; }
+
+    @media print {
+      body > *:not(#printable-cal) { display: none !important; }
+      #printable-cal {
+        display: block !important;
+        font-family: 'Inter', sans-serif;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-brand">
+          <img src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
+          <div class="header-title">
+            <h1>Prefeitura de Inajá</h1>
+            <p>Gestão de Empenhos</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+          </svg>
+          Credores Fixos
+        </a>
+        <a href="index.html#adm" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          ADM
+        </a>
+        <a href="rpa.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          RPA
+        </a>
+        <a href="extratos.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          Extratos
+        </a>
+        <a href="cnpj.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          CNPJ
+        </a>
+        <a href="pdf.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </a>
+        <a href="renomear.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Renomear
+        </a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Tarefas
+        </a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab active" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendário
+        </a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+
+      <div class="header-right">
+        <div class="dropdown">
+          <button class="dropdown-toggle" id="dropdown-toggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+            </svg>
+          </button>
+          <div class="dropdown-menu" id="dropdown-menu">
+            <button class="dropdown-item" id="theme-toggle">
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+              <span class="theme-label">Tema Claro</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <div class="cal-wrap">
+    <!-- LEFT: Calendar -->
+    <div>
+      <div class="cal-header-top">
+        <div class="cal-month-nav">
+          <button class="cal-nav-btn" id="btn-prev-month">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </button>
+          <span class="cal-month-label" id="cal-month-label">—</span>
+          <button class="cal-nav-btn" id="btn-next-month">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+        <button class="btn-pdf" id="btn-pdf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+            <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+          </svg>
+          Baixar PDF
+        </button>
+      </div>
+
+      <div class="legend-bar">
+        <h3>Legenda:</h3>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--red);"></div>
+          <span style="color:var(--red);">Pagamento</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--purple);"></div>
+          <span style="color:var(--purple);">Empenho</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--orange);"></div>
+          <span style="color:var(--orange);">Feriado</span>
+        </div>
+      </div>
+
+      <div class="cal-grid-wrap">
+        <div class="cal-weekdays">
+          <div class="cal-weekday">Dom</div>
+          <div class="cal-weekday">Seg</div>
+          <div class="cal-weekday">Ter</div>
+          <div class="cal-weekday">Qua</div>
+          <div class="cal-weekday">Qui</div>
+          <div class="cal-weekday">Sex</div>
+          <div class="cal-weekday">Sáb</div>
+        </div>
+        <div class="cal-days" id="cal-days"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Info Panel -->
+    <div class="info-panel" id="info-panel">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- Hidden printable calendar -->
+  <div id="printable-cal"></div>
+
+  <!-- jsPDF + html2canvas from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+  'use strict';
+
+  // ── Theme toggle (reuse from main project) ──────────────────
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+  document.getElementById('dropdown-toggle').addEventListener('click', () => {
+    document.getElementById('dropdown-menu').classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown')) document.getElementById('dropdown-menu').classList.remove('open');
+  });
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    document.querySelector('.theme-label').textContent = isDark ? 'Tema Escuro' : 'Tema Claro';
+    document.getElementById('dropdown-menu').classList.remove('open');
+  });
+
+  // ── Constants ───────────────────────────────────────────────
+  const MESES = ['janeiro','fevereiro','março','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro'];
+
+  const DayType = {
+    BUSINESS: 'BUSINESS',
+    WEEKEND: 'WEEKEND',
+    HOLIDAY: 'HOLIDAY',
+    PAYMENT: 'PAYMENT',
+    COMMITMENT: 'COMMITMENT',
+  };
+
+  // ── Feriados ────────────────────────────────────────────────
+  const FIXED_HOLIDAYS = [
+    { day: 1,  month: 0,  name: 'Confraternização Universal' },
+    { day: 21, month: 3,  name: 'Tiradentes' },
+    { day: 1,  month: 4,  name: 'Dia do Trabalho' },
+    { day: 7,  month: 8,  name: 'Independência do Brasil' },
+    { day: 12, month: 9,  name: 'Nossa Sr.ª Aparecida' },
+    { day: 2,  month: 10, name: 'Finados' },
+    { day: 15, month: 10, name: 'Proclamação da República' },
+    { day: 20, month: 10, name: 'Consciência Negra' },
+    { day: 25, month: 11, name: 'Natal' },
+  ];
+
+  const MOVABLE_HOLIDAYS = {
+    '2024-02-12': 'Carnaval', '2024-02-13': 'Carnaval',
+    '2024-03-29': 'Paixão de Cristo', '2024-05-30': 'Corpus Christi',
+    '2025-03-03': 'Carnaval', '2025-03-04': 'Carnaval',
+    '2025-04-18': 'Paixão de Cristo', '2025-06-19': 'Corpus Christi',
+    '2026-02-16': 'Carnaval', '2026-02-17': 'Carnaval',
+    '2026-04-03': 'Paixão de Cristo', '2026-06-04': 'Corpus Christi',
+  };
+
+  function getHolidayName(date) {
+    const d = date.getDate(), m = date.getMonth();
+    const fixed = FIXED_HOLIDAYS.find(h => h.day === d && h.month === m);
+    if (fixed) return fixed.name;
+    const key = `${date.getFullYear()}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    return MOVABLE_HOLIDAYS[key] || null;
+  }
+
+  function isHoliday(date) { return !!getHolidayName(date); }
+  function isWeekend(date) { const d = date.getDay(); return d === 0 || d === 6; }
+
+  // ── Date Helpers ────────────────────────────────────────────
+  function getLastBusinessDays(year, month, count) {
+    const found = [];
+    let day = new Date(year, month + 1, 0); // last day of month
+    let iter = 0;
+    while (day.getDate() >= 1 && found.length < count && iter < 32) {
+      if (!isWeekend(day) && !isHoliday(day)) found.push(day.getDate());
+      day = new Date(year, month, day.getDate() - 1);
+      iter++;
+    }
+    return found;
+  }
+
+  function findNextBusinessDay(year, month, startDay) {
+    let d = startDay;
+    for (let i = 0; i < 10; i++) {
+      const date = new Date(year, month, d);
+      if (!isWeekend(date) && !isHoliday(date)) return d;
+      d++;
+    }
+    return startDay;
+  }
+
+  function generateCalendarDays(year, month) {
+    const firstDow = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevLastDay = new Date(year, month, 0).getDate();
+
+    const bizDays = getLastBusinessDays(year, month, 2);
+    const lastBiz = bizDays[0];
+    const secondLastBiz = bizDays[1];
+    const copelDay = findNextBusinessDay(year, month, 15);
+    const oficDay10 = findNextBusinessDay(year, month, 10);
+
+    const days = [];
+
+    // Prev month padding
+    for (let i = firstDow - 1; i >= 0; i--) {
+      days.push({ date: new Date(year, month - 1, prevLastDay - i), dayOfMonth: prevLastDay - i, isCurrentMonth: false, type: DayType.BUSINESS });
+    }
+
+    // Current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(year, month, i);
+      let type = DayType.BUSINESS;
+      let commitmentText = null;
+      let paymentText = null;
+      const holiday = getHolidayName(date);
+
+      if (i === lastBiz) {
+        type = DayType.PAYMENT;
+        paymentText = 'Pagamento Servidores';
+      } else if (i === oficDay10) {
+        type = DayType.PAYMENT;
+        paymentText = 'Pagamento Oficineiros';
+      } else if (i === secondLastBiz) {
+        type = DayType.COMMITMENT;
+        commitmentText = 'Enfermeiras, estagiários, recicla já';
+      } else if (i === copelDay) {
+        type = DayType.COMMITMENT;
+        commitmentText = 'Copel e Sanepar';
+      } else if (i >= 5 && i <= 7 && !isWeekend(date) && !holiday) {
+        type = DayType.COMMITMENT;
+        commitmentText = 'Oficineiros';
+      } else if (holiday) {
+        type = DayType.HOLIDAY;
+      } else if (isWeekend(date)) {
+        type = DayType.WEEKEND;
+      }
+
+      days.push({ date, dayOfMonth: i, isCurrentMonth: true, type, holidayName: holiday, commitmentText, paymentText });
+    }
+
+    // Next month padding
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      days.push({ date: new Date(year, month + 1, i), dayOfMonth: i, isCurrentMonth: false, type: DayType.BUSINESS });
+    }
+
+    return days;
+  }
+
+  // ── State ────────────────────────────────────────────────────
+  let state = {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    selectedDay: null,
+    days: [],
+  };
+
+  function getLastBizDay() {
+    return getLastBusinessDays(state.year, state.month, 1)[0] || 1;
+  }
+
+  // ── Render Calendar ──────────────────────────────────────────
+  function renderCalendar() {
+    state.days = generateCalendarDays(state.year, state.month);
+
+    // Update month label
+    const label = `${MESES[state.month].charAt(0).toUpperCase() + MESES[state.month].slice(1)} ${state.year}`;
+    document.getElementById('cal-month-label').textContent = label;
+
+    const today = new Date();
+    const container = document.getElementById('cal-days');
+    container.innerHTML = '';
+
+    state.days.forEach((day, idx) => {
+      const el = document.createElement('div');
+      el.className = 'cal-day';
+
+      if (!day.isCurrentMonth) el.classList.add('other-month');
+      if (day.isCurrentMonth) {
+        if (day.type === DayType.WEEKEND) el.classList.add('is-weekend');
+        if (day.type === DayType.HOLIDAY) el.classList.add('is-holiday');
+        if (day.type === DayType.PAYMENT) el.classList.add('is-payment');
+        if (day.type === DayType.COMMITMENT) el.classList.add('is-commitment');
+      }
+
+      const isToday = day.date.getDate() === today.getDate() &&
+                      day.date.getMonth() === today.getMonth() &&
+                      day.date.getFullYear() === today.getFullYear();
+      if (isToday) el.classList.add('is-today');
+
+      if (state.selectedDay &&
+          day.date.getDate() === state.selectedDay.date.getDate() &&
+          day.date.getMonth() === state.selectedDay.date.getMonth()) {
+        el.classList.add('is-selected');
+      }
+
+      // Day number
+      const numEl = document.createElement('div');
+      numEl.className = 'cal-day-num';
+      numEl.textContent = day.dayOfMonth;
+      el.appendChild(numEl);
+
+      // Badge
+      if (day.isCurrentMonth) {
+        if (day.type === DayType.PAYMENT) {
+          const badge = document.createElement('div');
+          badge.className = 'cal-day-badge badge-payment';
+          badge.textContent = day.paymentText && day.paymentText.toLowerCase().includes('oficineiros') ? 'OFICINEIROS' : 'PAGAMENTO';
+          el.appendChild(badge);
+        } else if (day.type === DayType.COMMITMENT) {
+          const badge = document.createElement('div');
+          badge.className = 'cal-day-badge badge-commitment';
+          badge.textContent = 'EMPENHO';
+          el.appendChild(badge);
+        } else if (day.type === DayType.HOLIDAY && day.holidayName) {
+          const badge = document.createElement('div');
+          badge.className = 'cal-day-badge badge-holiday';
+          badge.textContent = day.holidayName;
+          el.appendChild(badge);
+        }
+      }
+
+      el.addEventListener('click', () => {
+        state.selectedDay = day;
+        renderCalendar();
+        renderInfoPanel();
+      });
+
+      container.appendChild(el);
+    });
+
+    renderInfoPanel();
+  }
+
+  // ── Render Info Panel ────────────────────────────────────────
+  function renderInfoPanel() {
+    const panel = document.getElementById('info-panel');
+    const lastBiz = getLastBizDay();
+
+    if (!state.selectedDay) {
+      panel.innerHTML = `
+        <div class="info-empty">
+          <div class="info-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <h3>Detalhes do Dia</h3>
+          <p>Selecione uma data no calendário para visualizar pagamentos e empenhos.</p>
+          <div class="info-empty-footer">
+            <p>Pagamento Geral</p>
+            <strong>Dia ${lastBiz}</strong>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const day = state.selectedDay;
+    const dateFormatted = day.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const isPayment = day.type === DayType.PAYMENT && day.isCurrentMonth;
+    const isCommitment = day.type === DayType.COMMITMENT && day.isCurrentMonth;
+    const isHolidayDay = day.type === DayType.HOLIDAY;
+    const isWeekendDay = day.type === DayType.WEEKEND;
+
+    let iconSvg, titleText, iconColor;
+
+    if (isPayment) {
+      iconColor = 'var(--red)';
+      titleText = 'Pagamento';
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--red);">
+        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>`;
+    } else if (isCommitment) {
+      iconColor = 'var(--purple)';
+      titleText = 'Empenho';
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--purple);">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+      </svg>`;
+    } else if (isHolidayDay) {
+      iconColor = 'var(--orange)';
+      titleText = 'Feriado';
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--orange);">
+        <path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+      </svg>`;
+    } else if (isWeekendDay) {
+      iconColor = 'var(--text-3)';
+      titleText = 'Fim de Semana';
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--text-3);">
+        <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+      </svg>`;
+    } else {
+      iconColor = 'var(--blue)';
+      titleText = 'Dia Útil';
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--blue);">
+        <path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>`;
+    }
+
+    let detailContent = '';
+    if (isPayment) {
+      detailContent = `<p class="info-hero-sub" style="color:var(--red);">${day.paymentText || 'Pagamento dos Servidores'}</p>`;
+    } else if (isHolidayDay) {
+      detailContent = `<p class="info-hero-sub" style="color:var(--orange);">${day.holidayName}</p>`;
+    } else if (isCommitment && day.commitmentText) {
+      const items = day.commitmentText.split(',').map(s => s.trim()).filter(Boolean);
+      detailContent = `
+        <div class="info-commitment-list">
+          <p class="label">Itens do Empenho:</p>
+          <ul>${items.map(it => `<li>${it}</li>`).join('')}</ul>
+        </div>`;
+    }
+
+    const showFooter = !isPayment && !isCommitment;
+    const footerHtml = showFooter ? `
+      <div class="info-footer-card" style="margin-top:auto;">
+        <div>
+          <div class="label-sm">Pagamento Geral</div>
+          <div class="label-md">Último dia útil do mês</div>
+        </div>
+        <span class="big-num">${lastBiz}</span>
+      </div>` : '';
+
+    panel.innerHTML = `
+      <div class="info-detail">
+        <div class="info-detail-date">${dateFormatted}</div>
+        <div class="info-detail-hero">
+          <div class="info-hero-icon">${iconSvg}</div>
+          <div class="info-hero-title" style="color:${iconColor};">${titleText}</div>
+          ${detailContent}
+        </div>
+        ${footerHtml}
+      </div>`;
+  }
+
+  // ── Navigation ───────────────────────────────────────────────
+  document.getElementById('btn-prev-month').addEventListener('click', () => {
+    if (state.month === 0) { state.month = 11; state.year--; }
+    else state.month--;
+    state.selectedDay = null;
+    renderCalendar();
+  });
+
+  document.getElementById('btn-next-month').addEventListener('click', () => {
+    if (state.month === 11) { state.month = 0; state.year++; }
+    else state.month++;
+    state.selectedDay = null;
+    renderCalendar();
+  });
+
+  // ── PDF Export ───────────────────────────────────────────────
+  document.getElementById('btn-pdf').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-pdf');
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
+    try {
+      // Build printable HTML
+      const monthLabel = `${MESES[state.month].charAt(0).toUpperCase() + MESES[state.month].slice(1)} ${state.year}`;
+      const lastBiz = getLastBizDay();
+      const days = state.days;
+
+      const WDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+      let gridHtml = '';
+      days.forEach(day => {
+        let bg = '#fff';
+        if (!day.isCurrentMonth) bg = '#f8f8f8';
+        else if (day.type === DayType.WEEKEND) bg = '#f5f5f5';
+        else if (day.type === DayType.HOLIDAY) bg = '#fff8ee';
+        else if (day.type === DayType.PAYMENT) bg = '#fff0f0';
+        else if (day.type === DayType.COMMITMENT) bg = '#f8f0ff';
+
+        let badgeHtml = '';
+        if (day.isCurrentMonth) {
+          if (day.type === DayType.PAYMENT)
+            badgeHtml = `<div style="background:#c74a4a;color:white;font-size:8px;font-weight:700;padding:2px 4px;border-radius:4px;text-align:center;">${day.paymentText || 'PAGAMENTO'}</div>`;
+          else if (day.type === DayType.COMMITMENT)
+            badgeHtml = `<div style="background:#7c5fc8;color:white;font-size:8px;font-weight:700;padding:2px 4px;border-radius:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${day.commitmentText || 'EMPENHO'}</div>`;
+          else if (day.type === DayType.HOLIDAY && day.holidayName)
+            badgeHtml = `<div style="color:#d97c3a;font-size:7px;font-weight:600;">${day.holidayName}</div>`;
+        }
+
+        gridHtml += `
+          <div style="border-right:1px solid #ddd;border-bottom:1px solid #ddd;background:${bg};height:90px;padding:6px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+            <span style="font-size:11px;font-weight:${!day.isCurrentMonth ? '400' : '600'};color:${!day.isCurrentMonth ? '#aaa' : '#1e2a38'};">${day.dayOfMonth}</span>
+            <div>${badgeHtml}</div>
+          </div>`;
+      });
+
+      const printHtml = `
+        <div style="width:210mm;min-height:297mm;background:white;padding:24px 28px;font-family:Arial,sans-serif;box-sizing:border-box;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e2a38;padding-bottom:12px;margin-bottom:20px;">
+            <div>
+              <div style="font-size:22px;font-weight:800;color:#1e2a38;text-transform:uppercase;">Calendário de Pagamentos</div>
+              <div style="font-size:12px;color:#6b7f96;margin-top:4px;">Prefeitura de Inajá</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:18px;font-weight:700;color:#1e2a38;text-transform:capitalize;">${monthLabel}</div>
+              <div style="font-size:10px;color:#6b7f96;margin-top:2px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+            </div>
+          </div>
+          <div style="border-top:1px solid #ddd;border-left:1px solid #ddd;">
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f0f0f0;border-bottom:1px solid #ddd;">
+              ${WDAYS.map(d => `<div style="text-align:center;padding:8px 4px;font-size:10px;font-weight:700;color:#3d4f63;border-right:1px solid #ddd;box-sizing:border-box;">${d}</div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);">
+              ${gridHtml}
+            </div>
+          </div>
+          <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="border:1px solid #ddd;border-radius:8px;padding:14px;background:#f8f8f8;">
+              <div style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:10px;">Legenda</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:14px;height:14px;background:#fff0f0;border:1px solid #c74a4a;border-radius:3px;"></div><span style="font-size:11px;">Dia de Pagamento</span></div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:14px;height:14px;background:#f8f0ff;border:1px solid #7c5fc8;border-radius:3px;"></div><span style="font-size:11px;">Dia de Empenho</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;background:#fff8ee;border:1px solid #d97c3a;border-radius:3px;"></div><span style="font-size:11px;">Feriado Nacional</span></div>
+            </div>
+            <div style="border:1px solid #ddd;border-radius:8px;padding:14px;background:#f8f8f8;">
+              <div style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:10px;">Resumo</div>
+              <p style="font-size:11px;color:#6b7f96;margin-bottom:6px;">Pagamento geral dos servidores:</p>
+              <p style="font-size:20px;font-weight:800;color:#c74a4a;">Dia ${lastBiz} de ${MESES[state.month]}</p>
+            </div>
+          </div>
+        </div>`;
+
+      const printEl = document.getElementById('printable-cal');
+      printEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;z-index:-1;';
+      printEl.innerHTML = printHtml;
+
+      const canvas = await html2canvas(printEl.firstElementChild, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const w = pdf.internal.pageSize.getWidth();
+      const h = pdf.internal.pageSize.getHeight();
+      pdf.addImage(imgData, 'PNG', 0, 0, w, h);
+      pdf.save(`calendario-pagamento-inaja-${MESES[state.month]}-${state.year}.pdf`);
+
+      printEl.style.cssText = '';
+      printEl.innerHTML = '';
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao gerar o PDF. Tente novamente.');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg> Baixar PDF`;
+  });
+
+  // ── Init ─────────────────────────────────────────────────────
+  renderCalendar();
+  </script>
+</body>
+</html>

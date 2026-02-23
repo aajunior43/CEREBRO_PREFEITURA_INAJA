@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RPA – Recibo de Pagamento Autônomo</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    .rpa-wrap { max-width: 900px; margin: 24px auto 60px; padding: 0 24px; }
+    .rpa-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid var(--shadow-dark); padding-bottom: 0; }
+    .rpa-tab { padding: 10px 22px; border: none; background: none; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-3); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+    .rpa-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    .rpa-tab:hover { color: var(--text); }
+    .rpa-panel { display: none; }
+    .rpa-panel.active { display: block; }
+    .rpa-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 24px; margin-bottom: 20px; }
+    .rpa-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input, .form-group select, .form-group textarea {
+      background: var(--bg); border: none; border-radius: var(--radius-sm);
+      box-shadow: var(--neo-in-sm); padding: 10px 12px; font-family: inherit;
+      font-size: 13px; color: var(--text); outline: none; transition: box-shadow 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { box-shadow: var(--neo-in); }
+    .form-group input:disabled { color: var(--text-3); cursor: not-allowed; }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .tax-box { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo-in); padding: 20px; }
+    .tax-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(184,194,204,0.3); font-size: 13px; }
+    .tax-row:last-child { border-bottom: none; }
+    .tax-row.total { font-weight: 800; font-size: 15px; color: var(--green-dark); padding-top: 12px; }
+    .tax-row.deduction { color: var(--red); }
+    .tax-label { color: var(--text-3); }
+    .tax-value { font-weight: 600; color: var(--text); }
+    .tax-value.neg { color: var(--red); }
+    .tax-value.pos { color: var(--green-dark); }
+    .rpa-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .btn-rpa { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+    .btn-rpa-primary { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: white; box-shadow: 3px 3px 8px rgba(79,128,200,0.4); }
+    .btn-rpa-primary:hover { box-shadow: 5px 5px 12px rgba(79,128,200,0.5); }
+    .btn-rpa-secondary { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); }
+    .btn-rpa-secondary:hover { box-shadow: var(--neo); }
+    .btn-rpa-danger { background: var(--bg); color: var(--red); box-shadow: var(--neo-sm); }
+    .btn-rpa-green { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: white; box-shadow: 3px 3px 8px rgba(58,170,110,0.4); }
+    .rpa-list-item { display: grid; grid-template-columns: 60px 1fr 140px 120px 120px 100px; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid rgba(184,194,204,0.2); font-size: 13px; }
+    .rpa-list-item:last-child { border-bottom: none; }
+    .rpa-list-item:hover { background: rgba(184,194,204,0.08); }
+    .rpa-num { font-weight: 700; color: var(--blue); }
+    .rpa-name { font-weight: 600; color: var(--text); }
+    .rpa-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .rpa-list-header { display: grid; grid-template-columns: 60px 1fr 140px 120px 120px 100px; gap: 12px; padding: 8px 18px; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge-aliq { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 11px; font-weight: 700; background: var(--bg); box-shadow: var(--neo-in-sm); color: var(--orange); }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(184,194,204,0.2); }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-label { font-size: 13px; font-weight: 600; color: var(--text); }
+    .settings-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; }
+    .toggle { position: relative; width: 44px; height: 24px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--shadow-dark); border-radius: 24px; cursor: pointer; transition: 0.3s; box-shadow: var(--neo-in-sm); }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+    .toggle input:checked + .toggle-slider { background: var(--blue); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+    .faixa-row { display: grid; grid-template-columns: 1fr 1fr 80px 100px; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .faixa-row input { padding: 6px 10px; font-size: 12px; }
+    .empty-rpa { text-align: center; padding: 50px 20px; color: var(--text-3); }
+    .empty-rpa svg { width: 48px; height: 48px; margin: 0 auto 12px; display: block; }
+    .cpf-warning { background: var(--orange-bg); color: var(--orange); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; margin-top: 6px; }
+    .section-divider { border: none; border-top: 1px solid rgba(184,194,204,0.3); margin: 16px 0; }
+    @media print { .rpa-tabs, .rpa-actions, header, .main-content { display: none !important; } }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER igual ao index.html -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="header-brand">
+          <img src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
+          <div class="header-title">
+            <h1>Prefeitura de Inajá</h1>
+            <p>Gestão de Empenhos</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="desktop-nav">
+        <a href="index.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+          </svg>
+          Credores Fixos
+        </a>
+        <a href="index.html#adm" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          ADM
+        </a>
+        <a href="rpa.html" class="nav-tab active" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          RPA
+        </a>
+        <a href="extratos.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          Extratos
+        </a>
+        <a href="cnpj.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+          CNPJ
+        </a>
+        <a href="pdf.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          PDF
+        </a>
+        <a href="renomear.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Renomear
+        </a>
+        <a href="tarefas.html" class="nav-tab" style="text-decoration:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Tarefas
+        </a>
+        <a href="auditor.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
+        <a href="calendario.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
+        <a href="tarifas-bancarias.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
+        <a href="gerador-empenho.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg>Gerar Empenho</a>
+        <a href="visualizador.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Visualizador</a>
+        <a href="fornecimento.html" class="nav-tab" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Fornecimento</a>
+      </nav>
+
+      <div class="header-right">
+      </div>
+    </div>
+  </header>
+
+  <div class="rpa-wrap">
+    <!-- Tabs -->
+    <div class="rpa-tabs">
+      <button class="rpa-tab active" onclick="showTab('criar',this)">📄 Novo RPA</button>
+      <button class="rpa-tab" onclick="showTab('lista',this)">📋 RPAs Salvos</button>
+      <button class="rpa-tab" onclick="showTab('config',this)">⚙️ Configurações</button>
+    </div>
+
+    <!-- ===== PAINEL: CRIAR RPA ===== -->
+    <div id="tab-criar" class="rpa-panel active">
+
+      <div class="rpa-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="font-size:20px;font-weight:800;color:var(--text);" id="form-title">Novo RPA</h2>
+            <p style="font-size:13px;color:var(--text-3);margin-top:4px;">Número: <strong id="rpa-numero-display" style="color:var(--blue);">—</strong></p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-rpa btn-rpa-secondary" onclick="limparForm()">🗑️ Limpar</button>
+            <button class="btn-rpa btn-rpa-secondary" onclick="exportarJSON()">⬇️ Exportar JSON</button>
+            <button class="btn-rpa btn-rpa-secondary" onclick="importarJSON()">⬆️ Importar JSON</button>
+            <button class="btn-rpa btn-rpa-green" onclick="gerarPDF()">🖨️ Gerar PDF</button>
+            <button class="btn-rpa btn-rpa-primary" onclick="salvarRPA()">💾 Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados da Prefeitura -->
+      <div class="rpa-card">
+        <h3>🏛️ Dados da Prefeitura <span style="font-size:11px;font-weight:400;color:var(--text-3);">(fixos)</span></h3>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Nome da Entidade</label>
+            <input type="text" id="cfg-entidade" disabled />
+          </div>
+          <div class="form-group">
+            <label>Órgão</label>
+            <input type="text" id="cfg-orgao" disabled />
+          </div>
+          <div class="form-group">
+            <label>CNPJ</label>
+            <input type="text" id="cfg-cnpj" disabled />
+          </div>
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" id="cfg-endereco" disabled />
+          </div>
+        </div>
+      </div>
+
+      <!-- Dados do Prestador -->
+      <div class="rpa-card">
+        <h3>👤 Dados do Prestador</h3>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Nome Completo *</label>
+            <input type="text" id="f-nome" placeholder="Nome completo do prestador" oninput="validarCampo('f-nome')" />
+          </div>
+          <div class="form-group">
+            <label>CPF *</label>
+            <input type="text" id="f-cpf" placeholder="000.000.000-00" maxlength="14" oninput="formatarCPF(this); verificarCPFDuplicado()" />
+          </div>
+          <div class="form-group full">
+            <label>Endereço do Prestador</label>
+            <input type="text" id="f-endereco-prestador" placeholder="Rua, número, bairro, cidade/UF" />
+          </div>
+          <div class="form-group">
+            <label>Nº Dependentes (IRRF)</label>
+            <input type="number" id="f-dependentes" value="0" min="0" max="20" oninput="calcularImpostos()" />
+          </div>
+          <div class="form-group">
+            <label>Pensão Alimentícia (R$)</label>
+            <input type="number" id="f-pensao" value="0" min="0" step="0.01" oninput="calcularImpostos()" />
+          </div>
+        </div>
+        <div id="cpf-warning" class="cpf-warning" style="display:none;"></div>
+      </div>
+
+      <!-- Dados do Serviço -->
+      <div class="rpa-card">
+        <h3>📋 Dados do Serviço</h3>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Número RPA *</label>
+            <input type="text" id="f-numero" placeholder="001/2026" />
+          </div>
+          <div class="form-group">
+            <label>Período de Referência *</label>
+            <input type="text" id="f-periodo" placeholder="Janeiro/2026" oninput="verificarCPFDuplicado()" />
+          </div>
+          <div class="form-group">
+            <label>Carga Horária *</label>
+            <input type="text" id="f-carga" placeholder="40h mensais" />
+          </div>
+          <div class="form-group full">
+            <label>Descrição do Serviço *</label>
+            <input type="text" id="f-descricao" placeholder="Descrição detalhada do serviço prestado" />
+          </div>
+          <div class="form-group">
+            <label>Local de Execução *</label>
+            <input type="text" id="f-local" placeholder="Secretaria Municipal de..." />
+          </div>
+          <div class="form-group">
+            <label>Valor Bruto (R$) *</label>
+            <input type="number" id="f-valor" placeholder="0,00" min="0" step="0.01" oninput="calcularImpostos()" />
+          </div>
+          <div class="form-group">
+            <label>Data de Emissão</label>
+            <input type="date" id="f-data" />
+          </div>
+        </div>
+        <hr class="section-divider" />
+        <div class="form-group">
+          <label>Observações</label>
+          <textarea id="f-obs" placeholder="Observações adicionais..."></textarea>
+        </div>
+      </div>
+
+      <!-- Cálculo de Impostos -->
+      <div class="rpa-card">
+        <h3>🧮 Cálculo de Impostos</h3>
+        <div class="tax-box">
+          <div class="tax-row">
+            <span class="tax-label">Valor Bruto</span>
+            <span class="tax-value" id="t-bruto">R$ 0,00</span>
+          </div>
+          <div class="tax-row deduction" id="row-inss">
+            <span class="tax-label">(-) INSS (<span id="t-aliq-inss">11%</span>)</span>
+            <span class="tax-value neg" id="t-inss">R$ 0,00</span>
+          </div>
+          <div class="tax-row deduction" id="row-deps">
+            <span class="tax-label">(-) Dedução Dependentes</span>
+            <span class="tax-value neg" id="t-deps">R$ 0,00</span>
+          </div>
+          <div class="tax-row deduction" id="row-pensao">
+            <span class="tax-label">(-) Pensão Alimentícia</span>
+            <span class="tax-value neg" id="t-pensao-val">R$ 0,00</span>
+          </div>
+          <div class="tax-row">
+            <span class="tax-label">Base de Cálculo IRRF</span>
+            <span class="tax-value" id="t-base-irrf">R$ 0,00</span>
+          </div>
+          <div class="tax-row deduction" id="row-ir">
+            <span class="tax-label">(-) IRRF (<span id="t-aliq-ir">0%</span>)</span>
+            <span class="tax-value neg" id="t-ir">R$ 0,00</span>
+          </div>
+          <div class="tax-row deduction" id="row-iss">
+            <span class="tax-label">(-) ISS (<span id="t-aliq-iss">5%</span>)</span>
+            <span class="tax-value neg" id="t-iss">R$ 0,00</span>
+          </div>
+          <div class="tax-row total">
+            <span>Valor Líquido</span>
+            <span class="tax-value pos" id="t-liquido">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAINEL: LISTA ===== -->
+    <div id="tab-lista" class="rpa-panel">
+      <div class="rpa-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+          <div>
+            <h3 style="margin-bottom:0;">📋 RPAs Salvos</h3>
+            <p style="font-size:12px;color:var(--text-3);margin-top:4px;" id="lista-count">0 RPAs</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="busca-rpa" placeholder="Buscar por nome, serviço ou número..." style="padding:8px 12px;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);border:none;font-family:inherit;font-size:13px;color:var(--text);outline:none;width:280px;" oninput="filtrarLista()" />
+            <button class="btn-rpa btn-rpa-secondary" onclick="baixarTodos()">⬇️ Baixar Todos</button>
+          </div>
+        </div>
+        <div class="rpa-list-header">
+          <span>Nº</span><span>Prestador / Serviço</span><span>Período</span><span>Bruto</span><span>Líquido</span><span>Ações</span>
+        </div>
+        <div id="lista-rpas" style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-in);"></div>
+      </div>
+    </div>
+
+    <!-- ===== PAINEL: CONFIGURAÇÕES ===== -->
+    <div id="tab-config" class="rpa-panel">
+      <div class="rpa-card">
+        <h3>⚙️ Configurações da Entidade</h3>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Nome da Entidade</label>
+            <input type="text" id="s-entidade" />
+          </div>
+          <div class="form-group">
+            <label>Órgão</label>
+            <input type="text" id="s-orgao" />
+          </div>
+          <div class="form-group">
+            <label>CNPJ</label>
+            <input type="text" id="s-cnpj" />
+          </div>
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" id="s-endereco" />
+          </div>
+        </div>
+      </div>
+
+      <div class="rpa-card">
+        <h3>💰 Alíquotas e Deduções</h3>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">INSS</div>
+            <div class="settings-desc">Alíquota e teto de contribuição</div>
+          </div>
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="s-inss-ativo" onchange="salvarConfig()" /><span class="toggle-slider"></span></label>
+            <input type="number" id="s-aliq-inss" step="0.1" style="width:70px;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);border:none;font-size:13px;color:var(--text);font-family:inherit;" onchange="salvarConfig()" />
+            <span style="font-size:12px;color:var(--text-3);">% | Teto:</span>
+            <input type="number" id="s-teto-inss" step="0.01" style="width:90px;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);border:none;font-size:13px;color:var(--text);font-family:inherit;" onchange="salvarConfig()" />
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">IRRF</div>
+            <div class="settings-desc">Tabela progressiva</div>
+          </div>
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="s-ir-ativo" onchange="salvarConfig()" /><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">ISS</div>
+            <div class="settings-desc">Imposto sobre serviços</div>
+          </div>
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="s-iss-ativo" onchange="salvarConfig()" /><span class="toggle-slider"></span></label>
+            <input type="number" id="s-aliq-iss" step="0.1" style="width:70px;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);border:none;font-size:13px;color:var(--text);font-family:inherit;" onchange="salvarConfig()" />
+            <span style="font-size:12px;color:var(--text-3);">%</span>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Dedução por Dependente (IRRF)</div>
+          </div>
+          <div class="toggle-wrap">
+            <span style="font-size:12px;color:var(--text-3);">R$</span>
+            <input type="number" id="s-deducao-dep" step="0.01" style="width:90px;padding:6px 8px;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);border:none;font-size:13px;color:var(--text);font-family:inherit;" onchange="salvarConfig()" />
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn-rpa btn-rpa-primary" onclick="salvarConfig()">💾 Salvar Configurações</button>
+          <button class="btn-rpa btn-rpa-secondary" onclick="resetarConfig()" style="margin-left:8px;">↺ Restaurar Padrão</button>
+        </div>
+      </div>
+
+      <div class="rpa-card">
+        <h3>📊 Tabela Progressiva IRRF</h3>
+        <div id="faixas-container"></div>
+        <button class="btn-rpa btn-rpa-secondary" onclick="salvarFaixas()" style="margin-top:12px;">💾 Salvar Tabela</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="rpa-toast" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:none;padding:12px 20px;border-radius:var(--radius);box-shadow:var(--neo);font-size:13px;font-weight:600;max-width:320px;"></div>
+
+<script>
+// ============================================================
+// CONFIGURAÇÕES PADRÃO
+// ============================================================
+const API = `http://${window.location.hostname}:5000/api`;
+
+const DEFAULT_CONFIG = {
+  nomeEntidade: "PREFEITURA MUNICIPAL DE INAJÁ",
+  orgao: "Estado do Paraná",
+  cnpjEntidade: "76.970.318/0001-67",
+  endereco: "Av. Antonio Veiga Martins, 80/82 - CEP 87670-000 - CENTRO - Inajá/PR",
+  aliquotaINSS: 11.0,
+  tetoINSS: 877.24,
+  aliquotaISS: 5.0,
+  inssAtivo: true,
+  irAtivo: true,
+  issAtivo: true,
+  deducaoPorDependente: 189.59
+};
+
+const DEFAULT_FAIXAS = [
+  { limInf: 0,       limSup: 2428.80, aliq: 0,    parcela: 0      },
+  { limInf: 2428.81, limSup: 2800.00, aliq: 7.5,  parcela: 182.16 },
+  { limInf: 2800.01, limSup: 3566.00, aliq: 15,   parcela: 394.16 },
+  { limInf: 3566.01, limSup: 4743.33, aliq: 22.5, parcela: 661.62 },
+  { limInf: 4743.34, limSup: null,    aliq: 27.5, parcela: 898.01 }
+];
+
+let config = {};
+let faixasIRRF = [];
+let rpas = [];
+let editandoId = null;
+let loadingRPAs = false;
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  carregarConfig();
+  carregarFaixas();
+  preencherConfigForm();
+  preencherFaixasForm();
+  preencherDadosPrefeitura();
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  calcularImpostos();
+  await carregarRPAs();
+  renderizarLista();
+  initTheme();
+});
+
+// ============================================================
+// TEMA
+// ============================================================
+function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else document.documentElement.removeAttribute('data-theme');
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(tab, btnEl) {
+  document.querySelectorAll('.rpa-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.rpa-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (btnEl) btnEl.classList.add('active');
+  else {
+    const tabs = document.querySelectorAll('.rpa-tab');
+    const map = { criar: 0, lista: 1, config: 2 };
+    if (map[tab] !== undefined) tabs[map[tab]].classList.add('active');
+  }
+  if (tab === 'lista') carregarRPAs().then(renderizarLista);
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function carregarConfig() {
+  try { config = JSON.parse(localStorage.getItem('rpa_config')) || {}; } catch { config = {}; }
+  config = Object.assign({}, DEFAULT_CONFIG, config);
+}
+
+function carregarFaixas() {
+  try { faixasIRRF = JSON.parse(localStorage.getItem('rpa_faixas')) || []; } catch { faixasIRRF = []; }
+  if (!faixasIRRF.length) faixasIRRF = JSON.parse(JSON.stringify(DEFAULT_FAIXAS));
+}
+
+async function carregarRPAs() {
+  try {
+    const res = await fetch(`${API}/rpas`);
+    if (!res.ok) throw new Error('Erro ao carregar RPAs');
+    const dados = await res.json();
+    rpas = dados.map(dbParaRPA);
+  } catch (e) {
+    console.error(e);
+    toast('Erro ao carregar RPAs do servidor.', 'error');
+    rpas = [];
+  }
+}
+
+function dbParaRPA(r) {
+  return {
+    id: r.id,
+    numeroRPA: r.numero_rpa || '',
+    nomePrestador: r.nome_prestador || '',
+    cpfPrestador: r.cpf_prestador || '',
+    enderecoPrestador: r.endereco_prestador || '',
+    descricaoServico: r.descricao_servico || '',
+    periodoReferencia: r.periodo_referencia || '',
+    cargaHoraria: r.carga_horaria || '',
+    localExecucao: r.local_execucao || '',
+    valorBruto: r.valor_bruto || 0,
+    numDependentes: r.num_dependentes || 0,
+    pensaoAlimenticia: r.pensao_alimenticia || 0,
+    inss: r.inss || 0,
+    iss: r.iss || 0,
+    deducaoDependentes: r.deducao_dependentes || 0,
+    baseCalculoIRRF: r.base_calculo_irrf || 0,
+    aliquotaIRRF: r.aliquota_irrf || 0,
+    parcelaDeduzirIRRF: r.parcela_deduzir_irrf || 0,
+    ir: r.ir || 0,
+    valorLiquido: r.valor_liquido || 0,
+    observacoes: r.observacoes || '',
+    dataEmissao: r.data_emissao || ''
+  };
+}
+
+// ============================================================
+// CONFIGURAÇÕES
+// ============================================================
+function preencherConfigForm() {
+  document.getElementById('s-entidade').value = config.nomeEntidade;
+  document.getElementById('s-orgao').value = config.orgao;
+  document.getElementById('s-cnpj').value = config.cnpjEntidade;
+  document.getElementById('s-endereco').value = config.endereco;
+  document.getElementById('s-aliq-inss').value = config.aliquotaINSS;
+  document.getElementById('s-teto-inss').value = config.tetoINSS;
+  document.getElementById('s-aliq-iss').value = config.aliquotaISS;
+  document.getElementById('s-deducao-dep').value = config.deducaoPorDependente;
+  document.getElementById('s-inss-ativo').checked = config.inssAtivo;
+  document.getElementById('s-ir-ativo').checked = config.irAtivo;
+  document.getElementById('s-iss-ativo').checked = config.issAtivo;
+}
+
+function preencherDadosPrefeitura() {
+  document.getElementById('cfg-entidade').value = config.nomeEntidade;
+  document.getElementById('cfg-orgao').value = config.orgao;
+  document.getElementById('cfg-cnpj').value = config.cnpjEntidade;
+  document.getElementById('cfg-endereco').value = config.endereco;
+}
+
+function salvarConfig() {
+  config.nomeEntidade = document.getElementById('s-entidade').value;
+  config.orgao = document.getElementById('s-orgao').value;
+  config.cnpjEntidade = document.getElementById('s-cnpj').value;
+  config.endereco = document.getElementById('s-endereco').value;
+  config.aliquotaINSS = parseFloat(document.getElementById('s-aliq-inss').value) || 11;
+  config.tetoINSS = parseFloat(document.getElementById('s-teto-inss').value) || 877.24;
+  config.aliquotaISS = parseFloat(document.getElementById('s-aliq-iss').value) || 5;
+  config.deducaoPorDependente = parseFloat(document.getElementById('s-deducao-dep').value) || 189.59;
+  config.inssAtivo = document.getElementById('s-inss-ativo').checked;
+  config.irAtivo = document.getElementById('s-ir-ativo').checked;
+  config.issAtivo = document.getElementById('s-iss-ativo').checked;
+  localStorage.setItem('rpa_config', JSON.stringify(config));
+  preencherDadosPrefeitura();
+  calcularImpostos();
+  toast('Configurações salvas!', 'success');
+}
+
+function resetarConfig() {
+  if (!confirm('Restaurar configurações padrão?')) return;
+  config = Object.assign({}, DEFAULT_CONFIG);
+  localStorage.removeItem('rpa_config');
+  preencherConfigForm();
+  preencherDadosPrefeitura();
+  calcularImpostos();
+  toast('Configurações restauradas.', 'info');
+}
+
+// ============================================================
+// FAIXAS IRRF
+// ============================================================
+function preencherFaixasForm() {
+  const c = document.getElementById('faixas-container');
+  c.innerHTML = '';
+  faixasIRRF.forEach((f, i) => {
+    const row = document.createElement('div');
+    row.className = 'faixa-row';
+    row.innerHTML = `
+      <div class="form-group">
+        <label>Limite Inf. (R$)</label>
+        <input type="number" step="0.01" value="${f.limInf}" id="fi-inf-${i}" />
+      </div>
+      <div class="form-group">
+        <label>Limite Sup. (R$)</label>
+        <input type="number" step="0.01" value="${f.limSup ?? ''}" id="fi-sup-${i}" placeholder="Sem limite" />
+      </div>
+      <div class="form-group">
+        <label>Alíq. (%)</label>
+        <input type="number" step="0.1" value="${f.aliq}" id="fi-aliq-${i}" />
+      </div>
+      <div class="form-group">
+        <label>Parcela Ded. (R$)</label>
+        <input type="number" step="0.01" value="${f.parcela}" id="fi-parc-${i}" />
+      </div>`;
+    c.appendChild(row);
+  });
+}
+
+function salvarFaixas() {
+  faixasIRRF = faixasIRRF.map((_, i) => ({
+    limInf: parseFloat(document.getElementById(`fi-inf-${i}`).value) || 0,
+    limSup: document.getElementById(`fi-sup-${i}`).value !== '' ? parseFloat(document.getElementById(`fi-sup-${i}`).value) : null,
+    aliq: parseFloat(document.getElementById(`fi-aliq-${i}`).value) || 0,
+    parcela: parseFloat(document.getElementById(`fi-parc-${i}`).value) || 0
+  }));
+  localStorage.setItem('rpa_faixas', JSON.stringify(faixasIRRF));
+  calcularImpostos();
+  toast('Tabela IRRF salva!', 'success');
+}
+
+// ============================================================
+// CÁLCULO DE IMPOSTOS
+// ============================================================
+function r2(v) { return Math.round(v * 100) / 100; }
+function fmt(v) { return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+function calcularImpostos() {
+  const bruto = parseFloat(document.getElementById('f-valor').value) || 0;
+  const deps = parseInt(document.getElementById('f-dependentes').value) || 0;
+  const pensao = parseFloat(document.getElementById('f-pensao').value) || 0;
+
+  const inss = config.inssAtivo ? r2(Math.min(bruto * (config.aliquotaINSS / 100), config.tetoINSS)) : 0;
+  const iss = config.issAtivo ? r2(bruto * (config.aliquotaISS / 100)) : 0;
+  const deducaoDeps = r2(deps * config.deducaoPorDependente);
+  const baseIRRF = r2(Math.max(0, bruto - inss - deducaoDeps - pensao));
+
+  let aliqIR = 0, parcelaIR = 0, ir = 0;
+  if (config.irAtivo && baseIRRF > 0) {
+    for (const f of faixasIRRF) {
+      if (f.limSup === null || f.limSup === undefined) {
+        if (baseIRRF >= f.limInf) { aliqIR = f.aliq; parcelaIR = f.parcela; }
+      } else if (baseIRRF >= f.limInf && baseIRRF <= f.limSup) {
+        aliqIR = f.aliq; parcelaIR = f.parcela; break;
+      }
+    }
+    ir = r2(Math.max(0, (baseIRRF * aliqIR / 100) - parcelaIR));
+  }
+
+  const liquido = r2(bruto - inss - ir - iss);
+
+  document.getElementById('t-bruto').textContent = fmt(bruto);
+  document.getElementById('t-inss').textContent = '-' + fmt(inss);
+  document.getElementById('t-deps').textContent = '-' + fmt(deducaoDeps);
+  document.getElementById('t-pensao-val').textContent = '-' + fmt(pensao);
+  document.getElementById('t-base-irrf').textContent = fmt(baseIRRF);
+  document.getElementById('t-aliq-ir').textContent = aliqIR + '%';
+  document.getElementById('t-ir').textContent = '-' + fmt(ir);
+  document.getElementById('t-iss').textContent = '-' + fmt(iss);
+  document.getElementById('t-liquido').textContent = fmt(liquido);
+  document.getElementById('t-aliq-inss').textContent = config.aliquotaINSS + '%';
+  document.getElementById('t-aliq-iss').textContent = config.aliquotaISS + '%';
+
+  document.getElementById('row-inss').style.display = config.inssAtivo ? '' : 'none';
+  document.getElementById('row-ir').style.display = config.irAtivo ? '' : 'none';
+  document.getElementById('row-iss').style.display = config.issAtivo ? '' : 'none';
+  document.getElementById('row-deps').style.display = deducaoDeps > 0 ? '' : 'none';
+  document.getElementById('row-pensao').style.display = pensao > 0 ? '' : 'none';
+
+  return { bruto, inss, iss, deducaoDeps, baseIRRF, aliqIR, parcelaIR, ir, liquido };
+}
+
+// ============================================================
+// FORMULÁRIO – SALVAR / EDITAR
+// ============================================================
+function coletarDados() {
+  const t = calcularImpostos();
+  return {
+    numeroRPA: document.getElementById('f-numero').value.trim(),
+    nomePrestador: document.getElementById('f-nome').value.trim(),
+    cpfPrestador: document.getElementById('f-cpf').value.trim(),
+    enderecoPrestador: document.getElementById('f-endereco-prestador').value.trim(),
+    descricaoServico: document.getElementById('f-descricao').value.trim(),
+    periodoReferencia: document.getElementById('f-periodo').value.trim(),
+    cargaHoraria: document.getElementById('f-carga').value.trim(),
+    localExecucao: document.getElementById('f-local').value.trim(),
+    valorBruto: t.bruto,
+    numDependentes: parseInt(document.getElementById('f-dependentes').value) || 0,
+    pensaoAlimenticia: parseFloat(document.getElementById('f-pensao').value) || 0,
+    inss: t.inss,
+    iss: t.iss,
+    deducaoDependentes: t.deducaoDeps,
+    baseCalculoIRRF: t.baseIRRF,
+    aliquotaIRRF: t.aliqIR,
+    parcelaDeduzirIRRF: t.parcelaIR,
+    ir: t.ir,
+    valorLiquido: t.liquido,
+    observacoes: document.getElementById('f-obs').value.trim(),
+    dataEmissao: document.getElementById('f-data').value
+  };
+}
+
+function validarForm(d) {
+  const erros = [];
+  if (!d.nomePrestador) erros.push('Nome do prestador obrigatório');
+  if (!d.cpfPrestador) erros.push('CPF obrigatório');
+  if (!d.descricaoServico) erros.push('Descrição do serviço obrigatória');
+  if (!d.periodoReferencia) erros.push('Período de referência obrigatório');
+  if (!d.cargaHoraria) erros.push('Carga horária obrigatória');
+  if (!d.localExecucao) erros.push('Local de execução obrigatório');
+  if (!d.numeroRPA) erros.push('Número do RPA obrigatório');
+  if (d.valorBruto <= 0) erros.push('Valor bruto deve ser maior que zero');
+  return erros;
+}
+
+async function salvarRPA() {
+  const d = coletarDados();
+  const erros = validarForm(d);
+  if (erros.length) { toast('⚠️ ' + erros[0], 'error'); return; }
+
+  try {
+    let res, salvo;
+    if (editandoId) {
+      res = await fetch(`${API}/rpas/${editandoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(d)
+      });
+      if (!res.ok) throw new Error();
+      salvo = dbParaRPA(await res.json());
+      const idx = rpas.findIndex(r => r.id === editandoId);
+      if (idx >= 0) rpas[idx] = salvo;
+      toast('RPA atualizado com sucesso!', 'success');
+    } else {
+      res = await fetch(`${API}/rpas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(d)
+      });
+      if (!res.ok) throw new Error();
+      salvo = dbParaRPA(await res.json());
+      rpas.unshift(salvo);
+      toast('RPA salvo com sucesso!', 'success');
+    }
+    limparForm();
+    renderizarLista();
+  } catch {
+    toast('Erro ao salvar RPA no servidor.', 'error');
+  }
+}
+
+function editarRPA(id) {
+  const rpa = rpas.find(r => r.id == id);
+  if (!rpa) return;
+  editandoId = id;
+  document.getElementById('form-title').textContent = 'Editar RPA';
+  document.getElementById('rpa-numero-display').textContent = rpa.numeroRPA;
+  document.getElementById('f-numero').value = rpa.numeroRPA;
+  document.getElementById('f-nome').value = rpa.nomePrestador;
+  document.getElementById('f-cpf').value = rpa.cpfPrestador;
+  document.getElementById('f-endereco-prestador').value = rpa.enderecoPrestador;
+  document.getElementById('f-descricao').value = rpa.descricaoServico;
+  document.getElementById('f-periodo').value = rpa.periodoReferencia;
+  document.getElementById('f-carga').value = rpa.cargaHoraria;
+  document.getElementById('f-local').value = rpa.localExecucao;
+  document.getElementById('f-valor').value = rpa.valorBruto;
+  document.getElementById('f-dependentes').value = rpa.numDependentes;
+  document.getElementById('f-pensao').value = rpa.pensaoAlimenticia;
+  document.getElementById('f-obs').value = rpa.observacoes;
+  document.getElementById('f-data').value = rpa.dataEmissao;
+  calcularImpostos();
+  showTab('criar');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function excluirRPA(id) {
+  if (!confirm('Excluir este RPA?')) return;
+  try {
+    const res = await fetch(`${API}/rpas/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    rpas = rpas.filter(r => r.id != id);
+    renderizarLista();
+    toast('RPA excluído.', 'info');
+  } catch {
+    toast('Erro ao excluir RPA.', 'error');
+  }
+}
+
+function limparForm() {
+  editandoId = null;
+  document.getElementById('form-title').textContent = 'Novo RPA';
+  document.getElementById('rpa-numero-display').textContent = '—';
+  ['f-numero','f-nome','f-cpf','f-endereco-prestador','f-descricao','f-periodo','f-carga','f-local','f-obs'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-valor').value = '';
+  document.getElementById('f-dependentes').value = 0;
+  document.getElementById('f-pensao').value = 0;
+  document.getElementById('f-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cpf-warning').style.display = 'none';
+  calcularImpostos();
+}
+
+// ============================================================
+// CPF
+// ============================================================
+function formatarCPF(el) {
+  let v = el.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+  el.value = v;
+  calcularImpostos();
+}
+
+function verificarCPFDuplicado() {
+  const cpf = document.getElementById('f-cpf').value.trim();
+  const periodo = document.getElementById('f-periodo').value.trim();
+  const warn = document.getElementById('cpf-warning');
+  if (!cpf || !periodo) { warn.style.display = 'none'; return; }
+  const dup = rpas.find(r => r.cpfPrestador === cpf && r.periodoReferencia === periodo && r.id != editandoId);
+  if (dup) {
+    warn.textContent = '⚠️ Já existe um RPA para este CPF no período "' + periodo + '" (RPA nº ' + dup.numeroRPA + ')';
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function validarCampo(id) {
+  const el = document.getElementById(id);
+  el.style.boxShadow = el.value.trim() ? '' : 'var(--neo-in), inset 0 0 0 2px rgba(220,53,69,0.4)';
+}
+
+// ============================================================
+// LISTA
+// ============================================================
+let listaFiltrada = [];
+
+function filtrarLista() {
+  const q = (document.getElementById('busca-rpa').value || '').toLowerCase();
+  listaFiltrada = rpas.filter(r =>
+    r.nomePrestador.toLowerCase().includes(q) ||
+    r.descricaoServico.toLowerCase().includes(q) ||
+    r.numeroRPA.toLowerCase().includes(q)
+  );
+  renderizarLista(listaFiltrada);
+}
+
+function renderizarLista(lista) {
+  lista = lista || rpas;
+  listaFiltrada = lista;
+  const el = document.getElementById('lista-rpas');
+  const count = document.getElementById('lista-count');
+  count.textContent = lista.length + (lista.length === 1 ? ' RPA' : ' RPAs');
+
+  if (!lista.length) {
+    el.innerHTML = '<div class="empty-rpa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>Nenhum RPA encontrado</p></div>';
+    return;
+  }
+
+  el.innerHTML = lista.map(r => `
+    <div class="rpa-list-item">
+      <span class="rpa-num">${escHtml(r.numeroRPA)}</span>
+      <div>
+        <div class="rpa-name">${escHtml(r.nomePrestador)}</div>
+        <div class="rpa-desc">${escHtml(r.descricaoServico)}</div>
+      </div>
+      <span style="color:var(--text-3);font-size:12px;">${escHtml(r.periodoReferencia)}</span>
+      <span style="font-weight:600;">${fmt(r.valorBruto)}</span>
+      <span style="font-weight:700;color:var(--green-dark);">${fmt(r.valorLiquido)}</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-rpa btn-rpa-secondary" style="padding:5px 9px;font-size:11px;" onclick="imprimirRPA('${r.id}')">🖨️</button>
+        <button class="btn-rpa btn-rpa-secondary" style="padding:5px 9px;font-size:11px;" onclick="editarRPA('${r.id}')">✏️</button>
+        <button class="btn-rpa btn-rpa-danger" style="padding:5px 9px;font-size:11px;" onclick="excluirRPA('${r.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// JSON IMPORT / EXPORT
+// ============================================================
+function exportarJSON() {
+  const d = coletarDados();
+  const blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'rpa_' + (d.numeroRPA || 'novo') + '.json';
+  a.click();
+}
+
+function importarJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const d = JSON.parse(ev.target.result);
+        editandoId = null;
+        document.getElementById('f-numero').value = d.numeroRPA || '';
+        document.getElementById('f-nome').value = d.nomePrestador || '';
+        document.getElementById('f-cpf').value = d.cpfPrestador || '';
+        document.getElementById('f-endereco-prestador').value = d.enderecoPrestador || '';
+        document.getElementById('f-descricao').value = d.descricaoServico || '';
+        document.getElementById('f-periodo').value = d.periodoReferencia || '';
+        document.getElementById('f-carga').value = d.cargaHoraria || '';
+        document.getElementById('f-local').value = d.localExecucao || '';
+        document.getElementById('f-valor').value = d.valorBruto || '';
+        document.getElementById('f-dependentes').value = d.numDependentes || 0;
+        document.getElementById('f-pensao').value = d.pensaoAlimenticia || 0;
+        document.getElementById('f-obs').value = d.observacoes || '';
+        document.getElementById('f-data').value = d.dataEmissao || new Date().toISOString().split('T')[0];
+        calcularImpostos();
+        toast('JSON importado com sucesso!', 'success');
+      } catch { toast('Erro ao ler o arquivo JSON.', 'error'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, tipo) {
+  const el = document.getElementById('rpa-toast');
+  const cores = { success: '#2d6a4f', error: '#c0392b', info: '#2c3e50' };
+  el.textContent = msg;
+  el.style.background = cores[tipo] || cores.info;
+  el.style.color = 'white';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.display = 'none'; }, 3500);
+}
+
+// ============================================================
+// GERAÇÃO DE PDF
+// ============================================================
+function montarHTMLRecibo(rpa) {
+  const c = config;
+  const dataFmt = rpa.dataEmissao
+    ? new Date(rpa.dataEmissao + 'T12:00:00').toLocaleDateString('pt-BR')
+    : new Date().toLocaleDateString('pt-BR');
+
+  const linhaImposto = (label, valor, cor) => valor > 0
+    ? `<tr><td style="padding:5px 8px;color:#555;">${label}</td><td style="padding:5px 8px;text-align:right;color:${cor};font-weight:600;">${fmt(valor)}</td></tr>`
+    : '';
+
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
+  <title>RPA ${escHtml(rpa.numeroRPA)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:Arial,sans-serif;font-size:12px;color:#222;background:#fff;padding:20px;}
+    .header{text-align:center;border-bottom:3px double #333;padding-bottom:12px;margin-bottom:16px;}
+    .header h1{font-size:15px;font-weight:700;text-transform:uppercase;}
+    .header p{font-size:11px;color:#555;margin-top:3px;}
+    .titulo{text-align:center;font-size:18px;font-weight:800;letter-spacing:2px;margin:12px 0;text-transform:uppercase;}
+    .numero{text-align:center;font-size:12px;color:#555;margin-bottom:16px;}
+    .secao{margin-bottom:14px;}
+    .secao-titulo{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#666;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;}
+    table.dados{width:100%;border-collapse:collapse;}
+    table.dados td{padding:5px 8px;vertical-align:top;}
+    table.dados td:first-child{font-weight:600;width:38%;color:#444;}
+    table.impostos{width:100%;border-collapse:collapse;background:#f9f9f9;border-radius:6px;}
+    table.impostos tr:last-child td{border-top:2px solid #333;font-weight:800;font-size:13px;}
+    .total-row td{background:#e8f5e9;color:#1b5e20!important;}
+    .assinaturas{display:flex;justify-content:space-between;margin-top:30px;gap:20px;}
+    .assinatura{flex:1;text-align:center;border-top:1px solid #333;padding-top:8px;font-size:11px;}
+    .rodape{text-align:center;font-size:10px;color:#999;margin-top:20px;border-top:1px solid #eee;padding-top:8px;}
+    @media print{body{padding:10px;}@page{margin:15mm;}}
+  </style></head><body>
+  <div class="header">
+    <h1>${escHtml(c.nomeEntidade)}</h1>
+    <p>${escHtml(c.orgao)}</p>
+    <p>CNPJ: ${escHtml(c.cnpjEntidade)}</p>
+    <p>${escHtml(c.endereco)}</p>
+  </div>
+  <div class="titulo">Recibo de Pagamento Autônomo</div>
+  <div class="numero">Nº ${escHtml(rpa.numeroRPA)} &nbsp;|&nbsp; Emissão: ${dataFmt}</div>
+
+  <div class="secao">
+    <div class="secao-titulo">Dados do Prestador</div>
+    <table class="dados">
+      <tr><td>Nome:</td><td>${escHtml(rpa.nomePrestador)}</td></tr>
+      <tr><td>CPF:</td><td>${escHtml(rpa.cpfPrestador)}</td></tr>
+      ${rpa.enderecoPrestador ? `<tr><td>Endereço:</td><td>${escHtml(rpa.enderecoPrestador)}</td></tr>` : ''}
+    </table>
+  </div>
+
+  <div class="secao">
+    <div class="secao-titulo">Dados do Serviço</div>
+    <table class="dados">
+      <tr><td>Descrição:</td><td>${escHtml(rpa.descricaoServico)}</td></tr>
+      <tr><td>Período:</td><td>${escHtml(rpa.periodoReferencia)}</td></tr>
+      <tr><td>Carga Horária:</td><td>${escHtml(rpa.cargaHoraria)}</td></tr>
+      <tr><td>Local de Execução:</td><td>${escHtml(rpa.localExecucao)}</td></tr>
+    </table>
+  </div>
+
+  <div class="secao">
+    <div class="secao-titulo">Cálculo de Impostos e Valores</div>
+    <table class="impostos">
+      <tr><td style="padding:5px 8px;font-weight:600;">Valor Bruto</td><td style="padding:5px 8px;text-align:right;font-weight:700;">${fmt(rpa.valorBruto)}</td></tr>
+      ${linhaImposto('(-) INSS (' + c.aliquotaINSS + '%)', rpa.inss, '#c0392b')}
+      ${rpa.deducaoDependentes > 0 ? linhaImposto('(-) Dedução Dependentes (' + rpa.numDependentes + 'x)', rpa.deducaoDependentes, '#c0392b') : ''}
+      ${rpa.pensaoAlimenticia > 0 ? linhaImposto('(-) Pensão Alimentícia', rpa.pensaoAlimenticia, '#c0392b') : ''}
+      <tr><td style="padding:5px 8px;color:#555;">Base de Cálculo IRRF</td><td style="padding:5px 8px;text-align:right;">${fmt(rpa.baseCalculoIRRF)}</td></tr>
+      ${rpa.ir > 0 ? linhaImposto('(-) IRRF (' + rpa.aliquotaIRRF + '%)', rpa.ir, '#c0392b') : ''}
+      ${rpa.iss > 0 ? linhaImposto('(-) ISS (' + c.aliquotaISS + '%)', rpa.iss, '#c0392b') : ''}
+      <tr class="total-row"><td style="padding:8px;font-weight:800;font-size:13px;">VALOR LÍQUIDO A RECEBER</td><td style="padding:8px;text-align:right;font-weight:800;font-size:14px;color:#1b5e20;">${fmt(rpa.valorLiquido)}</td></tr>
+    </table>
+  </div>
+
+  ${rpa.observacoes ? `<div class="secao"><div class="secao-titulo">Observações</div><p style="font-size:11px;color:#555;">${escHtml(rpa.observacoes)}</p></div>` : ''}
+
+  <div class="assinaturas">
+    <div class="assinatura">
+      <p>${escHtml(rpa.nomePrestador)}</p>
+      <p style="color:#777;font-size:10px;">CPF: ${escHtml(rpa.cpfPrestador)}</p>
+      <p style="color:#777;font-size:10px;">Prestador de Serviço</p>
+    </div>
+    <div class="assinatura">
+      <p>${escHtml(c.nomeEntidade)}</p>
+      <p style="color:#777;font-size:10px;">CNPJ: ${escHtml(c.cnpjEntidade)}</p>
+      <p style="color:#777;font-size:10px;">Tomador de Serviço</p>
+    </div>
+  </div>
+
+  <div class="rodape">Documento gerado em ${new Date().toLocaleString('pt-BR')} | ${escHtml(c.nomeEntidade)}</div>
+  </body></html>`;
+}
+
+function gerarPDF() {
+  const d = coletarDados();
+  const erros = validarForm(d);
+  if (erros.length) { toast('⚠️ ' + erros[0], 'error'); return; }
+  abrirJanelaPDF(d);
+}
+
+function imprimirRPA(id) {
+  const rpa = rpas.find(r => r.id == id);
+  if (!rpa) return;
+  abrirJanelaPDF(rpa);
+}
+
+function abrirJanelaPDF(rpa) {
+  const html = montarHTMLRecibo(rpa);
+  const win = window.open('', '_blank', 'width=800,height=700');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+}
+
+async function baixarTodos() {
+  const lista = listaFiltrada.length ? listaFiltrada : rpas;
+  if (!lista.length) { toast('Nenhum RPA para imprimir.', 'error'); return; }
+  toast('Abrindo ' + lista.length + ' RPA(s) para impressão...', 'info');
+  for (let i = 0; i < lista.length; i++) {
+    await new Promise(r => setTimeout(r, 400));
+    abrirJanelaPDF(lista[i]);
+  }
+}
+</script>
+</body></html>
