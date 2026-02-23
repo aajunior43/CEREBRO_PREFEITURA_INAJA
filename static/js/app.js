@@ -989,5 +989,11 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('Saiu da área administrativa', 'info');
   });
   
-  init();
+  init().then(() => {
+    // Auto-open ADM tab when navigated via /#adm
+    if (window.location.hash === '#adm') {
+      window.location.hash = '';
+      document.querySelector('.nav-tab[data-tab="adm"]')?.click();
+    }
+  });
 });
