@@ -701,10 +701,10 @@
       const el = document.getElementById('adm-modelos-lista');
       if (!lista.length) { el.innerHTML = '<p style="padding:20px;color:var(--text-3);text-align:center;">Nenhum modelo.</p>'; return; }
       el.innerHTML = lista.map(m => `
-        <div ondblclick="admSelecionarModelo('${m.id.replace(/'/g,"\\'")}'')"
+        <div onclick="admSelecionarModelo('${m.id.replace(/'/g,"\\'")}')"
           style="display:flex;align-items:flex-start;justify-content:space-between;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;gap:8px;"
           onmouseover="this.style.background='rgba(79,128,200,.08)'" onmouseout="this.style.background=''"
-          title="Duplo-clique para selecionar">
+          title="Clique para selecionar">
           <div>
             <div style="font-size:13px;font-weight:600;color:var(--text);">${m.name || m.id}</div>
             <div style="font-size:11px;color:var(--text-3);font-family:monospace;">${m.id}</div>
