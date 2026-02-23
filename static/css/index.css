@@ -691,6 +691,23 @@ body {
   color: var(--blue);
 }
 
+.nav-group-item.active {
+  background: rgba(79, 128, 200, 0.12);
+}
+
+.nav-group-item.active .nav-group-item-icon {
+  box-shadow: var(--neo-in-sm);
+}
+
+.nav-group-item.active .nav-group-item-icon svg {
+  color: var(--blue);
+}
+
+.nav-group-item.active .nav-group-item-name {
+  color: var(--blue);
+  font-weight: 700;
+}
+
 /* Mobile nav section label */
 .mobile-nav-label {
   padding: 10px 20px 4px;
