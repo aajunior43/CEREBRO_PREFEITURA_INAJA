@@ -499,6 +499,124 @@ body {
   margin: 6px 0;
 }
 
+/* Nav separator */
+.nav-sep {
+  width: 1px;
+  height: 20px;
+  background: rgba(184, 194, 204, 0.4);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+/* Nav Group Dropdown */
+.nav-group {
+  position: relative;
+}
+
+.nav-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-group-btn > svg:first-child {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nav-group-btn .chevron {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: transform 0.2s;
+}
+
+.nav-group-btn:hover {
+  color: var(--text);
+  background: rgba(79, 128, 200, 0.1);
+}
+
+.nav-group.open .nav-group-btn {
+  color: var(--blue);
+  background: var(--bg);
+  box-shadow: var(--neo-sm);
+}
+
+.nav-group.open .chevron {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+.nav-group-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-6px);
+  min-width: 180px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: var(--neo-lg), 0 12px 32px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  z-index: 200;
+}
+
+.nav-group.open .nav-group-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.nav-group-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.nav-group-item svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nav-group-item:hover {
+  background: rgba(79, 128, 200, 0.1);
+  color: var(--blue);
+}
+
+/* Mobile nav section label */
+.mobile-nav-label {
+  padding: 10px 20px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-3);
+}
+
 /* ADM Panel */
 .adm-panel {
   max-width: 1200px;

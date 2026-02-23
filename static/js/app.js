@@ -869,6 +869,20 @@ document.addEventListener('DOMContentLoaded', () => {
     dropdown.classList.toggle('open');
   });
   document.addEventListener('click', () => dropdown.classList.remove('open'));
+
+  // Nav group dropdowns (Documentos / Financeiro / Ferramentas)
+  document.querySelectorAll('.nav-group-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const group = btn.closest('.nav-group');
+      const isOpen = group.classList.contains('open');
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+      if (!isOpen) group.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () =>
+    document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
+  );
   
   // Theme toggle in dropdown
   document.getElementById('theme-toggle').addEventListener('click', () => {
@@ -945,6 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.tab;
+      if (!tabName) return;
       const requiresAuth = tab.dataset.requiresAuth === 'true';
       handleTabClick(tabName, requiresAuth);
     });
