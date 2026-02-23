@@ -108,14 +108,15 @@ body {
 .header {
   background: var(--bg);
   padding: 0 28px;
-  height: 64px;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.07);
+  border-bottom: 1px solid rgba(184, 194, 204, 0.2);
 }
 
 .header-inner {
@@ -153,16 +154,29 @@ body {
 }
 
 .header-title h1 {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
   color: var(--blue-dark);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
 }
 
 .header-title p {
-  font-size: 11px;
-  color: var(--text-3);
-  margin-top: 1px;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--blue-dark);
+  background: var(--blue-light);
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-top: 3px;
+  letter-spacing: 0.1px;
+  line-height: 1.4;
+}
+
+[data-theme="dark"] .header-title p {
+  background: rgba(90, 143, 212, 0.18);
+  color: #7aabf0;
 }
 
 /* Month navigator */
@@ -322,8 +336,12 @@ body {
 
 .nav-tab.active {
   color: var(--blue);
-  background: var(--bg);
-  box-shadow: var(--neo-sm);
+  background: rgba(79, 128, 200, 0.12);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .nav-tab.active {
+  background: rgba(90, 143, 212, 0.15);
 }
 
 /* Mobile Navigation Drawer */
@@ -551,8 +569,7 @@ body {
 
 .nav-group.open .nav-group-btn {
   color: var(--blue);
-  background: var(--bg);
-  box-shadow: var(--neo-sm);
+  background: rgba(79, 128, 200, 0.12);
 }
 
 .nav-group.open .chevron {
@@ -565,15 +582,27 @@ body {
   top: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%) translateY(-6px);
-  min-width: 180px;
+  min-width: 230px;
   background: var(--bg);
   border-radius: var(--radius);
-  box-shadow: var(--neo-lg), 0 12px 32px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--neo-lg), 0 16px 40px rgba(0, 0, 0, 0.13);
   padding: 6px;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
   z-index: 200;
+}
+
+.nav-group-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--bg);
+  border-top: none;
+  filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.04));
 }
 
 .nav-group.open .nav-group-menu {
@@ -582,28 +611,83 @@ body {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Mega-menu title bar */
+.nav-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--blue);
+  padding: 6px 12px 8px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(184, 194, 204, 0.25);
+}
+
+/* Mega-menu items */
 .nav-group-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-sm);
   color: var(--text-2);
-  font-size: 13px;
-  font-weight: 500;
   text-decoration: none;
   transition: all 0.15s;
-  white-space: nowrap;
 }
 
-.nav-group-item svg {
+.nav-group-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--bg);
+  box-shadow: var(--neo-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.nav-group-item-icon svg {
   width: 16px;
   height: 16px;
-  flex-shrink: 0;
+  color: var(--text-3);
+  transition: color 0.15s;
+}
+
+.nav-group-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-group-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.nav-group-item-desc {
+  font-size: 11px;
+  color: var(--text-3);
+  font-weight: 400;
+  line-height: 1.2;
 }
 
 .nav-group-item:hover {
-  background: rgba(79, 128, 200, 0.1);
+  background: rgba(79, 128, 200, 0.08);
+}
+
+.nav-group-item:hover .nav-group-item-icon {
+  box-shadow: var(--neo-in-sm);
+}
+
+.nav-group-item:hover .nav-group-item-icon svg {
+  color: var(--blue);
+}
+
+.nav-group-item:hover .nav-group-item-name {
   color: var(--blue);
 }
 
