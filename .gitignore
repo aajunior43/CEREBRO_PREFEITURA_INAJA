@@ -21,6 +21,9 @@ empenhos.db-wal
 *.xls
 DADOS/
 
+# Pastas de trabalho / staging
+PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL/
+
 # Ambientes virtuais
 venv/
 .venv/

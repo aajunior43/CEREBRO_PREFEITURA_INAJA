@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Despesa Pública – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/despesa-prefeitura.css" />
+</head>
+
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <div id="printHeader" class="print-header">
+    <img src="/static/img/brasao.png" alt="Brasão da Prefeitura" class="print-logo" />
+    <div>
+      <div class="print-title">Prefeitura Municipal de Inajá - Despesa pública</div>
+      <div class="print-meta">Emitido em <span id="printDate"></span></div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div>
+      <div class="brand">
+        <a href="/" class="brand-back" title="Voltar ao início" style="display:flex;align-items:center;gap:0;text-decoration:none;">
+          <img src="/static/img/brasao.png" alt="Brasão da Prefeitura" class="brand-logo" />
+        </a>
+        <p class="kicker">Prefeitura Municipal de Inajá</p>
+      </div>
+      <h1>Despesa pública</h1>
+      <div id="periodo-ativo" style="font-size:12px;color:var(--accent-2);margin-top:4px;min-height:18px;"></div>
+      <nav class="hero-nav" style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/" style="font-size:12px;color:var(--accent-2);text-decoration:none;opacity:0.85;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.85">
+          ← Credores Fixos
+        </a>
+        <a href="/pages/extratos.html" style="font-size:12px;color:var(--muted);text-decoration:none;opacity:0.7;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+          Extratos
+        </a>
+        <a href="/pages/fornecimento.html" style="font-size:12px;color:var(--muted);text-decoration:none;opacity:0.7;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+          Fornecimento
+        </a>
+        <a href="/pages/tarifas-bancarias.html" style="font-size:12px;color:var(--muted);text-decoration:none;opacity:0.7;transition:opacity .2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">
+          Tarifas
+        </a>
+      </nav>
+    </div>
+    <div class="upload" style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+      <label class="file">
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <span>Selecionar CSV</span>
+      </label>
+      <!-- Salvar no banco -->
+      <div id="salvar-banco-wrap" style="display:none;flex-direction:column;gap:8px;align-items:flex-end;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <input id="input-periodo" type="text" placeholder="Período (ex: Jan/2025)"
+            style="background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;width:150px;" />
+          <input id="input-descricao" type="text" placeholder="Descrição (opcional)"
+            style="background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;width:160px;" />
+        </div>
+        <button id="btn-salvar-banco" class="ghost" style="display:flex;align-items:center;gap:6px;background:rgba(201,169,97,0.15);border-color:var(--accent-2);color:var(--accent-2);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salvar no banco
+        </button>
+      </div>
+      <!-- Botão para abrir histórico -->
+      <button id="btn-historico" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Histórico
+      </button>
+    </div>
+  </header>
+
+  <!-- Painel de histórico -->
+  <div id="historico-painel" style="display:none;background:rgba(20,20,20,0.98);border-bottom:1px solid var(--line);padding:20px 28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h2 style="font-size:15px;font-weight:700;color:var(--ink);margin:0;">📅 Histórico de importações</h2>
+      <button id="btn-fechar-historico" class="ghost" style="font-size:12px;">Fechar ×</button>
+    </div>
+    <div id="historico-lista" style="max-height:320px;overflow-y:auto;"></div>
+  </div>
+
+  <main class="layout">
+    <section id="filters" class="panel filters">
+      <div class="filters-top">
+        <div class="field">
+          <label for="search">Busca rápida</label>
+          <input id="search" type="text" placeholder="Busque em todos os campos: entidade, programa, ação, valor..." />
+        </div>
+        <div class="field inline">
+          <label for="minValue">Saldo mínimo</label>
+          <input id="minValue" type="number" step="0.01" placeholder="0" />
+        </div>
+        <div class="field inline">
+          <label for="maxValue">Saldo máximo</label>
+          <input id="maxValue" type="number" step="0.01" placeholder="-" />
+        </div>
+        <button id="printView" class="ghost">Imprimir/PDF</button>
+        <button id="toggleFilters" class="ghost" aria-expanded="true">Recolher filtros</button>
+        <button id="resetFilters" class="ghost is-hidden">Limpar tudo</button>
+      </div>
+      <div id="filterChips" class="filter-chips"></div>
+      <div class="filters-grid">
+        <div class="field filter-box" data-column="Recurso">
+          <div class="filter-head">
+            <label>Recurso</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição da função">
+          <div class="filter-head">
+            <label>Função</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição da ação">
+          <div class="filter-head">
+            <label>Ação</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição do organograma">
+          <div class="filter-head">
+            <label>Departamento</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Natureza de Despesa">
+          <div class="filter-head">
+            <label>Natureza de despesa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Tipo de Despesa">
+          <div class="filter-head">
+            <label>Tipo de Despesa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-column">
+      <section class="panel" id="stats">
+        <div class="card">
+          <h3>Total</h3>
+          <p id="totalValue">-</p>
+        </div>
+        <div class="card">
+          <h3>Itens</h3>
+          <p id="totalRows">-</p>
+        </div>
+        <div class="card">
+          <h3>Média por despesa</h3>
+          <p id="avgValue">-</p>
+        </div>
+        <div class="card">
+          <h3>Maior valor</h3>
+          <p id="maxValueStat">-</p>
+        </div>
+      </section>
+
+      <section class="panel table">
+        <div class="table-header">
+          <h2>Detalhamento</h2>
+          <div class="table-actions">
+            <div class="view-toggle">
+              <button id="viewList" class="view-btn active" title="Visualização em Lista">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+              <button id="viewGrid" class="view-btn" title="Visualização em Grade">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+            </div>
+            <div class="pager">
+              <button id="prevPage" class="ghost">Anterior</button>
+              <span id="pageInfo">Página 1 de 1</span>
+              <button id="nextPage" class="ghost">Próxima</button>
+            </div>
+            <label class="page-size">
+              <span>Linhas</span>
+              <select id="pageSize">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+            </label>
+            <button id="exportCsv" class="ghost">Exportar CSV</button>
+            <button id="printSelected" class="ghost">Imprimir selecionada</button>
+            <span id="tableCount">0 linhas</span>
+          </div>
+        </div>
+        <div id="printCard" class="print-card"></div>
+        <div class="table-wrap">
+          <table id="dataTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span class="footer-dev">DEV <strong>ALEKSANDRO ALVES</strong></span>
+    </div>
+  </footer>
+
+  <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>Detalhes da Despesa</h2>
+        <div class="modal-actions">
+          <button id="printModalBtn" class="ghost" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Imprimir</button>
+          <button id="closeModal" class="close-modal" aria-label="Fechar">&times;</button>
+        </div>
+      </div>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/despesa/state.js"></script>
+  <script src="/static/js/despesa/utils.js"></script>
+  <script src="/static/js/despesa/csv.js"></script>
+  <script src="/static/js/despesa/ui.js"></script>
+  <script src="/static/js/despesa/logic.js"></script>
+  <script src="/static/js/despesa/main.js"></script>
+  <script src="/static/js/despesa/historico.js"></script>
+  <script>
+  // ── Histórico UI ──────────────────────────────────────────
+  (function () {
+    const btnHistorico      = document.getElementById('btn-historico');
+    const painelHistorico   = document.getElementById('historico-painel');
+    const btnFecharHistorico= document.getElementById('btn-fechar-historico');
+    const salvarWrap        = document.getElementById('salvar-banco-wrap');
+    const btnSalvar         = document.getElementById('btn-salvar-banco');
+    const inputPeriodo      = document.getElementById('input-periodo');
+    const inputDesc         = document.getElementById('input-descricao');
+    const csvFileInput      = document.getElementById('csvFile');
+
+    // Mostrar painel de histórico
+    btnHistorico.addEventListener('click', () => {
+      const visible = painelHistorico.style.display === 'block';
+      painelHistorico.style.display = visible ? 'none' : 'block';
+      if (!visible) window.DespesaHistorico.renderPainel();
+    });
+    btnFecharHistorico.addEventListener('click', () => {
+      painelHistorico.style.display = 'none';
+    });
+
+    // Mostrar formulário de salvar ao carregar CSV
+    const origHandleFile = window.__despesaHandleFile;
+    csvFileInput.addEventListener('change', () => {
+      salvarWrap.style.display = 'flex';
+      // Pre-preenche o período com o nome do arquivo
+      if (csvFileInput.files[0]) {
+        const name = csvFileInput.files[0].name.replace(/\.csv$/i, '');
+        if (!inputPeriodo.value) inputPeriodo.value = name.substring(0, 30);
+      }
+    });
+
+    // Salvar no banco
+    btnSalvar.addEventListener('click', async () => {
+      const periodo = inputPeriodo.value.trim();
+      if (!periodo) { inputPeriodo.focus(); inputPeriodo.style.borderColor = 'var(--accent)'; return; }
+      inputPeriodo.style.borderColor = 'var(--line)';
+
+      const arquivo = csvFileInput.files[0] ? csvFileInput.files[0].name : '';
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = 'Salvando…';
+
+      try {
+        const result = await window.DespesaHistorico.salvar(periodo, inputDesc.value.trim(), arquivo);
+        btnSalvar.textContent = '✓ Salvo!';
+        btnSalvar.style.background = 'rgba(16,185,129,0.15)';
+        btnSalvar.style.borderColor = '#10b981';
+        btnSalvar.style.color = '#10b981';
+        // Atualiza histórico se estiver aberto
+        if (painelHistorico.style.display === 'block') window.DespesaHistorico.renderPainel();
+        setTimeout(() => {
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no banco`;
+          btnSalvar.style.background = 'rgba(201,169,97,0.15)';
+          btnSalvar.style.borderColor = 'var(--accent-2)';
+          btnSalvar.style.color = 'var(--accent-2)';
+        }, 3000);
+      } catch (e) {
+        alert('Erro ao salvar: ' + e.message);
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no banco`;
+      }
+    });
+  })();
+  </script>
+
+  <style>
+  /* ── Histórico de importações ──────────────────────────── */
+  .hist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    transition: background 0.2s;
+  }
+  .hist-item:hover { background: rgba(255,255,255,0.08); }
+  .hist-item.active { border-color: var(--accent-2); background: rgba(201,169,97,0.08); }
+  .hist-item-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+  .hist-periodo { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .hist-desc    { font-size: 11px; color: var(--accent-2); }
+  .hist-meta    { font-size: 11px; color: var(--muted); }
+  .hist-arquivo { font-size: 10px; color: var(--muted); opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+  .hist-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .hist-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .hist-btn:hover { background: rgba(255,255,255,0.08); }
+  .hist-btn-load { color: var(--accent-2); border-color: var(--accent-2); }
+  .hist-btn-del  { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+  .hist-btn-del:hover { background: rgba(239,68,68,0.1); }
+  .hist-loading, .hist-empty { text-align: center; padding: 32px; font-size: 13px; color: var(--muted); }
+  </style>
+</body>
+
+</html>

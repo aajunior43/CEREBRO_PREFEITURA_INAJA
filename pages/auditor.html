@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Auditor de NF – Prefeitura de Inajá</title>
+    <title>Auditor de NF – Prefeitura de Inaja</title>
     <link rel="stylesheet" href="/static/css/index.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet" />
@@ -51,43 +51,6 @@
         }
 
         /* ── API KEY BANNER ── */
-        .aud-key-banner {
-            max-width: 960px;
-            margin: 0 auto 18px;
-            background: var(--bg);
-            border-radius: var(--radius);
-            box-shadow: var(--neo-sm);
-            padding: 14px 18px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap
-        }
-
-        .aud-key-banner label {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-2);
-            white-space: nowrap
-        }
-
-        .aud-key-inp {
-            flex: 1;
-            min-width: 220px;
-            padding: 8px 12px;
-            border: 1px solid rgba(0, 0, 0, .12);
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 13px;
-            background: var(--bg);
-            color: var(--text);
-            outline: none
-        }
-
-        .aud-key-inp:focus {
-            border-color: #6d5dfc;
-            box-shadow: 0 0 0 3px rgba(109, 93, 252, .1)
-        }
 
         .aud-key-save {
             padding: 8px 18px;
@@ -723,6 +686,8 @@
         }
     </style>
   <script src="/static/js/adm-guard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 </head>
 
 <body>
@@ -732,7 +697,7 @@
                 <div class="header-brand">
                     <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
                     <div class="header-title">
-                        <h1>Prefeitura de Inajá</h1>
+                        <h1>Prefeitura de Inaja</h1>
                         <p>Gestão de Empenhos</p>
                     </div>
                 </div>
@@ -811,6 +776,10 @@
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Fornecimento</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
             </a>
+            <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
+              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Despesa Pública</span><span class="nav-group-item-desc">Visor de despesas da prefeitura</span></div>
+            </a>
           </div>
         </div>
 
@@ -857,22 +826,12 @@
             </div>
             <div>
                 <h2>Auditor de Notas Fiscais · IA</h2>
-                <p>Envie uma NF-e, NFS-e, DANFE ou imagem digitalizada — a IA Gemini analisa fraudes, superfaturamento e
+                <p>Envie uma NF-e, NFS-e, DANFE ou imagem digitalizada — a IA analisa fraudes, superfaturamento e
                     inconsistências</p>
             </div>
         </div>
 
         <!-- API Key Banner -->
-        <div class="aud-key-banner">
-            <label>🔑 Chave API Gemini:</label>
-            <input class="aud-key-inp" type="password" id="api-key-inp"
-                placeholder="Cole sua API Key do Google AI Studio aqui…" />
-            <button class="aud-key-save" onclick="saveApiKey()">Salvar</button>
-            <span class="aud-key-status" id="key-status">⚪ Não configurada</span>
-            <a href="https://aistudio.google.com/apikey" target="_blank"
-                style="font-size:11px;color:#6d5dfc;text-decoration:none;font-weight:600;">Obter chave grátis →</a>
-        </div>
-
         <!-- Upload / Loading Card -->
         <div class="aud-card" id="upload-section">
             <div class="aud-card-head">
@@ -932,7 +891,7 @@
                             <div class="aud-progress-fill" id="prog-fill"></div>
                         </div>
                         <p class="aud-loading-msg" id="loading-msg">Processando arquivo digital...</p>
-                        <p class="aud-loading-sub">Auditoria IA em andamento · Gemini 2.5 Flash</p>
+                        <p class="aud-loading-sub">Auditoria IA em andamento · OpenRouter</p>
                     </div>
                 </div>
 
@@ -1057,9 +1016,15 @@
     <div id="aud-toast"></div>
 
     <script>
+  // Theme
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+        // ── PDF.js Setup ─────────────────────────────────────────────
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
         // ── STATE ────────────────────────────────────────────────
-        const KEY_STORE = 'auditor-gemini-key';
-        let apiKey = localStorage.getItem(KEY_STORE) || '';
         let fileDataUrl = null;
         let fileMime = null;
         let fileName = '';
@@ -1069,27 +1034,8 @@
 
         // ── INIT ─────────────────────────────────────────────────
         (function init() {
-            if (apiKey) {
-                document.getElementById('api-key-inp').value = apiKey;
-                setKeyStatus(true);
-            }
             setupDrop();
         })();
-
-        function saveApiKey() {
-            const v = document.getElementById('api-key-inp').value.trim();
-            if (!v) { toast('Cole uma API Key válida', 'error'); return; }
-            apiKey = v;
-            localStorage.setItem(KEY_STORE, v);
-            setKeyStatus(true);
-            toast('API Key salva com sucesso! 🔑', 'success');
-        }
-
-        function setKeyStatus(ok) {
-            const el = document.getElementById('key-status');
-            el.textContent = ok ? '✅ Configurada' : '⚪ Não configurada';
-            el.className = 'aud-key-status ' + (ok ? 'aud-key-ok' : 'aud-key-no');
-        }
 
         // ── DRAG & DROP ──────────────────────────────────────────
         function setupDrop() {
@@ -1148,7 +1094,8 @@
         ];
 
         async function startAudit() {
-            if (!apiKey) { toast('Configure a API Key do Gemini antes de auditar', 'error'); return; }
+            const apiKey = localStorage.getItem('api_openrouter_key') || '';
+            if (!apiKey) { toast('Configure a chave API OpenRouter na aba ADM primeiro', 'error'); return; }
             if (!fileDataUrl) { toast('Selecione um arquivo primeiro', 'error'); return; }
 
             show('view-preview', false); show('view-drop', false); show('view-loading', true);
@@ -1160,7 +1107,7 @@
             const iv = setInterval(() => { si++; if (si < STAGES.length) setMsg(STAGES[si]); }, 2500);
 
             try {
-                const result = await callGemini(fileDataUrl, fileMime);
+                const result = await callGemini(fileDataUrl, fileMime, apiKey);
                 lastResult = result;
                 renderResult(result);
                 toast('Auditoria concluída! ✅', 'success');
@@ -1176,7 +1123,7 @@
 
         function setMsg(m) { document.getElementById('loading-msg').textContent = m; }
 
-        // ── GEMINI API ───────────────────────────────────────────
+        // ── OPENROUTER API ───────────────────────────────────────────
         const SYSTEM_PROMPT = `Você é um Auditor Fiscal Sênior de uma Prefeitura Municipal Brasileira.
 Analise a imagem/PDF da Nota Fiscal fornecida com rigor, buscando fraudes, superfaturamento e inconsistências.
 
@@ -1186,67 +1133,85 @@ Regras:
 3. Descrições genéricas ("serviços diversos") são suspeitas.
 4. Notas muito antigas ou emitidas em fins de semana para serviços de escritório são suspeitas.
 5. Calcule riskScore 0–100 (0=seguro, 100=fraude quase certa).
-6. Retorne APENAS JSON válido, sem markdown, sem explicações extras.`;
+6. Retorne APENAS JSON válido, sem markdown, sem explicações extras.
 
-        async function callGemini(dataUrl, mime) {
-            const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
-            if (!matches) throw new Error('Formato de arquivo inválido.');
-            const b64 = matches[2];
+Schema JSON esperado:
+{
+  "supplierName": "string",
+  "cnpj": "string",
+  "invoiceDate": "string",
+  "totalAmount": number,
+  "items": [{"description": "string", "quantity": number, "unitPrice": number, "totalPrice": number}],
+  "anomalies": ["string"],
+  "riskScore": number,
+  "riskLevel": "BAIXO|MÉDIO|ALTO|CRÍTICO",
+  "auditRecommendation": "string",
+  "reasoning": "string"
+}`;
+
+        async function extractTextFromFile(dataUrl, mime) {
+            if (mime === 'application/pdf') {
+                const base64 = dataUrl.split(',')[1];
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                
+                const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                }
+                return fullText;
+            } else {
+                const { data: { text } } = await Tesseract.recognize(dataUrl, 'por');
+                return text;
+            }
+        }
+
+        async function callGemini(dataUrl, mime, apiKey) {
+            const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
             const today = new Date().toLocaleDateString('pt-BR');
 
+            // Extract text from file
+            const extractedText = await extractTextFromFile(dataUrl, mime);
+            if (!extractedText.trim()) throw new Error('Não foi possível extrair texto do arquivo.');
+
+            const prompt = `${SYSTEM_PROMPT}\n\nHoje é ${today}. Analise o seguinte texto extraído da nota fiscal e retorne SOMENTE o JSON conforme o schema. NÃO inclua markdown, explicações ou texto adicional. APENAS o JSON puro.\n\nTexto da nota:\n---\n${extractedText}\n---\n\nResposta (JSON puro):`;
+
             const body = {
-                system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-                contents: [{
-                    role: 'user',
-                    parts: [
-                        { text: `Hoje é ${today}. Analise esta nota fiscal e retorne SOMENTE o JSON conforme o schema.` },
-                        { inline_data: { mime_type: mime, data: b64 } }
-                    ]
-                }],
-                generationConfig: {
-                    response_mime_type: 'application/json',
-                    temperature: 0.2,
-                    response_schema: {
-                        type: 'OBJECT',
-                        properties: {
-                            supplierName: { type: 'STRING' },
-                            cnpj: { type: 'STRING' },
-                            invoiceDate: { type: 'STRING' },
-                            totalAmount: { type: 'NUMBER' },
-                            items: {
-                                type: 'ARRAY',
-                                items: {
-                                    type: 'OBJECT',
-                                    properties: {
-                                        description: { type: 'STRING' },
-                                        quantity: { type: 'NUMBER' },
-                                        unitPrice: { type: 'NUMBER' },
-                                        totalPrice: { type: 'NUMBER' }
-                                    }
-                                }
-                            },
-                            anomalies: { type: 'ARRAY', items: { type: 'STRING' } },
-                            riskScore: { type: 'NUMBER' },
-                            riskLevel: { type: 'STRING', enum: ['BAIXO', 'MÉDIO', 'ALTO', 'CRÍTICO'] },
-                            auditRecommendation: { type: 'STRING' },
-                            reasoning: { type: 'STRING' }
-                        },
-                        required: ['supplierName', 'totalAmount', 'riskScore', 'riskLevel', 'auditRecommendation', 'anomalies', 'reasoning']
-                    }
-                }
+                model,
+                messages: [
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.2
             };
 
-            const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-                { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-            );
+            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`,
+                    'HTTP-Referer': 'https://localhost',
+                    'X-Title': 'Auditor IA'
+                },
+                body: JSON.stringify(body)
+            });
+
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 throw new Error(err?.error?.message || `HTTP ${res.status}`);
             }
+
             const data = await res.json();
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error('Resposta vazia da API Gemini.');
+            let text = data?.choices?.[0]?.message?.content;
+            if (!text) throw new Error('Resposta vazia da API.');
+            
+            // Remove markdown code blocks if present
+            text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            
             return JSON.parse(text);
         }
 
@@ -1354,7 +1319,7 @@ Regras:
             const fmt = v => v != null ? 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—';
             const lines = [];
             lines.push('AUDITORIA FISCAL - AuditAI Municipal');
-            lines.push('Prefeitura de Inajá · ' + new Date().toLocaleString('pt-BR'));
+            lines.push('Prefeitura de Inaja · ' + new Date().toLocaleString('pt-BR'));
             lines.push('');
             lines.push('=== RESULTADO ===');
             lines.push(`Pontuação de Risco: ${r.riskScore}/100`);
@@ -1407,6 +1372,29 @@ Regras:
             clearTimeout(t._t);
             t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
         }
+  <script>
+    // Nav group dropdowns
+    document.querySelectorAll('.nav-group-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const group = btn.closest('.nav-group');
+        const isOpen = group.classList.contains('open');
+        document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group.classList.add('open');
+      });
+    });
+    document.querySelectorAll('.nav-group-menu').forEach(menu => {
+      menu.addEventListener('click', e => {
+        if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+          e.stopPropagation();
+        }
+      });
+    });
+    document.addEventListener('click', () =>
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
+    );
+  </script>
+
     </script>
 </body>
 

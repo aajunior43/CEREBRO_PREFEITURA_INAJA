@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -213,8 +213,13 @@
     }
     [data-theme="dark"] .info-tip { background: rgba(79,128,200,0.1); color: var(--blue); }
     .info-tip svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+    .btn-mode { background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-sm); padding: 10px 20px; font-size: 13px; font-weight: 600; color: var(--text-2); cursor: pointer; transition: all 0.2s; }
+    .btn-mode:hover { box-shadow: var(--neo); }
+    .btn-mode.active { background: var(--blue); color: white; box-shadow: 4px 4px 12px rgba(79,128,200,0.4); }
   </style>
   <script src="/static/js/adm-guard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
 </head>
 <body>
 
@@ -305,6 +310,10 @@
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Fornecimento</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
             </a>
+            <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
+              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Despesa Pública</span><span class="nav-group-item-desc">Visor de despesas da prefeitura</span></div>
+            </a>
           </div>
         </div>
 
@@ -366,19 +375,10 @@
 
     <div class="emp-card">
 
-      <!-- API Key -->
-      <div class="api-key-section">
-        <div class="api-key-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
-            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-          </svg>
-          Chave API Gemini
-        </div>
-        <div class="api-key-row">
-          <input type="password" class="api-key-input" id="api-key-input" placeholder="Cole sua chave API do Google Gemini aqui..." autocomplete="off" />
-          <button class="btn-save-key" id="btn-save-key">Salvar</button>
-        </div>
-        <div class="api-key-status miss" id="api-key-status">⚠️ Chave não configurada. Obtenha gratuitamente em aistudio.google.com</div>
+      <!-- Mode Selector -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(184,194,204,.2);padding-bottom:12px;">
+        <button class="btn-mode active" id="btn-mode-file" onclick="switchMode('file')">📄 Enviar Arquivo</button>
+        <button class="btn-mode" id="btn-mode-text" onclick="switchMode('text')">✍️ Digitar Texto</button>
       </div>
 
       <!-- Upload Section -->
@@ -410,21 +410,50 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Text Input Section -->
+      <div id="text-section" style="display:none;">
+        <textarea id="input-text" placeholder="Cole ou digite o texto do documento aqui (fatura, contrato, ordem de serviço, etc.)..." style="width:100%;min-height:200px;padding:16px;border:2px dashed rgba(184,194,204,.3);border-radius:var(--radius);background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;resize:vertical;box-shadow:var(--neo-in);"></textarea>
+        
+        <button class="btn-primary" id="btn-generate-text" style="margin-top:16px;width:100%;" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+          </svg>
+          Gerar Texto de Empenho
+        </button>
 
         <!-- Error -->
-        <div class="error-box" id="error-box" style="display:none;">
+        <div class="error-box" id="error-box-text" style="display:none;margin-top:16px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
-          <div><strong>Erro: </strong><span id="error-msg">—</span></div>
+          <div><strong>Erro: </strong><span id="error-msg-text">—</span></div>
         </div>
 
         <!-- Info tip -->
-        <div class="info-tip">
+        <div class="info-tip" style="margin-top:16px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-          <span>O documento é enviado diretamente à API Gemini e <strong>não é armazenado</strong> em nenhum servidor. Verifique sempre os dados gerados antes de usar.</span>
+          <span>O texto é enviado diretamente à API OpenRouter e <strong>não é armazenado</strong> em nenhum servidor.</span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="error-box" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div><strong>Erro: </strong><span id="error-msg">—</span></div>
+      </div>
+
+      <!-- Info tip -->
+      <div class="info-tip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>O documento é enviado diretamente à API OpenRouter e <strong>não é armazenado</strong> em nenhum servidor. Verifique sempre os dados gerados antes de usar.</span>
         </div>
 
         <div class="action-row">
@@ -444,7 +473,7 @@
             <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
           </svg>
         </div>
-        <p>Analisando documento com <strong>IA Gemini</strong>…<br><span style="font-size:12px;">Isso pode levar alguns segundos</span></p>
+        <p>Analisando documento com <strong>IA OpenRouter</strong>…<br><span style="font-size:12px;">Isso pode levar alguns segundos</span></p>
       </div>
 
       <!-- Result Section -->
@@ -488,6 +517,9 @@
   <script>
   'use strict';
 
+  // ── PDF.js Setup ─────────────────────────────────────────────
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
   // ── Theme ────────────────────────────────────────────────────
   (function() {
     const saved = localStorage.getItem('theme') || 'light';
@@ -509,36 +541,19 @@
     document.getElementById('dropdown-menu').classList.remove('open');
   });
 
-  // ── API Key ──────────────────────────────────────────────────
-  const apiKeyInput = document.getElementById('api-key-input');
-  const apiKeyStatus = document.getElementById('api-key-status');
-  let geminiApiKey = localStorage.getItem('gemini_api_key') || '';
-
-  function updateKeyStatus() {
-    if (geminiApiKey) {
-      apiKeyInput.value = geminiApiKey;
-      apiKeyStatus.className = 'api-key-status ok';
-      apiKeyStatus.textContent = '✅ Chave configurada e salva localmente';
+  // ── Mode Switching ───────────────────────────────────────────
+  function switchMode(mode) {
+    document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+    if (mode === 'file') {
+      document.getElementById('btn-mode-file').classList.add('active');
+      document.getElementById('upload-section').style.display = '';
+      document.getElementById('text-section').style.display = 'none';
     } else {
-      apiKeyStatus.className = 'api-key-status miss';
-      apiKeyStatus.textContent = '⚠️ Chave não configurada. Obtenha gratuitamente em aistudio.google.com';
+      document.getElementById('btn-mode-text').classList.add('active');
+      document.getElementById('upload-section').style.display = 'none';
+      document.getElementById('text-section').style.display = '';
     }
   }
-  updateKeyStatus();
-
-  document.getElementById('btn-save-key').addEventListener('click', () => {
-    const val = apiKeyInput.value.trim();
-    if (val) {
-      geminiApiKey = val;
-      localStorage.setItem('gemini_api_key', val);
-      updateKeyStatus();
-    } else {
-      alert('Digite uma chave API válida.');
-    }
-  });
-  apiKeyInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('btn-save-key').click();
-  });
 
   // ── State ────────────────────────────────────────────────────
   let currentFile = null;
@@ -638,8 +653,8 @@
     });
   }
 
-  // ── Gemini API ───────────────────────────────────────────────
-  const PROMPT = `Analise o documento anexo (pode ser uma fatura, contrato, ordem de serviço, ou requisição).
+  // ── OpenRouter API ───────────────────────────────────────────────
+  const PROMPT_TEMPLATE = `Analise o seguinte texto extraído de um documento (fatura, contrato, ordem de serviço, ou requisição).
 O seu objetivo é gerar o texto da "Descrição" para uma Nota de Empenho (NE) do setor público.
 
 Regras Estritas:
@@ -650,36 +665,115 @@ Regras Estritas:
 5. Não use markdown, apenas texto puro.
 
 Exemplo de formato esperado:
-"PELA DESPESA EMPENHADA REFERENTE A AQUISIÇÃO DE MATERIAIS DE ESCRITÓRIO PARA ATENDER AS NECESSIDADES DA SECRETARIA MUNICIPAL DE SAÚDE, CONFORME PREGÃO ELETRÔNICO N. 12/2024 E CONTRATO N. 05/2024."`;
+"PELA DESPESA EMPENHADA REFERENTE A AQUISIÇÃO DE MATERIAIS DE ESCRITÓRIO PARA ATENDER AS NECESSIDADES DA SECRETARIA MUNICIPAL DE SAÚDE, CONFORME PREGÃO ELETRÔNICO N. 12/2024 E CONTRATO N. 05/2024."
+
+Texto do documento:
+---
+{TEXT}
+---`;
+
+  async function extractTextFromFile(file) {
+    if (file.type === 'application/pdf') {
+      // Extract text from PDF using pdf.js
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      return fullText;
+    } else {
+      // For images, use Tesseract.js OCR
+      const { data: { text } } = await Tesseract.recognize(file, 'por', {
+        logger: m => console.log(m)
+      });
+      return text;
+    }
+  }
 
   async function generateEmpenhoText(file) {
-    if (!geminiApiKey) throw new Error('Configure sua chave API Gemini antes de continuar.');
+    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
+    if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
 
-    const { data, mimeType } = await fileToBase64(file);
+    // Extract text from file
+    const extractedText = await extractTextFromFile(file);
+    if (!extractedText.trim()) throw new Error('Não foi possível extrair texto do arquivo.');
+
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+    const prompt = PROMPT_TEMPLATE.replace('{TEXT}', extractedText);
 
     const body = {
-      contents: [{
-        parts: [
-          { inlineData: { mimeType, data } },
-          { text: PROMPT }
-        ]
-      }],
-      generationConfig: { temperature: 0.2 }
+      model,
+      messages: [
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2
     };
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-    );
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterApiKey}`,
+        'HTTP-Referer': 'https://localhost',
+        'X-Title': 'Gerador de Empenho'
+      },
+      body: JSON.stringify(body)
+    });
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       throw new Error(err?.error?.message || `HTTP ${resp.status}`);
     }
 
-    const data2 = await resp.json();
-    let text = data2?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!text) throw new Error('Resposta vazia da API Gemini.');
+    const data = await resp.json();
+    let text = data?.choices?.[0]?.message?.content || '';
+    if (!text) throw new Error('Resposta vazia da API.');
+
+    // Enforce rules
+    text = text.toUpperCase().trim().replace(/\*\*/g, '').replace(/\*/g, '');
+    const PREFIX = 'PELA DESPESA EMPENHADA';
+    if (!text.startsWith(PREFIX)) {
+      text = text.startsWith('REFERENTE') ? `${PREFIX} ${text}` : `${PREFIX} REFERENTE A ${text}`;
+    }
+    return text;
+  }
+
+  async function generateFromText(inputText) {
+    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
+    if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
+
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+    const prompt = PROMPT_TEMPLATE.replace('{TEXT}', inputText);
+
+    const body = {
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2
+    };
+
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterApiKey}`,
+        'HTTP-Referer': 'https://localhost',
+        'X-Title': 'Gerador de Empenho'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    let text = data?.choices?.[0]?.message?.content || '';
+    if (!text) throw new Error('Resposta vazia da API.');
 
     // Enforce rules
     text = text.toUpperCase().trim().replace(/\*\*/g, '').replace(/\*/g, '');
@@ -693,7 +787,6 @@ Exemplo de formato esperado:
   // ── Generate ─────────────────────────────────────────────────
   btnGenerate.addEventListener('click', async () => {
     if (!currentFile) return;
-    if (!geminiApiKey) { showError('Configure sua chave API Gemini antes de continuar.'); return; }
 
     hideError();
     uploadSection.style.display = 'none';
@@ -721,12 +814,50 @@ Exemplo de formato esperado:
     resultTextarea.setSelectionRange(pos, pos);
   });
 
+  // ── Text Input ───────────────────────────────────────────────
+  const inputText = document.getElementById('input-text');
+  const btnGenerateText = document.getElementById('btn-generate-text');
+  
+  inputText.addEventListener('input', () => {
+    btnGenerateText.disabled = !inputText.value.trim();
+  });
+
+  btnGenerateText.addEventListener('click', async () => {
+    const text = inputText.value.trim();
+    if (!text) return;
+
+    const errorBoxText = document.getElementById('error-box-text');
+    const errorMsgText = document.getElementById('error-msg-text');
+    errorBoxText.style.display = 'none';
+    
+    uploadSection.style.display = 'none';
+    document.getElementById('text-section').style.display = 'none';
+    loaderEl.style.display = 'flex';
+    resultSection.style.display = 'none';
+
+    try {
+      const generated = await generateFromText(text);
+      resultTextarea.value = generated;
+      loaderEl.style.display = 'none';
+      resultSection.style.display = '';
+      resultTextarea.focus();
+    } catch (err) {
+      loaderEl.style.display = 'none';
+      document.getElementById('text-section').style.display = '';
+      errorBoxText.style.display = 'flex';
+      errorMsgText.textContent = err instanceof Error ? err.message : 'Erro desconhecido.';
+    }
+  });
+
   // ── Reset ────────────────────────────────────────────────────
   document.getElementById('btn-reset').addEventListener('click', () => {
     clearFile();
+    inputText.value = '';
+    btnGenerateText.disabled = true;
     resultSection.style.display = 'none';
     resultTextarea.value = '';
     hideError();
+    document.getElementById('error-box-text').style.display = 'none';
   });
 
   // ── Copy ─────────────────────────────────────────────────────
@@ -758,6 +889,33 @@ Exemplo de formato esperado:
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
+  </script>
+
+  <script>
+    // Nav group dropdowns (Documentos / Financeiro / Ferramentas)
+    document.querySelectorAll('.nav-group-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const group = btn.closest('.nav-group');
+        const isOpen = group.classList.contains('open');
+        document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group.classList.add('open');
+      });
+    });
+    
+    // Prevent closing when clicking inside menu (but not on links)
+    document.querySelectorAll('.nav-group-menu').forEach(menu => {
+      menu.addEventListener('click', e => {
+        if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+          e.stopPropagation();
+        }
+      });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', () =>
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
+    );
   </script>
 </body>
 </html>

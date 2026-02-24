@@ -880,6 +880,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!isOpen) group.classList.add('open');
     });
   });
+  
+  // Prevent closing when clicking inside menu (but not on links)
+  document.querySelectorAll('.nav-group-menu').forEach(menu => {
+    menu.addEventListener('click', e => {
+      if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+        e.stopPropagation();
+      }
+    });
+  });
+  
+  // Close dropdowns when clicking outside
   document.addEventListener('click', () =>
     document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
   );
@@ -892,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // ADM Authentication
-  let isAdmAuthenticated = false;
+  let isAdmAuthenticated = sessionStorage.getItem('adm_auth') === '1';
   
   function showPasswordModal() {
     document.getElementById('password-overlay').style.display = 'flex';
@@ -939,7 +950,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.progress-section').style.display = '';
     document.querySelector('.toolbar').style.display = '';
     document.querySelector('.main-content').style.display = '';
-    isAdmAuthenticated = false;
   }
   
   // Handle tab clicks with auth requirement

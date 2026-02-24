@@ -78,6 +78,26 @@ def migrate_db():
             criado_em            TEXT    DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    # ── Despesas da Prefeitura (CSV histórico) ──────────────────
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS despesas_importacoes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            periodo     TEXT    NOT NULL,
+            descricao   TEXT,
+            arquivo     TEXT,
+            total_rows  INTEGER DEFAULT 0,
+            colunas     TEXT,
+            importado_em TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS despesas_linhas (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            importacao_id   INTEGER NOT NULL
+                            REFERENCES despesas_importacoes(id) ON DELETE CASCADE,
+            dados           TEXT    NOT NULL
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -792,18 +812,20 @@ def cnpj_buscar():
 # ────────────────────────────────────────────────────────────
 import io as _io
 import zipfile as _zipfile
-from PyPDF2 import PdfMerger as _PdfMerger, PdfReader as _PdfReader, PdfWriter as _PdfWriter
+from PyPDF2 import PdfReader as _PdfReader, PdfWriter as _PdfWriter
 
 @app.route('/api/pdf/mesclar', methods=['POST'])
 def pdf_mesclar():
     files = request.files.getlist('pdfs')
     if len(files) < 2:
         return 'Envie ao menos 2 arquivos', 400
-    merger = _PdfMerger()
+    writer = _PdfWriter()
     for f in files:
-        merger.append(f)
+        reader = _PdfReader(f)
+        for page in reader.pages:
+            writer.add_page(page)
     buf = _io.BytesIO()
-    merger.write(buf)
+    writer.write(buf)
     buf.seek(0)
     return send_file(buf, mimetype='application/pdf', as_attachment=True,
                      download_name='mesclado.pdf')
@@ -874,6 +896,98 @@ def pdf_proteger():
     buf.seek(0)
     return send_file(buf, mimetype='application/pdf', as_attachment=True,
                      download_name='protegido.pdf')
+
+
+# ────────────────────────────────────────────────────────────
+# API – Despesas da Prefeitura (histórico CSV → BD)
+# ────────────────────────────────────────────────────────────
+
+@app.route('/api/despesas/importacoes', methods=['GET'])
+def despesas_listar_importacoes():
+    """Lista todas as importações de despesas salvas no banco."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
+        "FROM despesas_importacoes ORDER BY importado_em DESC"
+    ).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+
+@app.route('/api/despesas/importar', methods=['POST'])
+def despesas_importar():
+    """Salva um CSV de despesas no banco de dados com período e descrição."""
+    d = request.get_json()
+    periodo  = (d.get('periodo') or '').strip()
+    descricao = (d.get('descricao') or '').strip()
+    arquivo  = (d.get('arquivo') or '').strip()
+    linhas   = d.get('linhas', [])   # lista de objetos {coluna: valor}
+    colunas  = d.get('colunas', [])  # lista de strings
+
+    if not periodo:
+        return jsonify({'error': 'Período obrigatório'}), 400
+    if not linhas:
+        return jsonify({'error': 'Nenhuma linha recebida'}), 400
+
+    from datetime import datetime as _dt_now
+    now = _dt_now.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db()
+    cur  = conn.cursor()
+    cur.execute(
+        "INSERT INTO despesas_importacoes (periodo, descricao, arquivo, total_rows, colunas, importado_em) "
+        "VALUES (?,?,?,?,?,?)",
+        (periodo, descricao, arquivo, len(linhas), json.dumps(colunas, ensure_ascii=False), now)
+    )
+    imp_id = cur.lastrowid
+
+    cur.executemany(
+        "INSERT INTO despesas_linhas (importacao_id, dados) VALUES (?,?)",
+        [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas]
+    )
+
+    conn.commit()
+    row = conn.execute(
+        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
+        "FROM despesas_importacoes WHERE id=?", (imp_id,)
+    ).fetchone()
+    conn.close()
+    return jsonify(row_to_dict(row)), 201
+
+
+@app.route('/api/despesas/importacoes/<int:imp_id>', methods=['GET'])
+def despesas_carregar(imp_id):
+    """Retorna os dados completos de uma importação."""
+    conn = get_db()
+    imp = conn.execute(
+        "SELECT id, periodo, descricao, arquivo, total_rows, colunas, importado_em "
+        "FROM despesas_importacoes WHERE id=?", (imp_id,)
+    ).fetchone()
+    if not imp:
+        conn.close()
+        return jsonify({'error': 'Importação não encontrada'}), 404
+
+    linhas_rows = conn.execute(
+        "SELECT dados FROM despesas_linhas WHERE importacao_id=? ORDER BY id",
+        (imp_id,)
+    ).fetchall()
+    conn.close()
+
+    imp_dict = row_to_dict(imp)
+    imp_dict['colunas'] = json.loads(imp_dict['colunas'] or '[]')
+    linhas = [json.loads(r['dados']) for r in linhas_rows]
+    return jsonify({'importacao': imp_dict, 'linhas': linhas})
+
+
+@app.route('/api/despesas/importacoes/<int:imp_id>', methods=['DELETE'])
+def despesas_excluir(imp_id):
+    """Exclui uma importação e todas as suas linhas."""
+    conn = get_db()
+    conn.execute("DELETE FROM despesas_linhas WHERE importacao_id=?", (imp_id,))
+    conn.execute("DELETE FROM despesas_importacoes WHERE id=?", (imp_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
 
 
 # ────────────────────────────────────────────────────────────

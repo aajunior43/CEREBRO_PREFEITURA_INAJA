@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -105,6 +105,10 @@
             <a href="/pages/fornecimento.html" class="nav-group-item">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Fornecimento</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
+            </a>
+            <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
+              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Despesa Pública</span><span class="nav-group-item-desc">Visor de despesas da prefeitura</span></div>
             </a>
           </div>
         </div>
@@ -230,6 +234,10 @@
     <a href="/pages/fornecimento.html" class="mobile-nav-item" style="text-decoration:none;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       Fornecimento
+    </a>
+    <a href="/pages/despesa-prefeitura.html" class="mobile-nav-item" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Despesa Pública
     </a>
     <div class="mobile-nav-divider"></div>
     <div class="mobile-nav-label">Ferramentas</div>
@@ -627,13 +635,13 @@
       const cnpjaEl = document.getElementById('adm-cnpja-key');
       if (!keyEl) return;
       keyEl.value  = localStorage.getItem('api_openrouter_key')    || '';
-      modEl.value  = localStorage.getItem('api_openrouter_modelo') || 'openai/gpt-4o-mini';
+      modEl.value  = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
       if (cnpjaEl) cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
     }
 
     function admSalvarChaves() {
       const k = document.getElementById('adm-or-key').value.trim();
-      const m = document.getElementById('adm-or-modelo').value.trim() || 'openai/gpt-4o-mini';
+      const m = document.getElementById('adm-or-modelo').value.trim() || 'meta-llama/llama-3.2-3b-instruct:free';
       localStorage.setItem('api_openrouter_key',    k);
       localStorage.setItem('api_openrouter_modelo', m);
       // manter compat com chaves antigas usadas em extratos.html
@@ -685,7 +693,7 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro');
-        _admTodosModelos = data.modelos || [];
+        _admTodosModelos = (data.modelos || []).filter(m => m.pricing && m.pricing.prompt === '0' && m.pricing.completion === '0');
         admRenderModelos(_admTodosModelos);
         document.getElementById('adm-modelos-filtro').value = '';
         document.getElementById('adm-modelos-modal').style.display = 'flex';

@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tarifas Bancárias – Prefeitura de Inajá</title>
+  <title>Tarifas Bancárias – Prefeitura de Inaja</title>
   <link rel="stylesheet" href="/static/css/index.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- PDF.js CDN -->
@@ -327,7 +327,7 @@
         <div class="header-brand">
           <img src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
           <div class="header-title">
-            <h1>Prefeitura de Inajá</h1>
+            <h1>Prefeitura de Inaja</h1>
             <p>Gestão de Empenhos</p>
           </div>
         </div>
@@ -407,6 +407,10 @@
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Fornecimento</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
             </a>
+            <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
+              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Despesa Pública</span><span class="nav-group-item-desc">Visor de despesas da prefeitura</span></div>
+            </a>
           </div>
         </div>
 
@@ -476,20 +480,6 @@
       </div>
 
       <!-- API Key -->
-      <div class="api-key-section">
-        <div class="api-key-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;">
-            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-          </svg>
-          Chave API Gemini
-        </div>
-        <div class="api-key-row">
-          <input type="password" class="api-key-input" id="api-key-input" placeholder="Cole sua chave API do Google Gemini aqui..." autocomplete="off" />
-          <button class="btn-save-key" id="btn-save-key">Salvar</button>
-        </div>
-        <div class="api-key-status miss" id="api-key-status">⚠️ Chave não configurada. Obtenha gratuitamente em aistudio.google.com</div>
-      </div>
-
       <!-- Upload -->
       <div id="upload-section">
         <label class="upload-zone" id="upload-zone">
@@ -551,7 +541,7 @@
       <div class="steps-list" id="steps-list">
         <div class="step-item">
           <div class="step-num">1</div>
-          <span>Configure sua <strong style="color:var(--text-2);">chave API Gemini</strong> gratuita em <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--blue);">aistudio.google.com</a></span>
+          <span>Configure sua <strong style="color:var(--text-2);">chave API OpenRouter</strong> em <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--blue);">openrouter.ai</a></span>
         </div>
         <div class="step-item">
           <div class="step-num">2</div>
@@ -591,33 +581,6 @@
   });
 
   // ── API Key ──────────────────────────────────────────────────
-  const apiKeyInput = document.getElementById('api-key-input');
-  const apiKeyStatus = document.getElementById('api-key-status');
-  let geminiApiKey = localStorage.getItem('gemini_api_key') || '';
-
-  function updateKeyStatus() {
-    if (geminiApiKey) {
-      apiKeyInput.value = geminiApiKey;
-      apiKeyStatus.className = 'api-key-status ok';
-      apiKeyStatus.textContent = '✅ Chave configurada e salva localmente';
-    } else {
-      apiKeyStatus.className = 'api-key-status miss';
-      apiKeyStatus.textContent = '⚠️ Chave não configurada. Obtenha gratuitamente em aistudio.google.com';
-    }
-  }
-  updateKeyStatus();
-
-  document.getElementById('btn-save-key').addEventListener('click', () => {
-    const val = apiKeyInput.value.trim();
-    if (val) {
-      geminiApiKey = val;
-      localStorage.setItem('gemini_api_key', val);
-      updateKeyStatus();
-    } else {
-      alert('Digite uma chave API válida.');
-    }
-  });
-  apiKeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('btn-save-key').click(); });
 
   // ── PDF.js Setup ─────────────────────────────────────────────
   // Dynamic import for pdf.js ES module
@@ -644,9 +607,10 @@
     return fullText;
   }
 
-  // ── Gemini API ───────────────────────────────────────────────
+  // ── OpenRouter API ───────────────────────────────────────────────
   async function summarizeBankFees(text) {
-    if (!geminiApiKey) throw new Error('Configure sua chave API Gemini antes de continuar.');
+    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
+    if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
 
     const PROMPT = `Você é um assistente financeiro especialista em analisar extratos bancários brasileiros.
 Sua única tarefa é analisar o texto do extrato bancário a seguir, identificar TODAS as cobranças que são tarifas, taxas, juros, encargos, IOF, ou qualquer outro tipo de custo cobrado pelo banco.
@@ -665,27 +629,32 @@ Texto do extrato para análise:
 ${text}
 ---`;
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: PROMPT }] }],
-          generationConfig: { responseMimeType: 'application/json' }
-        })
-      }
-    );
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+
+    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openrouterApiKey}`,
+        'HTTP-Referer': 'https://localhost',
+        'X-Title': 'Prefeitura de Inaja – Tarifas Bancárias'
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: PROMPT }],
+        temperature: 0.2,
+      })
+    });
 
     if (!resp.ok) {
       const errBody = await resp.json().catch(() => ({}));
       const msg = errBody?.error?.message || `HTTP ${resp.status}`;
-      throw new Error(`Gemini API: ${msg}`);
+      throw new Error(`API: ${msg}`);
     }
 
     const data = await resp.json();
-    const jsonString = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!jsonString) throw new Error('Resposta vazia da API Gemini.');
+    const jsonString = data?.choices?.[0]?.message?.content?.trim();
+    if (!jsonString) throw new Error('Resposta vazia da API.');
 
     const result = JSON.parse(jsonString);
     if (typeof result.total_tarifas === 'number') return result.total_tarifas;
@@ -757,8 +726,8 @@ ${text}
   // ── Analyze ──────────────────────────────────────────────────
   btnAnalyze.addEventListener('click', async () => {
     if (!currentFile) return;
-    if (!geminiApiKey) {
-      showError('Configure sua chave API Gemini antes de continuar.');
+    if (!openrouterApiKey) {
+      showError('Configure sua chave API OpenRouter antes de continuar.');
       return;
     }
 
@@ -813,6 +782,29 @@ ${text}
       alert('Não foi possível copiar. Copie manualmente: ' + lastTotal);
     }
   });
+
+  <script>
+    // Nav group dropdowns
+    document.querySelectorAll('.nav-group-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const group = btn.closest('.nav-group');
+        const isOpen = group.classList.contains('open');
+        document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group.classList.add('open');
+      });
+    });
+    document.querySelectorAll('.nav-group-menu').forEach(menu => {
+      menu.addEventListener('click', e => {
+        if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+          e.stopPropagation();
+        }
+      });
+    });
+    document.addEventListener('click', () =>
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
+    );
+  </script>
 
   </script>
 </body>

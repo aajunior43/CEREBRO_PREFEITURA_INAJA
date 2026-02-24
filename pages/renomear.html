@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Renomear com IA – Prefeitura de Inajá</title>
+  <title>Renomear com IA - Prefeitura de Inaja</title>
   <link rel="stylesheet" href="/static/css/index.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
@@ -687,7 +687,7 @@
         <div class="header-brand">
           <img src="/static/img/brasao.png" alt="Brasão" style="height:48px;width:auto;object-fit:contain;" />
           <div class="header-title">
-            <h1>Prefeitura de Inajá</h1>
+            <h1>Prefeitura de Inaja</h1>
             <p>Gestão de Empenhos</p>
           </div>
         </div>
@@ -765,6 +765,10 @@
             <a href="/pages/fornecimento.html" class="nav-group-item">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Fornecimento</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
+            </a>
+            <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
+              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Despesa Pública</span><span class="nav-group-item-desc">Visor de despesas da prefeitura</span></div>
             </a>
           </div>
         </div>
@@ -955,6 +959,11 @@
   </div>
 
   <script>
+  // Theme
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
     // ── CACHE ──────────────────────────────────────────────────────────────────
@@ -1031,7 +1040,7 @@
       updateCounters();
     });
     function updateModelBadge() {
-      const m = localStorage.getItem('api_openrouter_modelo') || 'openai/gpt-4o-mini';
+      const m = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
       document.getElementById('model-badge').textContent = m;
     }
     function updateCounters() {
@@ -1183,14 +1192,18 @@
     async function callAPI(content, attempt) {
       const key = localStorage.getItem('api_openrouter_key') || '';
       if (!key) throw new Error('Chave OpenRouter não configurada (ADM → OpenRouter)');
-      const model = localStorage.getItem('api_openrouter_modelo') || 'openai/gpt-4o-mini';
+      const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': window.location.origin, 'X-Title': 'Prefeitura de Inajá – Renomeador' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': 'https://localhost', 'X-Title': 'Renomeador' },
         body: JSON.stringify({ model, messages: [{ role: 'user', content }], max_tokens: 120, temperature: 0.2 })
       });
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error?.message || `Erro HTTP ${res.status}`);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message || `Erro HTTP ${res.status}`);
       if (!data.choices?.length) throw new Error('API não retornou resposta');
       return data.choices[0].message.content.trim();
     }
@@ -1401,6 +1414,29 @@
       t.style.display = 'block'; t.style.opacity = '1';
       clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
     }
+  <script>
+    // Nav group dropdowns
+    document.querySelectorAll('.nav-group-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const group = btn.closest('.nav-group');
+        const isOpen = group.classList.contains('open');
+        document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group.classList.add('open');
+      });
+    });
+    document.querySelectorAll('.nav-group-menu').forEach(menu => {
+      menu.addEventListener('click', e => {
+        if (e.target.tagName !== 'A' && !e.target.closest('a')) {
+          e.stopPropagation();
+        }
+      });
+    });
+    document.addEventListener('click', () =>
+      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
+    );
+  </script>
+
   </script>
 </body>
 
