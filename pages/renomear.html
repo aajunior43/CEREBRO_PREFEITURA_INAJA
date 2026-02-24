@@ -818,36 +818,55 @@
     }
 
     // ── PROMPT ─────────────────────────────────────────────────────────────────
-    const RENAME_PROMPT = `Você é um assistente especializado em organização de documentos da administração pública brasileira.
-Analise o texto abaixo e gere um nome de arquivo descritivo e padronizado.
+    const RENAME_PROMPT = `Gere um nome de arquivo para este documento público brasileiro.
+REGRAS: MAIÚSCULAS + números + underscore apenas. Sem espaços. Máximo 60 chars.
+Formato: TIPO_DESCRICAO_DATA
+Exemplos: SOLICITACAO_SERVICO_LAVAGEM_VEICULOS_2024, NOTA_FISCAL_EMPRESA_ABC_20240315
+Responda SOMENTE com o nome, nada mais.
 
-REGRAS ABSOLUTAS:
-- Responda SOMENTE com o nome do arquivo, NADA MAIS
-- Use APENAS letras MAIÚSCULAS, números e underscore (_)
-- SEM espaços, SEM acentos, SEM caracteres especiais, SEM extensão
-- Entre 10 e 80 caracteres
-- Formato: TIPO_ENTIDADE_REFERENCIA_DATA
-
-Tipos comuns: NOTA_FISCAL, RECIBO, COMPROVANTE_PAGAMENTO, EXTRATO, CONTRATO, EMPENHO,
-LIQUIDACAO, ORDEM_PAGAMENTO, CERTIDAO, ATA, RELATORIO, DECLARACAO, OFICIO, MEMORANDO,
-PORTARIA, DECRETO, RESOLUCAO, SOLICITACAO_COMPRA, TERMO_ADITIVO
-
-Exemplos de resposta correta:
-  NOTA_FISCAL_EMPRESA_ABC_001234_20240315
-  EMPENHO_2024_001234_FORNECEDOR_XYZ
-  CONTRATO_PREFEITURA_INAJA_SERVICOS_TI_2024
-  EXTRATO_BB_CONTA_0001_JANEIRO_2024
-  SOLICITACAO_COMPRA_MATERIAL_ESCRITORIO_2024
-
-TEXTO DO DOCUMENTO:
----
-[CONTEUDO]
----
-
-NOME DO ARQUIVO (somente o nome, sem explicação):`;
+TEXTO:
+[CONTEUDO]`;
 
     function getActivePrompt(fileType, content) {
-      return RENAME_PROMPT.replace('[CONTEUDO]', content || `Tipo: ${fileType}`);
+      return RENAME_PROMPT.replace('[CONTEUDO]', (content || fileType).substring(0, 2000));
+    }
+
+    // Gera nome localmente do texto OCR quando IA falha
+    function buildNameFromText(text, origName) {
+      if (!text || text.length < 10) return null;
+      const up = text.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const parts = [];
+      // Detecta tipo do documento
+      const tipos = [
+        ['SOLICITACAO DE SERVICO','SOLICITACAO_SERVICO'], ['SOLICITACAO DE COMPRA','SOLICITACAO_COMPRA'],
+        ['NOTA FISCAL','NOTA_FISCAL'], ['RECIBO','RECIBO'], ['CONTRATO','CONTRATO'],
+        ['EMPENHO','EMPENHO'], ['LIQUIDACAO','LIQUIDACAO'], ['CERTIDAO','CERTIDAO'],
+        ['EXTRATO','EXTRATO'], ['RELATORIO','RELATORIO'], ['DECLARACAO','DECLARACAO'],
+        ['PORTARIA','PORTARIA'], ['DECRETO','DECRETO'], ['OFICIO','OFICIO'],
+        ['ATA','ATA'], ['MEMORANDO','MEMORANDO'], ['SOLICITACAO','SOLICITACAO'],
+        ['ORDEM DE SERVICO','ORDEM_SERVICO'], ['ORDEM DE PAGAMENTO','ORDEM_PAGAMENTO'],
+      ];
+      let tipo = '';
+      for (const [pat, label] of tipos) {
+        if (up.includes(pat)) { tipo = label; break; }
+      }
+      if (tipo) parts.push(tipo);
+      // Extrai palavras-chave relevantes (linhas curtas com conteúdo)
+      const lines = up.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 3 && l.length < 60 && !/CNPJ|CEP|EMAIL|TELEFON|AV\.|RUA |ESTADO|MUNICIPIO/.test(l));
+      const keywords = [];
+      for (const line of lines.slice(2, 10)) {
+        const clean = line.replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, '_').replace(/^_|_$/g, '');
+        if (clean.length > 3 && clean.length < 40 && !parts.join('').includes(clean.split('_')[0])) {
+          keywords.push(clean);
+          if (keywords.length >= 2) break;
+        }
+      }
+      parts.push(...keywords);
+      // Extrai data
+      const dateMatch = text.match(/\d{2}\/\d{2}\/(\d{4})/);
+      if (dateMatch) parts.push(dateMatch[1]);
+      const result = parts.join('_').replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 70);
+      return result.length >= 8 ? result : null;
     }
 
     // ── STATE ──────────────────────────────────────────────────────────────────
@@ -1100,6 +1119,7 @@ NOME DO ARQUIVO (somente o nome, sem explicação):`;
               console.log(`[RENOMEAR] OCR resultado (${text.length} chars):`, text.substring(0, 200));
             } catch (e) { console.warn('[RENOMEAR] OCR falhou:', e); text = ''; }
           }
+          item._ocrText = text;
           const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (sem texto legível)`;
           console.log('[RENOMEAR] Conteúdo enviado para IA:', content.substring(0, 300));
           msgContent = getActivePrompt('PDF', content);
@@ -1110,6 +1130,7 @@ NOME DO ARQUIVO (somente o nome, sem explicação):`;
             text = await ocrFile(item.file);
             console.log(`[RENOMEAR] OCR imagem (${text.length} chars):`, text.substring(0, 200));
           } catch (e) { console.warn('[RENOMEAR] OCR imagem falhou:', e); text = ''; }
+          item._ocrText = text;
           const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (imagem sem texto)`;
           msgContent = getActivePrompt('Imagem', content);
         } else {
@@ -1123,8 +1144,16 @@ NOME DO ARQUIVO (somente o nome, sem explicação):`;
           return callAPI(msgContent, attempt);
         }, 3, 1500);
         console.log('[RENOMEAR] Resposta bruta da IA:', suggestion);
-        console.log('[RENOMEAR] Nome final:', cleanName(suggestion, item.origName));
-        item.sugName = cleanName(suggestion, item.origName); item.status = 'done'; item.fromCache = false; item.retries = retryCount;
+        // Usa fallback local se IA retornar vazio
+        let finalName = suggestion ? cleanName(suggestion, item.origName) : null;
+        if (!finalName || finalName === cleanName('', item.origName)) {
+          // tenta gerar localmente do OCR/texto
+          const ocrText = item._ocrText || '';
+          finalName = cleanName(buildNameFromText(ocrText, item.origName) || suggestion, item.origName);
+          if (ocrText) console.log('[RENOMEAR] Usando fallback local:', finalName);
+        }
+        console.log('[RENOMEAR] Nome final:', finalName);
+        item.sugName = finalName; item.status = 'done'; item.fromCache = false; item.retries = retryCount;
         aiCache.set(ck, item.sugName);
         addHistory(item.origName, item.sugName, item.type, item.file.size);
       } catch (e) {
