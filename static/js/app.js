@@ -820,32 +820,37 @@ async function init() {
 }
 
 // ── Theme Toggle ───────────────────────────────────────────────
+const THEME_CYCLE = ['light', 'rosa', 'dark'];
+const THEME_LABELS = { light: '🌸 Tema Rosa', rosa: '🌙 Tema Escuro', dark: '☀️ Tema Claro' };
+
 function initTheme() {
-  const saved = localStorage.getItem('theme');
-  if (saved === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  const saved = localStorage.getItem('theme') || 'light';
+  if (saved !== 'light') {
+    document.documentElement.setAttribute('data-theme', saved);
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
 }
 
 function syncThemeLabel() {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
   const label = document.querySelector('.theme-label');
-  if (!label) return;
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  label.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+  if (label) label.textContent = THEME_LABELS[cur] || '🌸 Tema Rosa';
+  const mobileLabel = document.querySelector('.theme-label-mobile');
+  if (mobileLabel) mobileLabel.textContent = THEME_LABELS[cur] || '🌸 Tema Rosa';
 }
 
 function toggleTheme() {
   const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
-  if (isDark) {
+  const cur = html.getAttribute('data-theme') || 'light';
+  const next = THEME_CYCLE[(THEME_CYCLE.indexOf(cur) + 1) % THEME_CYCLE.length];
+  if (next === 'light') {
     html.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
   } else {
-    html.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
+    html.setAttribute('data-theme', next);
   }
+  localStorage.setItem('theme', next);
+  syncThemeLabel();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -889,20 +894,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mobile theme toggle
   const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
   if (mobileThemeToggle) {
-    mobileThemeToggle.addEventListener('click', () => {
-      toggleTheme();
-      syncThemeLabel();
-      // Sync mobile label too
-      const mobileLabel = mobileThemeToggle.querySelector('.theme-label-mobile');
-      if (mobileLabel) {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
-      }
-    });
-    // Set initial mobile label
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const mobileLabel = mobileThemeToggle.querySelector('.theme-label-mobile');
-    if (mobileLabel) mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+    mobileThemeToggle.addEventListener('click', () => { toggleTheme(); });
+  }
   }
   
   // Dropdown menu

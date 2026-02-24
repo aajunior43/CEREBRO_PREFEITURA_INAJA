@@ -22,30 +22,32 @@
   const isDespesaPage = path.includes('/pages/despesa');
 
   function initTheme() {
-    // Despesa pages are always dark (their own CSS vars require dark background)
-    const saved = isDespesaPage ? 'dark' : localStorage.getItem('theme');
-    if (saved === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
+    const saved = isDespesaPage ? 'dark' : (localStorage.getItem('theme') || 'light');
+    if (saved !== 'light') {
+      document.documentElement.setAttribute('data-theme', saved);
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
   }
+
+  const THEME_CYCLE = ['light', 'rosa', 'dark'];
   function toggleTheme() {
-    if (isDespesaPage) return; // theme locked on despesa pages
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (isDark) {
+    if (isDespesaPage) return;
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(cur) + 1) % THEME_CYCLE.length];
+    if (next === 'light') {
       document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('theme', 'light');
     } else {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
+      document.documentElement.setAttribute('data-theme', next);
     }
+    localStorage.setItem('theme', next);
     syncThemeBtn();
   }
   function syncThemeBtn() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const labels = { light: '🌸 Tema Rosa', rosa: '🌙 Tema Escuro', dark: '☀️ Tema Claro' };
     document.querySelectorAll('.shd-theme-label').forEach(el => {
-      el.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+      el.textContent = labels[cur] || '🌸 Tema Rosa';
     });
   }
   initTheme();
@@ -91,8 +93,9 @@
       </a>`).join('');
   }
 
-  const isDarkNow = document.documentElement.getAttribute('data-theme') === 'dark';
-  const themeLabel = isDarkNow ? 'Tema Claro' : 'Tema Escuro';
+  const _curTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const _themeLabels = { light: '🌸 Tema Rosa', rosa: '🌙 Tema Escuro', dark: '☀️ Tema Claro' };
+  const themeLabel = _themeLabels[_curTheme] || '🌸 Tema Rosa';
 
   const headerHTML = `
 <header class="header" id="shd-header">
