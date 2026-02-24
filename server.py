@@ -12,7 +12,7 @@ import os
 import re
 import sys
 
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_from_directory, send_file, Response
 
 
 # ── Instala Flask se necessário ─────────────────────────────
@@ -230,10 +230,37 @@ def index():
 
 @app.route('/<path:filename>')
 def static_files(filename):
+    if filename.startswith('api/'):
+        return jsonify({'error': 'Rota não encontrada: ' + filename}), 404
     return send_from_directory(BASE_DIR, filename)
 
+@app.errorhandler(404)
+def not_found(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Rota não encontrada', 'path': request.path}), 404
+    return str(e), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'Erro interno do servidor', 'detail': str(e)}), 500
+    return str(e), 500
+
 # ────────────────────────────────────────────────────────────
-# API – Credores
+# API – Autenticação ADM
+# ────────────────────────────────────────────────────────────
+
+# Senha armazenada no servidor — nunca exposta ao cliente
+_ADM_PASSWORD = os.environ.get('ADM_PASSWORD', '1999')
+
+@app.route('/api/auth/adm', methods=['POST'])
+def auth_adm():
+    """Verifica a senha da área administrativa."""
+    d = request.get_json(force=True) or {}
+    senha = d.get('senha', '')
+    if senha == _ADM_PASSWORD:
+        return jsonify({'ok': True})
+    return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
 # ────────────────────────────────────────────────────────────
 
 @app.route('/api/credores', methods=['GET'])
@@ -917,42 +944,47 @@ def despesas_listar_importacoes():
 @app.route('/api/despesas/importar', methods=['POST'])
 def despesas_importar():
     """Salva um CSV de despesas no banco de dados com período e descrição."""
-    d = request.get_json()
-    periodo  = (d.get('periodo') or '').strip()
-    descricao = (d.get('descricao') or '').strip()
-    arquivo  = (d.get('arquivo') or '').strip()
-    linhas   = d.get('linhas', [])   # lista de objetos {coluna: valor}
-    colunas  = d.get('colunas', [])  # lista de strings
+    try:
+        d = request.get_json(force=True)
+        if not d:
+            return jsonify({'error': 'JSON inválido ou vazio'}), 400
+        periodo  = (d.get('periodo') or '').strip()
+        descricao = (d.get('descricao') or '').strip()
+        arquivo  = (d.get('arquivo') or '').strip()
+        linhas   = d.get('linhas', [])   # lista de objetos {coluna: valor}
+        colunas  = d.get('colunas', [])  # lista de strings
 
-    if not periodo:
-        return jsonify({'error': 'Período obrigatório'}), 400
-    if not linhas:
-        return jsonify({'error': 'Nenhuma linha recebida'}), 400
+        if not periodo:
+            return jsonify({'error': 'Período obrigatório'}), 400
+        if not linhas:
+            return jsonify({'error': 'Nenhuma linha recebida'}), 400
 
-    from datetime import datetime as _dt_now
-    now = _dt_now.now().strftime('%Y-%m-%d %H:%M:%S')
+        from datetime import datetime as _dt_now
+        now = _dt_now.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    conn = get_db()
-    cur  = conn.cursor()
-    cur.execute(
-        "INSERT INTO despesas_importacoes (periodo, descricao, arquivo, total_rows, colunas, importado_em) "
-        "VALUES (?,?,?,?,?,?)",
-        (periodo, descricao, arquivo, len(linhas), json.dumps(colunas, ensure_ascii=False), now)
-    )
-    imp_id = cur.lastrowid
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute(
+            "INSERT INTO despesas_importacoes (periodo, descricao, arquivo, total_rows, colunas, importado_em) "
+            "VALUES (?,?,?,?,?,?)",
+            (periodo, descricao, arquivo, len(linhas), json.dumps(colunas, ensure_ascii=False), now)
+        )
+        imp_id = cur.lastrowid
 
-    cur.executemany(
-        "INSERT INTO despesas_linhas (importacao_id, dados) VALUES (?,?)",
-        [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas]
-    )
+        cur.executemany(
+            "INSERT INTO despesas_linhas (importacao_id, dados) VALUES (?,?)",
+            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas]
+        )
 
-    conn.commit()
-    row = conn.execute(
-        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
-        "FROM despesas_importacoes WHERE id=?", (imp_id,)
-    ).fetchone()
-    conn.close()
-    return jsonify(row_to_dict(row)), 201
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
+            "FROM despesas_importacoes WHERE id=?", (imp_id,)
+        ).fetchone()
+        conn.close()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        return jsonify({'error': 'Erro ao salvar no banco', 'detail': str(e)}), 500
 
 
 @app.route('/api/despesas/importacoes/<int:imp_id>', methods=['GET'])
@@ -988,6 +1020,81 @@ def despesas_excluir(imp_id):
     conn.commit()
     conn.close()
     return jsonify({'ok': True})
+
+
+@app.route('/api/despesas/importacoes/<int:imp_id>/resumo', methods=['GET'])
+def despesas_resumo(imp_id):
+    """Retorna totais e agrupamentos de uma importação (sem retornar todas as linhas)."""
+    conn = get_db()
+    imp = conn.execute(
+        "SELECT id, periodo, descricao, arquivo, total_rows, colunas, importado_em "
+        "FROM despesas_importacoes WHERE id=?", (imp_id,)
+    ).fetchone()
+    if not imp:
+        conn.close()
+        return jsonify({'error': 'Importação não encontrada'}), 404
+
+    linhas_rows = conn.execute(
+        "SELECT dados FROM despesas_linhas WHERE importacao_id=?", (imp_id,)
+    ).fetchall()
+    conn.close()
+
+    colunas = json.loads(imp['colunas'] or '[]')
+    linhas = [json.loads(r['dados']) for r in linhas_rows]
+
+    def parse_val(v):
+        if not v:
+            return 0.0
+        s = str(v).replace('.', '').replace(',', '.').strip()
+        try:
+            return float(s)
+        except Exception:
+            return 0.0
+
+    # Detecta colunas de valor
+    val_cols = [c for c in colunas if any(k in c.lower() for k in ['saldo', 'valor', 'empenhado', 'liquidado', 'pago'])]
+    totais = {c: sum(parse_val(r.get(c, 0)) for r in linhas) for c in val_cols}
+
+    # Agrupamentos
+    def agrupar(col_key):
+        grupos = {}
+        for r in linhas:
+            k = r.get(col_key) or '(Sem valor)'
+            grupos[k] = grupos.get(k, 0) + 1
+        return dict(sorted(grupos.items(), key=lambda x: -x[1])[:20])
+
+    secretaria_col = next((c for c in colunas if 'organograma' in c.lower()), None)
+    funcao_col     = next((c for c in colunas if 'função' in c.lower() or 'funcao' in c.lower()), None)
+    natureza_col   = next((c for c in colunas if 'natureza' in c.lower() and 'descrição' not in c.lower() and 'descricao' not in c.lower()), None)
+    recurso_col    = next((c for c in colunas if 'recurso' in c.lower() and 'descrição' not in c.lower()), None)
+
+    # Totais por agrupamento de valor (top secretaria por soma de saldo)
+    saldo_col = next((c for c in colunas if 'saldo' in c.lower()), None)
+    por_secretaria_valor = {}
+    if secretaria_col and saldo_col:
+        for r in linhas:
+            k = r.get(secretaria_col) or '(Sem valor)'
+            por_secretaria_valor[k] = por_secretaria_valor.get(k, 0) + parse_val(r.get(saldo_col, 0))
+        por_secretaria_valor = dict(sorted(por_secretaria_valor.items(), key=lambda x: -x[1])[:15])
+
+    return jsonify({
+        'importacao': {
+            'id': imp['id'],
+            'periodo': imp['periodo'],
+            'descricao': imp['descricao'],
+            'arquivo': imp['arquivo'],
+            'total_rows': imp['total_rows'],
+            'importado_em': imp['importado_em'],
+        },
+        'totais': totais,
+        'por_secretaria_contagem': agrupar(secretaria_col) if secretaria_col else {},
+        'por_secretaria_valor': por_secretaria_valor,
+        'por_funcao': agrupar(funcao_col) if funcao_col else {},
+        'por_natureza': agrupar(natureza_col) if natureza_col else {},
+        'por_recurso': agrupar(recurso_col) if recurso_col else {},
+        'saldo_col': saldo_col,
+        'colunas': colunas,
+    })
 
 
 # ────────────────────────────────────────────────────────────

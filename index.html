@@ -110,6 +110,10 @@
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Despesa Pública</span><span class="nav-group-item-desc">Visor de despesas da prefeitura</span></div>
             </a>
+            <a href="/pages/despesa-relatorios.html" class="nav-group-item">
+              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Relatórios de Despesa</span><span class="nav-group-item-desc">Comparar períodos e histórico</span></div>
+            </a>
           </div>
         </div>
 
@@ -166,9 +170,12 @@
               </svg>
               Logs
             </button>
-            <button class="dropdown-item" id="theme-toggle">
+            <button class="dropdown-item theme-toggle" id="theme-toggle">
               <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
               </svg>
               <span class="theme-label">Tema Claro</span>
             </button>
@@ -239,6 +246,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       Despesa Pública
     </a>
+    <a href="/pages/despesa-relatorios.html" class="mobile-nav-item" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg>
+      Relatórios de Despesa
+    </a>
     <div class="mobile-nav-divider"></div>
     <div class="mobile-nav-label">Ferramentas</div>
     <a href="/pages/cnpj.html" class="mobile-nav-item" style="text-decoration:none;">
@@ -264,6 +275,15 @@
         <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
       </svg>
       Logs
+    </button>
+    <button class="mobile-nav-item theme-toggle" id="mobile-theme-toggle">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+      <span class="theme-label-mobile">Tema Escuro</span>
     </button>
   </div>
 <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>

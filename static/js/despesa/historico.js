@@ -32,7 +32,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ periodo, descricao, arquivo, colunas: colsParaSalvar, linhas })
       });
-      const data = await resp.json();
+      let data;
+      const text = await resp.text();
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        throw new Error('Servidor retornou resposta inválida (não-JSON). Verifique se o servidor foi reiniciado após as últimas alterações.');
+      }
       if (!resp.ok) throw new Error(data.error || 'Erro ao salvar');
       return data;
     } catch (e) {

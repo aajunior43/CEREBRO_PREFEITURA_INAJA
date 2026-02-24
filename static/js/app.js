@@ -861,6 +861,25 @@ document.addEventListener('DOMContentLoaded', () => {
     closeMobileNav();
     document.getElementById('btn-logs').click();
   });
+
+  // Mobile theme toggle
+  const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
+  if (mobileThemeToggle) {
+    mobileThemeToggle.addEventListener('click', () => {
+      toggleTheme();
+      syncThemeLabel();
+      // Sync mobile label too
+      const mobileLabel = mobileThemeToggle.querySelector('.theme-label-mobile');
+      if (mobileLabel) {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+      }
+    });
+    // Set initial mobile label
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const mobileLabel = mobileThemeToggle.querySelector('.theme-label-mobile');
+    if (mobileLabel) mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+  }
   
   // Dropdown menu
   const dropdown = document.getElementById('dropdown-toggle').parentElement;
@@ -916,23 +935,44 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('password-overlay').style.display = 'none';
   }
   
-  function checkPassword() {
+  async function checkPassword() {
     const password = document.getElementById('password-input').value;
-    if (password === '1999') {
-      isAdmAuthenticated = true;
-      sessionStorage.setItem('adm_auth', '1');
-      hidePasswordModal();
-      // If redirected from another page, go back there
-      const returnTo = sessionStorage.getItem('adm_return');
-      if (returnTo) {
-        sessionStorage.removeItem('adm_return');
-        window.location.href = returnTo;
-        return;
+    const submitBtn = document.getElementById('password-submit');
+    const errorEl  = document.getElementById('password-error');
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '…';
+    errorEl.style.display = 'none';
+
+    try {
+      const resp = await fetch('/api/auth/adm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha: password })
+      });
+      const data = await resp.json();
+
+      if (data.ok) {
+        isAdmAuthenticated = true;
+        sessionStorage.setItem('adm_auth', '1');
+        hidePasswordModal();
+        const returnTo = sessionStorage.getItem('adm_return');
+        if (returnTo) {
+          sessionStorage.removeItem('adm_return');
+          window.location.href = returnTo;
+          return;
+        }
+        showAdmPanel();
+        showToast('Bem-vindo à área administrativa!', 'success');
+      } else {
+        errorEl.style.display = 'block';
       }
-      showAdmPanel();
-      showToast('Bem-vindo à área administrativa!', 'success');
-    } else {
-      document.getElementById('password-error').style.display = 'block';
+    } catch (e) {
+      errorEl.textContent = 'Erro de conexão. Tente novamente.';
+      errorEl.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Entrar';
     }
   }
   

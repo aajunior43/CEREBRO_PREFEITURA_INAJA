@@ -129,6 +129,45 @@
     document.addEventListener('keydown', escHandler);
   }
 
+  window.App.ui.updateActiveChips = function (onRemove) {
+    const { state, elements } = window.App;
+    const chips = elements.filterChips;
+    const reset = elements.reset;
+    if (!chips) return;
+
+    chips.innerHTML = '';
+    let count = 0;
+
+    const addChip = (label, type, filter) => {
+      count++;
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `<span>${label}</span><button title="Remover">×</button>`;
+      chip.querySelector('button').addEventListener('click', () => onRemove(type, filter));
+      chips.appendChild(chip);
+    };
+
+    if (elements.search && elements.search.value.trim())
+      addChip(`🔍 "${elements.search.value.trim()}"`, 'search', null);
+    if (elements.minValue && elements.minValue.value)
+      addChip(`Mín: ${elements.minValue.value}`, 'min', null);
+    if (elements.maxValue && elements.maxValue.value)
+      addChip(`Máx: ${elements.maxValue.value}`, 'max', null);
+
+    state.filters.forEach(filter => {
+      if (filter.selected.size) {
+        const vals = [...filter.selected].map(v => filter.labelFor ? filter.labelFor(v) : (v || '(Sem valor)')).join(', ');
+        const short = vals.length > 40 ? vals.substring(0, 40) + '…' : vals;
+        addChip(`${filter.box.querySelector('label').textContent.trim()}: ${short}`, 'filter_select', filter);
+      }
+      if (filter.query) {
+        addChip(`${filter.box.querySelector('label').textContent.trim()} contém "${filter.query}"`, 'filter_query', filter);
+      }
+    });
+
+    if (reset) reset.classList.toggle('is-hidden', count === 0);
+  };
+
   window.App.ui.updateStats = function () {
     const { state, elements } = window.App;
     const { formatter, numberFormatter } = window.App.utils;
