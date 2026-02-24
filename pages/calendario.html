@@ -385,15 +385,11 @@
       background: var(--bg); box-shadow: var(--neo-sm); color: var(--text-2);
       font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
     }
-    .btn-edit-day {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 9px 16px; border-radius: var(--radius); border: none;
-      background: var(--bg); box-shadow: var(--neo-sm); color: var(--text-2);
-      font-family: inherit; font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: box-shadow 0.15s; margin-top: 14px; width: 100%;
-      justify-content: center;
+    .btn-modal-danger {
+      padding: 12px 18px; border-radius: var(--radius); border: none;
+      background: var(--red-bg); color: var(--red); box-shadow: var(--neo-sm);
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
     }
-    .btn-edit-day:hover { box-shadow: var(--neo); }
     .btn-rules {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 14px; border-radius: var(--radius); border: none;
@@ -410,6 +406,71 @@
     .rules-form-row { margin-bottom: 14px; }
     .rules-divider { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 16px 0; }
     [data-theme="dark"] .rules-divider { border-color: rgba(255,255,255,0.08); }
+
+    /* ── Event List (Info Panel) ── */
+    .day-events-list { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .day-event-item {
+      background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo-in-sm);
+      padding: 10px 50px 10px 14px; position: relative;
+    }
+    .day-event-type { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .day-event-text { font-size: 13px; color: var(--text-2); font-weight: 500; line-height: 1.4; }
+    .day-event-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+    .evt-btn {
+      width: 27px; height: 27px; border-radius: 7px; border: none;
+      background: var(--bg); box-shadow: var(--neo-sm); cursor: pointer;
+      font-size: 12px; display: flex; align-items: center; justify-content: center;
+      color: var(--text-3); transition: all 0.15s;
+    }
+    .evt-btn:hover { box-shadow: var(--neo); }
+    .evt-edit:hover { color: var(--blue); }
+    .evt-delete:hover { color: var(--red); }
+    .events-empty { text-align: center; padding: 20px 0; color: var(--text-3); font-size: 13px; }
+    .day-bottom-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+    .btn-day-action {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 10px 14px; border-radius: var(--radius); border: none;
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-add-event {
+      background: linear-gradient(135deg, var(--blue), #2563eb); color: white;
+      box-shadow: 3px 3px 8px rgba(59,130,246,0.3);
+    }
+    .btn-add-event:hover { opacity: 0.9; }
+    .btn-reset { background: var(--bg); box-shadow: var(--neo-sm); color: var(--text-3); }
+    .btn-reset:hover { box-shadow: var(--neo); color: var(--red); }
+    /* ── All Events Modal ── */
+    .all-events-filter {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .filter-select {
+      padding: 7px 12px; border-radius: var(--radius);
+      border: 1.5px solid rgba(0,0,0,0.12); background: var(--bg);
+      box-shadow: var(--neo-sm); color: var(--text-2); font-family: inherit; font-size: 13px;
+    }
+    [data-theme="dark"] .filter-select { border-color: rgba(255,255,255,0.12); }
+    .btn-add-new-evt {
+      display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+      border-radius: var(--radius); border: none;
+      background: linear-gradient(135deg, var(--blue), #2563eb); color: white;
+      font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      box-shadow: 3px 3px 8px rgba(59,130,246,0.3); margin-left: auto;
+    }
+    .all-events-list { max-height: 420px; overflow-y: auto; }
+    .all-evt-row {
+      display: grid; grid-template-columns: 90px 110px 1fr 58px;
+      gap: 8px; align-items: center;
+      padding: 10px 12px; border-radius: var(--radius);
+      background: var(--bg); box-shadow: var(--neo-in-sm); margin-bottom: 6px;
+    }
+    .all-evt-date { font-size: 11px; color: var(--text-3); font-weight: 600; }
+    .all-evt-type { font-size: 11px; font-weight: 700; }
+    .all-evt-text { font-size: 13px; color: var(--text-2); word-break: break-word; }
+    .all-evt-actions { display: flex; gap: 4px; }
+    @media (max-width: 540px) {
+      .all-evt-row { grid-template-columns: 1fr 1fr; }
+      .all-evt-text { grid-column: 1 / -1; }
+    }
 
     /* ── Printable (hidden) ── */
     #printable-cal { display: none; }
@@ -442,6 +503,10 @@
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
           </button>
         </div>
+        <button class="btn-rules" id="btn-all-events">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Gerenciar
+        </button>
         <button class="btn-rules" id="btn-rules">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
           Configurar
@@ -493,29 +558,59 @@
   <!-- Hidden printable calendar -->
   <div id="printable-cal"></div>
 
-  <!-- ── Edit Day Modal ── -->
-  <div class="modal-overlay" id="modal-edit-day">
+  <!-- ── Add / Edit Event Modal ── -->
+  <div class="modal-overlay" id="modal-event">
     <div class="modal-box">
-      <button class="modal-close" onclick="closeEditModal()">×</button>
-      <div class="modal-title">✏ Editar Dia</div>
-      <div class="modal-sub" id="modal-edit-day-title">—</div>
+      <button class="modal-close" onclick="closeEventModal()">×</button>
+      <div class="modal-title" id="modal-evt-title">➕ Adicionar Evento</div>
+      <div class="modal-sub" id="modal-evt-subtitle">—</div>
+
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" class="form-input" id="evt-date" />
+      </div>
       <div class="form-group">
         <label class="form-label">Tipo do Evento</label>
         <div class="type-options">
-          <button class="type-btn" data-type="PAYMENT" onclick="selectEditType(this)">💰 Pagamento</button>
-          <button class="type-btn" data-type="COMMITMENT" onclick="selectEditType(this)">📋 Empenho</button>
-          <button class="type-btn" data-type="HOLIDAY" onclick="selectEditType(this)">🏖 Feriado</button>
-          <button class="type-btn" data-type="CLEAR" onclick="selectEditType(this)">🔄 Padrão</button>
+          <button class="type-btn" data-type="PAYMENT" onclick="selectEvtType(this)">💰 Pagamento</button>
+          <button class="type-btn" data-type="COMMITMENT" onclick="selectEvtType(this)">📋 Empenho</button>
+          <button class="type-btn" data-type="HOLIDAY" onclick="selectEvtType(this)">🏖 Feriado</button>
+          <button class="type-btn" data-type="NOTE" onclick="selectEvtType(this)">📝 Observação</button>
         </div>
       </div>
-      <div class="form-group" id="edit-text-group">
+      <div class="form-group">
         <label class="form-label">Descrição</label>
-        <input type="text" class="form-input" id="edit-event-text" placeholder="Ex: Pagamento extra, Reunião..." />
+        <input type="text" class="form-input" id="evt-text" placeholder="Ex: Pagamento extra, Reunião..." />
       </div>
       <div class="modal-actions">
-        <button class="btn-modal-cancel" onclick="closeEditModal()">Cancelar</button>
-        <button class="btn-modal-save" onclick="saveEditModal()">💾 Salvar</button>
+        <button class="btn-modal-danger" id="modal-evt-delete" onclick="deleteEventFromModal()" style="display:none;">🗑 Excluir</button>
+        <button class="btn-modal-cancel" onclick="closeEventModal()">Cancelar</button>
+        <button class="btn-modal-save" onclick="saveEventModal()">💾 Salvar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── All Events Management Modal ── -->
+  <div class="modal-overlay" id="modal-all-events">
+    <div class="modal-box" style="max-width:620px;">
+      <button class="modal-close" onclick="closeAllEventsModal()">×</button>
+      <div class="modal-title">📋 Gerenciar Eventos</div>
+      <div class="modal-sub">Todos os eventos personalizados</div>
+      <div class="all-events-filter">
+        <select class="filter-select" id="all-evt-filter-type" onchange="renderAllEventsList()">
+          <option value="">Todos os tipos</option>
+          <option value="PAYMENT">💰 Pagamento</option>
+          <option value="COMMITMENT">📋 Empenho</option>
+          <option value="HOLIDAY">🏖 Feriado</option>
+          <option value="NOTE">📝 Observação</option>
+        </select>
+        <input type="month" class="filter-select" id="all-evt-filter-month" onchange="renderAllEventsList()" style="min-width:130px;" />
+        <button class="btn-add-new-evt" onclick="openAddEventModal(todayKey())">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo evento
+        </button>
+      </div>
+      <div class="all-events-list" id="all-events-list"></div>
     </div>
   </div>
 
@@ -524,7 +619,7 @@
     <div class="modal-box" style="max-width:520px;">
       <button class="modal-close" onclick="closeRulesModal()">×</button>
       <div class="modal-title">⚙ Configurar Regras</div>
-      <div class="modal-sub">Textos padrão dos eventos automáticos do calendário</div>
+      <div class="modal-sub">Textos padrão dos eventos automáticos</div>
       <div class="rules-form-row">
         <label class="form-label">💰 Pagamento – Último dia útil (servidores)</label>
         <input type="text" class="form-input" id="rule-paymentLastBizText" placeholder="Pagamento Servidores" />
@@ -560,78 +655,86 @@
   <script>
   'use strict';
 
-  // ── Theme (handled by shared-header.js) ─────────────────────
+  // ── Theme ─────────────────────────────────────────────────────
   (function() {
     const saved = localStorage.getItem('theme') || 'light';
     if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
 
-  // ── Constants ───────────────────────────────────────────────
+  // ── Constants ─────────────────────────────────────────────────
   const MESES = ['janeiro','fevereiro','março','abril','maio','junho',
                  'julho','agosto','setembro','outubro','novembro','dezembro'];
+  const DayType = { BUSINESS:'BUSINESS', WEEKEND:'WEEKEND', HOLIDAY:'HOLIDAY', PAYMENT:'PAYMENT', COMMITMENT:'COMMITMENT' };
+  const TYPE_LABELS  = { PAYMENT:'Pagamento', COMMITMENT:'Empenho', HOLIDAY:'Feriado', NOTE:'Observação' };
+  const TYPE_COLORS  = { PAYMENT:'var(--red)', COMMITMENT:'var(--purple)', HOLIDAY:'var(--orange)', NOTE:'var(--blue)' };
+  const TYPE_EMOJIS  = { PAYMENT:'💰', COMMITMENT:'📋', HOLIDAY:'🏖', NOTE:'📝' };
 
-  const DayType = {
-    BUSINESS: 'BUSINESS',
-    WEEKEND: 'WEEKEND',
-    HOLIDAY: 'HOLIDAY',
-    PAYMENT: 'PAYMENT',
-    COMMITMENT: 'COMMITMENT',
-  };
+  // ── Persistent Data ───────────────────────────────────────────
+  // customEvents: { "YYYY-MM-DD": [{ id, type, text }, ...] }
+  //   undefined = use auto-generated defaults
+  //   [] = customized (no events)
+  //   [...] = customized events
+  let customEvents = (() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('cal_custom_events') || '{}');
+      // Migrate old single-event format
+      const out = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (Array.isArray(v)) { out[k] = v; }
+        else if (v && v.type) {
+          if (v.type === 'CLEAR') out[k] = [];
+          else out[k] = [{ id: 'mig_' + Math.random().toString(36).slice(2,8), type: v.type, text: v.text || '' }];
+        }
+      }
+      return out;
+    } catch(e) { return {}; }
+  })();
+  let calRules = (() => { try { return JSON.parse(localStorage.getItem('cal_rules') || '{}'); } catch(e) { return {}; } })();
 
-  // ── Persistent Custom Data ────────────────────────────────────
-  let customEvents = JSON.parse(localStorage.getItem('cal_custom_events') || '{}');
-  let calRules = JSON.parse(localStorage.getItem('cal_rules') || '{}');
   function saveCustomEvents() { localStorage.setItem('cal_custom_events', JSON.stringify(customEvents)); }
-  function saveCalRules() { localStorage.setItem('cal_rules', JSON.stringify(calRules)); }
-  function getRule(key, def) { return calRules[key] || def; }
-  function dateKey(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  function saveCalRules()     { localStorage.setItem('cal_rules', JSON.stringify(calRules)); }
+  function getRule(key, def)  { return calRules[key] || def; }
+  function dateKey(y, m, d)   { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+  function newId()            { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+  function todayKey()         { const t = new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); }
 
-  // ── Feriados ────────────────────────────────────────────────
+  // ── Holidays ──────────────────────────────────────────────────
   const FIXED_HOLIDAYS = [
-    { day: 1,  month: 0,  name: 'Confraternização Universal' },
-    { day: 21, month: 3,  name: 'Tiradentes' },
-    { day: 1,  month: 4,  name: 'Dia do Trabalho' },
-    { day: 7,  month: 8,  name: 'Independência do Brasil' },
-    { day: 12, month: 9,  name: 'Nossa Sr.ª Aparecida' },
-    { day: 2,  month: 10, name: 'Finados' },
-    { day: 15, month: 10, name: 'Proclamação da República' },
-    { day: 20, month: 10, name: 'Consciência Negra' },
-    { day: 25, month: 11, name: 'Natal' },
+    { day:1,  month:0,  name:'Confraternização Universal' },
+    { day:21, month:3,  name:'Tiradentes' },
+    { day:1,  month:4,  name:'Dia do Trabalho' },
+    { day:7,  month:8,  name:'Independência do Brasil' },
+    { day:12, month:9,  name:'Nossa Sr.ª Aparecida' },
+    { day:2,  month:10, name:'Finados' },
+    { day:15, month:10, name:'Proclamação da República' },
+    { day:20, month:10, name:'Consciência Negra' },
+    { day:25, month:11, name:'Natal' },
   ];
-
   const MOVABLE_HOLIDAYS = {
-    '2024-02-12': 'Carnaval', '2024-02-13': 'Carnaval',
-    '2024-03-29': 'Paixão de Cristo', '2024-05-30': 'Corpus Christi',
-    '2025-03-03': 'Carnaval', '2025-03-04': 'Carnaval',
-    '2025-04-18': 'Paixão de Cristo', '2025-06-19': 'Corpus Christi',
-    '2026-02-16': 'Carnaval', '2026-02-17': 'Carnaval',
-    '2026-04-03': 'Paixão de Cristo', '2026-06-04': 'Corpus Christi',
+    '2024-02-12':'Carnaval','2024-02-13':'Carnaval','2024-03-29':'Paixão de Cristo','2024-05-30':'Corpus Christi',
+    '2025-03-03':'Carnaval','2025-03-04':'Carnaval','2025-04-18':'Paixão de Cristo','2025-06-19':'Corpus Christi',
+    '2026-02-16':'Carnaval','2026-02-17':'Carnaval','2026-04-03':'Paixão de Cristo','2026-06-04':'Corpus Christi',
   };
-
   function getHolidayName(date) {
     const d = date.getDate(), m = date.getMonth();
     const fixed = FIXED_HOLIDAYS.find(h => h.day === d && h.month === m);
     if (fixed) return fixed.name;
-    const key = `${date.getFullYear()}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    return MOVABLE_HOLIDAYS[key] || null;
+    const k = `${date.getFullYear()}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    return MOVABLE_HOLIDAYS[k] || null;
   }
-
   function isHoliday(date) { return !!getHolidayName(date); }
   function isWeekend(date) { const d = date.getDay(); return d === 0 || d === 6; }
 
-  // ── Date Helpers ────────────────────────────────────────────
+  // ── Date Helpers ──────────────────────────────────────────────
   function getLastBusinessDays(year, month, count) {
     const found = [];
-    let day = new Date(year, month + 1, 0); // last day of month
-    let iter = 0;
+    let day = new Date(year, month + 1, 0), iter = 0;
     while (day.getDate() >= 1 && found.length < count && iter < 32) {
       if (!isWeekend(day) && !isHoliday(day)) found.push(day.getDate());
-      day = new Date(year, month, day.getDate() - 1);
-      iter++;
+      day = new Date(year, month, day.getDate() - 1); iter++;
     }
     return found;
   }
-
   function findNextBusinessDay(year, month, startDay) {
     let d = startDay;
     for (let i = 0; i < 10; i++) {
@@ -642,103 +745,98 @@
     return startDay;
   }
 
+  // ── Default events for a day ──────────────────────────────────
+  function getDefaultEvents(year, month, dayNum, date, biz) {
+    const { lastBiz, secondLastBiz, copelDay, oficDay10 } = biz;
+    const holiday = getHolidayName(date);
+    const events = [];
+    if (dayNum === lastBiz && !isWeekend(date))
+      events.push({ id:'_lastbiz', type:'PAYMENT', text: getRule('paymentLastBizText','Pagamento Servidores') });
+    if (dayNum === oficDay10 && dayNum !== lastBiz)
+      events.push({ id:'_ofic10', type:'PAYMENT', text: getRule('paymentDay10Text','Pagamento Oficineiros') });
+    if (dayNum === secondLastBiz && dayNum !== lastBiz && dayNum !== oficDay10)
+      events.push({ id:'_2ndbiz', type:'COMMITMENT', text: getRule('commitmentSecondLastText','Enfermeiras, estagiários, recicla já') });
+    if (dayNum === copelDay && dayNum !== lastBiz && dayNum !== oficDay10 && dayNum !== secondLastBiz)
+      events.push({ id:'_copel', type:'COMMITMENT', text: getRule('commitmentDay15Text','Copel e Sanepar') });
+    if (dayNum >= 5 && dayNum <= 7 && !isWeekend(date) && !holiday && events.length === 0)
+      events.push({ id:'_ofic57', type:'COMMITMENT', text: getRule('commitmentDay5to7Text','Oficineiros') });
+    if (holiday)
+      events.push({ id:'_holiday', type:'HOLIDAY', text: holiday });
+    return events;
+  }
+
+  // ── Primary type from event list ──────────────────────────────
+  function getPrimaryType(events, holidayName, wknd) {
+    if (events.some(e => e.type === 'PAYMENT'))    return DayType.PAYMENT;
+    if (events.some(e => e.type === 'COMMITMENT')) return DayType.COMMITMENT;
+    if (events.some(e => e.type === 'HOLIDAY') || holidayName) return DayType.HOLIDAY;
+    if (wknd) return DayType.WEEKEND;
+    return DayType.BUSINESS;
+  }
+
+  // ── Materialize defaults into custom for a day ────────────────
+  function materializeDay(key) {
+    if (customEvents[key] !== undefined) return;
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    const lbDays = getLastBusinessDays(y, m - 1, 2);
+    const biz = { lastBiz: lbDays[0], secondLastBiz: lbDays[1],
+      copelDay: findNextBusinessDay(y, m - 1, 15), oficDay10: findNextBusinessDay(y, m - 1, 10) };
+    const defs = getDefaultEvents(y, m - 1, d, date, biz);
+    customEvents[key] = defs.map(e => ({ ...e, id: newId() }));
+    saveCustomEvents();
+  }
+
+  // ── Generate calendar days ────────────────────────────────────
   function generateCalendarDays(year, month) {
-    const firstDow = new Date(year, month, 1).getDay();
+    const firstDow  = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const prevLastDay = new Date(year, month, 0).getDate();
-
-    const bizDays = getLastBusinessDays(year, month, 2);
-    const lastBiz = bizDays[0];
-    const secondLastBiz = bizDays[1];
-    const copelDay = findNextBusinessDay(year, month, 15);
-    const oficDay10 = findNextBusinessDay(year, month, 10);
-
+    const lbDays = getLastBusinessDays(year, month, 2);
+    const biz = { lastBiz: lbDays[0], secondLastBiz: lbDays[1],
+      copelDay: findNextBusinessDay(year, month, 15), oficDay10: findNextBusinessDay(year, month, 10) };
     const days = [];
 
-    // Prev month padding
-    for (let i = firstDow - 1; i >= 0; i--) {
-      days.push({ date: new Date(year, month - 1, prevLastDay - i), dayOfMonth: prevLastDay - i, isCurrentMonth: false, type: DayType.BUSINESS });
-    }
+    for (let i = firstDow - 1; i >= 0; i--)
+      days.push({ date: new Date(year, month - 1, prevLastDay - i), dayOfMonth: prevLastDay - i, isCurrentMonth: false, type: DayType.BUSINESS, events: [] });
 
-    // Current month
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
-      let type = DayType.BUSINESS;
-      let commitmentText = null;
-      let paymentText = null;
-      const holiday = getHolidayName(date);
-
-      if (i === lastBiz) {
-        type = DayType.PAYMENT;
-        paymentText = getRule('paymentLastBizText', 'Pagamento Servidores');
-      } else if (i === oficDay10) {
-        type = DayType.PAYMENT;
-        paymentText = getRule('paymentDay10Text', 'Pagamento Oficineiros');
-      } else if (i === secondLastBiz) {
-        type = DayType.COMMITMENT;
-        commitmentText = getRule('commitmentSecondLastText', 'Enfermeiras, estagiários, recicla já');
-      } else if (i === copelDay) {
-        type = DayType.COMMITMENT;
-        commitmentText = getRule('commitmentDay15Text', 'Copel e Sanepar');
-      } else if (i >= 5 && i <= 7 && !isWeekend(date) && !holiday) {
-        type = DayType.COMMITMENT;
-        commitmentText = getRule('commitmentDay5to7Text', 'Oficineiros');
-      } else if (holiday) {
-        type = DayType.HOLIDAY;
-      } else if (isWeekend(date)) {
-        type = DayType.WEEKEND;
-      }
-
-      // Apply custom event overrides
       const key = dateKey(year, month, i);
-      const custom = customEvents[key];
-      let hasCustom = false;
-      let customHolidayName = null;
-      if (custom) {
-        if (custom.type === 'CLEAR') {
-          type = holiday ? DayType.HOLIDAY : isWeekend(date) ? DayType.WEEKEND : DayType.BUSINESS;
-          paymentText = null;
-          commitmentText = null;
-        } else {
-          hasCustom = true;
-          type = DayType[custom.type] || type;
-          if (custom.type === 'PAYMENT') { paymentText = custom.text; commitmentText = null; }
-          else if (custom.type === 'COMMITMENT') { commitmentText = custom.text; paymentText = null; }
-          else if (custom.type === 'HOLIDAY') { customHolidayName = custom.text; }
-        }
+      const holiday = getHolidayName(date);
+      const wknd = isWeekend(date);
+      let events, isCustom;
+      if (customEvents[key] !== undefined) {
+        events = customEvents[key]; isCustom = true;
+      } else {
+        events = getDefaultEvents(year, month, i, date, biz); isCustom = false;
       }
-
-      days.push({ date, dayOfMonth: i, isCurrentMonth: true, type,
-        holidayName: customHolidayName || holiday,
-        commitmentText, paymentText, hasCustom });
+      const type = getPrimaryType(events, holiday, wknd);
+      days.push({ date, dayOfMonth: i, isCurrentMonth: true, type, events, isCustom, holidayName: holiday });
     }
 
-    // Next month padding
     const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i++) {
-      days.push({ date: new Date(year, month + 1, i), dayOfMonth: i, isCurrentMonth: false, type: DayType.BUSINESS });
-    }
+    for (let i = 1; i <= remaining; i++)
+      days.push({ date: new Date(year, month + 1, i), dayOfMonth: i, isCurrentMonth: false, type: DayType.BUSINESS, events: [] });
 
     return days;
   }
 
-  // ── State ────────────────────────────────────────────────────
-  let state = {
-    year: new Date().getFullYear(),
-    month: new Date().getMonth(),
-    selectedDay: null,
-    days: [],
-  };
+  // ── State ─────────────────────────────────────────────────────
+  let state = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDay: null, days: [] };
+  function getLastBizDay() { return getLastBusinessDays(state.year, state.month, 1)[0] || 1; }
 
-  function getLastBizDay() {
-    return getLastBusinessDays(state.year, state.month, 1)[0] || 1;
-  }
-
-  // ── Render Calendar ──────────────────────────────────────────
+  // ── Render Calendar ───────────────────────────────────────────
   function renderCalendar() {
     state.days = generateCalendarDays(state.year, state.month);
 
-    // Update month label
+    // Refresh selectedDay reference so info panel reflects latest data
+    if (state.selectedDay) {
+      const selKey = dateKey(state.selectedDay.date.getFullYear(), state.selectedDay.date.getMonth(), state.selectedDay.date.getDate());
+      const refreshed = state.days.find(d => d.isCurrentMonth && dateKey(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()) === selKey);
+      if (refreshed) state.selectedDay = refreshed;
+    }
+
     const label = `${MESES[state.month].charAt(0).toUpperCase() + MESES[state.month].slice(1)} ${state.year}`;
     document.getElementById('cal-month-label').textContent = label;
 
@@ -746,79 +844,60 @@
     const container = document.getElementById('cal-days');
     container.innerHTML = '';
 
-    state.days.forEach((day, idx) => {
+    state.days.forEach(day => {
       const el = document.createElement('div');
       el.className = 'cal-day';
-
       if (!day.isCurrentMonth) el.classList.add('other-month');
       if (day.isCurrentMonth) {
-        if (day.type === DayType.WEEKEND) el.classList.add('is-weekend');
-        if (day.type === DayType.HOLIDAY) el.classList.add('is-holiday');
-        if (day.type === DayType.PAYMENT) el.classList.add('is-payment');
+        if (day.type === DayType.WEEKEND)    el.classList.add('is-weekend');
+        if (day.type === DayType.HOLIDAY)    el.classList.add('is-holiday');
+        if (day.type === DayType.PAYMENT)    el.classList.add('is-payment');
         if (day.type === DayType.COMMITMENT) el.classList.add('is-commitment');
       }
-
-      const isToday = day.date.getDate() === today.getDate() &&
-                      day.date.getMonth() === today.getMonth() &&
-                      day.date.getFullYear() === today.getFullYear();
+      const isToday = day.date.getDate() === today.getDate() && day.date.getMonth() === today.getMonth() && day.date.getFullYear() === today.getFullYear();
       if (isToday) el.classList.add('is-today');
+      if (state.selectedDay && day.date.getDate() === state.selectedDay.date.getDate() && day.date.getMonth() === state.selectedDay.date.getMonth()) el.classList.add('is-selected');
 
-      if (state.selectedDay &&
-          day.date.getDate() === state.selectedDay.date.getDate() &&
-          day.date.getMonth() === state.selectedDay.date.getMonth()) {
-        el.classList.add('is-selected');
-      }
-
-      // Day number
       const numEl = document.createElement('div');
       numEl.className = 'cal-day-num';
       numEl.textContent = day.dayOfMonth;
       el.appendChild(numEl);
 
-      // Badge
-      if (day.isCurrentMonth) {
-        if (day.type === DayType.PAYMENT) {
+      if (day.isCurrentMonth && day.events.length > 0) {
+        const specials = day.events.filter(e => e.type !== 'HOLIDAY');
+        const holiday  = day.events.find(e => e.type === 'HOLIDAY');
+        if (specials.length > 0) {
+          const first = specials[0];
           const badge = document.createElement('div');
-          badge.className = 'cal-day-badge badge-payment';
-          badge.textContent = day.paymentText && day.paymentText.toLowerCase().includes('oficineiros') ? 'OFICINEIROS' : 'PAGAMENTO';
+          badge.className = `cal-day-badge ${first.type === 'PAYMENT' ? 'badge-payment' : first.type === 'COMMITMENT' ? 'badge-commitment' : 'badge-holiday'}`;
+          let lbl = first.text.toUpperCase().slice(0, 14);
+          if (specials.length > 1) lbl += ` +${specials.length - 1}`;
+          badge.textContent = lbl;
           el.appendChild(badge);
-        } else if (day.type === DayType.COMMITMENT) {
-          const badge = document.createElement('div');
-          badge.className = 'cal-day-badge badge-commitment';
-          badge.textContent = 'EMPENHO';
-          el.appendChild(badge);
-        } else if (day.type === DayType.HOLIDAY && day.holidayName) {
+        } else if (holiday) {
           const badge = document.createElement('div');
           badge.className = 'cal-day-badge badge-holiday';
-          badge.textContent = day.holidayName;
+          badge.textContent = holiday.text;
           el.appendChild(badge);
         }
       }
 
-      el.addEventListener('click', () => {
-        state.selectedDay = day;
-        renderCalendar();
-        renderInfoPanel();
-      });
-
-      // Custom event indicator dot
-      if (day.hasCustom) {
+      if (day.isCustom) {
         const dot = document.createElement('div');
         dot.style.cssText = 'position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--blue);';
         el.appendChild(dot);
       }
 
+      el.addEventListener('click', () => { state.selectedDay = day; renderCalendar(); renderInfoPanel(); });
       container.appendChild(el);
     });
 
     renderInfoPanel();
   }
 
-  // ── Render Info Panel ────────────────────────────────────────
+  // ── Render Info Panel ─────────────────────────────────────────
   function renderInfoPanel() {
     const panel = document.getElementById('info-panel');
-    const lastBiz = getLastBizDay();
-
     if (!state.selectedDay) {
       panel.innerHTML = `
         <div class="info-empty">
@@ -829,176 +908,294 @@
             </svg>
           </div>
           <h3>Detalhes do Dia</h3>
-          <p>Selecione uma data no calendário para visualizar pagamentos e empenhos.</p>
-          <div class="info-empty-footer">
-            <p>Pagamento Geral</p>
-            <strong>Dia ${lastBiz}</strong>
-          </div>
+          <p>Selecione uma data para visualizar e gerenciar os eventos.</p>
+          <div class="info-empty-footer"><p>Pagamento Geral</p><strong>Dia ${getLastBizDay()}</strong></div>
         </div>`;
       return;
     }
 
     const day = state.selectedDay;
     const dateFormatted = day.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-    const isPayment = day.type === DayType.PAYMENT && day.isCurrentMonth;
-    const isCommitment = day.type === DayType.COMMITMENT && day.isCurrentMonth;
-    const isHolidayDay = day.type === DayType.HOLIDAY;
-    const isWeekendDay = day.type === DayType.WEEKEND;
+    const key = day.isCurrentMonth ? dateKey(day.date.getFullYear(), day.date.getMonth(), day.date.getDate()) : null;
 
-    let iconSvg, titleText, iconColor;
-
-    if (isPayment) {
-      iconColor = 'var(--red)';
-      titleText = 'Pagamento';
-      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--red);">
-        <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>`;
-    } else if (isCommitment) {
-      iconColor = 'var(--purple)';
-      titleText = 'Empenho';
-      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--purple);">
-        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-      </svg>`;
-    } else if (isHolidayDay) {
-      iconColor = 'var(--orange)';
-      titleText = 'Feriado';
-      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--orange);">
-        <path d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-      </svg>`;
-    } else if (isWeekendDay) {
-      iconColor = 'var(--text-3)';
-      titleText = 'Fim de Semana';
-      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--text-3);">
-        <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-      </svg>`;
+    let eventsHtml = '';
+    if (!day.isCurrentMonth) {
+      eventsHtml = '<p style="font-size:13px;color:var(--text-3);text-align:center;padding:20px 0;">Dia de outro mês — selecione um dia do mês atual.</p>';
+    } else if (day.events.length === 0) {
+      eventsHtml = `<div class="events-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;color:var(--text-3);display:block;margin:0 auto 8px;">
+          <circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>Nenhum evento neste dia</div>`;
     } else {
-      iconColor = 'var(--blue)';
-      titleText = 'Dia Útil';
-      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:var(--blue);">
-        <path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-      </svg>`;
-    }
-
-    let detailContent = '';
-    if (isPayment) {
-      detailContent = `<p class="info-hero-sub" style="color:var(--red);">${day.paymentText || 'Pagamento dos Servidores'}</p>`;
-    } else if (isHolidayDay) {
-      detailContent = `<p class="info-hero-sub" style="color:var(--orange);">${day.holidayName}</p>`;
-    } else if (isCommitment && day.commitmentText) {
-      const items = day.commitmentText.split(',').map(s => s.trim()).filter(Boolean);
-      detailContent = `
-        <div class="info-commitment-list">
-          <p class="label">Itens do Empenho:</p>
-          <ul>${items.map(it => `<li>${it}</li>`).join('')}</ul>
+      eventsHtml = day.events.map(evt => {
+        const color = TYPE_COLORS[evt.type] || 'var(--blue)';
+        return `
+        <div class="day-event-item" style="border-left:3px solid ${color};">
+          <div class="day-event-type" style="color:${color};">${TYPE_EMOJIS[evt.type] || '•'} ${TYPE_LABELS[evt.type] || evt.type}</div>
+          <div class="day-event-text">${evt.text}</div>
+          <div class="day-event-actions">
+            <button class="evt-btn evt-edit"   title="Editar"  onclick="openEditEventModal('${key}','${evt.id}')">✏</button>
+            <button class="evt-btn evt-delete" title="Excluir" onclick="deleteEvent('${key}','${evt.id}')">✕</button>
+          </div>
         </div>`;
+      }).join('');
     }
 
-    const showFooter = !isPayment && !isCommitment;
-    const footerHtml = showFooter ? `
-      <div class="info-footer-card" style="margin-top:auto;">
-        <div>
-          <div class="label-sm">Pagamento Geral</div>
-          <div class="label-md">Último dia útil do mês</div>
-        </div>
-        <span class="big-num">${lastBiz}</span>
-      </div>` : '';
+    const resetBtn = (day.isCustom && key) ? `<button class="btn-day-action btn-reset" onclick="resetDay('${key}')">🔄 Resetar para padrão</button>` : '';
 
     panel.innerHTML = `
       <div class="info-detail">
-        <div class="info-detail-date">${dateFormatted}</div>
-        <div class="info-detail-hero">
-          <div class="info-hero-icon">${iconSvg}</div>
-          <div class="info-hero-title" style="color:${iconColor};">${titleText}${day.hasCustom ? '<span class="custom-badge">EDITADO</span>' : ''}</div>
-          ${detailContent}
-        </div>
-        ${footerHtml}
-        <button class="btn-edit-day" onclick="openEditModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          Editar este dia
-        </button>
+        <div class="info-detail-date">${dateFormatted}${day.isCustom ? '<span class="custom-badge">EDITADO</span>' : ''}</div>
+        <div class="day-events-list">${eventsHtml}</div>
+        ${key ? `<div class="day-bottom-actions">
+          <button class="btn-day-action btn-add-event" onclick="openAddEventModal('${key}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar evento
+          </button>
+          ${resetBtn}
+        </div>` : ''}
       </div>`;
   }
 
-  // ── Navigation ───────────────────────────────────────────────
+  // ── Event CRUD ────────────────────────────────────────────────
+  function deleteEvent(key, eventId) {
+    if (customEvents[key] === undefined) materializeDay(key);
+    customEvents[key] = (customEvents[key] || []).filter(e => e.id !== eventId);
+    saveCustomEvents();
+    renderCalendar();
+  }
+
+  function resetDay(key) {
+    if (!confirm('Resetar este dia para os eventos automáticos? Suas alterações serão perdidas.')) return;
+    delete customEvents[key];
+    saveCustomEvents();
+    renderCalendar();
+  }
+
+  // ── Add / Edit Event Modal ────────────────────────────────────
+  let _evtKey = null;
+  let _evtId  = null; // null = new, string = editing
+
+  function openAddEventModal(key) {
+    _evtKey = key; _evtId = null;
+    document.getElementById('modal-evt-title').textContent = '➕ Adicionar Evento';
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    document.getElementById('modal-evt-subtitle').textContent = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.querySelectorAll('#modal-event .type-btn').forEach(b => b.classList.remove('sel'));
+    document.getElementById('evt-text').value = '';
+    document.getElementById('evt-date').value = key;
+    document.getElementById('modal-evt-delete').style.display = 'none';
+    document.getElementById('modal-event').classList.add('open');
+    setTimeout(() => document.getElementById('evt-text').focus(), 50);
+  }
+
+  function openEditEventModal(key, eventId) {
+    if (customEvents[key] === undefined) materializeDay(key);
+    // After materialization, find event (id may have changed) — try by id first
+    let evt = (customEvents[key] || []).find(e => e.id === eventId);
+    // If not found (was a default _id), try to match by original _id after materialization
+    if (!evt && customEvents[key] && customEvents[key].length > 0) evt = customEvents[key][0];
+    if (!evt) return;
+
+    _evtKey = key; _evtId = evt.id;
+    document.getElementById('modal-evt-title').textContent = '✏ Editar Evento';
+    const [y, m, d] = key.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    document.getElementById('modal-evt-subtitle').textContent = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.querySelectorAll('#modal-event .type-btn').forEach(b => b.classList.toggle('sel', b.dataset.type === evt.type));
+    document.getElementById('evt-text').value = evt.text;
+    document.getElementById('evt-date').value = key;
+    document.getElementById('modal-evt-delete').style.display = 'block';
+    document.getElementById('modal-event').classList.add('open');
+    setTimeout(() => document.getElementById('evt-text').focus(), 50);
+  }
+
+  function closeEventModal() { document.getElementById('modal-event').classList.remove('open'); }
+
+  function selectEvtType(btn) {
+    document.querySelectorAll('#modal-event .type-btn').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+  }
+
+  function saveEventModal() {
+    const selType = document.querySelector('#modal-event .type-btn.sel');
+    if (!selType) { alert('Selecione um tipo de evento.'); return; }
+    const type = selType.dataset.type;
+    const text = document.getElementById('evt-text').value.trim();
+    const newKey = document.getElementById('evt-date').value;
+    if (!text)   { alert('Informe uma descrição.'); document.getElementById('evt-text').focus(); return; }
+    if (!newKey.match(/^\d{4}-\d{2}-\d{2}$/)) { alert('Data inválida.'); return; }
+
+    if (_evtId) {
+      // Remove from old key
+      if (customEvents[_evtKey]) customEvents[_evtKey] = customEvents[_evtKey].filter(e => e.id !== _evtId);
+      // Add to new key (may be different date)
+      if (customEvents[newKey] === undefined) materializeDay(newKey);
+      if (!customEvents[newKey]) customEvents[newKey] = [];
+      customEvents[newKey].push({ id: _evtId, type, text });
+    } else {
+      if (customEvents[newKey] === undefined) materializeDay(newKey);
+      if (!customEvents[newKey]) customEvents[newKey] = [];
+      customEvents[newKey].push({ id: newId(), type, text });
+    }
+    saveCustomEvents();
+    closeEventModal();
+    // Navigate to the date of the saved event
+    const [y, m] = newKey.split('-').map(Number);
+    state.year = y; state.month = m - 1;
+    // Re-select the day
+    state.selectedDay = null;
+    renderCalendar();
+    const target = state.days.find(d => d.isCurrentMonth && dateKey(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()) === newKey);
+    if (target) { state.selectedDay = target; renderInfoPanel(); }
+  }
+
+  function deleteEventFromModal() {
+    if (!_evtId || !_evtKey) return;
+    if (!confirm('Excluir este evento?')) return;
+    if (customEvents[_evtKey]) customEvents[_evtKey] = customEvents[_evtKey].filter(e => e.id !== _evtId);
+    saveCustomEvents();
+    closeEventModal();
+    renderCalendar();
+  }
+
+  // ── All Events Management Modal ───────────────────────────────
+  function openAllEventsModal() {
+    const now = new Date();
+    document.getElementById('all-evt-filter-month').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    renderAllEventsList();
+    document.getElementById('modal-all-events').classList.add('open');
+  }
+  function closeAllEventsModal() { document.getElementById('modal-all-events').classList.remove('open'); }
+
+  function renderAllEventsList() {
+    const container    = document.getElementById('all-events-list');
+    const filterType   = document.getElementById('all-evt-filter-type').value;
+    const filterMonth  = document.getElementById('all-evt-filter-month').value; // "YYYY-MM"
+
+    const allEvts = [];
+    for (const [key, evts] of Object.entries(customEvents)) {
+      if (!Array.isArray(evts)) continue;
+      evts.forEach(evt => allEvts.push({ key, ...evt }));
+    }
+    allEvts.sort((a, b) => a.key.localeCompare(b.key));
+
+    const filtered = allEvts.filter(e => {
+      if (filterType  && e.type  !== filterType)  return false;
+      if (filterMonth && !e.key.startsWith(filterMonth)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-3);padding:30px 0;font-size:13px;">Nenhum evento personalizado encontrado.</p>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(evt => {
+      const color   = TYPE_COLORS[evt.type] || 'var(--blue)';
+      const [y, m, d] = evt.key.split('-').map(Number);
+      const dateStr = new Date(y, m - 1, d).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+      return `
+        <div class="all-evt-row">
+          <div class="all-evt-date">${dateStr}</div>
+          <div class="all-evt-type" style="color:${color};">${TYPE_EMOJIS[evt.type]||''} ${TYPE_LABELS[evt.type]||evt.type}</div>
+          <div class="all-evt-text">${evt.text}</div>
+          <div class="all-evt-actions">
+            <button class="evt-btn evt-edit"   title="Editar"  onclick="closeAllEventsModal();openEditEventModal('${evt.key}','${evt.id}')">✏</button>
+            <button class="evt-btn evt-delete" title="Excluir" onclick="deleteEvent('${evt.key}','${evt.id}');renderAllEventsList()">✕</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Rules Modal ───────────────────────────────────────────────
+  function openRulesModal() {
+    ['paymentLastBizText','paymentDay10Text','commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'].forEach(key => {
+      const el = document.getElementById('rule-' + key);
+      if (el) el.value = calRules[key] || '';
+    });
+    document.getElementById('modal-rules').classList.add('open');
+  }
+  function closeRulesModal() { document.getElementById('modal-rules').classList.remove('open'); }
+  function saveRulesModal() {
+    ['paymentLastBizText','paymentDay10Text','commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'].forEach(key => {
+      const el = document.getElementById('rule-' + key);
+      if (el && el.value.trim()) calRules[key] = el.value.trim(); else delete calRules[key];
+    });
+    saveCalRules(); closeRulesModal(); renderCalendar();
+  }
+
+  // ── Button bindings ───────────────────────────────────────────
+  document.getElementById('btn-rules').addEventListener('click', openRulesModal);
+  document.getElementById('btn-all-events').addEventListener('click', openAllEventsModal);
   document.getElementById('btn-prev-month').addEventListener('click', () => {
-    if (state.month === 0) { state.month = 11; state.year--; }
-    else state.month--;
-    state.selectedDay = null;
-    renderCalendar();
+    if (state.month === 0) { state.month = 11; state.year--; } else state.month--;
+    state.selectedDay = null; renderCalendar();
   });
-
   document.getElementById('btn-next-month').addEventListener('click', () => {
-    if (state.month === 11) { state.month = 0; state.year++; }
-    else state.month++;
-    state.selectedDay = null;
-    renderCalendar();
+    if (state.month === 11) { state.month = 0; state.year++; } else state.month++;
+    state.selectedDay = null; renderCalendar();
+  });
+  ['modal-event','modal-rules','modal-all-events'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['modal-event','modal-rules','modal-all-events'].forEach(id => document.getElementById(id).classList.remove('open'));
   });
 
-  // ── PDF Export ───────────────────────────────────────────────
+  // ── PDF Export ────────────────────────────────────────────────
   document.getElementById('btn-pdf').addEventListener('click', async () => {
     const btn = document.getElementById('btn-pdf');
-    btn.disabled = true;
-    btn.textContent = 'Gerando...';
-
+    btn.disabled = true; btn.textContent = 'Gerando...';
     try {
-      // Build printable HTML
       const monthLabel = `${MESES[state.month].charAt(0).toUpperCase() + MESES[state.month].slice(1)} ${state.year}`;
       const lastBiz = getLastBizDay();
-      const days = state.days;
-
       const WDAYS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
       let gridHtml = '';
-      days.forEach(day => {
+      state.days.forEach(day => {
         let bg = '#fff';
         if (!day.isCurrentMonth) bg = '#f8f8f8';
-        else if (day.type === DayType.WEEKEND) bg = '#f5f5f5';
-        else if (day.type === DayType.HOLIDAY) bg = '#fff8ee';
-        else if (day.type === DayType.PAYMENT) bg = '#fff0f0';
+        else if (day.type === DayType.WEEKEND)    bg = '#f5f5f5';
+        else if (day.type === DayType.HOLIDAY)    bg = '#fff8ee';
+        else if (day.type === DayType.PAYMENT)    bg = '#fff0f0';
         else if (day.type === DayType.COMMITMENT) bg = '#f8f0ff';
-
         let badgeHtml = '';
-        if (day.isCurrentMonth) {
-          if (day.type === DayType.PAYMENT)
-            badgeHtml = `<div style="background:#c74a4a;color:white;font-size:8px;font-weight:700;padding:2px 4px;border-radius:4px;text-align:center;">${day.paymentText || 'PAGAMENTO'}</div>`;
-          else if (day.type === DayType.COMMITMENT)
-            badgeHtml = `<div style="background:#7c5fc8;color:white;font-size:8px;font-weight:700;padding:2px 4px;border-radius:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${day.commitmentText || 'EMPENHO'}</div>`;
-          else if (day.type === DayType.HOLIDAY && day.holidayName)
-            badgeHtml = `<div style="color:#d97c3a;font-size:7px;font-weight:600;">${day.holidayName}</div>`;
+        if (day.isCurrentMonth && day.events.length > 0) {
+          const specials = day.events.filter(e => e.type !== 'HOLIDAY');
+          const hol = day.events.find(e => e.type === 'HOLIDAY');
+          if (specials.length > 0) {
+            const f = specials[0];
+            const bgColor = f.type === 'PAYMENT' ? '#c74a4a' : f.type === 'COMMITMENT' ? '#7c5fc8' : '#2563eb';
+            let lbl = f.text.slice(0, 14).toUpperCase();
+            if (specials.length > 1) lbl += ` +${specials.length-1}`;
+            badgeHtml = `<div style="background:${bgColor};color:white;font-size:8px;font-weight:700;padding:2px 4px;border-radius:4px;text-align:center;">${lbl}</div>`;
+          } else if (hol) {
+            badgeHtml = `<div style="color:#d97c3a;font-size:7px;font-weight:600;">${hol.text}</div>`;
+          }
         }
-
-        gridHtml += `
-          <div style="border-right:1px solid #ddd;border-bottom:1px solid #ddd;background:${bg};height:90px;padding:6px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
-            <span style="font-size:11px;font-weight:${!day.isCurrentMonth ? '400' : '600'};color:${!day.isCurrentMonth ? '#aaa' : '#1e2a38'};">${day.dayOfMonth}</span>
-            <div>${badgeHtml}</div>
-          </div>`;
+        gridHtml += `<div style="border-right:1px solid #ddd;border-bottom:1px solid #ddd;background:${bg};height:90px;padding:6px;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box;">
+          <span style="font-size:11px;font-weight:${!day.isCurrentMonth ? '400' : '600'};color:${!day.isCurrentMonth ? '#aaa' : '#1e2a38'};">${day.dayOfMonth}</span>
+          <div>${badgeHtml}</div></div>`;
       });
-
       const printHtml = `
         <div style="width:210mm;min-height:297mm;background:white;padding:24px 28px;font-family:Arial,sans-serif;box-sizing:border-box;">
           <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e2a38;padding-bottom:12px;margin-bottom:20px;">
-            <div>
-              <div style="font-size:22px;font-weight:800;color:#1e2a38;text-transform:uppercase;">Calendário de Pagamentos</div>
-              <div style="font-size:12px;color:#6b7f96;margin-top:4px;">Prefeitura de Inajá</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:18px;font-weight:700;color:#1e2a38;text-transform:capitalize;">${monthLabel}</div>
-              <div style="font-size:10px;color:#6b7f96;margin-top:2px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
-            </div>
+            <div><div style="font-size:22px;font-weight:800;color:#1e2a38;text-transform:uppercase;">Calendário de Pagamentos</div><div style="font-size:12px;color:#6b7f96;margin-top:4px;">Prefeitura de Inajá</div></div>
+            <div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:#1e2a38;text-transform:capitalize;">${monthLabel}</div><div style="font-size:10px;color:#6b7f96;margin-top:2px;">Gerado em ${new Date().toLocaleDateString('pt-BR')}</div></div>
           </div>
           <div style="border-top:1px solid #ddd;border-left:1px solid #ddd;">
             <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#f0f0f0;border-bottom:1px solid #ddd;">
               ${WDAYS.map(d => `<div style="text-align:center;padding:8px 4px;font-size:10px;font-weight:700;color:#3d4f63;border-right:1px solid #ddd;box-sizing:border-box;">${d}</div>`).join('')}
             </div>
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);">
-              ${gridHtml}
-            </div>
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);">${gridHtml}</div>
           </div>
           <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div style="border:1px solid #ddd;border-radius:8px;padding:14px;background:#f8f8f8;">
               <div style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:10px;">Legenda</div>
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:14px;height:14px;background:#fff0f0;border:1px solid #c74a4a;border-radius:3px;"></div><span style="font-size:11px;">Dia de Pagamento</span></div>
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><div style="width:14px;height:14px;background:#f8f0ff;border:1px solid #7c5fc8;border-radius:3px;"></div><span style="font-size:11px;">Dia de Empenho</span></div>
-              <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;background:#fff8ee;border:1px solid #d97c3a;border-radius:3px;"></div><span style="font-size:11px;">Feriado Nacional</span></div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="width:14px;height:14px;background:#fff8ee;border:1px solid #d97c3a;border-radius:3px;"></div><span style="font-size:11px;">Feriado</span></div>
             </div>
             <div style="border:1px solid #ddd;border-radius:8px;padding:14px;background:#f8f8f8;">
               <div style="font-size:11px;font-weight:700;color:#3d4f63;text-transform:uppercase;border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:10px;">Resumo</div>
@@ -1007,144 +1204,23 @@
             </div>
           </div>
         </div>`;
-
       const printEl = document.getElementById('printable-cal');
       printEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;z-index:-1;';
       printEl.innerHTML = printHtml;
-
       const canvas = await html2canvas(printEl.firstElementChild, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const w = pdf.internal.pageSize.getWidth();
-      const h = pdf.internal.pageSize.getHeight();
+      const w = pdf.internal.pageSize.getWidth(), h = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
       pdf.save(`calendario-pagamento-inaja-${MESES[state.month]}-${state.year}.pdf`);
-
-      printEl.style.cssText = '';
-      printEl.innerHTML = '';
-    } catch (err) {
-      console.error(err);
-      alert('Erro ao gerar o PDF. Tente novamente.');
-    }
-
+      printEl.style.cssText = ''; printEl.innerHTML = '';
+    } catch (err) { console.error(err); alert('Erro ao gerar o PDF. Tente novamente.'); }
     btn.disabled = false;
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg> Baixar PDF`;
   });
 
-  // ── Rules Button ─────────────────────────────────────────────
-  document.getElementById('btn-rules').addEventListener('click', openRulesModal);
-
-  // ── Edit Day Modal ────────────────────────────────────────────
-  let _editDateKey = null;
-
-  function openEditModal() {
-    if (!state.selectedDay || !state.selectedDay.isCurrentMonth) return;
-    const day = state.selectedDay;
-    _editDateKey = dateKey(day.date.getFullYear(), day.date.getMonth(), day.date.getDate());
-
-    const formatted = day.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-    document.getElementById('modal-edit-day-title').textContent = formatted;
-
-    // Determine current effective type
-    const existing = customEvents[_editDateKey];
-    let currentType = existing ? existing.type : null;
-    if (!currentType) {
-      if (day.type === DayType.PAYMENT) currentType = 'PAYMENT';
-      else if (day.type === DayType.COMMITMENT) currentType = 'COMMITMENT';
-      else if (day.type === DayType.HOLIDAY) currentType = 'HOLIDAY';
-      else currentType = 'CLEAR';
-    }
-
-    document.querySelectorAll('#modal-edit-day .type-btn').forEach(btn => {
-      btn.classList.toggle('sel', btn.dataset.type === currentType);
-    });
-
-    const textInput = document.getElementById('edit-event-text');
-    textInput.value = existing ? (existing.text || '') :
-      (day.paymentText || day.commitmentText || day.holidayName || '');
-
-    document.getElementById('edit-text-group').style.display =
-      currentType === 'CLEAR' ? 'none' : 'block';
-
-    document.getElementById('modal-edit-day').classList.add('open');
-    if (currentType !== 'CLEAR') setTimeout(() => textInput.focus(), 50);
-  }
-
-  function closeEditModal() {
-    document.getElementById('modal-edit-day').classList.remove('open');
-  }
-
-  function selectEditType(btn) {
-    document.querySelectorAll('#modal-edit-day .type-btn').forEach(b => b.classList.remove('sel'));
-    btn.classList.add('sel');
-    document.getElementById('edit-text-group').style.display =
-      btn.dataset.type === 'CLEAR' ? 'none' : 'block';
-  }
-
-  function saveEditModal() {
-    const selType = document.querySelector('#modal-edit-day .type-btn.sel');
-    if (!selType) { alert('Selecione um tipo de evento.'); return; }
-    const type = selType.dataset.type;
-    const text = document.getElementById('edit-event-text').value.trim();
-    if (type !== 'CLEAR' && !text) {
-      alert('Informe uma descrição para o evento.');
-      document.getElementById('edit-event-text').focus();
-      return;
-    }
-    if (type === 'CLEAR') {
-      delete customEvents[_editDateKey];
-    } else {
-      customEvents[_editDateKey] = { type, text };
-    }
-    saveCustomEvents();
-    closeEditModal();
-    renderCalendar();
-  }
-
-  // Close modal on overlay click
-  document.getElementById('modal-edit-day').addEventListener('click', function(e) {
-    if (e.target === this) closeEditModal();
-  });
-
-  // ── Rules Modal ───────────────────────────────────────────────
-  function openRulesModal() {
-    const ruleIds = ['paymentLastBizText','paymentDay10Text',
-      'commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'];
-    ruleIds.forEach(key => {
-      const el = document.getElementById('rule-' + key);
-      if (el) el.value = calRules[key] || '';
-    });
-    document.getElementById('modal-rules').classList.add('open');
-  }
-
-  function closeRulesModal() {
-    document.getElementById('modal-rules').classList.remove('open');
-  }
-
-  function saveRulesModal() {
-    const ruleIds = ['paymentLastBizText','paymentDay10Text',
-      'commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'];
-    ruleIds.forEach(key => {
-      const el = document.getElementById('rule-' + key);
-      if (el && el.value.trim()) calRules[key] = el.value.trim();
-      else delete calRules[key];
-    });
-    saveCalRules();
-    closeRulesModal();
-    renderCalendar();
-  }
-
-  document.getElementById('modal-rules').addEventListener('click', function(e) {
-    if (e.target === this) closeRulesModal();
-  });
-
-  // Keyboard: Esc closes any open modal
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeEditModal(); closeRulesModal(); }
-  });
-
-  // ── Init ─────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────
   renderCalendar();
 
   </script>
