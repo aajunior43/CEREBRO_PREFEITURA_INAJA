@@ -598,6 +598,50 @@ def modelos_openrouter():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/ia/chat', methods=['POST'])
+def ia_chat_proxy():
+    """Proxy para OpenRouter chat completions (evita CORS no browser)."""
+    import urllib.request, urllib.error
+    d = request.get_json() or {}
+    api_key = d.get('api_key', '').strip()
+    model   = d.get('model', 'meta-llama/llama-3.1-8b-instruct:free').strip()
+    messages = d.get('messages', [])
+    max_tokens = int(d.get('max_tokens', 500))
+    temperature = float(d.get('temperature', 0.3))
+    if not api_key:
+        return jsonify({'error': 'Chave API obrigatória'}), 400
+    payload = json.dumps({
+        'model': model,
+        'messages': messages,
+        'max_tokens': max_tokens,
+        'temperature': temperature
+    }).encode('utf-8')
+    try:
+        req = urllib.request.Request(
+            'https://openrouter.ai/api/v1/chat/completions',
+            data=payload,
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://localhost',
+                'X-Title': 'CEREBRO_PREFEITURA'
+            },
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=60) as r:
+            data = json.loads(r.read().decode())
+        return jsonify(data)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        try:
+            err = json.loads(body)
+        except Exception:
+            err = {'message': body}
+        return jsonify({'error': err, 'model_used': model}), e.code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/extratos/listar-pasta', methods=['POST'])
 def listar_pasta():
     """Lista subpastas de um caminho para navegação."""

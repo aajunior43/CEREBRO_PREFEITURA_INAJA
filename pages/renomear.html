@@ -1070,15 +1070,16 @@
     async function callAPI(content, attempt) {
       const key = localStorage.getItem('api_openrouter_key') || '';
       if (!key) throw new Error('Chave OpenRouter não configurada (ADM → OpenRouter)');
-      const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
+      const res = await fetch('/api/ia/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': 'https://localhost', 'X-Title': 'Renomeador' },
-        body: JSON.stringify({ model, messages: [{ role: 'user', content }], max_tokens: 120, temperature: 0.2 })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: key, model, messages: [{ role: 'user', content }], max_tokens: 200, temperature: 0.2 })
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error?.message || `Erro HTTP ${res.status}`);
+        const msg = data.error?.message || data.error || `Erro HTTP ${res.status}`;
+        throw new Error(`[${model}] ${msg}`);
       }
       const data = await res.json();
       if (!data.choices?.length) throw new Error('API não retornou resposta');
