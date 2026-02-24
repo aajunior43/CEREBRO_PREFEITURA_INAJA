@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -74,6 +74,7 @@
     @media print { .rpa-tabs, .rpa-actions, header, .main-content { display: none !important; } }
   </style>
   <script src="/static/js/adm-guard.js"></script>
+  <script src="/static/js/shared-header.js"></script>
 </head>
 <body>
 
@@ -1046,7 +1047,8 @@ function montarHTMLRecibo(rpa) {
     .assinatura{flex:1;text-align:center;border-top:1px solid #333;padding-top:8px;font-size:11px;}
     .rodape{text-align:center;font-size:10px;color:#999;margin-top:20px;border-top:1px solid #eee;padding-top:8px;}
     @media print{body{padding:10px;}@page{margin:15mm;}}
-  </style></head><body>
+  </style>  <script src="/static/js/shared-header.js"></script>
+</head><body>
   <div class="header">
     <h1>${escHtml(c.nomeEntidade)}</h1>
     <p>${escHtml(c.orgao)}</p>
