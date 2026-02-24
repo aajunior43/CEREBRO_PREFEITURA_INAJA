@@ -1030,13 +1030,43 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
       }
       const data = await res.json();
       if (!data.choices?.length) throw new Error('API não retornou resposta');
-      return data.choices[0].message.content.trim();
+      const raw = data.choices[0].message.content.trim();
+      // Tenta extrair o nome do arquivo da resposta (AI às vezes retorna explicações)
+      return extractFileName(raw);
+    }
+
+    // Extrai o nome do arquivo de uma resposta de texto livre da IA
+    function extractFileName(raw) {
+      if (!raw) return '';
+      // 1. Remove blocos markdown (```NOME```)
+      const mdMatch = raw.match(/```[^\n]*\n?([A-Z0-9_\-]{3,80})\n?```/i);
+      if (mdMatch) return mdMatch[1].toUpperCase();
+      // 2. Procura a sequência mais longa de caracteres válidos para nome de arquivo
+      const candidates = raw.toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^A-Z0-9_\-\n ]/g, ' ')
+        .split(/[\n\r]/)
+        .map(l => l.trim().replace(/\s+/g, '_').replace(/_{2,}/g, '_').replace(/^_|_$/g, ''))
+        .filter(l => l.length >= 5 && /[A-Z]/.test(l))
+        .sort((a, b) => b.length - a.length);
+      return candidates[0] || raw.replace(/[^A-Z0-9_\-]/gi, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toUpperCase().substring(0, 80);
     }
 
     // ── CLEAN NAME ─────────────────────────────────────────────────────────────
-    function cleanName(raw) {
-      return (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/\.PDF$/i, '').replace(/[^A-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 80) || 'DOCUMENTO';
+    // Normaliza o nome (remove acentos, espaços, extensão) com fallback no nome original
+    function cleanName(raw, origName) {
+      const cleaned = (raw || '').toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\.(PDF|DOCX?|JPE?G|PNG|WEBP)$/i, '')
+        .replace(/[^A-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+        .substring(0, 80);
+      if (cleaned && cleaned.length >= 5) return cleaned;
+      // fallback: limpa o nome original do arquivo
+      const fallback = (origName || 'DOCUMENTO').toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\.[^.]+$/, '').replace(/[^A-Z0-9_\-]/g, '_')
+        .replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 80);
+      return fallback || 'DOCUMENTO';
     }
 
     // ── PROCESS SINGLE ─────────────────────────────────────────────────────────
@@ -1087,7 +1117,7 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
           item.retries = retryCount; renderTable();
           return callAPI(msgContent, attempt);
         }, 3, 1500);
-        item.sugName = cleanName(suggestion); item.status = 'done'; item.fromCache = false; item.retries = retryCount;
+        item.sugName = cleanName(suggestion, item.origName); item.status = 'done'; item.fromCache = false; item.retries = retryCount;
         aiCache.set(ck, item.sugName);
         addHistory(item.origName, item.sugName, item.type, item.file.size);
       } catch (e) {
@@ -1127,7 +1157,7 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
     function downloadOne(idx) {
       const item = files[idx]; if (item.status !== 'done') return;
       const inp = document.getElementById(`inp-${idx}`) || document.getElementById(`cinp-${idx}`);
-      const name = cleanName((inp ? inp.value : '') || item.sugName || 'DOCUMENTO');
+      const name = cleanName((inp ? inp.value : '') || item.sugName || item.origName, item.origName);
       const ext = item.type === 'PDF' ? '.pdf' : item.type === 'Word' ? '.docx' : getImageExt(item.file);
       const url = URL.createObjectURL(item.file);
       const a = document.createElement('a'); a.href = url; a.download = name + ext; a.click();
