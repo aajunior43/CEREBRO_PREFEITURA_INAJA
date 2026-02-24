@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src='https://unpkg.com/tesseract.js@5/dist/tesseract.min.js'></script>
   <style>
     .ren-page {
       background: var(--bg);
@@ -968,7 +969,7 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
       }
       return text.trim();
     }
-    async function pdfFirstPageImage(file) {
+    async function pdfFirstPageCanvas(file) {
       const ab = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
       const page = await pdf.getPage(1);
@@ -976,14 +977,23 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
       const canvas = document.createElement('canvas');
       canvas.width = vp.width; canvas.height = vp.height;
       await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-      return canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+      return canvas;
     }
-    async function fileToBase64(file) {
-      return new Promise((res, rej) => {
-        const r = new FileReader(); r.readAsDataURL(file);
-        r.onload = () => res(r.result.split(',')[1]);
-        r.onerror = e => rej(e);
-      });
+
+    async function ocrCanvas(canvas) {
+      const worker = await Tesseract.createWorker('por+eng');
+      const { data: { text } } = await worker.recognize(canvas);
+      await worker.terminate();
+      return text.trim();
+    }
+
+    async function ocrFile(file) {
+      const worker = await Tesseract.createWorker('por+eng');
+      const url = URL.createObjectURL(file);
+      const { data: { text } } = await worker.recognize(url);
+      await worker.terminate();
+      URL.revokeObjectURL(url);
+      return text.trim();
     }
 
     // ── RETRY LOGIC ────────────────────────────────────────────────────────────
@@ -1043,21 +1053,34 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
       try {
         let msgContent;
         if (item.type === 'PDF') {
-          const text = await extractText(item.file);
+          let text = await extractText(item.file);
           if (text.length < 50) {
-            const img = await pdfFirstPageImage(item.file);
-            msgContent = [{ type: 'text', text: getActivePrompt('PDF') }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img}` } }];
+            // PDF escaneado — usar OCR na primeira página
+            item.error = 'OCR em andamento…'; renderAll();
+            try {
+              const canvas = await pdfFirstPageCanvas(item.file);
+              text = await ocrCanvas(canvas);
+            } catch (e) { text = ''; }
+          }
+          if (text.length < 20) {
+            msgContent = getActivePrompt('PDF') + `\n\nNome original: ${item.origName}\n(PDF sem texto legível)`;
           } else {
             msgContent = getActivePrompt('PDF') + '\n\nCONTEÚDO:\n' + text.substring(0, 4000);
           }
         } else if (item.type === 'Imagem') {
-          const b64 = await fileToBase64(item.file);
-          const mime = item.file.type || 'image/jpeg';
-          msgContent = [{ type: 'text', text: getActivePrompt('Imagem') }, { type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } }];
+          item.error = 'OCR em andamento…'; renderAll();
+          let text = '';
+          try { text = await ocrFile(item.file); } catch (e) { text = ''; }
+          if (text.length < 20) {
+            msgContent = getActivePrompt('Imagem') + `\n\nNome original: ${item.origName}\n(Imagem sem texto legível)`;
+          } else {
+            msgContent = getActivePrompt('Imagem') + '\n\nTEXTO EXTRAÍDO POR OCR:\n' + text.substring(0, 4000);
+          }
         } else {
-          // Word or other - just use name as hint
+          // Word ou outro — usa nome como dica
           msgContent = getActivePrompt('Word') + `\n\nNome original do arquivo: ${item.origName}`;
         }
+        item.error = '';
         let retryCount = 0;
         const suggestion = await withRetry(async (attempt) => {
           retryCount = attempt - 1;
