@@ -817,7 +817,37 @@ async function loadDataManager() {
   try {
     const r = await fetch('/api/fornecimento/dados');
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    _dmCache = await r.json();
+    const data = await r.json();
+
+    // Migração única: se banco vazio e localStorage tem dados, importa automaticamente
+    const totalDB = (data.solicitantes||[]).length + (data.empresas||[]).length + (data.observacoes||[]).length;
+    if (totalDB === 0) {
+      try {
+        const legacy = JSON.parse(localStorage.getItem('inaja-data-manager') || '{}');
+        const items = [
+          ...(legacy.solicitantes||[]).map(v => ({tipo:'solicitantes', valor:v})),
+          ...(legacy.empresas||[]).map(v     => ({tipo:'empresas',     valor:v})),
+          ...(legacy.observacoes||[]).map(v  => ({tipo:'observacoes',  valor:v}))
+        ];
+        if (items.length > 0) {
+          for (const it of items) {
+            await fetch('/api/fornecimento/dados', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(it)
+            });
+          }
+          localStorage.removeItem('inaja-data-manager');
+          // Recarrega após migração
+          const r2 = await fetch('/api/fornecimento/dados');
+          _dmCache = await r2.json();
+          showToast('✅ Dados migrados para o banco com sucesso!', 'success');
+          renderChips();
+          return;
+        }
+      } catch(e2) { /* sem dados legados, ok */ }
+    }
+
+    _dmCache = data;
   } catch(e) {
     console.error('[fornecimento] Erro ao carregar dados:', e);
     showToast('⚠️ Erro ao carregar dados: ' + e.message + ' — reinicie o servidor', 'error');
