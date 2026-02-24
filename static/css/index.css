@@ -77,37 +77,6 @@
   --text-3: #8fa0b4;
 }
 
-/* ── Tema Rosa e Branco ─────────────────────────────────── */
-[data-theme="rosa"] {
-  --bg: #fdf3f7;
-  --shadow-dark: #e8bece;
-  --shadow-lite: #ffffff;
-
-  --neo: 6px 6px 14px var(--shadow-dark), -6px -6px 14px var(--shadow-lite);
-  --neo-sm: 3px 3px 8px var(--shadow-dark), -3px -3px 8px var(--shadow-lite);
-  --neo-lg: 10px 10px 24px var(--shadow-dark), -10px -10px 24px var(--shadow-lite);
-  --neo-in: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-lite);
-  --neo-in-sm: inset 2px 2px 6px var(--shadow-dark), inset -2px -2px 6px var(--shadow-lite);
-
-  --blue: #c2185b;
-  --blue-dark: #880e4f;
-  --blue-light: #fce4ec;
-  --green: #2e7d32;
-  --green-bg: #e8f5e9;
-  --green-dark: #1b5e20;
-  --orange: #e65100;
-  --orange-bg: #fff3e0;
-  --red: #b71c1c;
-  --red-bg: #ffebee;
-  --purple: #7b1fa2;
-  --purple-bg: #f3e5f5;
-
-  --text: #1a0a10;
-  --text-2: #4a1628;
-  --text-3: #9c6070;
-  --border: rgba(194, 24, 91, 0.15);
-}
-
 html,
 body {
   min-height: 100vh;
