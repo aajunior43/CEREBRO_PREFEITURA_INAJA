@@ -323,6 +323,94 @@
       padding: 0 8px;
     }
 
+    /* ── Edit Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 9999;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg); border-radius: var(--radius-lg);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 28px; width: 100%; max-width: 460px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .modal-sub { font-size: 12px; color: var(--text-3); margin-bottom: 20px; text-transform: capitalize; }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none; cursor: pointer;
+      color: var(--text-3); font-size: 22px; line-height: 1; padding: 4px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--text-3); text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%; padding: 10px 14px; border-radius: var(--radius);
+      border: 1.5px solid rgba(0,0,0,0.12); background: var(--bg);
+      box-shadow: var(--neo-in-sm); color: var(--text);
+      font-family: inherit; font-size: 14px; box-sizing: border-box;
+      transition: border-color 0.15s;
+    }
+    [data-theme="dark"] .form-input { border-color: rgba(255,255,255,0.12); }
+    .form-input:focus { outline: none; border-color: var(--blue); }
+    .type-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .type-btn {
+      padding: 10px 8px; border-radius: var(--radius); border: 2px solid transparent;
+      background: var(--bg); box-shadow: var(--neo-sm); cursor: pointer;
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      color: var(--text-2); display: flex; align-items: center;
+      justify-content: center; gap: 6px; transition: all 0.15s;
+    }
+    .type-btn:hover { box-shadow: var(--neo); }
+    .type-btn.sel[data-type="PAYMENT"] { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+    .type-btn.sel[data-type="COMMITMENT"] { border-color: var(--purple); color: var(--purple); background: var(--purple-bg); }
+    .type-btn.sel[data-type="HOLIDAY"] { border-color: var(--orange); color: var(--orange); background: var(--orange-bg); }
+    .type-btn.sel[data-type="CLEAR"] { border-color: var(--text-3); color: var(--text-3); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-modal-save {
+      flex: 1; padding: 12px; border-radius: var(--radius); border: none;
+      background: linear-gradient(135deg, var(--blue), #2563eb); color: white;
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+      box-shadow: 3px 3px 8px rgba(59,130,246,0.35); transition: opacity 0.2s;
+    }
+    .btn-modal-save:hover { opacity: 0.9; }
+    .btn-modal-cancel {
+      padding: 12px 18px; border-radius: var(--radius); border: none;
+      background: var(--bg); box-shadow: var(--neo-sm); color: var(--text-2);
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-edit-day {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: var(--radius); border: none;
+      background: var(--bg); box-shadow: var(--neo-sm); color: var(--text-2);
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: box-shadow 0.15s; margin-top: 14px; width: 100%;
+      justify-content: center;
+    }
+    .btn-edit-day:hover { box-shadow: var(--neo); }
+    .btn-rules {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: var(--radius); border: none;
+      background: var(--bg); box-shadow: var(--neo-sm); color: var(--text-2);
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: box-shadow 0.15s;
+    }
+    .btn-rules:hover { box-shadow: var(--neo); }
+    .custom-badge {
+      font-size: 9px; background: var(--blue); color: white;
+      border-radius: 4px; padding: 1px 5px; font-weight: 700;
+      vertical-align: middle; margin-left: 6px;
+    }
+    .rules-form-row { margin-bottom: 14px; }
+    .rules-divider { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 16px 0; }
+    [data-theme="dark"] .rules-divider { border-color: rgba(255,255,255,0.08); }
+
     /* ── Printable (hidden) ── */
     #printable-cal { display: none; }
 
@@ -354,6 +442,10 @@
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
           </button>
         </div>
+        <button class="btn-rules" id="btn-rules">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          Configurar
+        </button>
         <button class="btn-pdf" id="btn-pdf">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
             <path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
@@ -401,6 +493,66 @@
   <!-- Hidden printable calendar -->
   <div id="printable-cal"></div>
 
+  <!-- ── Edit Day Modal ── -->
+  <div class="modal-overlay" id="modal-edit-day">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeEditModal()">×</button>
+      <div class="modal-title">✏ Editar Dia</div>
+      <div class="modal-sub" id="modal-edit-day-title">—</div>
+      <div class="form-group">
+        <label class="form-label">Tipo do Evento</label>
+        <div class="type-options">
+          <button class="type-btn" data-type="PAYMENT" onclick="selectEditType(this)">💰 Pagamento</button>
+          <button class="type-btn" data-type="COMMITMENT" onclick="selectEditType(this)">📋 Empenho</button>
+          <button class="type-btn" data-type="HOLIDAY" onclick="selectEditType(this)">🏖 Feriado</button>
+          <button class="type-btn" data-type="CLEAR" onclick="selectEditType(this)">🔄 Padrão</button>
+        </div>
+      </div>
+      <div class="form-group" id="edit-text-group">
+        <label class="form-label">Descrição</label>
+        <input type="text" class="form-input" id="edit-event-text" placeholder="Ex: Pagamento extra, Reunião..." />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn-modal-save" onclick="saveEditModal()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Rules Modal ── -->
+  <div class="modal-overlay" id="modal-rules">
+    <div class="modal-box" style="max-width:520px;">
+      <button class="modal-close" onclick="closeRulesModal()">×</button>
+      <div class="modal-title">⚙ Configurar Regras</div>
+      <div class="modal-sub">Textos padrão dos eventos automáticos do calendário</div>
+      <div class="rules-form-row">
+        <label class="form-label">💰 Pagamento – Último dia útil (servidores)</label>
+        <input type="text" class="form-input" id="rule-paymentLastBizText" placeholder="Pagamento Servidores" />
+      </div>
+      <div class="rules-form-row">
+        <label class="form-label">💰 Pagamento – Dia 10 (oficineiros)</label>
+        <input type="text" class="form-input" id="rule-paymentDay10Text" placeholder="Pagamento Oficineiros" />
+      </div>
+      <hr class="rules-divider"/>
+      <div class="rules-form-row">
+        <label class="form-label">📋 Empenho – Penúltimo dia útil</label>
+        <input type="text" class="form-input" id="rule-commitmentSecondLastText" placeholder="Enfermeiras, estagiários, recicla já" />
+      </div>
+      <div class="rules-form-row">
+        <label class="form-label">📋 Empenho – Dia 15</label>
+        <input type="text" class="form-input" id="rule-commitmentDay15Text" placeholder="Copel e Sanepar" />
+      </div>
+      <div class="rules-form-row">
+        <label class="form-label">📋 Empenho – Dias 5 a 7</label>
+        <input type="text" class="form-input" id="rule-commitmentDay5to7Text" placeholder="Oficineiros" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeRulesModal()">Cancelar</button>
+        <button class="btn-modal-save" onclick="saveRulesModal()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- jsPDF + html2canvas from CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -425,6 +577,14 @@
     PAYMENT: 'PAYMENT',
     COMMITMENT: 'COMMITMENT',
   };
+
+  // ── Persistent Custom Data ────────────────────────────────────
+  let customEvents = JSON.parse(localStorage.getItem('cal_custom_events') || '{}');
+  let calRules = JSON.parse(localStorage.getItem('cal_rules') || '{}');
+  function saveCustomEvents() { localStorage.setItem('cal_custom_events', JSON.stringify(customEvents)); }
+  function saveCalRules() { localStorage.setItem('cal_rules', JSON.stringify(calRules)); }
+  function getRule(key, def) { return calRules[key] || def; }
+  function dateKey(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
 
   // ── Feriados ────────────────────────────────────────────────
   const FIXED_HOLIDAYS = [
@@ -510,26 +670,47 @@
 
       if (i === lastBiz) {
         type = DayType.PAYMENT;
-        paymentText = 'Pagamento Servidores';
+        paymentText = getRule('paymentLastBizText', 'Pagamento Servidores');
       } else if (i === oficDay10) {
         type = DayType.PAYMENT;
-        paymentText = 'Pagamento Oficineiros';
+        paymentText = getRule('paymentDay10Text', 'Pagamento Oficineiros');
       } else if (i === secondLastBiz) {
         type = DayType.COMMITMENT;
-        commitmentText = 'Enfermeiras, estagiários, recicla já';
+        commitmentText = getRule('commitmentSecondLastText', 'Enfermeiras, estagiários, recicla já');
       } else if (i === copelDay) {
         type = DayType.COMMITMENT;
-        commitmentText = 'Copel e Sanepar';
+        commitmentText = getRule('commitmentDay15Text', 'Copel e Sanepar');
       } else if (i >= 5 && i <= 7 && !isWeekend(date) && !holiday) {
         type = DayType.COMMITMENT;
-        commitmentText = 'Oficineiros';
+        commitmentText = getRule('commitmentDay5to7Text', 'Oficineiros');
       } else if (holiday) {
         type = DayType.HOLIDAY;
       } else if (isWeekend(date)) {
         type = DayType.WEEKEND;
       }
 
-      days.push({ date, dayOfMonth: i, isCurrentMonth: true, type, holidayName: holiday, commitmentText, paymentText });
+      // Apply custom event overrides
+      const key = dateKey(year, month, i);
+      const custom = customEvents[key];
+      let hasCustom = false;
+      let customHolidayName = null;
+      if (custom) {
+        if (custom.type === 'CLEAR') {
+          type = holiday ? DayType.HOLIDAY : isWeekend(date) ? DayType.WEEKEND : DayType.BUSINESS;
+          paymentText = null;
+          commitmentText = null;
+        } else {
+          hasCustom = true;
+          type = DayType[custom.type] || type;
+          if (custom.type === 'PAYMENT') { paymentText = custom.text; commitmentText = null; }
+          else if (custom.type === 'COMMITMENT') { commitmentText = custom.text; paymentText = null; }
+          else if (custom.type === 'HOLIDAY') { customHolidayName = custom.text; }
+        }
+      }
+
+      days.push({ date, dayOfMonth: i, isCurrentMonth: true, type,
+        holidayName: customHolidayName || holiday,
+        commitmentText, paymentText, hasCustom });
     }
 
     // Next month padding
@@ -619,6 +800,13 @@
         renderCalendar();
         renderInfoPanel();
       });
+
+      // Custom event indicator dot
+      if (day.hasCustom) {
+        const dot = document.createElement('div');
+        dot.style.cssText = 'position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--blue);';
+        el.appendChild(dot);
+      }
 
       container.appendChild(el);
     });
@@ -720,10 +908,14 @@
         <div class="info-detail-date">${dateFormatted}</div>
         <div class="info-detail-hero">
           <div class="info-hero-icon">${iconSvg}</div>
-          <div class="info-hero-title" style="color:${iconColor};">${titleText}</div>
+          <div class="info-hero-title" style="color:${iconColor};">${titleText}${day.hasCustom ? '<span class="custom-badge">EDITADO</span>' : ''}</div>
           ${detailContent}
         </div>
         ${footerHtml}
+        <button class="btn-edit-day" onclick="openEditModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Editar este dia
+        </button>
       </div>`;
   }
 
@@ -838,6 +1030,118 @@
 
     btn.disabled = false;
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg> Baixar PDF`;
+  });
+
+  // ── Rules Button ─────────────────────────────────────────────
+  document.getElementById('btn-rules').addEventListener('click', openRulesModal);
+
+  // ── Edit Day Modal ────────────────────────────────────────────
+  let _editDateKey = null;
+
+  function openEditModal() {
+    if (!state.selectedDay || !state.selectedDay.isCurrentMonth) return;
+    const day = state.selectedDay;
+    _editDateKey = dateKey(day.date.getFullYear(), day.date.getMonth(), day.date.getDate());
+
+    const formatted = day.date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    document.getElementById('modal-edit-day-title').textContent = formatted;
+
+    // Determine current effective type
+    const existing = customEvents[_editDateKey];
+    let currentType = existing ? existing.type : null;
+    if (!currentType) {
+      if (day.type === DayType.PAYMENT) currentType = 'PAYMENT';
+      else if (day.type === DayType.COMMITMENT) currentType = 'COMMITMENT';
+      else if (day.type === DayType.HOLIDAY) currentType = 'HOLIDAY';
+      else currentType = 'CLEAR';
+    }
+
+    document.querySelectorAll('#modal-edit-day .type-btn').forEach(btn => {
+      btn.classList.toggle('sel', btn.dataset.type === currentType);
+    });
+
+    const textInput = document.getElementById('edit-event-text');
+    textInput.value = existing ? (existing.text || '') :
+      (day.paymentText || day.commitmentText || day.holidayName || '');
+
+    document.getElementById('edit-text-group').style.display =
+      currentType === 'CLEAR' ? 'none' : 'block';
+
+    document.getElementById('modal-edit-day').classList.add('open');
+    if (currentType !== 'CLEAR') setTimeout(() => textInput.focus(), 50);
+  }
+
+  function closeEditModal() {
+    document.getElementById('modal-edit-day').classList.remove('open');
+  }
+
+  function selectEditType(btn) {
+    document.querySelectorAll('#modal-edit-day .type-btn').forEach(b => b.classList.remove('sel'));
+    btn.classList.add('sel');
+    document.getElementById('edit-text-group').style.display =
+      btn.dataset.type === 'CLEAR' ? 'none' : 'block';
+  }
+
+  function saveEditModal() {
+    const selType = document.querySelector('#modal-edit-day .type-btn.sel');
+    if (!selType) { alert('Selecione um tipo de evento.'); return; }
+    const type = selType.dataset.type;
+    const text = document.getElementById('edit-event-text').value.trim();
+    if (type !== 'CLEAR' && !text) {
+      alert('Informe uma descrição para o evento.');
+      document.getElementById('edit-event-text').focus();
+      return;
+    }
+    if (type === 'CLEAR') {
+      delete customEvents[_editDateKey];
+    } else {
+      customEvents[_editDateKey] = { type, text };
+    }
+    saveCustomEvents();
+    closeEditModal();
+    renderCalendar();
+  }
+
+  // Close modal on overlay click
+  document.getElementById('modal-edit-day').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+  });
+
+  // ── Rules Modal ───────────────────────────────────────────────
+  function openRulesModal() {
+    const ruleIds = ['paymentLastBizText','paymentDay10Text',
+      'commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'];
+    ruleIds.forEach(key => {
+      const el = document.getElementById('rule-' + key);
+      if (el) el.value = calRules[key] || '';
+    });
+    document.getElementById('modal-rules').classList.add('open');
+  }
+
+  function closeRulesModal() {
+    document.getElementById('modal-rules').classList.remove('open');
+  }
+
+  function saveRulesModal() {
+    const ruleIds = ['paymentLastBizText','paymentDay10Text',
+      'commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'];
+    ruleIds.forEach(key => {
+      const el = document.getElementById('rule-' + key);
+      if (el && el.value.trim()) calRules[key] = el.value.trim();
+      else delete calRules[key];
+    });
+    saveCalRules();
+    closeRulesModal();
+    renderCalendar();
+  }
+
+  document.getElementById('modal-rules').addEventListener('click', function(e) {
+    if (e.target === this) closeRulesModal();
+  });
+
+  // Keyboard: Esc closes any open modal
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeEditModal(); closeRulesModal(); }
   });
 
   // ── Init ─────────────────────────────────────────────────────
