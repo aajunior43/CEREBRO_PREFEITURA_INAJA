@@ -750,7 +750,6 @@
     <div class="ren-toolbar" id="toolbar" style="display:none">
       <button class="ren-btn ren-btn-primary" id="btn-all" onclick="processAll()">✨ Processar Todos</button>
       <button class="ren-btn ren-btn-secondary" id="btn-dl-all" onclick="downloadAll()">⬇️ Baixar Todos</button>
-      <button class="ren-btn ren-btn-secondary" onclick="openTemplates()">📝 Templates</button>
       <button class="ren-btn ren-btn-secondary" onclick="openHistory()">🕐 Histórico</button>
       <div class="ren-model-info">Modelo:&nbsp;<span class="ren-model-badge" id="model-badge">—</span><a
           href="/" style="font-size:11px;color:var(--blue);"
@@ -779,48 +778,6 @@
     style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:none;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:90vw;text-align:center;transition:opacity .3s">
   </div>
 
-  <!-- Templates Modal -->
-  <div class="ren-overlay" id="modal-tpl" style="display:none" onclick="if(event.target===this)closeTpl()">
-    <div class="ren-modal">
-      <div class="ren-modal-head">
-        <h3>📝 Templates de Prompt</h3><button class="ren-close" onclick="closeTpl()">✕</button>
-      </div>
-      <div class="ren-modal-body">
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button class="ren-btn ren-btn-secondary" style="font-size:12px;padding:7px 12px" onclick="showTplList()">Ver
-            Templates</button>
-          <button class="ren-btn ren-btn-primary" style="font-size:12px;padding:7px 12px" onclick="showTplForm()">➕ Novo
-            Template</button>
-        </div>
-        <div id="tpl-list"></div>
-        <div id="tpl-form" style="display:none">
-          <div class="tpl-form">
-            <label>Nome do Template</label>
-            <input id="tf-name" placeholder="Ex: Notas Fiscais Municipais">
-            <label>Descrição</label>
-            <input id="tf-desc" placeholder="Descrição curta">
-            <label>Categoria</label>
-            <select id="tf-cat">
-              <option value="geral">Geral</option>
-              <option value="fiscal">Fiscal</option>
-              <option value="juridico">Jurídico</option>
-              <option value="corporativo">Corporativo</option>
-              <option value="pessoal">Pessoal</option>
-              <option value="academico">Acadêmico</option>
-            </select>
-            <label>Prompt (use [FILETYPE] para o tipo de arquivo)</label>
-            <textarea id="tf-prompt" placeholder="ANALISE este documento [FILETYPE] e crie um nome..."></textarea>
-          </div>
-        </div>
-      </div>
-      <div class="ren-modal-foot">
-        <button class="ren-btn ren-btn-secondary" onclick="closeTpl()">Fechar</button>
-        <button class="ren-btn ren-btn-primary" id="tpl-save-btn" onclick="saveTpl()" style="display:none">💾 Salvar
-          Template</button>
-      </div>
-    </div>
-  </div>
-
   <!-- History Modal -->
   <div class="ren-overlay" id="modal-hist" style="display:none" onclick="if(event.target===this)closeHist()">
     <div class="ren-modal">
@@ -846,7 +803,7 @@
 
     // ── CACHE ──────────────────────────────────────────────────────────────────
     const aiCache = new Map(); // key: name+size+templateId → suggestedName
-    function cacheKey(file, tplId) { return `${file.name}|${file.size}|${tplId}`; }
+    function cacheKey(file) { return `${file.name}|${file.size}`; }
 
     // ── HISTORY ────────────────────────────────────────────────────────────────
     const HIST_KEY = 'renamer_history_v2';
@@ -859,56 +816,39 @@
       updateCounters();
     }
 
-    // ── TEMPLATES ──────────────────────────────────────────────────────────────
-    const TPL_KEY = 'renamer_templates_v2';
-    const DEFAULT_TEMPLATES = [
-      {
-        id: 'tpl_geral', name: 'Geral Inteligente', desc: 'Template versátil para qualquer documento', cat: 'geral', isDefault: true,
-        prompt: `ANALISE DETALHADAMENTE este documento [FILETYPE] e crie um nome de arquivo PROFISSIONAL.\nREGRAS:\n- Use APENAS letras maiúsculas, números e underscore\n- Formato: TIPO_ENTIDADE_DATA_REFERENCIA\n- Máximo 80 caracteres, SEM espaços, SEM acentos, SEM extensão\nRESPONDA APENAS COM O NOME.`
-      },
-      {
-        id: 'tpl_fiscal', name: 'Documentos Fiscais', desc: 'Notas fiscais, recibos, comprovantes', cat: 'fiscal', isDefault: true,
-        prompt: `ANALISE este documento fiscal [FILETYPE].\nFormato: TIPO_EMPRESA_NUMERO_DATA\nTipos: NOTA_FISCAL, RECIBO, COMPROVANTE_PAGAMENTO, CUPOM_FISCAL\nExemplos: NOTA_FISCAL_EMPRESA_ABC_001234_20240315\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
-      },
-      {
-        id: 'tpl_juridico', name: 'Documentos Jurídicos', desc: 'Contratos, certidões, procurações', cat: 'juridico', isDefault: true,
-        prompt: `ANALISE este documento jurídico [FILETYPE].\nFormato: TIPO_PARTES_DATA\nTipos: CONTRATO, CERTIDAO, PROCURACAO, ESCRITURA, PETICAO\nExemplos: CONTRATO_LOCACAO_JOAO_SILVA_20240315\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
-      },
-      {
-        id: 'tpl_corporativo', name: 'Documentos Corporativos', desc: 'Relatórios, apresentações, memorandos', cat: 'corporativo', isDefault: true,
-        prompt: `ANALISE este documento corporativo [FILETYPE].\nFormato: TIPO_PERIODO_DEPARTAMENTO\nTipos: RELATORIO, APRESENTACAO, MEMORANDO, ATA\nExemplos: RELATORIO_MENSAL_VENDAS_2024\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
-      },
-      {
-        id: 'tpl_pessoal', name: 'Documentos Pessoais', desc: 'RG, CPF, comprovantes', cat: 'pessoal', isDefault: true,
-        prompt: `ANALISE este documento pessoal [FILETYPE].\nFormato: TIPO_NOME_DATA\nTipos: RG, CPF, CNH, COMPROVANTE_RESIDENCIA\nExemplos: RG_JOAO_SILVA_20240315\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
-      },
-      {
-        id: 'tpl_academico', name: 'Documentos Acadêmicos', desc: 'Diplomas, certificados, históricos', cat: 'academico', isDefault: true,
-        prompt: `ANALISE este documento acadêmico [FILETYPE].\nFormato: TIPO_CURSO_INSTITUICAO_ANO\nTipos: DIPLOMA, CERTIFICADO, HISTORICO, DECLARACAO\nExemplos: DIPLOMA_ENGENHARIA_CIVIL_UFMG_2024\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
-      },
-      {
-        id: 'tpl_prefeitura', name: 'Documentos Municipais', desc: 'Empenhos, contratos públicos, atos', cat: 'corporativo', isDefault: true,
-        prompt: `ANALISE este documento da administração pública brasileira [FILETYPE].\nFormato sugerido: TIPO_ENTIDADE_DATA_REFERENCIA\nExemplos:\n  EMPENHO_2024_001234_FORNECEDOR_ABC\n  CONTRATO_PREFEITURA_INAJA_SERVICOS_2024\n  EXTRATO_BB_CONTA_0001_JANEIRO_2024\nRESPONDA APENAS COM O NOME EM MAIÚSCULAS.`
-      }
-    ];
-    function loadTemplates() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(TPL_KEY) || 'null');
-        if (!saved) { localStorage.setItem(TPL_KEY, JSON.stringify(DEFAULT_TEMPLATES)); return DEFAULT_TEMPLATES; }
-        // merge defaults if missing
-        const ids = saved.map(t => t.id);
-        DEFAULT_TEMPLATES.forEach(d => { if (!ids.includes(d.id)) saved.unshift(d); });
-        return saved;
-      } catch (e) { return DEFAULT_TEMPLATES; }
+    // ── PROMPT ─────────────────────────────────────────────────────────────────
+    const RENAME_PROMPT = `Você é um assistente especializado em organização de documentos da administração pública brasileira.
+Analise o conteúdo do documento [FILETYPE] abaixo e gere um nome de arquivo curto, descritivo e padronizado.
+
+REGRAS OBRIGATÓRIAS:
+- Use APENAS letras MAIÚSCULAS, números e underscore (_)
+- SEM espaços, SEM acentos, SEM caracteres especiais, SEM extensão
+- Máximo 80 caracteres
+- Formato preferencial: TIPO_ENTIDADE_REFERENCIA_DATA
+
+Tipos comuns:
+  NOTA_FISCAL, RECIBO, COMPROVANTE_PAGAMENTO, EXTRATO, CONTRATO, EMPENHO,
+  LIQUIDACAO, ORDEM_PAGAMENTO, CERTIDAO, ATA, RELATORIO, DECLARACAO,
+  OFICIO, MEMORANDO, PORTARIA, DECRETO, RESOLUCAO
+
+Exemplos:
+  NOTA_FISCAL_EMPRESA_ABC_001234_20240315
+  EMPENHO_2024_001234_FORNECEDOR_XYZ
+  CONTRATO_PREFEITURA_INAJA_SERVICOS_TI_2024
+  EXTRATO_BB_CONTA_0001_JANEIRO_2024
+  CERTIDAO_NEGATIVA_DEBITOS_JOAO_SILVA_20240315
+
+RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
+
+    function getActivePrompt(fileType) {
+      return RENAME_PROMPT.replace(/\[FILETYPE\]/g, fileType);
     }
-    function saveTemplates(t) { try { localStorage.setItem(TPL_KEY, JSON.stringify(t)); } catch (e) { } }
-    let templates = loadTemplates();
-    let activeTemplateId = localStorage.getItem('renamer_active_tpl') || 'tpl_geral';
 
     // ── STATE ──────────────────────────────────────────────────────────────────
-    const files = []; // {file,origName,type,sugName,status,error,fromCache,retries,feedback}
+    const files = []; // {file,origName,type,sugName,status,error,fromCache,retries}
     let processing = false;
-    let editingTplId = null;
+
+    // ── CACHE ──────────────────────────────────────────────────────────────────
 
     // ── INIT ───────────────────────────────────────────────────────────────────
     window.addEventListener('load', () => {
@@ -951,7 +891,7 @@
       const valid = list.filter(f => isAccepted(f));
       if (!valid.length) { showToast('Formato não suportado. Use PDF, Word ou Imagem.', 'error'); return; }
       for (const f of valid) {
-        files.push({ file: f, origName: f.name, type: getFileType(f), sugName: '', status: 'wait', error: '', fromCache: false, retries: 0, feedback: null });
+        files.push({ file: f, origName: f.name, type: getFileType(f), sugName: '', status: 'wait', error: '', fromCache: false, retries: 0 });
       }
       renderAll();
       showToast(`${valid.length} arquivo(s) adicionado(s)`, 'success');
@@ -1007,18 +947,15 @@
       return `<span style="font-size:12px;color:var(--red,#e11d48)" title="${esc(item.error)}">❌ ${esc(item.error.substring(0, 55))}</span>`;
     }
     function actionsHtml(item, idx) {
-      const fb = item.status === 'done' ? `<button class="fb-btn${item.feedback === 1 ? ' active' : ''}" onclick="setFeedback(${idx},1)" title="Bom">👍</button><button class="fb-btn${item.feedback === -1 ? ' active' : ''}" onclick="setFeedback(${idx},-1)" title="Ruim">👎</button>` : '';
       return `<button class="ren-act" onclick="processSingle(${idx})" ${processing || item.status === 'proc' ? 'disabled' : ''} title="Analisar">✨</button>` +
         (item.status === 'done' ? `<button class="ren-act ren-act-dl" onclick="downloadOne(${idx})" title="Baixar">⬇️</button>` : '')
-        + fb + `<button class="ren-act ren-act-rm" onclick="removeFile(${idx})" title="Remover">✕</button>`;
+        + `<button class="ren-act ren-act-rm" onclick="removeFile(${idx})" title="Remover">✕</button>`;
     }
     function badgeHtml(st) {
       const cls = { wait: 'ren-badge-wait', proc: 'ren-badge-proc', done: 'ren-badge-done', error: 'ren-badge-err' };
       const lbl = { wait: 'Aguardando', proc: 'Processando', done: 'Concluído', error: 'Erro' };
       return `<span class="ren-badge ${cls[st] || ''}">${lbl[st] || st}</span>`;
     }
-    function setFeedback(idx, v) { files[idx].feedback = v; renderAll(); }
-
     // ── TEXT EXTRACTION ────────────────────────────────────────────────────────
     async function extractText(file) {
       const ab = await file.arrayBuffer();
@@ -1086,12 +1023,6 @@
       return data.choices[0].message.content.trim();
     }
 
-    // ── GET ACTIVE PROMPT ──────────────────────────────────────────────────────
-    function getActivePrompt(fileType) {
-      const tpl = templates.find(t => t.id === activeTemplateId) || templates.find(t => t.id === 'tpl_geral') || templates[0];
-      return (tpl.prompt || '').replace(/\[FILETYPE\]/g, fileType);
-    }
-
     // ── CLEAN NAME ─────────────────────────────────────────────────────────────
     function cleanName(raw) {
       return (raw || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -1103,7 +1034,7 @@
       if (files[idx].status === 'proc') return;
       const item = files[idx];
       // check cache
-      const ck = cacheKey(item.file, activeTemplateId);
+      const ck = cacheKey(item.file);
       if (aiCache.has(ck)) {
         item.sugName = aiCache.get(ck); item.status = 'done'; item.fromCache = true;
         renderAll(); showToast('✅ Nome obtido do cache', 'success'); return;
@@ -1196,70 +1127,6 @@
       document.getElementById('file-cards').innerHTML = '';
       document.getElementById('prog-wrap').style.display = 'none';
       updateCounters();
-    }
-
-    // ── TEMPLATES MODAL ────────────────────────────────────────────────────────
-    function openTemplates() { renderTplList(); document.getElementById('modal-tpl').style.display = 'flex'; }
-    function closeTpl() { document.getElementById('modal-tpl').style.display = 'none'; editingTplId = null; }
-    function showTplList() {
-      document.getElementById('tpl-list').style.display = '';
-      document.getElementById('tpl-form').style.display = 'none';
-      document.getElementById('tpl-save-btn').style.display = 'none';
-      editingTplId = null; renderTplList();
-    }
-    function showTplForm(editId) {
-      editingTplId = editId || null;
-      document.getElementById('tpl-list').style.display = 'none';
-      document.getElementById('tpl-form').style.display = '';
-      document.getElementById('tpl-save-btn').style.display = '';
-      if (editId) {
-        const t = templates.find(x => x.id === editId) || {};
-        document.getElementById('tf-name').value = t.name || '';
-        document.getElementById('tf-desc').value = t.desc || t.description || '';
-        document.getElementById('tf-cat').value = t.cat || 'geral';
-        document.getElementById('tf-prompt').value = t.prompt || '';
-      } else {
-        document.getElementById('tf-name').value = '';
-        document.getElementById('tf-desc').value = '';
-        document.getElementById('tf-cat').value = 'geral';
-        document.getElementById('tf-prompt').value = '';
-      }
-    }
-    function renderTplList() {
-      const el = document.getElementById('tpl-list'); el.innerHTML = '';
-      templates.forEach(t => {
-        const d = document.createElement('div'); d.className = 'tpl-item' + (t.id === activeTemplateId ? ' active' : '');
-        const catEmoji = { fiscal: '🧾', juridico: '⚖️', corporativo: '🏢', pessoal: '👤', academico: '🎓', geral: '📄' }[t.cat || 'geral'] || '📄';
-        d.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div class="tpl-name">${catEmoji} ${esc(t.name)}</div><div class="tpl-desc">${esc(t.desc || t.description || '')}</div>
-        <span class="tpl-cat">${t.cat || 'geral'}</span>${t.isDefault ? '<span class="tpl-cat" style="background:rgba(34,197,94,.12);color:#15803d;margin-left:4px">padrão</span>' : ''}</div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          ${!t.isDefault ? `<button class="ren-act" onclick="showTplForm('${t.id}');event.stopPropagation()" title="Editar" style="padding:4px 7px;font-size:11px">✏️</button>
-          <button class="ren-act ren-act-rm" onclick="deleteTpl('${t.id}');event.stopPropagation()" title="Excluir" style="padding:4px 7px;font-size:11px">✕</button>` : ''}
-        </div></div>`;
-        d.addEventListener('click', () => { activeTemplateId = t.id; localStorage.setItem('renamer_active_tpl', t.id); renderTplList(); showToast(`Template "${t.name}" ativo`, 'success'); });
-        el.appendChild(d);
-      });
-    }
-    function saveTpl() {
-      const name = document.getElementById('tf-name').value.trim();
-      const desc = document.getElementById('tf-desc').value.trim();
-      const cat = document.getElementById('tf-cat').value;
-      const prompt = document.getElementById('tf-prompt').value.trim();
-      if (!name || !prompt) { showToast('Preencha nome e prompt', 'error'); return; }
-      if (editingTplId) {
-        const i = templates.findIndex(t => t.id === editingTplId);
-        if (i > -1) { templates[i] = { ...templates[i], name, desc, cat, prompt }; }
-      } else {
-        templates.push({ id: 'tpl_' + Date.now(), name, desc, cat, prompt, isDefault: false });
-      }
-      saveTemplates(templates); showTplList(); showToast('Template salvo!', 'success');
-    }
-    function deleteTpl(id) {
-      const t = templates.find(x => x.id === id); if (!t || t.isDefault) { showToast('Templates padrão não podem ser excluídos', 'error'); return; }
-      templates = templates.filter(x => x.id !== id); saveTemplates(templates);
-      if (activeTemplateId === id) { activeTemplateId = 'tpl_geral'; localStorage.setItem('renamer_active_tpl', 'tpl_geral'); }
-      renderTplList(); showToast('Template excluído', 'success');
     }
 
     // ── HISTORY MODAL ──────────────────────────────────────────────────────────
