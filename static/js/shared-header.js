@@ -216,6 +216,15 @@
   function initDOM() {
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
 
+    // Rodapé em todas as sub-páginas
+    if (!document.querySelector('.shd-footer')) {
+      document.body.insertAdjacentHTML('beforeend',
+        `<footer class="shd-footer" style="text-align:center;padding:14px 0 18px;font-size:12px;color:var(--text-3,#9ca3af);border-top:1px solid var(--border,rgba(0,0,0,.08));margin-top:32px">
+          Desenvolvido por <strong style="color:var(--text-2,#6b7280)">Aleksandro Alves</strong>
+        </footer>`
+      );
+    }
+
     function openMobile() {
       document.getElementById('shd-hamburger').classList.add('active');
       document.getElementById('shd-mobile-nav').classList.add('open');
