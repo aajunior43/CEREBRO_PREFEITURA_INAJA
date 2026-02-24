@@ -176,6 +176,18 @@ def init_db():
         )
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS kanban_tasks (
+            id          TEXT    PRIMARY KEY,
+            title       TEXT    NOT NULL,
+            description TEXT    DEFAULT '',
+            status      TEXT    DEFAULT 'todo',
+            priority    TEXT    DEFAULT 'medium',
+            criado_em   TEXT    DEFAULT (datetime('now', 'localtime')),
+            atualizado_em TEXT  DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+
     # Popula credores iniciais se a tabela estiver vazia
     count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
     if count == 0 and os.path.exists(DATA_JS):
@@ -707,6 +719,57 @@ def update_rpa(rid):
 def delete_rpa(rid):
     conn = get_db()
     conn.execute("DELETE FROM rpas WHERE id=?", (rid,))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
+# ────────────────────────────────────────────────────────────
+# API – Kanban Tasks
+# ────────────────────────────────────────────────────────────
+
+@app.route('/api/kanban', methods=['GET'])
+def kanban_list():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM kanban_tasks ORDER BY criado_em ASC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/kanban', methods=['POST'])
+def kanban_create():
+    d = request.json or {}
+    if not d.get('id') or not d.get('title'):
+        return jsonify({'error': 'id e title são obrigatórios'}), 400
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO kanban_tasks (id, title, description, status, priority) VALUES (?,?,?,?,?)",
+        (d['id'], d['title'], d.get('description',''), d.get('status','todo'), d.get('priority','medium'))
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (d['id'],)).fetchone()
+    conn.close()
+    return jsonify(dict(row)), 201
+
+@app.route('/api/kanban/<task_id>', methods=['PUT'])
+def kanban_update(task_id):
+    d = request.json or {}
+    conn = get_db()
+    conn.execute(
+        """UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?,
+           atualizado_em=datetime('now','localtime') WHERE id=?""",
+        (d.get('title'), d.get('description',''), d.get('status'), d.get('priority'), task_id)
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({'error': 'not found'}), 404
+    return jsonify(dict(row))
+
+@app.route('/api/kanban/<task_id>', methods=['DELETE'])
+def kanban_delete(task_id):
+    conn = get_db()
+    conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
     conn.commit()
     conn.close()
     return jsonify({'ok': True})

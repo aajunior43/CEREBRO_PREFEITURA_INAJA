@@ -569,19 +569,13 @@
                 </svg></div>
             <div>
                 <h2>Tarefas • Kanban</h2>
-                <p>Organize seu dia com arrastar e soltar · Prioridades · Backup com criptografia AES-GCM</p>
+                <p>Organize seu dia com arrastar e soltar · Prioridades · Dados salvos no servidor</p>
             </div>
         </div>
 
         <!-- Toolbar -->
         <div class="kb-toolbar">
             <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
-            <button class="kb-btn kb-btn-violet" onclick="exportBackup()">⬇️ Exportar Backup</button>
-            <label style="cursor:pointer"><input type="file" accept="application/json" id="import-inp"
-                    style="display:none" onchange="handleImportFile(event)" /><span class="kb-btn kb-btn-emerald"
-                    onclick="document.getElementById('import-inp').click()">⬆️ Importar Backup</span></label>
-            <button id="enc-btn" class="kb-enc-off" onclick="toggleEncryption()"
-                title="Ativar/desativar criptografia AES-GCM no backup">🔒 Criptografia: OFF</button>
             <div class="kb-stats">
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
@@ -620,12 +614,6 @@
             </div>
         </div>
 
-        <!-- Backup History -->
-        <div class="kb-hist" id="hist-section" style="display:none">
-            <div class="kb-hist-head">🕐 Histórico de Backups <span id="hist-count"
-                    style="background:rgba(0,0,0,.07);border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700"></span>
-            </div>
-            <div class="kb-hist-grid" id="hist-grid"></div>
         </div>
     </div>
 
@@ -682,25 +670,6 @@
         </div>
     </div>
 
-    <!-- Passphrase Modal -->
-    <div class="kb-overlay" id="pass-modal" style="display:none">
-        <div class="kb-modal" style="max-width:360px">
-            <div class="kb-modal-head">
-                <h3>🔑 Senha para criptografia</h3><button class="kb-close" onclick="closePassModal()">✕</button>
-            </div>
-            <div class="kb-modal-body">
-                <p style="font-size:13px;color:var(--text-2);margin:0 0 8px">Esta senha será usada para
-                    criptografar/descriptografar o backup com AES-GCM-256.</p>
-                <div><label class="kb-label">Senha</label><input class="kb-input" type="password" id="passphrase-inp"
-                        placeholder="Mínimo 6 caracteres" /></div>
-            </div>
-            <div class="kb-modal-foot">
-                <button class="kb-btn kb-btn-ghost" onclick="closePassModal()">Cancelar</button>
-                <button class="kb-btn kb-btn-violet" onclick="confirmPassphrase()">✅ Confirmar</button>
-            </div>
-        </div>
-    </div>
-
     <div id="kb-toast"></div>
 
     <script>
@@ -710,29 +679,21 @@
     if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
         // ── STATE ──────────────────────────────────────────────────────────────────
-        const TASKS_KEY = 'kanban-tasks-v2';
-        const HIST_KEY = 'kanban-backup-history';
         let tasks = [];
-        let backupHistory = [];
         let editingId = null;
         let deletingId = null;
-        let useEncryption = false;
-        let passphrase = '';
         let dragTaskId = null;
-        let passphraseCallback = null;
 
         // ── INIT ───────────────────────────────────────────────────────────────────
-        function loadAll() {
-            try { tasks = JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'); } catch (e) { tasks = []; }
-            try { backupHistory = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { backupHistory = []; }
-        }
-        function saveAll() {
-            try { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); } catch (e) { }
-            try { localStorage.setItem(HIST_KEY, JSON.stringify(backupHistory)); } catch (e) { }
+        async function loadAll() {
+            try {
+                const res = await fetch('/api/kanban');
+                tasks = await res.json();
+            } catch (e) { tasks = []; showToast('Erro ao carregar tarefas', 'error'); }
+            renderBoard();
         }
 
         loadAll();
-        renderBoard();
 
         // ── RENDER ─────────────────────────────────────────────────────────────────
         function renderBoard() {
@@ -752,7 +713,6 @@
                 });
             });
             updateStats();
-            renderHistSection();
         }
 
         function createCard(task) {
@@ -786,30 +746,25 @@
             });
         }
 
-        function renderHistSection() {
-            const sec = document.getElementById('hist-section');
-            if (!backupHistory.length) { sec.style.display = 'none'; return; }
-            sec.style.display = '';
-            document.getElementById('hist-count').textContent = backupHistory.length;
-            document.getElementById('hist-grid').innerHTML = backupHistory.map(b => `
-      <div class="kb-hist-item">
-        <div class="kb-hist-ts">📅 ${new Date(b.timestamp).toLocaleString('pt-BR')}</div>
-        <div class="kb-hist-meta">${b.count} tarefa(s) · ${b.encrypted ? '🔒 Criptografado' : '📄 Sem criptografia'}</div>
-      </div>`).join('');
-        }
-
         // ── DRAG & DROP ────────────────────────────────────────────────────────────
         function onColDragOver(e, col) {
             e.preventDefault(); e.dataTransfer.dropEffect = 'move';
             document.getElementById(`body-${col}`).classList.add('drag-over');
         }
         function onColDragLeave(e, col) { document.getElementById(`body-${col}`).classList.remove('drag-over'); }
-        function onColDrop(e, col) {
+        async function onColDrop(e, col) {
             e.preventDefault();
             document.getElementById(`body-${col}`).classList.remove('drag-over');
             if (!dragTaskId) return;
             const task = tasks.find(t => t.id === dragTaskId);
-            if (task && task.status !== col) { task.status = col; saveAll(); renderBoard(); showToast(`Tarefa movida para "${colName(col)}"`, 'success'); }
+            if (task && task.status !== col) {
+                task.status = col;
+                try {
+                    await fetch(`/api/kanban/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(task) });
+                    showToast(`Tarefa movida para "${colName(col)}"`, 'success');
+                } catch (e) { showToast('Erro ao mover tarefa', 'error'); }
+                renderBoard();
+            }
         }
         function colName(c) { return { todo: 'A Fazer', 'in-progress': 'Em Progresso', done: 'Concluído' }[c] || c; }
 
@@ -829,117 +784,42 @@
             setTimeout(() => document.getElementById('t-title').focus(), 100);
         }
 
-        function saveTask() {
+        async function saveTask() {
             const title = document.getElementById('t-title').value.trim();
             if (!title) { showToast('O título é obrigatório', 'error'); return; }
             const desc = document.getElementById('t-desc').value.trim();
             const status = document.getElementById('t-status').value;
             const priority = document.getElementById('t-prio').value;
-            if (editingId) {
-                const i = tasks.findIndex(t => t.id === editingId);
-                if (i > -1) tasks[i] = { ...tasks[i], title, description: desc, status, priority };
-                showToast('Tarefa atualizada!', 'success');
-            } else {
-                tasks.push({ id: uid(), title, description: desc, status, priority });
-                showToast('Tarefa criada!', 'success');
-            }
-            saveAll(); renderBoard(); closeTaskModal();
+            try {
+                if (editingId) {
+                    const task = tasks.find(t => t.id === editingId);
+                    const updated = { ...task, title, description: desc, status, priority };
+                    await fetch(`/api/kanban/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                    const i = tasks.findIndex(t => t.id === editingId);
+                    if (i > -1) tasks[i] = updated;
+                    showToast('Tarefa atualizada!', 'success');
+                } else {
+                    const newTask = { id: uid(), title, description: desc, status, priority };
+                    const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTask) });
+                    const created = await res.json();
+                    tasks.push(created);
+                    showToast('Tarefa criada!', 'success');
+                }
+                renderBoard(); closeTaskModal();
+            } catch (e) { showToast('Erro ao salvar tarefa', 'error'); }
         }
 
         function confirmDelete(id) { deletingId = id; document.getElementById('confirm-modal').style.display = 'flex'; }
         function closeConfirm() { document.getElementById('confirm-modal').style.display = 'none'; deletingId = null; }
-        function executeDelete() { if (deletingId) { tasks = tasks.filter(t => t.id !== deletingId); saveAll(); renderBoard(); showToast('Tarefa excluída', 'success'); } closeConfirm(); }
-
-        // ── ENCRYPTION ─────────────────────────────────────────────────────────────
-        function toggleEncryption() {
-            if (!useEncryption) {
-                openPassphrase(() => { useEncryption = true; updateEncBtn(); showToast('Criptografia AES-GCM ativada 🔒', 'success'); });
-            } else {
-                useEncryption = false; passphrase = ''; updateEncBtn(); showToast('Criptografia desativada', 'success');
+        async function executeDelete() {
+            if (deletingId) {
+                try {
+                    await fetch(`/api/kanban/${deletingId}`, { method: 'DELETE' });
+                    tasks = tasks.filter(t => t.id !== deletingId);
+                    renderBoard(); showToast('Tarefa excluída', 'success');
+                } catch (e) { showToast('Erro ao excluir tarefa', 'error'); }
             }
-        }
-        function updateEncBtn() {
-            const btn = document.getElementById('enc-btn');
-            btn.textContent = useEncryption ? '🔒 Criptografia: ON' : '🔒 Criptografia: OFF';
-            btn.className = useEncryption ? 'kb-enc-on' : 'kb-enc-off';
-        }
-        function openPassphrase(cb) {
-            passphraseCallback = cb;
-            document.getElementById('passphrase-inp').value = '';
-            document.getElementById('pass-modal').style.display = 'flex';
-            setTimeout(() => document.getElementById('passphrase-inp').focus(), 100);
-        }
-        function closePassModal() { document.getElementById('pass-modal').style.display = 'none'; passphraseCallback = null; }
-        function confirmPassphrase() {
-            const val = document.getElementById('passphrase-inp').value;
-            if (val.length < 6) { showToast('A senha deve ter pelo menos 6 caracteres', 'error'); return; }
-            passphrase = val; closePassModal();
-            if (passphraseCallback) { passphraseCallback(); passphraseCallback = null; }
-        }
-
-        // ── BACKUP CRYPTO ──────────────────────────────────────────────────────────
-        const toB64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
-        const fromB64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
-        async function deriveKey(secret, salt) {
-            const enc = new TextEncoder();
-            const km = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'PBKDF2' }, false, ['deriveKey']);
-            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-        }
-        async function encryptData(data, secret) {
-            const salt = crypto.getRandomValues(new Uint8Array(16));
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            const key = await deriveKey(secret, salt);
-            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(data)));
-            return { alg: 'AES-GCM', salt: toB64(salt.buffer), iv: toB64(iv.buffer), ciphertext: toB64(ct) };
-        }
-        async function decryptData(payload, secret) {
-            const key = await deriveKey(secret, fromB64(payload.salt));
-            const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(payload.iv) }, key, fromB64(payload.ciphertext));
-            return JSON.parse(new TextDecoder().decode(dec));
-        }
-
-        // ── EXPORT BACKUP ──────────────────────────────────────────────────────────
-        async function exportBackup() {
-            try {
-                const doExport = async () => {
-                    const data = useEncryption && passphrase ? await encryptData({ tasks }, passphrase) : { tasks };
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-                    a.download = `kanban-backup-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
-                    a.click(); URL.revokeObjectURL(a.href);
-                    backupHistory = [{ id: uid(), timestamp: Date.now(), count: tasks.length, encrypted: useEncryption && !!passphrase }, ...backupHistory].slice(0, 20);
-                    saveAll(); renderHistSection();
-                    showToast('Backup exportado com sucesso! ⬇️', 'success');
-                };
-                if (useEncryption && !passphrase) { openPassphrase(doExport); } else { await doExport(); }
-            } catch (e) { showToast('Erro ao exportar: ' + e.message, 'error'); }
-        }
-
-        // ── IMPORT BACKUP ──────────────────────────────────────────────────────────
-        async function handleImportFile(e) {
-            const file = e.target.files[0]; if (!file) return;
-            e.target.value = '';
-            try {
-                const text = await file.text();
-                const json = JSON.parse(text);
-                const doImport = async (pass) => {
-                    let imported;
-                    if (json.ciphertext) {
-                        if (!pass) throw new Error('Backup criptografado requer senha.');
-                        imported = await decryptData(json, pass);
-                    } else { imported = json; }
-                    const raw = (imported.tasks ?? imported);
-                    if (!Array.isArray(raw)) throw new Error('Estrutura de backup inválida.');
-                    const valid = raw.filter(t => t && t.id && t.title && ['todo', 'in-progress', 'done'].includes(t.status));
-                    tasks = valid.map(t => ({ id: t.id, title: t.title, description: t.description || '', status: t.status, priority: t.priority || 'medium' }));
-                    backupHistory = [{ id: uid(), timestamp: Date.now(), count: tasks.length, encrypted: !!json.ciphertext }, ...backupHistory].slice(0, 20);
-                    saveAll(); renderBoard();
-                    showToast(`Backup importado: ${tasks.length} tarefa(s) ✅`, 'success');
-                };
-                if (json.ciphertext) {
-                    openPassphrase(async () => { try { await doImport(passphrase); } catch (err) { showToast('Erro: ' + err.message, 'error'); } });
-                } else { await doImport(''); }
-            } catch (e) { showToast('Erro ao importar: ' + e.message, 'error'); }
+            closeConfirm();
         }
 
         // ── KEY SHORTCUT ───────────────────────────────────────────────────────────
@@ -948,7 +828,6 @@
             if (e.key === 'Escape') {
                 document.getElementById('task-modal').style.display = 'none';
                 document.getElementById('confirm-modal').style.display = 'none';
-                document.getElementById('pass-modal').style.display = 'none';
             }
         });
 
