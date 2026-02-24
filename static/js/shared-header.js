@@ -53,24 +53,24 @@
   /* ── HTML do header ──────────────────────────────────────── */
   const NAV_ITEMS = {
     documentos: [
-      { href: '/pages/rpa.html',             name: 'RPA',            desc: 'Recibo de Pagamento Autônomo' },
-      { href: '/pages/pdf.html',             name: 'PDF',            desc: 'Mesclar, dividir e proteger' },
-      { href: '/pages/gerador-empenho.html', name: 'Gerar Empenho',  desc: 'Criar empenhos em PDF' },
-      { href: '/pages/visualizador.html',    name: 'Visualizador',   desc: 'Documentos e contratos' },
-      { href: '/pages/auditor.html',         name: 'Auditor NF',     desc: 'Auditoria e notas fiscais' },
+      { href: '/pages/rpa.html',             name: 'RPA',                    desc: 'Recibo de Pagamento Autônomo' },
+      { href: '/pages/pdf.html',             name: 'PDF Master',             desc: 'Mesclar, dividir e proteger' },
+      { href: '/pages/gerador-empenho.html', name: 'Gerador de Empenho',     desc: 'Gerar texto de empenho em PDF' },
+      { href: '/pages/visualizador.html',    name: 'Rel. de Empenhos',       desc: 'Visualizar e filtrar empenhos' },
+      { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
     ],
     financeiro: [
-      { href: '/pages/extratos.html',             name: 'Extratos',             desc: 'Organizar arquivos bancários' },
-      { href: '/pages/tarifas-bancarias.html',    name: 'Tarifas',              desc: 'Encargos e tarifas bancárias' },
-      { href: '/pages/fornecimento.html',         name: 'Fornecimento',         desc: 'Controle de fornecedores' },
-      { href: '/pages/despesa-prefeitura.html',   name: 'Despesa Pública',      desc: 'Visor de despesas da prefeitura' },
-      { href: '/pages/despesa-relatorios.html',   name: 'Relatórios de Despesa',desc: 'Comparar períodos e histórico' },
+      { href: '/pages/extratos.html',             name: 'Extratos Bancários',      desc: 'Organizar arquivos de extrato' },
+      { href: '/pages/tarifas-bancarias.html',    name: 'Analisador Financeiro',   desc: 'Tarifas e encargos bancários' },
+      { href: '/pages/fornecimento.html',         name: 'Aquisições',              desc: 'Solicitações de aquisição' },
+      { href: '/pages/despesa-prefeitura.html',   name: 'Despesa Pública',         desc: 'Visor de despesas da prefeitura' },
+      { href: '/pages/despesa-relatorios.html',   name: 'Relatórios de Despesa',   desc: 'Comparar períodos e histórico' },
     ],
     ferramentas: [
-      { href: '/pages/cnpj.html',       name: 'CNPJ',       desc: 'Consultar dados de empresas' },
-      { href: '/pages/renomear.html',   name: 'Renomear',   desc: 'Organizar PDFs e extratos' },
-      { href: '/pages/tarefas.html',    name: 'Tarefas',    desc: 'Gerenciar atividades' },
-      { href: '/pages/calendario.html', name: 'Calendário', desc: 'Histórico mensal' },
+      { href: '/pages/cnpj.html',       name: 'Consulta CNPJ',    desc: 'Consultar dados de empresas' },
+      { href: '/pages/renomear.html',   name: 'Renomear com IA',  desc: 'Renomear PDFs e extratos' },
+      { href: '/pages/tarefas.html',    name: 'Tarefas Kanban',   desc: 'Gerenciar atividades' },
+      { href: '/pages/calendario.html', name: 'Calendário',       desc: 'Calendário de pagamentos' },
     ],
   };
 
