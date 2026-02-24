@@ -198,6 +198,14 @@ def init_db():
         )
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS configuracoes (
+            chave     TEXT PRIMARY KEY,
+            valor     TEXT NOT NULL DEFAULT '',
+            atualizado_em TEXT DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+
     # Popula credores iniciais se a tabela estiver vazia
     count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
     if count == 0 and os.path.exists(DATA_JS):
@@ -868,6 +876,34 @@ def fornecimento_dados_del():
     valor = d.get('valor', '').strip()
     conn = get_db()
     conn.execute("DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+
+# ────────────────────────────────────────────────────────────
+# API – Configurações (chave/valor persistido no banco)
+# ────────────────────────────────────────────────────────────
+ALLOWED_CONFIG_KEYS = {'api_openrouter_key', 'api_openrouter_modelo', 'api_cnpja_key'}
+
+@app.route('/api/config', methods=['GET'])
+def config_get():
+    conn = get_db()
+    rows = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
+    conn.close()
+    return jsonify({r['chave']: r['valor'] for r in rows if r['chave'] in ALLOWED_CONFIG_KEYS})
+
+@app.route('/api/config', methods=['POST'])
+def config_set():
+    d = request.get_json(force=True)
+    conn = get_db()
+    for chave, valor in d.items():
+        if chave in ALLOWED_CONFIG_KEYS:
+            conn.execute(
+                "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?,?,datetime('now','localtime')) "
+                "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor, atualizado_em=excluded.atualizado_em",
+                (chave, str(valor))
+            )
     conn.commit()
     conn.close()
     return jsonify({'ok': True})

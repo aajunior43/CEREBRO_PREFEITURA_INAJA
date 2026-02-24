@@ -225,6 +225,15 @@
       );
     }
 
+    // Sincroniza chaves do banco → localStorage (garante que módulos de IA funcionem mesmo após limpeza de cache)
+    if (!localStorage.getItem('api_openrouter_key')) {
+      fetch('/api/config').then(r => r.json()).then(cfg => {
+        if (cfg.api_openrouter_key)    { localStorage.setItem('api_openrouter_key',    cfg.api_openrouter_key);    localStorage.setItem('ext_ia_key',    cfg.api_openrouter_key); }
+        if (cfg.api_openrouter_modelo) { localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); localStorage.setItem('ext_ia_modelo', cfg.api_openrouter_modelo); }
+        if (cfg.api_cnpja_key)         { localStorage.setItem('api_cnpja_key',          cfg.api_cnpja_key); }
+      }).catch(() => {});
+    }
+
     function openMobile() {
       document.getElementById('shd-hamburger').classList.add('active');
       document.getElementById('shd-mobile-nav').classList.add('open');

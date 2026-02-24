@@ -649,25 +649,45 @@
   <script>
     let _admTodosModelos = [];
 
-    function admCarregarChaves() {
-      const keyEl  = document.getElementById('adm-or-key');
-      const modEl  = document.getElementById('adm-or-modelo');
+    async function admCarregarChaves() {
+      const keyEl   = document.getElementById('adm-or-key');
+      const modEl   = document.getElementById('adm-or-modelo');
       const cnpjaEl = document.getElementById('adm-cnpja-key');
       if (!keyEl) return;
-      keyEl.value  = localStorage.getItem('api_openrouter_key')    || '';
-      modEl.value  = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
-      if (cnpjaEl) cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
+      // Carrega do banco primeiro; fallback para localStorage
+      try {
+        const r = await fetch('/api/config');
+        const cfg = await r.json();
+        if (cfg.api_openrouter_key)    { keyEl.value   = cfg.api_openrouter_key;    localStorage.setItem('api_openrouter_key',    cfg.api_openrouter_key); }
+        else keyEl.value = localStorage.getItem('api_openrouter_key') || '';
+        if (cfg.api_openrouter_modelo) { modEl.value   = cfg.api_openrouter_modelo; localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); }
+        else modEl.value = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+        if (cnpjaEl) {
+          if (cfg.api_cnpja_key) { cnpjaEl.value = cfg.api_cnpja_key; localStorage.setItem('api_cnpja_key', cfg.api_cnpja_key); }
+          else cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
+        }
+      } catch(e) {
+        keyEl.value   = localStorage.getItem('api_openrouter_key')    || '';
+        modEl.value   = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+        if (cnpjaEl) cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
+      }
     }
 
-    function admSalvarChaves() {
+    async function admSalvarChaves() {
       const k = document.getElementById('adm-or-key').value.trim();
       const m = document.getElementById('adm-or-modelo').value.trim() || 'meta-llama/llama-3.2-3b-instruct:free';
+      // Salva no banco (persistente) E no localStorage (compatibilidade)
+      try {
+        await fetch('/api/config', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ api_openrouter_key: k, api_openrouter_modelo: m })
+        });
+      } catch(e) { console.warn('Falha ao salvar no banco:', e); }
       localStorage.setItem('api_openrouter_key',    k);
       localStorage.setItem('api_openrouter_modelo', m);
-      // manter compat com chaves antigas usadas em extratos.html
       localStorage.setItem('ext_ia_key',    k);
       localStorage.setItem('ext_ia_modelo', m);
-      showToast('Configurações salvas!', 'success');
+      showToast('✅ Configurações salvas no banco!', 'success');
       admStatusMsg('✅ Salvo com sucesso', 'success');
     }
 
@@ -767,10 +787,16 @@
       inp.type = inp.type === 'password' ? 'text' : 'password';
     }
 
-    function admSalvarCnpja() {
+    async function admSalvarCnpja() {
       const k = document.getElementById('adm-cnpja-key').value.trim();
+      try {
+        await fetch('/api/config', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ api_cnpja_key: k })
+        });
+      } catch(e) { console.warn('Falha ao salvar no banco:', e); }
       localStorage.setItem('api_cnpja_key', k);
-      showToast('Chave CNPJá salva!', 'success');
+      showToast('✅ Chave CNPJá salva no banco!', 'success');
       admCnpjaStatus('✅ Salvo com sucesso', 'success');
     }
 
