@@ -1091,19 +1091,25 @@ NOME DO ARQUIVO (somente o nome, sem explicação):`;
         let msgContent;
         if (item.type === 'PDF') {
           let text = await extractText(item.file);
+          console.log(`[RENOMEAR] PDF texto extraído (${text.length} chars):`, text.substring(0, 200));
           if (text.length < 50) {
             item.error = 'OCR em andamento…'; renderAll();
             try {
               const canvas = await pdfFirstPageCanvas(item.file);
               text = await ocrCanvas(canvas);
-            } catch (e) { text = ''; }
+              console.log(`[RENOMEAR] OCR resultado (${text.length} chars):`, text.substring(0, 200));
+            } catch (e) { console.warn('[RENOMEAR] OCR falhou:', e); text = ''; }
           }
           const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (sem texto legível)`;
+          console.log('[RENOMEAR] Conteúdo enviado para IA:', content.substring(0, 300));
           msgContent = getActivePrompt('PDF', content);
         } else if (item.type === 'Imagem') {
           item.error = 'OCR em andamento…'; renderAll();
           let text = '';
-          try { text = await ocrFile(item.file); } catch (e) { text = ''; }
+          try {
+            text = await ocrFile(item.file);
+            console.log(`[RENOMEAR] OCR imagem (${text.length} chars):`, text.substring(0, 200));
+          } catch (e) { console.warn('[RENOMEAR] OCR imagem falhou:', e); text = ''; }
           const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (imagem sem texto)`;
           msgContent = getActivePrompt('Imagem', content);
         } else {
@@ -1116,6 +1122,8 @@ NOME DO ARQUIVO (somente o nome, sem explicação):`;
           item.retries = retryCount; renderTable();
           return callAPI(msgContent, attempt);
         }, 3, 1500);
+        console.log('[RENOMEAR] Resposta bruta da IA:', suggestion);
+        console.log('[RENOMEAR] Nome final:', cleanName(suggestion, item.origName));
         item.sugName = cleanName(suggestion, item.origName); item.status = 'done'; item.fromCache = false; item.retries = retryCount;
         aiCache.set(ck, item.sugName);
         addHistory(item.origName, item.sugName, item.type, item.file.size);
