@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0" />
     <title>Tarefas Kanban – Prefeitura de Inajá</title>
     <link rel="stylesheet" href="/static/css/index.css" />
+    <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet" />
     <style>
@@ -13,8 +14,7 @@
         .kb-page {
             min-height: calc(100vh - 64px);
             padding: 20px 16px 60px;
-            background: var(--bg-2, #f4f5f7)
-        }
+            background: var(--bg)
 
         /* ── HERO ── */
         .kb-hero {
@@ -232,7 +232,7 @@
 
         /* ── CARDS ── */
         .kb-card {
-            background: var(--bg-2, #f4f5f7);
+            background: var(--bg);
             border-radius: var(--radius-sm);
             padding: 13px;
             border-left: 4px solid transparent;
