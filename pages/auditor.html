@@ -1068,7 +1068,8 @@ Schema JSON esperado:
             }
             if (!extractedText.trim()) throw new Error('Não foi possível extrair texto do arquivo.');
 
-            const shortText = extractedText.slice(0, 3000);
+            console.log('[AUDITOR] Texto extraído (' + extractedText.length + ' chars):', extractedText.slice(0, 500));
+            const fullText = extractedText.slice(0, 8000); // suporta NFs longas
 
             async function tryAI(promptText) {
                 const res = await fetch('/api/ia/chat', {
@@ -1084,18 +1085,21 @@ Schema JSON esperado:
                     throw new Error(msg);
                 }
                 const data = await res.json();
+                console.log('[AUDITOR] Resposta IA:', JSON.stringify(data?.choices?.[0]?.message?.content || '').slice(0, 300));
                 let txt = data?.choices?.[0]?.message?.content || '';
                 txt = txt.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
                 return txt;
             }
 
             // Attempt 1: full prompt
-            const fullPrompt = `Você é auditor fiscal. Analise a nota fiscal abaixo e retorne SOMENTE JSON válido com este schema exato (sem markdown, sem texto extra):
+            const fullPrompt = `Você é auditor fiscal municipal brasileiro. Analise TODA a nota fiscal abaixo e retorne SOMENTE JSON válido com este schema exato (sem markdown, sem texto extra):
 {"supplierName":"string","cnpj":"string","invoiceDate":"string","totalAmount":0,"items":[{"description":"string","quantity":0,"unitPrice":0,"totalPrice":0}],"anomalies":["string"],"riskScore":0,"riskLevel":"BAIXO","auditRecommendation":"string","reasoning":"string"}
 
-Hoje: ${today}
-Texto da nota:
-${shortText}
+Extraia TODOS os itens da nota. Hoje: ${today}
+Texto completo da nota fiscal:
+${fullText}
+
+JSON:
 
 JSON:`;
 
@@ -1106,7 +1110,7 @@ JSON:`;
                 const minPrompt = `Extraia dados desta nota fiscal e retorne JSON puro:
 {"supplierName":"?","cnpj":"?","invoiceDate":"?","totalAmount":0,"items":[],"anomalies":[],"riskScore":20,"riskLevel":"BAIXO","auditRecommendation":"Verificar","reasoning":"?"}
 
-Nota: ${shortText.slice(0, 1500)}
+Nota: ${fullText.slice(0, 4000)}
 JSON:`;
                 text = await tryAI(minPrompt);
             }
