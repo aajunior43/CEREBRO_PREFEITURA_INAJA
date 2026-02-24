@@ -555,31 +555,18 @@ Texto do documento:
     const extractedText = await extractTextFromFile(file);
     if (!extractedText.trim()) throw new Error('Não foi possível extrair texto do arquivo.');
 
-    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
     const prompt = PROMPT_TEMPLATE.replace('{TEXT}', extractedText);
 
-    const body = {
-      model,
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.2
-    };
-
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const resp = await fetch('/api/ia/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openrouterApiKey}`,
-        'HTTP-Referer': 'https://localhost',
-        'X-Title': 'Gerador de Empenho'
-      },
-      body: JSON.stringify(body)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: openrouterApiKey, model, messages: [{ role: 'user', content: prompt }], temperature: 0.2 })
     });
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+      throw new Error(err?.error?.message || err?.error || `HTTP ${resp.status}`);
     }
 
     const data = await resp.json();
@@ -599,29 +586,18 @@ Texto do documento:
     const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
     if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
 
-    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
     const prompt = PROMPT_TEMPLATE.replace('{TEXT}', inputText);
 
-    const body = {
-      model,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.2
-    };
-
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const resp = await fetch('/api/ia/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openrouterApiKey}`,
-        'HTTP-Referer': 'https://localhost',
-        'X-Title': 'Gerador de Empenho'
-      },
-      body: JSON.stringify(body)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: openrouterApiKey, model, messages: [{ role: 'user', content: prompt }], temperature: 0.2 })
     });
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+      throw new Error(err?.error?.message || err?.error || `HTTP ${resp.status}`);
     }
 
     const data = await resp.json();

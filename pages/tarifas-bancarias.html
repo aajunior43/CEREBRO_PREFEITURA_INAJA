@@ -636,17 +636,13 @@ Extrato bancário:
 ${text.slice(0, 12000)}
 ---`;
 
-    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
 
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const resp = await fetch('/api/ia/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openrouterApiKey}`,
-        'HTTP-Referer': 'https://localhost',
-        'X-Title': 'Prefeitura de Inaja – Analisador Financeiro'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        api_key: openrouterApiKey,
         model,
         messages: [{ role: 'user', content: PROMPT }],
         temperature: 0.1,
@@ -655,8 +651,8 @@ ${text.slice(0, 12000)}
 
     if (!resp.ok) {
       const errBody = await resp.json().catch(() => ({}));
-      const msg = errBody?.error?.message || `HTTP ${resp.status}`;
-      throw new Error(`API: ${msg}`);
+      const msg = errBody?.error?.message || errBody?.error || `HTTP ${resp.status}`;
+      throw new Error(`[${model}] ${msg}`);
     }
 
     const data = await resp.json();
