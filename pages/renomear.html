@@ -1076,7 +1076,6 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}`, 'HTTP-Referer': 'https://localhost', 'X-Title': 'Renomeador' },
         body: JSON.stringify({ model, messages: [{ role: 'user', content }], max_tokens: 120, temperature: 0.2 })
       });
-      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error?.message || `Erro HTTP ${res.status}`);
