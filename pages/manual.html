@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📖 Manual do Sistema – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Layout ── */
+    .man-wrap {
+      max-width: 900px;
+      margin: 0 auto 80px;
+      padding: 0 20px;
+    }
+
+    /* ── Hero ── */
+    .man-hero {
+      text-align: center;
+      padding: 48px 20px 40px;
+      background: linear-gradient(135deg, var(--blue, #2563eb) 0%, #7c3aed 100%);
+      border-radius: 16px;
+      margin: 28px 0 36px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+    .man-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .man-hero-icon { font-size: 52px; margin-bottom: 16px; display: block; }
+    .man-hero h1 { font-size: 32px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.5px; }
+    .man-hero p { font-size: 15px; opacity: 0.88; margin: 0; }
+
+    /* ── Table of Contents ── */
+    .man-toc {
+      background: var(--bg-2, #f8fafc);
+      border: 1px solid var(--border, rgba(0,0,0,.08));
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 40px;
+    }
+    [data-theme="dark"] .man-toc { background: var(--bg-2, #1e2a38); }
+    .man-toc h2 { font-size: 16px; font-weight: 700; margin: 0 0 16px; color: var(--text); }
+    .man-toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+    }
+    .man-toc a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 13px;
+      color: var(--text-2, #6b7280);
+      transition: background .15s, color .15s;
+      background: var(--bg, #fff);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .man-toc a:hover { background: var(--blue-light, rgba(37,99,235,.1)); color: var(--blue, #2563eb); }
+    .man-toc-num { font-size: 11px; font-weight: 700; color: var(--blue, #2563eb); min-width: 20px; }
+
+    /* ── Module Section ── */
+    .man-section {
+      margin-bottom: 48px;
+      scroll-margin-top: 80px;
+    }
+    .man-section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border, rgba(0,0,0,.08));
+    }
+    .man-section-icon {
+      font-size: 32px;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--blue-light, rgba(37,99,235,.1));
+      border-radius: 14px;
+      flex-shrink: 0;
+    }
+    .man-section-meta h2 { font-size: 22px; font-weight: 800; margin: 0 0 4px; color: var(--text); }
+    .man-section-meta p { font-size: 13px; color: var(--text-3, #9ca3af); margin: 0; }
+
+    /* ── Cards (description + steps) ── */
+    .man-card {
+      background: var(--bg, #fff);
+      border: 1px solid var(--border, rgba(0,0,0,.08));
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    [data-theme="dark"] .man-card { box-shadow: none; }
+    .man-card h3 { font-size: 14px; font-weight: 700; margin: 0 0 12px; color: var(--text-2, #6b7280); text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Step list ── */
+    .man-steps { list-style: none; padding: 0; margin: 0; }
+    .man-steps li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text, #1a2332);
+      border-bottom: 1px solid var(--border, rgba(0,0,0,.06));
+    }
+    .man-steps li:last-child { border-bottom: none; }
+    .man-step-num {
+      min-width: 24px;
+      height: 24px;
+      background: var(--blue, #2563eb);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Tips box ── */
+    .man-tip {
+      display: flex;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(37,99,235,.06), rgba(124,58,237,.04));
+      border: 1px solid rgba(37,99,235,.15);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-2, #6b7280);
+      margin-top: 14px;
+    }
+    .man-tip-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* ── Badge ── */
+    .man-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: var(--blue-light, rgba(37,99,235,.1));
+      color: var(--blue, #2563eb);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .man-badge.ai { background: rgba(124,58,237,.1); color: #7c3aed; }
+    .man-badge.pdf { background: rgba(220,38,38,.1); color: #dc2626; }
+    .man-badge.new { background: rgba(16,185,129,.1); color: #059669; }
+
+    /* ── Back to top ── */
+    .man-back-top {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-3, #9ca3af);
+      text-decoration: none;
+      margin-bottom: 32px;
+      transition: color .15s;
+    }
+    .man-back-top:hover { color: var(--blue, #2563eb); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .man-hero h1 { font-size: 24px; }
+      .man-toc-grid { grid-template-columns: 1fr 1fr; }
+      .man-card { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<script src="/static/js/shared-header.js"></script>
+
+<div class="man-wrap">
+
+  <!-- Hero -->
+  <div class="man-hero" id="top">
+    <span class="man-hero-icon">📖</span>
+    <h1>Manual do Sistema</h1>
+    <p>Guia completo de todos os módulos da plataforma de gestão municipal de Inajá</p>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="man-toc">
+    <h2>📋 Índice de Módulos</h2>
+    <div class="man-toc-grid">
+      <a href="#credores-fixos"><span class="man-toc-num">1</span>💼 Credores Fixos</a>
+      <a href="#gerador-empenho"><span class="man-toc-num">2</span>✍️ Gerador de Empenho</a>
+      <a href="#rpa"><span class="man-toc-num">3</span>🧾 RPA</a>
+      <a href="#auditor"><span class="man-toc-num">4</span>🔍 Auditor Fiscal</a>
+      <a href="#renomear"><span class="man-toc-num">5</span>🏷️ Renomeador IA</a>
+      <a href="#fornecimento"><span class="man-toc-num">6</span>🛒 Aquisições</a>
+      <a href="#tarefas"><span class="man-toc-num">7</span>📋 Tarefas Kanban</a>
+      <a href="#calendario"><span class="man-toc-num">8</span>📅 Calendário</a>
+      <a href="#cnpj"><span class="man-toc-num">9</span>🏢 Consulta CNPJ</a>
+      <a href="#extratos"><span class="man-toc-num">10</span>🏦 Extratos Bancários</a>
+      <a href="#visualizador"><span class="man-toc-num">11</span>👁 Visualizador</a>
+      <a href="#pdf"><span class="man-toc-num">12</span>📄 PDF Tools</a>
+      <a href="#tarifas"><span class="man-toc-num">13</span>💰 Tarifas Bancárias</a>
+      <a href="#despesa"><span class="man-toc-num">14</span>📊 Despesa Pública</a>
+      <a href="#adm"><span class="man-toc-num">15</span>⚙️ ADM</a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 1. CREDORES FIXOS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="credores-fixos">
+    <div class="man-section-header">
+      <div class="man-section-icon">💼</div>
+      <div class="man-section-meta">
+        <h2>Credores Fixos</h2>
+        <p>Gerenciamento de credores e empenhos mensais recorrentes</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        O módulo principal do sistema. Permite cadastrar e gerenciar credores fixos que recebem empenhos todos os meses.
+        Organiza os pagamentos por departamento (Administração, Saúde, Educação, Assistência Social) com controle de status (Pendente / Empenhado).
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Na tela inicial, clique em <strong>Novo Credor</strong> para cadastrar um credor fixo com nome, departamento, valor e descrição do objeto.</li>
+        <li><span class="man-step-num">2</span>Use os filtros de <strong>Departamento</strong> e <strong>Status</strong> para localizar credores específicos.</li>
+        <li><span class="man-step-num">3</span>Clique em um credor para expandi-lo e ver os empenhos mensais. Use o ícone de lápis para editar ou o ícone de lixeira para excluir.</li>
+        <li><span class="man-step-num">4</span>Marque empenhos como <strong>Empenhado</strong> clicando no botão de status ao lado do mês correspondente.</li>
+        <li><span class="man-step-num">5</span>Use <strong>Expandir Todos</strong> para ver todos os credores de uma vez e <strong>Imprimir Lote</strong> para gerar um PDF com todos os empenhos do mês.</li>
+        <li><span class="man-step-num">6</span>Navegue entre meses com as setas ← → no cabeçalho para visualizar o histórico de empenhos.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>Use a barra de pesquisa para encontrar credores rapidamente digitando parte do nome. Os resultados são filtrados em tempo real.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 2. GERADOR DE EMPENHO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="gerador-empenho">
+    <div class="man-section-header">
+      <div class="man-section-icon">✍️</div>
+      <div class="man-section-meta">
+        <h2>Gerador de Empenho <span class="man-badge ai">IA</span></h2>
+        <p>Criar textos de empenho em linguagem formal com inteligência artificial</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Usa IA (OpenRouter) para gerar automaticamente textos de descrição de empenho no padrão da administração pública. 
+        Aceita documentos (PDF, imagem) ou texto digitado como entrada e produz um texto pronto para uso.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Documentos → Texto de Empenho</strong>.</li>
+        <li><span class="man-step-num">2</span>Escolha o modo: <strong>Enviar Arquivo</strong> (PDF ou imagem de nota fiscal) ou <strong>Digitar Texto</strong> com a descrição da despesa.</li>
+        <li><span class="man-step-num">3</span>Preencha os campos de contexto (departamento, valor, fornecedor) conforme necessário.</li>
+        <li><span class="man-step-num">4</span>Clique em <strong>Gerar Texto de Empenho</strong> e aguarde a IA processar.</li>
+        <li><span class="man-step-num">5</span>Revise o texto gerado, copie-o ou baixe como arquivo de texto.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>Para melhores resultados, forneça o documento completo da nota fiscal. A IA extrai automaticamente fornecedor, valor e descrição dos serviços.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 3. RPA -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="rpa">
+    <div class="man-section-header">
+      <div class="man-section-icon">🧾</div>
+      <div class="man-section-meta">
+        <h2>RPA — Recibo de Pagamento Autônomo <span class="man-badge pdf">PDF</span></h2>
+        <p>Geração de recibos de pagamento para prestadores autônomos</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Módulo para criar Recibos de Pagamento Autônomo (RPA) em PDF com todos os campos obrigatórios:
+        dados do prestador, serviço realizado, valor bruto, deduções (INSS, ISS) e valor líquido a receber.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Documentos → RPA</strong>.</li>
+        <li><span class="man-step-num">2</span>Na aba <strong>Novo RPA</strong>, preencha os dados do prestador: nome, CPF, endereço e banco.</li>
+        <li><span class="man-step-num">3</span>Descreva o serviço prestado, informe o valor bruto e o período de referência.</li>
+        <li><span class="man-step-num">4</span>O sistema calcula automaticamente as deduções (INSS e ISS) e exibe o valor líquido.</li>
+        <li><span class="man-step-num">5</span>Clique em <strong>🖨️ Gerar PDF</strong> para baixar o recibo pronto para assinatura.</li>
+        <li><span class="man-step-num">6</span>Use <strong>💾 Salvar</strong> para arquivar no sistema e consultar depois na aba <strong>RPAs Salvos</strong>.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>Configure os dados da prefeitura (entidade, CNPJ, endereço) uma única vez na aba <strong>⚙️ Configurações</strong> para que sejam preenchidos automaticamente em todos os RPAs.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 4. AUDITOR FISCAL -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="auditor">
+    <div class="man-section-header">
+      <div class="man-section-icon">🔍</div>
+      <div class="man-section-meta">
+        <h2>Auditor Fiscal com IA <span class="man-badge ai">IA</span></h2>
+        <p>Análise automatizada de notas fiscais para detectar irregularidades</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Utiliza inteligência artificial para analisar notas fiscais (imagem ou PDF) e identificar possíveis 
+        irregularidades: valores divergentes, dados fiscais inválidos, inconsistências nos serviços declarados e sinais de adulteração.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Documentos → Auditor de NF</strong>.</li>
+        <li><span class="man-step-num">2</span>Clique em <strong>Selecionar Arquivo</strong> ou arraste a nota fiscal (PDF, JPG, PNG) para a área de upload.</li>
+        <li><span class="man-step-num">3</span>Uma pré-visualização do documento é exibida. Confirme que é o arquivo correto.</li>
+        <li><span class="man-step-num">4</span>Clique em <strong>Iniciar Auditoria</strong> e aguarde a análise da IA (geralmente 10–30 segundos).</li>
+        <li><span class="man-step-num">5</span>Leia o relatório gerado com o resultado (Aprovado / Suspeito / Reprovado) e as justificativas.</li>
+        <li><span class="man-step-num">6</span>Clique em <strong>Baixar Relatório PDF</strong> para arquivar o resultado da auditoria.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">⚠️</span>
+        <span>O resultado da IA é um auxílio à decisão, não substitui a análise humana. Sempre revisite os casos marcados como "Suspeito" com atenção especial antes de tomar providências.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 5. RENOMEADOR -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="renomear">
+    <div class="man-section-header">
+      <div class="man-section-icon">🏷️</div>
+      <div class="man-section-meta">
+        <h2>Renomeador de Documentos com IA <span class="man-badge ai">IA</span></h2>
+        <p>Renomear PDFs e imagens em lote usando inteligência artificial</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Analisa o conteúdo de PDFs, imagens e documentos Word e sugere nomes padronizados automaticamente. 
+        Ideal para organizar notas fiscais, contratos e extratos bancários com nomenclatura consistente.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Ferramentas → Renomear com IA</strong>.</li>
+        <li><span class="man-step-num">2</span>Arraste os arquivos para a área de upload ou clique em <strong>📂 Selecionar arquivos</strong>. São aceitos múltiplos arquivos de uma vez.</li>
+        <li><span class="man-step-num">3</span>Os arquivos aparecem na lista com status "Pendente". Clique em <strong>✨ Processar Todos</strong> para iniciar a análise em lote.</li>
+        <li><span class="man-step-num">4</span>A IA analisa cada arquivo e sugere um nome padronizado. Você pode editar o nome sugerido antes de confirmar.</li>
+        <li><span class="man-step-num">5</span>Clique em <strong>⬇️ Baixar Todos</strong> para baixar todos os arquivos renomeados de uma vez.</li>
+        <li><span class="man-step-num">6</span>Confira o <strong>🕐 Histórico</strong> para ver todas as renomeações realizadas anteriormente.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>O modelo de IA utilizado é exibido no painel. Para trocar o modelo, clique em "trocar" ao lado do nome do modelo ou acesse a área ADM.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 6. FORNECIMENTO / AQUISIÇÕES -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="fornecimento">
+    <div class="man-section-header">
+      <div class="man-section-icon">🛒</div>
+      <div class="man-section-meta">
+        <h2>Sistema de Aquisições <span class="man-badge pdf">PDF</span></h2>
+        <p>Solicitações de aquisição de materiais e serviços</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Módulo para criar e gerenciar solicitações de aquisição (compras) municipais com geração automática de PDF.
+        Suporta entrada individual por formulário ou importação em lote via arquivo de texto.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Financeiro → Aquisições</strong>.</li>
+        <li><span class="man-step-num">2</span>Na aba <strong>📝 Formulário</strong>, preencha o solicitante, empresa fornecedora e data.</li>
+        <li><span class="man-step-num">3</span>Clique em <strong>+ Adicionar Item</strong> para inserir cada produto/serviço com descrição, quantidade e valor unitário.</li>
+        <li><span class="man-step-num">4</span>A pré-visualização à direita é atualizada em tempo real conforme você preenche.</li>
+        <li><span class="man-step-num">5</span>Clique em <strong>📄 Exportar PDF</strong> para gerar o documento de solicitação.</li>
+        <li><span class="man-step-num">6</span>Para importação em lote, use a aba <strong>📦 Lote</strong> e faça upload de um arquivo .txt no formato indicado.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>Baixe o template de lote clicando em <strong>📥 Baixar Template</strong> para ver o formato correto antes de preparar seu arquivo de importação.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 7. TAREFAS KANBAN -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="tarefas">
+    <div class="man-section-header">
+      <div class="man-section-icon">📋</div>
+      <div class="man-section-meta">
+        <h2>Tarefas · Kanban <span class="man-badge new">Novo</span></h2>
+        <p>Gestão de tarefas com quadro visual arrastar-e-soltar</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Quadro Kanban para organizar as atividades da equipe nas colunas: <strong>A Fazer</strong>, <strong>Em Progresso</strong> e <strong>Concluído</strong>.
+        Os dados são salvos no servidor e ficam disponíveis para toda a equipe.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Ferramentas → Tarefas Kanban</strong>.</li>
+        <li><span class="man-step-num">2</span>Clique em <strong>➕ Nova Tarefa</strong> para abrir o modal de criação.</li>
+        <li><span class="man-step-num">3</span>Preencha o título (obrigatório), descrição, prioridade (Baixa, Média, Alta) e responsável.</li>
+        <li><span class="man-step-num">4</span>A tarefa criada aparece na coluna <strong>A Fazer</strong>. Arraste-a para mover entre colunas.</li>
+        <li><span class="man-step-num">5</span>Clique no ícone de lápis em qualquer tarefa para editar seus detalhes.</li>
+        <li><span class="man-step-num">6</span>Clique no ícone de lixeira para excluir uma tarefa (uma confirmação será solicitada).</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>Os contadores no topo (A Fazer / Em Progresso / Concluídas) são atualizados automaticamente conforme você move as tarefas.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 8. CALENDÁRIO -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="calendario">
+    <div class="man-section-header">
+      <div class="man-section-icon">📅</div>
+      <div class="man-section-meta">
+        <h2>Calendário Municipal</h2>
+        <p>Agenda de pagamentos e eventos da prefeitura</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Calendário mensal para registro e acompanhamento de pagamentos programados, vencimentos e eventos importantes.
+        Cada dia pode ter múltiplos eventos com cores e categorias diferentes.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Ferramentas → Calendário</strong>.</li>
+        <li><span class="man-step-num">2</span>Navegue entre os meses usando as setas ← →.</li>
+        <li><span class="man-step-num">3</span>Clique em um dia para adicionar um evento. Informe o título, hora e categoria.</li>
+        <li><span class="man-step-num">4</span>Eventos existentes são exibidos diretamente no dia correspondente com indicadores coloridos.</li>
+        <li><span class="man-step-num">5</span>Clique em um evento para editar ou excluir.</li>
+      </ol>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 9. CNPJ -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="cnpj">
+    <div class="man-section-header">
+      <div class="man-section-icon">🏢</div>
+      <div class="man-section-meta">
+        <h2>Consulta CNPJ</h2>
+        <p>Buscar dados cadastrais de empresas pela Receita Federal</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Consulta dados cadastrais completos de empresas pelo CNPJ diretamente da Receita Federal (via CNPJá / ReceitaWS).
+        Exibe razão social, endereço, atividades, sócios, situação cadastral e muito mais.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Ferramentas → Consulta CNPJ</strong>.</li>
+        <li><span class="man-step-num">2</span>Digite o CNPJ no campo (apenas números ou formatado 00.000.000/0000-00).</li>
+        <li><span class="man-step-num">3</span>Clique em <strong>Buscar</strong> ou pressione Enter.</li>
+        <li><span class="man-step-num">4</span>Os dados da empresa são exibidos em cartões organizados: dados gerais, endereço, atividades e sócios.</li>
+        <li><span class="man-step-num">5</span>Clique em <strong>Imprimir</strong> para gerar uma versão formatada da consulta.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">⚠️</span>
+        <span>O limite de consultas gratuitas é de 5 por minuto. Para uso intensivo, configure uma chave da API CNPJá na área ADM.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 10. EXTRATOS BANCÁRIOS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="extratos">
+    <div class="man-section-header">
+      <div class="man-section-icon">🏦</div>
+      <div class="man-section-meta">
+        <h2>Extratos Bancários <span class="man-badge ai">IA</span></h2>
+        <p>Análise e organização de extratos bancários com inteligência artificial</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Módulo para importar, organizar e analisar extratos bancários da prefeitura. 
+        Usa IA para categorizar automaticamente as transações e identificar padrões de gastos e receitas.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Financeiro → Extratos Bancários</strong>.</li>
+        <li><span class="man-step-num">2</span>Faça upload do arquivo de extrato (PDF ou OFX exportado do banco).</li>
+        <li><span class="man-step-num">3</span>O sistema processa o arquivo e exibe as transações em uma tabela organizada.</li>
+        <li><span class="man-step-num">4</span>Use os filtros de período e categoria para analisar os dados.</li>
+        <li><span class="man-step-num">5</span>Exporte os dados processados para planilha se necessário.</li>
+      </ol>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 11. VISUALIZADOR -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="visualizador">
+    <div class="man-section-header">
+      <div class="man-section-icon">👁️</div>
+      <div class="man-section-meta">
+        <h2>Visualizador de Empenhos</h2>
+        <p>Visualizar, filtrar e exportar empenhos registrados no sistema</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Relatório interativo de todos os empenhos cadastrados no sistema. Permite filtrar por departamento, 
+        período e status, além de exportar os dados para Excel ou imprimir.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Documentos → Rel. de Empenhos</strong>.</li>
+        <li><span class="man-step-num">2</span>Use os filtros de período (mês/ano) e departamento para segmentar a visão.</li>
+        <li><span class="man-step-num">3</span>A tabela exibe todos os empenhos com credor, valor, status e data.</li>
+        <li><span class="man-step-num">4</span>Clique nos cabeçalhos das colunas para ordenar os resultados.</li>
+        <li><span class="man-step-num">5</span>Use os botões de exportação para gerar Excel ou imprimir o relatório.</li>
+      </ol>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 12. PDF TOOLS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="pdf">
+    <div class="man-section-header">
+      <div class="man-section-icon">📄</div>
+      <div class="man-section-meta">
+        <h2>PDF Tools <span class="man-badge pdf">PDF</span></h2>
+        <p>Mesclar, dividir, proteger e anotar documentos PDF</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Suite completa de ferramentas para manipulação de PDFs diretamente no navegador: 
+        visualizador com zoom, anotações de texto, desenho à mão, assinatura digital, fusão de arquivos, divisão de páginas e proteção com senha.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Documentos → Editor de PDF</strong>.</li>
+        <li><span class="man-step-num">2</span>Arraste um PDF para a área de visualização ou clique para selecionar o arquivo.</li>
+        <li><span class="man-step-num">3</span>Use a barra de ferramentas lateral para escolher a ferramenta: Texto, Nota, Desenho ou Assinatura.</li>
+        <li><span class="man-step-num">4</span>Para <strong>Mesclar</strong>: clique em 🔗 Mesclar, faça upload de vários PDFs e baixe o arquivo unificado.</li>
+        <li><span class="man-step-num">5</span>Para <strong>Dividir</strong>: clique em ✂️ Dividir, informe os intervalos de páginas e baixe os segmentos.</li>
+        <li><span class="man-step-num">6</span>Para <strong>Proteger</strong>: clique em 🔒 Proteger, defina uma senha e baixe o PDF criptografado.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">💡</span>
+        <span>Todo o processamento de PDF acontece localmente no seu navegador — nenhum arquivo é enviado para servidores externos.</span>
+      </div>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 13. TARIFAS BANCÁRIAS -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="tarifas">
+    <div class="man-section-header">
+      <div class="man-section-icon">💰</div>
+      <div class="man-section-meta">
+        <h2>Analisador Financeiro</h2>
+        <p>Consulta e análise de tarifas e encargos bancários</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Módulo para analisar e acompanhar tarifas bancárias cobradas nas contas da prefeitura,
+        identificar cobranças indevidas e comparar com os limites permitidos pela regulamentação do Banco Central.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Financeiro → Analisador Financeiro</strong>.</li>
+        <li><span class="man-step-num">2</span>Importe o extrato de tarifas fornecido pelo banco.</li>
+        <li><span class="man-step-num">3</span>O sistema categoriza cada tarifa e verifica se está dentro dos limites regulatórios.</li>
+        <li><span class="man-step-num">4</span>Itens marcados em vermelho indicam possíveis cobranças irregulares que merecem contestação.</li>
+        <li><span class="man-step-num">5</span>Gere um relatório para apresentar ao banco ou ao setor de controle interno.</li>
+      </ol>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 14. DESPESA PÚBLICA -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="despesa">
+    <div class="man-section-header">
+      <div class="man-section-icon">📊</div>
+      <div class="man-section-meta">
+        <h2>Despesa Pública</h2>
+        <p>Importar e analisar despesas do portal da transparência municipal</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Dois módulos complementares: <strong>Visor de Despesas</strong> (consulta em tempo real do portal da transparência)
+        e <strong>Relatórios de Despesa</strong> (comparação entre períodos e histórico de gastos por categoria).
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar — Visor de Despesas</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Financeiro → Despesa Pública</strong>.</li>
+        <li><span class="man-step-num">2</span>Selecione o período (mês/ano) e o órgão/unidade orçamentária.</li>
+        <li><span class="man-step-num">3</span>Os dados são carregados automaticamente e exibidos em tabela detalhada.</li>
+        <li><span class="man-step-num">4</span>Use os gráficos para visualizar a distribuição das despesas por categoria.</li>
+      </ol>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar — Relatórios de Despesa</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Acesse pelo menu <strong>Financeiro → Relatórios de Despesa</strong>.</li>
+        <li><span class="man-step-num">2</span>Escolha dois períodos para comparação lado a lado.</li>
+        <li><span class="man-step-num">3</span>O sistema exibe variações percentuais e destaca aumentos ou reduções significativas.</li>
+        <li><span class="man-step-num">4</span>Exporte o comparativo para PDF ou Excel.</li>
+      </ol>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- 15. ADM -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="man-section" id="adm">
+    <div class="man-section-header">
+      <div class="man-section-icon">⚙️</div>
+      <div class="man-section-meta">
+        <h2>ADM — Área Administrativa</h2>
+        <p>Configurar chaves de API e parâmetros do sistema</p>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📝 O que é</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        Painel restrito por senha para configurar as integrações do sistema:
+        chave da API de inteligência artificial (OpenRouter) e chave da API de consulta de CNPJ.
+        Também permite selecionar o modelo de IA a ser utilizado em todos os módulos.
+      </p>
+    </div>
+
+    <div class="man-card">
+      <h3>🚀 Como usar</h3>
+      <ol class="man-steps">
+        <li><span class="man-step-num">1</span>Clique em <strong>ADM</strong> na barra de navegação principal.</li>
+        <li><span class="man-step-num">2</span>Digite a senha de acesso administrativo quando solicitado.</li>
+        <li><span class="man-step-num">3</span>Na seção <strong>OpenRouter (IA)</strong>, cole sua chave de API no formato <code>sk-or-v1-...</code>.</li>
+        <li><span class="man-step-num">4</span>Para escolher o modelo de IA, clique em <strong>Ver Modelos</strong> e selecione o desejado na lista. Modelos gratuitos são priorizados.</li>
+        <li><span class="man-step-num">5</span>Clique em <strong>Testar Chave</strong> para confirmar que a API está funcionando corretamente.</li>
+        <li><span class="man-step-num">6</span>Na seção <strong>CNPJá</strong>, insira sua chave de API para aumentar o limite de consultas.</li>
+        <li><span class="man-step-num">7</span>Clique em <strong>Salvar</strong> em cada seção para gravar as configurações no banco de dados do servidor.</li>
+      </ol>
+      <div class="man-tip">
+        <span class="man-tip-icon">🔑</span>
+        <span>As chaves de API são salvas de forma segura no servidor e sincronizadas automaticamente com o navegador.
+        Você pode obter uma chave gratuita do OpenRouter em <strong>openrouter.ai</strong> — basta criar uma conta.</span>
+      </div>
+    </div>
+
+    <div class="man-card">
+      <h3>📊 Logs do Sistema</h3>
+      <p style="font-size:14px;color:var(--text);line-height:1.6;margin:0;">
+        O histórico de todas as alterações feitas no sistema pode ser consultado clicando no ícone de três pontos (⋯) 
+        no cabeçalho e selecionando <strong>Logs</strong>. Cada entrada registra a operação, o credor afetado, o valor e a data/hora.
+      </p>
+    </div>
+  </section>
+  <a href="#top" class="man-back-top">↑ Voltar ao topo</a>
+
+  <!-- Footer info -->
+  <div style="text-align:center;padding:32px 0 8px;font-size:12px;color:var(--text-3);">
+    Sistema de Gestão Municipal · Prefeitura de Inajá · Desenvolvido por <strong style="color:var(--text-2)">Aleksandro Alves</strong>
+  </div>
+
+</div>
+
+</body>
+</html>

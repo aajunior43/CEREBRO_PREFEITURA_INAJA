@@ -733,7 +733,7 @@
           <polyline points="17 8 12 3 7 8" />
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg></div>
-      <p class="ren-drop-title">Arraste arquivos aqui</p>
+      <p class="ren-drop-title" data-tooltip="Arraste PDFs ou imagens aqui">Arraste arquivos aqui</p>
       <p class="ren-drop-sub">PDF · Word (.docx) · Imagens (JPEG, PNG, WebP) · Múltiplos arquivos</p>
       <span class="ren-drop-btn">📂 Selecionar arquivos</span>
     </div>
@@ -749,7 +749,7 @@
     </div>
 
     <div class="ren-toolbar" id="toolbar" style="display:none">
-      <button class="ren-btn ren-btn-primary" id="btn-all" onclick="processAll()">✨ Processar Todos</button>
+      <button class="ren-btn ren-btn-primary" id="btn-all" onclick="processAll()" data-tooltip="Renomear arquivos automaticamente com IA">✨ Processar Todos</button>
       <button class="ren-btn ren-btn-secondary" id="btn-dl-all" onclick="downloadAll()">⬇️ Baixar Todos</button>
       <button class="ren-btn ren-btn-secondary" onclick="openHistory()">🕐 Histórico</button>
       <div class="ren-model-info">Modelo:&nbsp;<span class="ren-model-badge" id="model-badge">—</span><a

@@ -71,6 +71,7 @@
       { href: '/pages/renomear.html',   name: 'Renomear com IA',  desc: 'Renomear PDFs e extratos' },
       { href: '/pages/tarefas.html',    name: 'Tarefas Kanban',   desc: 'Gerenciar atividades' },
       { href: '/pages/calendario.html', name: 'Calendário',       desc: 'Calendário de pagamentos' },
+      { href: '/pages/manual.html',     name: '📖 Manual',        desc: 'Guia completo do sistema' },
     ],
   };
 
@@ -223,6 +224,55 @@
           Desenvolvido por <strong style="color:var(--text-2,#6b7280)">Aleksandro Alves</strong>
         </footer>`
       );
+    }
+
+    // Tooltip system
+    if (!document.getElementById('shd-tooltip-style')) {
+      const style = document.createElement('style');
+      style.id = 'shd-tooltip-style';
+      style.textContent = `
+        [data-tooltip] { position: relative; }
+        [data-tooltip]::after {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%);
+          background: #1e2a38;
+          color: #fff;
+          padding: 6px 10px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 500;
+          white-space: nowrap;
+          max-width: 220px;
+          white-space: pre-wrap;
+          text-align: center;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity .15s;
+          z-index: 9999;
+          box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        [data-tooltip]::before {
+          content: '';
+          position: absolute;
+          bottom: calc(100% + 2px);
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: #1e2a38;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity .15s;
+          z-index: 9999;
+        }
+        [data-tooltip]:hover::after,
+        [data-tooltip]:hover::before { opacity: 1; }
+        [data-theme="dark"] [data-tooltip]::after { background: #e2e8f0; color: #1e2a38; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+        [data-theme="dark"] [data-tooltip]::before { border-top-color: #e2e8f0; }
+      `;
+      document.head.appendChild(style);
     }
 
     // Sincroniza chaves do banco → localStorage (garante que módulos de IA funcionem mesmo após limpeza de cache)
