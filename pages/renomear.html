@@ -819,30 +819,35 @@
 
     // ── PROMPT ─────────────────────────────────────────────────────────────────
     const RENAME_PROMPT = `Você é um assistente especializado em organização de documentos da administração pública brasileira.
-Analise o conteúdo do documento [FILETYPE] abaixo e gere um nome de arquivo curto, descritivo e padronizado.
+Analise o texto abaixo e gere um nome de arquivo descritivo e padronizado.
 
-REGRAS OBRIGATÓRIAS:
+REGRAS ABSOLUTAS:
+- Responda SOMENTE com o nome do arquivo, NADA MAIS
 - Use APENAS letras MAIÚSCULAS, números e underscore (_)
 - SEM espaços, SEM acentos, SEM caracteres especiais, SEM extensão
-- Máximo 80 caracteres
-- Formato preferencial: TIPO_ENTIDADE_REFERENCIA_DATA
+- Entre 10 e 80 caracteres
+- Formato: TIPO_ENTIDADE_REFERENCIA_DATA
 
-Tipos comuns:
-  NOTA_FISCAL, RECIBO, COMPROVANTE_PAGAMENTO, EXTRATO, CONTRATO, EMPENHO,
-  LIQUIDACAO, ORDEM_PAGAMENTO, CERTIDAO, ATA, RELATORIO, DECLARACAO,
-  OFICIO, MEMORANDO, PORTARIA, DECRETO, RESOLUCAO
+Tipos comuns: NOTA_FISCAL, RECIBO, COMPROVANTE_PAGAMENTO, EXTRATO, CONTRATO, EMPENHO,
+LIQUIDACAO, ORDEM_PAGAMENTO, CERTIDAO, ATA, RELATORIO, DECLARACAO, OFICIO, MEMORANDO,
+PORTARIA, DECRETO, RESOLUCAO, SOLICITACAO_COMPRA, TERMO_ADITIVO
 
-Exemplos:
+Exemplos de resposta correta:
   NOTA_FISCAL_EMPRESA_ABC_001234_20240315
   EMPENHO_2024_001234_FORNECEDOR_XYZ
   CONTRATO_PREFEITURA_INAJA_SERVICOS_TI_2024
   EXTRATO_BB_CONTA_0001_JANEIRO_2024
-  CERTIDAO_NEGATIVA_DEBITOS_JOAO_SILVA_20240315
+  SOLICITACAO_COMPRA_MATERIAL_ESCRITORIO_2024
 
-RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
+TEXTO DO DOCUMENTO:
+---
+[CONTEUDO]
+---
 
-    function getActivePrompt(fileType) {
-      return RENAME_PROMPT.replace(/\[FILETYPE\]/g, fileType);
+NOME DO ARQUIVO (somente o nome, sem explicação):`;
+
+    function getActivePrompt(fileType, content) {
+      return RENAME_PROMPT.replace('[CONTEUDO]', content || `Tipo: ${fileType}`);
     }
 
     // ── STATE ──────────────────────────────────────────────────────────────────
@@ -1031,25 +1036,27 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
       const data = await res.json();
       if (!data.choices?.length) throw new Error('API não retornou resposta');
       const raw = data.choices[0].message.content.trim();
-      // Tenta extrair o nome do arquivo da resposta (AI às vezes retorna explicações)
       return extractFileName(raw);
     }
 
-    // Extrai o nome do arquivo de uma resposta de texto livre da IA
+    // Extrai o nome do arquivo de uma resposta livre da IA
     function extractFileName(raw) {
       if (!raw) return '';
-      // 1. Remove blocos markdown (```NOME```)
-      const mdMatch = raw.match(/```[^\n]*\n?([A-Z0-9_\-]{3,80})\n?```/i);
-      if (mdMatch) return mdMatch[1].toUpperCase();
-      // 2. Procura a sequência mais longa de caracteres válidos para nome de arquivo
-      const candidates = raw.toUpperCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^A-Z0-9_\-\n ]/g, ' ')
-        .split(/[\n\r]/)
-        .map(l => l.trim().replace(/\s+/g, '_').replace(/_{2,}/g, '_').replace(/^_|_$/g, ''))
-        .filter(l => l.length >= 5 && /[A-Z]/.test(l))
-        .sort((a, b) => b.length - a.length);
-      return candidates[0] || raw.replace(/[^A-Z0-9_\-]/gi, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').toUpperCase().substring(0, 80);
+      const up = raw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      // 1. Se a resposta inteira (sem espaços) já é um nome válido, usa direto
+      const direct = up.replace(/\s+/g, '_').replace(/[^A-Z0-9_\-]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      if (direct.length >= 5 && direct.length <= 80 && !direct.includes(' ') && direct === up.replace(/\s/g,'').replace(/[^A-Z0-9_\-]/g,'')) {
+        return direct.substring(0, 80);
+      }
+      // 2. Procura padrões de nome de arquivo (UPPERCASE_COM_UNDERSCORES) na resposta
+      const tokens = up.match(/[A-Z][A-Z0-9_\-]{4,79}/g) || [];
+      // Prefere tokens que contenham palavras-chave de documentos municipais
+      const keywords = ['EMPENHO','NOTA','FISCAL','CONTRATO','EXTRATO','RECIBO','CERTIDAO','LIQUIDACAO','RELATORIO','PORTARIA','DECRETO','OFICIO','ATA','COMPROVANTE','ORDEM','PAGAMENTO','SOLICITACAO'];
+      const withKw = tokens.filter(t => keywords.some(k => t.includes(k)));
+      if (withKw.length) return withKw.sort((a,b) => b.length - a.length)[0].substring(0, 80);
+      // 3. Pega o token mais longo que pareça nome de arquivo
+      tokens.sort((a,b) => b.length - a.length);
+      return (tokens[0] || '').substring(0, 80);
     }
 
     // ── CLEAN NAME ─────────────────────────────────────────────────────────────
@@ -1085,30 +1092,22 @@ RESPONDA APENAS COM O NOME DO ARQUIVO, SEM EXPLICAÇÕES.`;
         if (item.type === 'PDF') {
           let text = await extractText(item.file);
           if (text.length < 50) {
-            // PDF escaneado — usar OCR na primeira página
             item.error = 'OCR em andamento…'; renderAll();
             try {
               const canvas = await pdfFirstPageCanvas(item.file);
               text = await ocrCanvas(canvas);
             } catch (e) { text = ''; }
           }
-          if (text.length < 20) {
-            msgContent = getActivePrompt('PDF') + `\n\nNome original: ${item.origName}\n(PDF sem texto legível)`;
-          } else {
-            msgContent = getActivePrompt('PDF') + '\n\nCONTEÚDO:\n' + text.substring(0, 4000);
-          }
+          const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (sem texto legível)`;
+          msgContent = getActivePrompt('PDF', content);
         } else if (item.type === 'Imagem') {
           item.error = 'OCR em andamento…'; renderAll();
           let text = '';
           try { text = await ocrFile(item.file); } catch (e) { text = ''; }
-          if (text.length < 20) {
-            msgContent = getActivePrompt('Imagem') + `\n\nNome original: ${item.origName}\n(Imagem sem texto legível)`;
-          } else {
-            msgContent = getActivePrompt('Imagem') + '\n\nTEXTO EXTRAÍDO POR OCR:\n' + text.substring(0, 4000);
-          }
+          const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (imagem sem texto)`;
+          msgContent = getActivePrompt('Imagem', content);
         } else {
-          // Word ou outro — usa nome como dica
-          msgContent = getActivePrompt('Word') + `\n\nNome original do arquivo: ${item.origName}`;
+          msgContent = getActivePrompt('Word', `Nome original: ${item.origName}`);
         }
         item.error = '';
         let retryCount = 0;
