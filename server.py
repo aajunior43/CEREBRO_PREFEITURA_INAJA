@@ -238,13 +238,18 @@ def row_to_dict(row):
 
 @app.route('/')
 def index():
-    return send_file(os.path.join(BASE_DIR, 'index.html'))
+    resp = send_file(os.path.join(BASE_DIR, 'index.html'))
+    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return resp
 
 @app.route('/<path:filename>')
 def static_files(filename):
     if filename.startswith('api/'):
         return jsonify({'error': 'Rota não encontrada: ' + filename}), 404
-    return send_from_directory(BASE_DIR, filename)
+    resp = send_from_directory(BASE_DIR, filename)
+    if filename.endswith('.html'):
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return resp
 
 @app.errorhandler(404)
 def not_found(e):
