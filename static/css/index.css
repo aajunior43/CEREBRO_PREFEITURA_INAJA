@@ -1146,6 +1146,11 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color .15s;
+}
+.card-name:hover {
+  color: var(--blue);
+  text-decoration: underline dotted;
 }
 
 .empenho-card.done .card-name {

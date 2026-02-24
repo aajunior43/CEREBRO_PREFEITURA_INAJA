@@ -151,7 +151,7 @@ function buildCard(c, done, idx) {
   div.innerHTML = `
     <div class="card-row">
       <div class="col-name">
-        <span class="card-name">${c.nome || '—'}${obs ? `<span class="badge-obs">${obs}</span>` : ''}</span>
+        <span class="card-name" title="Clique para copiar" style="cursor:pointer;">${c.nome || '—'}${obs ? `<span class="badge-obs">${obs}</span>` : ''}</span>
         <span class="card-desc">${c.descricao || '—'}</span>
       </div>
       <div class="col-dept">
@@ -202,6 +202,30 @@ function buildCard(c, done, idx) {
   div.querySelector('.btn-print').addEventListener('click', e => {
     e.stopPropagation();
     printCredor(c);
+  });
+
+  div.querySelector('.card-name').addEventListener('click', e => {
+    e.stopPropagation();
+    const nome = c.nome || '';
+    navigator.clipboard.writeText(nome).then(() => {
+      const el = e.currentTarget;
+      const orig = el.style.color;
+      el.style.color = 'var(--green-dark, #16a34a)';
+      const prevTitle = el.title;
+      el.title = 'Copiado!';
+      setTimeout(() => { el.style.color = orig; el.title = prevTitle; }, 1200);
+      showToast(`"${nome}" copiado!`, 'success');
+    }).catch(() => {
+      // Fallback para navegadores sem suporte
+      const ta = document.createElement('textarea');
+      ta.value = nome;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast(`"${nome}" copiado!`, 'success');
+    });
   });
 
   return div;
