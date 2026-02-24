@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PDF Master – Prefeitura de Inajá</title>
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/index.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
@@ -36,6 +37,7 @@
 
     /* Viewer */
     .pdf-viewer-wrap { flex: 1; position: relative; overflow: hidden; background: #d0d4db; }
+    [data-theme="dark"] .pdf-viewer-wrap { background: #0d0f12; }
     .pdf-viewer-inner { position: absolute; inset: 0; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px; }
     .pdf-frame-wrap { position: relative; display: inline-block; box-shadow: 0 6px 32px rgba(0,0,0,.3); flex-shrink: 0; }
     .pdf-iframe { display: block; border: none; background: white; }
@@ -54,7 +56,7 @@
     .ann-del:hover { color: var(--red,#e11d48); }
 
     /* Upload screen */
-    .pdf-upload-screen { min-height: calc(100vh - 64px); display: flex; align-items: center; justify-content: center; padding: 32px 20px; background: var(--bg-2,#f4f5f7); }
+    .pdf-upload-screen { min-height: calc(100vh - 64px); display: flex; align-items: center; justify-content: center; padding: 32px 20px; background: var(--bg); }
     .pdf-drop-zone { border: 2px dashed rgba(79,128,200,.4); border-radius: var(--radius); padding: 40px 32px; text-align: center; cursor: pointer; transition: all .2s; max-width: 580px; width: 100%; background: var(--bg); box-shadow: var(--neo); }
     .pdf-drop-zone:hover, .pdf-drop-zone.drag-over { border-color: var(--blue); background: rgba(79,128,200,.04); box-shadow: var(--neo-sm); }
     .pdf-features { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 24px; }
