@@ -408,24 +408,11 @@
   <script>
   'use strict';
 
-  // ── Theme toggle (reuse from main project) ──────────────────
+  // ── Theme (handled by shared-header.js) ─────────────────────
   (function() {
     const saved = localStorage.getItem('theme') || 'light';
     if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
-  document.getElementById('dropdown-toggle').addEventListener('click', () => {
-    document.getElementById('dropdown-menu').classList.toggle('open');
-  });
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.dropdown')) document.getElementById('dropdown-menu').classList.remove('open');
-  });
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    document.querySelector('.theme-label').textContent = isDark ? 'Tema Escuro' : 'Tema Claro';
-    document.getElementById('dropdown-menu').classList.remove('open');
-  });
 
   // ── Constants ───────────────────────────────────────────────
   const MESES = ['janeiro','fevereiro','março','abril','maio','junho',
