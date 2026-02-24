@@ -842,7 +842,7 @@
     const saved = localStorage.getItem('theme') || 'light';
     if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    try { if (typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } catch(e) {}
 
     // ── CACHE ──────────────────────────────────────────────────────────────────
     const aiCache = new Map(); // key: name+size+templateId → suggestedName

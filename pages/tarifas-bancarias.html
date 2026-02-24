@@ -217,32 +217,111 @@
     .result-wrap {
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 20px;
       animation: fadeIn 0.4s ease;
+      width: 100%;
     }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Destaque total tarifas */
+    .result-highlight {
+      background: var(--bg);
+      box-shadow: var(--neo-in);
+      border-radius: var(--radius-lg);
+      padding: 24px 32px;
+      text-align: center;
+    }
     .result-label {
       font-size: 11px;
       font-weight: 700;
       color: var(--text-3);
       text-transform: uppercase;
       letter-spacing: 1px;
-    }
-    .result-display {
-      background: var(--bg);
-      box-shadow: var(--neo-in);
-      border-radius: var(--radius-lg);
-      padding: 28px 40px;
-      text-align: center;
-      width: 100%;
+      margin-bottom: 8px;
     }
     .result-value {
       font-size: 42px;
       font-weight: 800;
-      color: var(--text);
+      color: var(--red, #c74a4a);
       letter-spacing: -1px;
     }
+
+    /* Grid de cards resumo */
+    .res-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 560px) { .res-grid { grid-template-columns: 1fr 1fr; } }
+    .res-card {
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .res-card-icon { font-size: 22px; margin-bottom: 4px; }
+    .res-card-val { font-size: 18px; font-weight: 800; color: var(--text); }
+    .res-card-val.green { color: var(--green); }
+    .res-card-val.red { color: var(--red, #c74a4a); }
+    .res-card-val.blue { color: var(--blue); }
+    .res-card-lbl { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 3px; }
+
+    /* Seção tarifas detalhadas */
+    .res-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 10px;
+    }
+    .res-section {
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .fee-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(0,0,0,.05);
+      font-size: 13px;
+    }
+    [data-theme="dark"] .fee-item { border-bottom-color: rgba(255,255,255,.05); }
+    .fee-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .fee-name { color: var(--text-2); font-weight: 500; }
+    .fee-val { font-weight: 700; color: var(--red, #c74a4a); white-space: nowrap; }
+
+    /* Alertas */
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 12.5px;
+      color: var(--text-2);
+      border-bottom: 1px solid rgba(0,0,0,.05);
+      line-height: 1.4;
+    }
+    [data-theme="dark"] .alert-item { border-bottom-color: rgba(255,255,255,.05); }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange, #d97c3a); flex-shrink: 0; margin-top: 4px; }
+
+    /* Resumo texto */
+    .res-resumo {
+      background: var(--bg);
+      box-shadow: var(--neo-in-sm);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* Ações */
     .result-actions {
       display: flex;
       gap: 12px;
@@ -381,10 +460,72 @@
 
       <!-- Result -->
       <div class="result-wrap" id="result-section" style="display:none;">
-        <div class="result-label">Total de Tarifas Identificadas</div>
-        <div class="result-display">
+
+        <!-- Total tarifas em destaque -->
+        <div class="result-highlight">
+          <div class="result-label">⚠️ Total de Tarifas e Encargos Identificados</div>
           <div class="result-value" id="result-value">R$ 0,00</div>
         </div>
+
+        <!-- Cards resumo financeiro -->
+        <div class="res-grid" id="res-grid" style="display:none;">
+          <div class="res-card">
+            <div class="res-card-icon">📈</div>
+            <div class="res-card-val green" id="res-creditos">—</div>
+            <div class="res-card-lbl">Total Créditos</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">📉</div>
+            <div class="res-card-val red" id="res-debitos">—</div>
+            <div class="res-card-lbl">Total Débitos</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">💰</div>
+            <div class="res-card-val blue" id="res-saldo">—</div>
+            <div class="res-card-lbl">Saldo do Período</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">🔢</div>
+            <div class="res-card-val" id="res-lancamentos">—</div>
+            <div class="res-card-lbl">Lançamentos</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">🏦</div>
+            <div class="res-card-val red" id="res-taxa-pct">—</div>
+            <div class="res-card-lbl">% em Tarifas</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">📋</div>
+            <div class="res-card-val" id="res-qtd-tarifas">—</div>
+            <div class="res-card-lbl">Tipos de Tarifas</div>
+          </div>
+        </div>
+
+        <!-- Detalhamento das tarifas -->
+        <div id="res-fees-section" style="display:none;">
+          <div class="res-section-title">📊 Detalhamento das Tarifas</div>
+          <div class="res-section" id="res-fees-list"></div>
+        </div>
+
+        <!-- Maiores débitos -->
+        <div id="res-debitos-section" style="display:none;">
+          <div class="res-section-title">💸 Maiores Débitos do Período</div>
+          <div class="res-section" id="res-debitos-list"></div>
+        </div>
+
+        <!-- Alertas -->
+        <div id="res-alertas-section" style="display:none;">
+          <div class="res-section-title">🔔 Alertas e Observações</div>
+          <div class="res-section" id="res-alertas-list"></div>
+        </div>
+
+        <!-- Resumo textual da IA -->
+        <div id="res-resumo-section" style="display:none;">
+          <div class="res-section-title">🤖 Análise da IA</div>
+          <div class="res-resumo" id="res-resumo-txt"></div>
+        </div>
+
+        <!-- Ações -->
         <div class="result-actions">
           <button class="btn-action" id="btn-reset">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6"/><path d="M3 8A9 9 0 1 0 5.5 4.9"/></svg>
@@ -392,7 +533,11 @@
           </button>
           <button class="btn-action" id="btn-copy">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-            Copiar Valor
+            Copiar Total
+          </button>
+          <button class="btn-action" id="btn-export">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+            Exportar Relatório
           </button>
         </div>
       </div>
@@ -461,25 +606,34 @@
   }
 
   // ── OpenRouter API ───────────────────────────────────────────────
-  async function summarizeBankFees(text) {
+  async function analyzeBankStatement(text) {
     const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
     if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
 
-    const PROMPT = `Você é um assistente financeiro especialista em analisar extratos bancários brasileiros.
-Sua única tarefa é analisar o texto do extrato bancário a seguir, identificar TODAS as cobranças que são tarifas, taxas, juros, encargos, IOF, ou qualquer outro tipo de custo cobrado pelo banco.
-Some os valores monetários de todas essas cobranças que encontrar.
-Sua resposta DEVE SER ESTRITAMENTE um objeto JSON com uma única chave: "total_tarifas". O valor dessa chave deve ser o número correspondente à soma total, usando ponto como separador decimal.
-Não inclua nenhuma outra palavra, explicação, formatação ou moeda. Apenas o JSON.
+    const PROMPT = `Você é um especialista em finanças públicas municipais do Brasil. Analise o extrato bancário abaixo e retorne UM ÚNICO objeto JSON com EXATAMENTE estas chaves (sem texto extra):
 
-Exemplo de resposta esperada:
-{"total_tarifas": 152.78}
+{
+  "total_tarifas": <número: soma de todas as tarifas/taxas/IOF/encargos do banco>,
+  "categorias_tarifas": [{"nome": "...", "valor": <número>}, ...],
+  "total_creditos": <número: soma de todos os créditos/depósitos/entradas>,
+  "total_debitos": <número: soma de todos os débitos/pagamentos/saídas>,
+  "saldo_periodo": <número: diferença créditos - débitos, pode ser negativo>,
+  "num_lancamentos": <inteiro: total de lançamentos no extrato>,
+  "maiores_debitos": [{"descricao": "...", "valor": <número>}, ...],
+  "alertas": ["alerta 1", "alerta 2", ...],
+  "resumo": "Análise resumida do extrato em 2-3 frases."
+}
 
-Se nenhuma tarifa for encontrada, retorne:
-{"total_tarifas": 0}
+Regras:
+- "categorias_tarifas": listar CADA tipo de tarifa separadamente (ex: Manutenção de Conta, IOF, TED, Pacote de Serviços, etc). Array vazio se não houver.
+- "maiores_debitos": listar os 5 maiores débitos (excluindo as tarifas já listadas). Array vazio se não houver.
+- "alertas": situações relevantes como tarifas excessivas, cobranças duplicadas, valores suspeitos. Array vazio se não houver.
+- Use ponto como separador decimal. Todos os valores monetários como números (sem R$).
+- Se algum dado não estiver disponível no extrato, use 0 ou array vazio.
 
-Texto do extrato para análise:
+Extrato bancário:
 ---
-${text}
+${text.slice(0, 12000)}
 ---`;
 
     const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
@@ -490,12 +644,12 @@ ${text}
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${openrouterApiKey}`,
         'HTTP-Referer': 'https://localhost',
-        'X-Title': 'Prefeitura de Inaja – Tarifas Bancárias'
+        'X-Title': 'Prefeitura de Inaja – Analisador Financeiro'
       },
       body: JSON.stringify({
         model,
         messages: [{ role: 'user', content: PROMPT }],
-        temperature: 0.2,
+        temperature: 0.1,
       })
     });
 
@@ -506,17 +660,22 @@ ${text}
     }
 
     const data = await resp.json();
-    const jsonString = data?.choices?.[0]?.message?.content?.trim();
-    if (!jsonString) throw new Error('Resposta vazia da API.');
+    let raw = data?.choices?.[0]?.message?.content?.trim();
+    if (!raw) throw new Error('Resposta vazia da API.');
 
-    const result = JSON.parse(jsonString);
-    if (typeof result.total_tarifas === 'number') return result.total_tarifas;
-    throw new Error('Formato de resposta inesperado da IA.');
+    // Extrair JSON mesmo que a IA adicione texto extra
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Formato de resposta inesperado da IA.');
+    return JSON.parse(jsonMatch[0]);
   }
 
   // ── State ────────────────────────────────────────────────────
   let currentFile = null;
-  let lastTotal = null;
+  let lastResult = null;
+
+  // ── Helpers ──────────────────────────────────────────────────
+  const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+  const fmtNum = v => (v ?? '—').toLocaleString?.('pt-BR') ?? v;
 
   // ── DOM refs ─────────────────────────────────────────────────
   const uploadSection = document.getElementById('upload-section');
@@ -579,6 +738,7 @@ ${text}
   // ── Analyze ──────────────────────────────────────────────────
   btnAnalyze.addEventListener('click', async () => {
     if (!currentFile) return;
+    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
     if (!openrouterApiKey) {
       showError('Configure sua chave API OpenRouter antes de continuar.');
       return;
@@ -595,11 +755,70 @@ ${text}
         throw new Error('Não foi possível extrair texto do PDF. O arquivo pode ser uma imagem digitalizada.');
       }
 
-      loaderMsg.textContent = 'Analisando com IA Gemini...';
-      const total = await summarizeBankFees(text);
-      lastTotal = total;
+      loaderMsg.textContent = 'Analisando com IA...';
+      const result = await analyzeBankStatement(text);
+      lastResult = result;
 
-      resultValue.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total);
+      // Preencher total tarifas
+      document.getElementById('result-value').textContent = fmt(result.total_tarifas);
+
+      // Preencher cards resumo
+      const hasFluxo = result.total_creditos || result.total_debitos;
+      if (hasFluxo) {
+        document.getElementById('res-creditos').textContent = fmt(result.total_creditos);
+        document.getElementById('res-debitos').textContent = fmt(result.total_debitos);
+        document.getElementById('res-saldo').textContent = fmt(result.saldo_periodo);
+        document.getElementById('res-saldo').className = 'res-card-val ' + ((result.saldo_periodo || 0) >= 0 ? 'green' : 'red');
+        document.getElementById('res-lancamentos').textContent = result.num_lancamentos || '—';
+        const pct = result.total_debitos ? ((result.total_tarifas / result.total_debitos) * 100).toFixed(1) + '%' : '—';
+        document.getElementById('res-taxa-pct').textContent = pct;
+        document.getElementById('res-qtd-tarifas').textContent = (result.categorias_tarifas || []).length || '—';
+        document.getElementById('res-grid').style.display = '';
+      } else {
+        document.getElementById('res-grid').style.display = 'none';
+      }
+
+      // Detalhamento tarifas
+      const fees = result.categorias_tarifas || [];
+      if (fees.length) {
+        document.getElementById('res-fees-list').innerHTML = fees.map(f =>
+          `<div class="fee-item"><span class="fee-name">${f.nome}</span><span class="fee-val">${fmt(f.valor)}</span></div>`
+        ).join('');
+        document.getElementById('res-fees-section').style.display = '';
+      } else {
+        document.getElementById('res-fees-section').style.display = 'none';
+      }
+
+      // Maiores débitos
+      const debList = result.maiores_debitos || [];
+      if (debList.length) {
+        document.getElementById('res-debitos-list').innerHTML = debList.map(d =>
+          `<div class="fee-item"><span class="fee-name">${d.descricao}</span><span class="fee-val" style="color:var(--text-2)">${fmt(d.valor)}</span></div>`
+        ).join('');
+        document.getElementById('res-debitos-section').style.display = '';
+      } else {
+        document.getElementById('res-debitos-section').style.display = 'none';
+      }
+
+      // Alertas
+      const alertas = result.alertas || [];
+      if (alertas.length) {
+        document.getElementById('res-alertas-list').innerHTML = alertas.map(a =>
+          `<div class="alert-item"><div class="alert-dot"></div><span>${a}</span></div>`
+        ).join('');
+        document.getElementById('res-alertas-section').style.display = '';
+      } else {
+        document.getElementById('res-alertas-section').style.display = 'none';
+      }
+
+      // Resumo IA
+      if (result.resumo) {
+        document.getElementById('res-resumo-txt').textContent = result.resumo;
+        document.getElementById('res-resumo-section').style.display = '';
+      } else {
+        document.getElementById('res-resumo-section').style.display = 'none';
+      }
+
       showSection('result');
     } catch (err) {
       showSection('upload');
@@ -610,7 +829,7 @@ ${text}
   // ── Reset ────────────────────────────────────────────────────
   document.getElementById('btn-reset').addEventListener('click', () => {
     currentFile = null;
-    lastTotal = null;
+    lastResult = null;
     fileInput.value = '';
     fileBadge.style.display = 'none';
     btnAnalyze.style.display = 'none';
@@ -622,18 +841,68 @@ ${text}
   // ── Copy ─────────────────────────────────────────────────────
   const btnCopy = document.getElementById('btn-copy');
   btnCopy.addEventListener('click', async () => {
-    if (lastTotal === null) return;
+    if (!lastResult) return;
     try {
-      await navigator.clipboard.writeText(lastTotal.toString());
+      await navigator.clipboard.writeText(String(lastResult.total_tarifas));
       btnCopy.classList.add('copied');
       btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M20 6L9 17l-5-5"/></svg> Copiado!`;
       setTimeout(() => {
         btnCopy.classList.remove('copied');
-        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar Valor`;
+        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar Total`;
       }, 2500);
     } catch {
-      alert('Não foi possível copiar. Copie manualmente: ' + lastTotal);
+      alert('Copie manualmente: ' + lastResult.total_tarifas);
     }
+  });
+
+  // ── Exportar ─────────────────────────────────────────────────
+  document.getElementById('btn-export').addEventListener('click', () => {
+    if (!lastResult) return;
+    const r = lastResult;
+    const fmt2 = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    let lines = [
+      '═══════════════════════════════════════════',
+      '  RELATÓRIO DE ANÁLISE DE EXTRATO BANCÁRIO',
+      '  Prefeitura de Inajá',
+      '  Gerado em: ' + new Date().toLocaleString('pt-BR'),
+      '═══════════════════════════════════════════',
+      '',
+      '📊 RESUMO FINANCEIRO',
+      `  Total Créditos:   ${fmt2(r.total_creditos)}`,
+      `  Total Débitos:    ${fmt2(r.total_debitos)}`,
+      `  Saldo do Período: ${fmt2(r.saldo_periodo)}`,
+      `  Lançamentos:      ${r.num_lancamentos || '—'}`,
+      '',
+      '⚠️  TARIFAS E ENCARGOS',
+      `  TOTAL TARIFAS:    ${fmt2(r.total_tarifas)}`,
+      '',
+    ];
+    if ((r.categorias_tarifas || []).length) {
+      lines.push('  Detalhamento:');
+      r.categorias_tarifas.forEach(f => lines.push(`    - ${f.nome}: ${fmt2(f.valor)}`));
+      lines.push('');
+    }
+    if ((r.maiores_debitos || []).length) {
+      lines.push('💸 MAIORES DÉBITOS');
+      r.maiores_debitos.forEach(d => lines.push(`    - ${d.descricao}: ${fmt2(d.valor)}`));
+      lines.push('');
+    }
+    if ((r.alertas || []).length) {
+      lines.push('🔔 ALERTAS');
+      r.alertas.forEach(a => lines.push(`    • ${a}`));
+      lines.push('');
+    }
+    if (r.resumo) {
+      lines.push('🤖 ANÁLISE DA IA');
+      lines.push('  ' + r.resumo);
+      lines.push('');
+    }
+    lines.push('═══════════════════════════════════════════');
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `analise_extrato_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
   });
 
   </script>
