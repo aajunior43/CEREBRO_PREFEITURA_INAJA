@@ -212,67 +212,74 @@
 </div>
 <div class="mobile-nav-overlay" id="shd-mobile-overlay"></div>`;
 
-  /* ── Injeta no início do body ────────────────────────────── */
-  document.body.insertAdjacentHTML('afterbegin', headerHTML);
+  /* ── Injeta + Event listeners após DOM pronto ───────────────*/
+  function initDOM() {
+    document.body.insertAdjacentHTML('afterbegin', headerHTML);
 
-  /* ── Event listeners ─────────────────────────────────────── */
-  function openMobile() {
-    document.getElementById('shd-hamburger').classList.add('active');
-    document.getElementById('shd-mobile-nav').classList.add('open');
-    document.getElementById('shd-mobile-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-  function closeMobile() {
-    document.getElementById('shd-hamburger').classList.remove('active');
-    document.getElementById('shd-mobile-nav').classList.remove('open');
-    document.getElementById('shd-mobile-overlay').classList.remove('open');
-    document.body.style.overflow = '';
-  }
+    function openMobile() {
+      document.getElementById('shd-hamburger').classList.add('active');
+      document.getElementById('shd-mobile-nav').classList.add('open');
+      document.getElementById('shd-mobile-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeMobile() {
+      document.getElementById('shd-hamburger').classList.remove('active');
+      document.getElementById('shd-mobile-nav').classList.remove('open');
+      document.getElementById('shd-mobile-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
 
-  document.getElementById('shd-hamburger').addEventListener('click', () => {
-    document.getElementById('shd-mobile-nav').classList.contains('open') ? closeMobile() : openMobile();
-  });
-  document.getElementById('shd-mobile-nav-close').addEventListener('click', closeMobile);
-  document.getElementById('shd-mobile-overlay').addEventListener('click', closeMobile);
+    document.getElementById('shd-hamburger').addEventListener('click', () => {
+      document.getElementById('shd-mobile-nav').classList.contains('open') ? closeMobile() : openMobile();
+    });
+    document.getElementById('shd-mobile-nav-close').addEventListener('click', closeMobile);
+    document.getElementById('shd-mobile-overlay').addEventListener('click', closeMobile);
 
-  // Nav group dropdowns
-  document.querySelectorAll('#shd-header .nav-group-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
+    // Nav group dropdowns
+    document.querySelectorAll('#shd-header .nav-group-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const group = btn.closest('.nav-group');
+        const isOpen = group.classList.contains('open');
+        document.querySelectorAll('#shd-header .nav-group').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group.classList.add('open');
+      });
+    });
+    document.querySelectorAll('#shd-header .nav-group-menu').forEach(menu => {
+      menu.addEventListener('click', e => {
+        if (e.target.tagName !== 'A' && !e.target.closest('a')) e.stopPropagation();
+      });
+    });
+
+    // Dropdown (3 dots)
+    const ddToggle = document.getElementById('shd-dropdown-toggle');
+    const ddParent = ddToggle.parentElement;
+    ddToggle.addEventListener('click', e => {
       e.stopPropagation();
-      const group = btn.closest('.nav-group');
-      const isOpen = group.classList.contains('open');
+      ddParent.classList.toggle('open');
+    });
+
+    // Close all on outside click
+    document.addEventListener('click', () => {
       document.querySelectorAll('#shd-header .nav-group').forEach(g => g.classList.remove('open'));
-      if (!isOpen) group.classList.add('open');
+      ddParent.classList.remove('open');
     });
-  });
-  document.querySelectorAll('#shd-header .nav-group-menu').forEach(menu => {
-    menu.addEventListener('click', e => {
-      if (e.target.tagName !== 'A' && !e.target.closest('a')) e.stopPropagation();
+
+    // Theme toggle (desktop + mobile)
+    document.getElementById('shd-theme-toggle').addEventListener('click', () => {
+      ddParent.classList.remove('open');
+      toggleTheme();
     });
-  });
+    document.getElementById('shd-mobile-theme').addEventListener('click', () => {
+      closeMobile();
+      toggleTheme();
+    });
+  }
 
-  // Dropdown (3 dots)
-  const ddToggle = document.getElementById('shd-dropdown-toggle');
-  const ddParent = ddToggle.parentElement;
-  ddToggle.addEventListener('click', e => {
-    e.stopPropagation();
-    ddParent.classList.toggle('open');
-  });
-
-  // Close all on outside click
-  document.addEventListener('click', () => {
-    document.querySelectorAll('#shd-header .nav-group').forEach(g => g.classList.remove('open'));
-    ddParent.classList.remove('open');
-  });
-
-  // Theme toggle (desktop + mobile)
-  document.getElementById('shd-theme-toggle').addEventListener('click', () => {
-    ddParent.classList.remove('open');
-    toggleTheme();
-  });
-  document.getElementById('shd-mobile-theme').addEventListener('click', () => {
-    closeMobile();
-    toggleTheme();
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDOM);
+  } else {
+    initDOM();
+  }
 
 })();
