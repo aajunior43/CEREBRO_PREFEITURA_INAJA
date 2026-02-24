@@ -1076,9 +1076,12 @@ Schema JSON esperado:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ api_key: apiKey, model, messages: [{ role: 'user', content: promptText }], max_tokens: 2000, temperature: 0.1 })
                 });
+                if (res.status === 429) return ''; // rate-limit → fall through to next attempt/fallback
                 if (!res.ok) {
                     const err = await res.json().catch(() => ({}));
-                    throw new Error(err?.error?.message || err?.error || `HTTP ${res.status}`);
+                    const msg = typeof err?.error === 'string' ? err.error
+                              : err?.error?.message || JSON.stringify(err?.error) || `HTTP ${res.status}`;
+                    throw new Error(msg);
                 }
                 const data = await res.json();
                 let txt = data?.choices?.[0]?.message?.content || '';
