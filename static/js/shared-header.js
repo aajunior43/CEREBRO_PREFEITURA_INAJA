@@ -54,7 +54,7 @@
   const NAV_ITEMS = {
     documentos: [
       { href: '/pages/rpa.html',             name: 'RPA',                    desc: 'Recibo de Pagamento Autônomo' },
-      { href: '/pages/pdf.html',             name: 'PDF Master',             desc: 'Mesclar, dividir e proteger' },
+      { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
       { href: '/pages/gerador-empenho.html', name: 'Gerador de Empenho',     desc: 'Gerar texto de empenho em PDF' },
       { href: '/pages/visualizador.html',    name: 'Rel. de Empenhos',       desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
