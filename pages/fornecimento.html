@@ -816,27 +816,49 @@ let _dmCache = { solicitantes: [], empresas: [], observacoes: [] };
 async function loadDataManager() {
   try {
     const r = await fetch('/api/fornecimento/dados');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
     _dmCache = await r.json();
-  } catch(e) { console.warn('Erro ao carregar dados:', e); }
+  } catch(e) {
+    console.error('[fornecimento] Erro ao carregar dados:', e);
+    showToast('⚠️ Erro ao carregar dados: ' + e.message + ' — reinicie o servidor', 'error');
+  }
   renderChips();
 }
 
 async function apiAddItem(tipo, valor) {
-  await fetch('/api/fornecimento/dados', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({tipo, valor})
-  });
-  await loadDataManager();
+  try {
+    const r = await fetch('/api/fornecimento/dados', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({tipo, valor})
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadDataManager();
+  } catch(e) {
+    showToast('❌ Falha ao salvar: ' + e.message, 'error');
+  }
 }
 
 async function apiDelItem(tipo, valor) {
-  await fetch('/api/fornecimento/dados', {
-    method: 'DELETE',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({tipo, valor})
-  });
-  await loadDataManager();
+  try {
+    const r = await fetch('/api/fornecimento/dados', {
+      method: 'DELETE',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({tipo, valor})
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadDataManager();
+  } catch(e) {
+    showToast('❌ Falha ao remover: ' + e.message, 'error');
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;background:${type==='error'?'#ef4444':'#22c55e'};box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:360px;word-break:break-word`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
 }
 
 function renderChips() {
