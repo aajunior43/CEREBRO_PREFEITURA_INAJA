@@ -810,32 +810,52 @@ document.getElementById('btn-batch-json').addEventListener('click', () => {
   download('lote_solicitacoes.json', JSON.stringify(processedRequests, null, 2), 'application/json');
 });
 
-/* ═══════════ TAB 3 – DADOS ═══════════ */
-function getDataManager() {
-  try { return JSON.parse(localStorage.getItem('inaja-data-manager')) || { solicitantes: [], empresas: [], observacoes: [] }; }
-  catch { return { solicitantes: [], empresas: [], observacoes: [] }; }
+/* ═══════════ TAB 3 – DADOS (SQLite via API) ═══════════ */
+let _dmCache = { solicitantes: [], empresas: [], observacoes: [] };
+
+async function loadDataManager() {
+  try {
+    const r = await fetch('/api/fornecimento/dados');
+    _dmCache = await r.json();
+  } catch(e) { console.warn('Erro ao carregar dados:', e); }
+  renderChips();
 }
-function saveDataManager(d) { localStorage.setItem('inaja-data-manager', JSON.stringify(d)); }
+
+async function apiAddItem(tipo, valor) {
+  await fetch('/api/fornecimento/dados', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({tipo, valor})
+  });
+  await loadDataManager();
+}
+
+async function apiDelItem(tipo, valor) {
+  await fetch('/api/fornecimento/dados', {
+    method: 'DELETE',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({tipo, valor})
+  });
+  await loadDataManager();
+}
 
 function renderChips() {
-  const data = getDataManager();
-  renderChipList('solic-chips', data.solicitantes, 'solicitantes', $sol);
-  renderChipList('emp-chips', data.empresas, 'empresas', $emp);
-  renderChipList('obs-chips', data.observacoes, 'observacoes', $obs);
+  renderChipList('solic-chips', _dmCache.solicitantes, 'solicitantes', $sol);
+  renderChipList('emp-chips',   _dmCache.empresas,     'empresas',     $emp);
+  renderChipList('obs-chips',   _dmCache.observacoes,  'observacoes',  $obs);
 }
 
 function renderChipList(containerId, arr, key, targetInput) {
   const container = document.getElementById(containerId);
   container.innerHTML = '';
-  arr.forEach((val, idx) => {
+  arr.forEach((val) => {
     const chip = document.createElement('button');
     chip.className = 'chip';
-    chip.innerHTML = `${esc(val)} <span class="chip-x" data-key="${key}" data-idx="${idx}">&times;</span>`;
+    chip.innerHTML = `${esc(val)} <span class="chip-x" data-key="${key}" data-val="${esc(val)}">&times;</span>`;
     chip.addEventListener('click', (e) => {
       if (e.target.classList.contains('chip-x')) return;
       targetInput.value = val;
       targetInput.dispatchEvent(new Event('input'));
-      // Switch to form tab
       document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
       document.querySelector('[data-panel="tab-form"]').classList.add('active');
@@ -844,14 +864,10 @@ function renderChipList(containerId, arr, key, targetInput) {
     container.appendChild(chip);
   });
 
-  // Remove handlers
   container.querySelectorAll('.chip-x').forEach(x => {
     x.addEventListener('click', (e) => {
       e.stopPropagation();
-      const d = getDataManager();
-      d[x.dataset.key].splice(Number(x.dataset.idx), 1);
-      saveDataManager(d);
-      renderChips();
+      apiDelItem(x.dataset.key, x.dataset.val);
     });
   });
 }
@@ -860,18 +876,14 @@ function addDataItem(key, inputId) {
   const inp = document.getElementById(inputId);
   const val = inp.value.trim();
   if (!val) return;
-  const d = getDataManager();
-  if (!d[key].includes(val)) d[key].push(val);
-  saveDataManager(d);
   inp.value = '';
-  renderChips();
+  apiAddItem(key, val);
 }
 
 document.getElementById('btn-add-solic').addEventListener('click', () => addDataItem('solicitantes', 'add-solic-input'));
-document.getElementById('btn-add-emp').addEventListener('click', () => addDataItem('empresas', 'add-emp-input'));
-document.getElementById('btn-add-obs').addEventListener('click', () => addDataItem('observacoes', 'add-obs-input'));
+document.getElementById('btn-add-emp').addEventListener('click',   () => addDataItem('empresas',     'add-emp-input'));
+document.getElementById('btn-add-obs').addEventListener('click',   () => addDataItem('observacoes',  'add-obs-input'));
 
-// Enter key support for add inputs
 ['add-solic-input', 'add-emp-input', 'add-obs-input'].forEach((id, i) => {
   document.getElementById(id).addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -883,7 +895,7 @@ document.getElementById('btn-add-obs').addEventListener('click', () => addDataIt
 
 // Export / Import data
 document.getElementById('btn-export-data').addEventListener('click', () => {
-  download('dados_fornecimento.json', JSON.stringify(getDataManager(), null, 2), 'application/json');
+  download('dados_fornecimento.json', JSON.stringify(_dmCache, null, 2), 'application/json');
 });
 
 const importDataFile = document.getElementById('import-data-file');
@@ -892,33 +904,47 @@ importDataFile.addEventListener('change', () => {
   const file = importDataFile.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const d = JSON.parse(e.target.result);
       if (d.solicitantes || d.empresas || d.observacoes) {
-        saveDataManager({
-          solicitantes: d.solicitantes || [],
-          empresas: d.empresas || [],
-          observacoes: d.observacoes || []
-        });
-        renderChips();
+        const all = [
+          ...(d.solicitantes||[]).map(v => ({tipo:'solicitantes',valor:v})),
+          ...(d.empresas||[]).map(v => ({tipo:'empresas',valor:v})),
+          ...(d.observacoes||[]).map(v => ({tipo:'observacoes',valor:v}))
+        ];
+        for (const item of all) {
+          await fetch('/api/fornecimento/dados', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(item)
+          });
+        }
+        await loadDataManager();
         alert('Dados importados com sucesso!');
-      } else {
-        alert('Formato inválido.');
-      }
+      } else { alert('Formato inválido.'); }
     } catch { alert('Erro ao ler arquivo JSON.'); }
   };
   reader.readAsText(file);
   importDataFile.value = '';
 });
 
-document.getElementById('btn-clear-data').addEventListener('click', () => {
+document.getElementById('btn-clear-data').addEventListener('click', async () => {
   if (!confirm('Limpar todos os dados salvos?')) return;
-  localStorage.removeItem('inaja-data-manager');
-  renderChips();
+  const all = [
+    ..._dmCache.solicitantes.map(v => ({tipo:'solicitantes',valor:v})),
+    ..._dmCache.empresas.map(v     => ({tipo:'empresas',valor:v})),
+    ..._dmCache.observacoes.map(v  => ({tipo:'observacoes',valor:v}))
+  ];
+  for (const item of all) {
+    await fetch('/api/fornecimento/dados', {
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(item)
+    });
+  }
+  await loadDataManager();
 });
 
-renderChips();
+loadDataManager();
 
 /* ═══════════ TEMPLATE MANAGER ═══════════ */
 document.getElementById('btn-save-template').addEventListener('click', () => {

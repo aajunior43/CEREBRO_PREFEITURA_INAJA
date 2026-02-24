@@ -188,6 +188,16 @@ def init_db():
         )
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS fornecimento_dados (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            tipo      TEXT    NOT NULL,
+            valor     TEXT    NOT NULL,
+            criado_em TEXT    DEFAULT (datetime('now', 'localtime')),
+            UNIQUE(tipo, valor)
+        )
+    """)
+
     # Popula credores iniciais se a tabela estiver vazia
     count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
     if count == 0 and os.path.exists(DATA_JS):
@@ -825,8 +835,42 @@ def kanban_delete(task_id):
 
 
 # ────────────────────────────────────────────────────────────
-# API – Consulta CNPJ
+# API – Fornecimento Dados (solicitantes / empresas / observações)
 # ────────────────────────────────────────────────────────────
+@app.route('/api/fornecimento/dados', methods=['GET'])
+def fornecimento_dados_get():
+    conn = get_db()
+    rows = conn.execute("SELECT tipo, valor FROM fornecimento_dados ORDER BY tipo, valor COLLATE NOCASE").fetchall()
+    conn.close()
+    result = {'solicitantes': [], 'empresas': [], 'observacoes': []}
+    for r in rows:
+        if r['tipo'] in result:
+            result[r['tipo']].append(r['valor'])
+    return jsonify(result)
+
+@app.route('/api/fornecimento/dados', methods=['POST'])
+def fornecimento_dados_add():
+    d = request.get_json(force=True)
+    tipo  = d.get('tipo', '').strip()
+    valor = d.get('valor', '').strip()
+    if tipo not in ('solicitantes', 'empresas', 'observacoes') or not valor:
+        return jsonify({'error': 'tipo ou valor inválido'}), 400
+    conn = get_db()
+    conn.execute("INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)", (tipo, valor))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/fornecimento/dados', methods=['DELETE'])
+def fornecimento_dados_del():
+    d = request.get_json(force=True)
+    tipo  = d.get('tipo', '').strip()
+    valor = d.get('valor', '').strip()
+    conn = get_db()
+    conn.execute("DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor))
+    conn.commit()
+    conn.close()
+    return jsonify({'ok': True})
 
 import urllib.request as _urllib_req
 import urllib.error as _urllib_err
