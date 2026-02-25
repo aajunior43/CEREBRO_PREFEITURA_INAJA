@@ -88,6 +88,35 @@
         <button id="resetFilters" class="ghost is-hidden">Limpar tudo</button>
       </div>
       <div id="filterChips" class="filter-chips"></div>
+
+      <!-- Filtros rápidos por natureza de despesa -->
+      <div id="quickFilters" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px 0;align-items:center;">
+        <span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">Filtro rápido:</span>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.14" data-tooltip="Filtra despesas de Diárias (código 3.3.90.14)">🧳 Diárias Civil</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.30" data-tooltip="Filtra despesas de Material de Consumo (código 3.3.90.30)">🛒 Material de Consumo</button>
+        <button type="button" class="qf-btn" data-qf-prefix="4.4.90.52" data-tooltip="Filtra despesas de Material Permanente (código 4.4.90.52)">🏗 Material Permanente</button>
+        <button type="button" class="qf-btn" data-qf-prefix="4.4.90.51" data-tooltip="Filtra despesas de Obras e Instalações (código 4.4.90.51)">🏛 Obras</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.1." data-tooltip="Filtra todas as despesas de Pessoal (códigos 3.1.xx)">👥 Pessoal</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.36,3.3.90.39" data-tooltip="Filtra Serviços de Terceiros PF e PJ (3.3.90.36 e 3.3.90.39)">🔧 Serviços de Terceiros</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.33" data-tooltip="Filtra despesas de Passagens e Locomoção (código 3.3.90.33)">✈ Passagens</button>
+        <button type="button" id="qfClear" style="margin-left:4px;" class="ghost" data-tooltip="Limpa o filtro rápido de natureza de despesa">✕ Limpar Filtro Rápido</button>
+      </div>
+      <style>
+        .qf-btn {
+          background: var(--surface, #f5f5f5);
+          border: 1.5px solid var(--border, #ccc);
+          border-radius: 20px;
+          padding: 4px 12px;
+          font-size: 12px;
+          cursor: pointer;
+          color: var(--ink, #222);
+          transition: background .15s, border-color .15s;
+          white-space: nowrap;
+        }
+        .qf-btn:hover { background: var(--accent, #0066cc); color: #fff; border-color: var(--accent, #0066cc); }
+        .qf-btn.active { background: var(--accent, #0066cc); color: #fff; border-color: var(--accent, #0066cc); font-weight: 700; }
+      </style>
+
       <div class="filters-grid">
         <div class="field filter-box" data-column="Recurso">
           <div class="filter-head">
@@ -374,6 +403,70 @@
   .hist-btn-del:hover { background: rgba(239,68,68,0.1); }
   .hist-loading, .hist-empty { text-align: center; padding: 32px; font-size: 13px; color: var(--muted); }
   </style>
+  <script>
+  // ── Filtros Rápidos por Natureza de Despesa ─────────────────────────────
+  (function () {
+    let activeQfPrefix = null;
+
+    function applyQuickFilter(prefixes) {
+      const { state } = window.App;
+      if (!state || !state.filters) return;
+
+      const filter = state.filters.find(f => f.column === "Natureza de Despesa");
+      if (!filter) return;
+
+      const prefixList = prefixes ? prefixes.split(',').map(p => p.trim()) : [];
+
+      if (prefixList.length === 0) {
+        // Clear: select all
+        filter.selected = new Set(filter.values);
+      } else {
+        // Select only values matching any prefix
+        filter.selected = new Set(
+          filter.values.filter(v => prefixList.some(p => v.startsWith(p)))
+        );
+      }
+
+      window.App.ui.renderFilterOptions(filter);
+      window.App.logic.applyFilters();
+    }
+
+    function initQuickFilters() {
+      document.querySelectorAll('.qf-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const prefix = btn.dataset.qfPrefix;
+          if (activeQfPrefix === prefix) {
+            // toggle off
+            activeQfPrefix = null;
+            document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
+            applyQuickFilter(null);
+          } else {
+            activeQfPrefix = prefix;
+            document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            applyQuickFilter(prefix);
+          }
+        });
+      });
+
+      const clearBtn = document.getElementById('qfClear');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          activeQfPrefix = null;
+          document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
+          applyQuickFilter(null);
+        });
+      }
+    }
+
+    // Wait for App to be ready (main.js initializes on DOMContentLoaded)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(initQuickFilters, 400));
+    } else {
+      setTimeout(initQuickFilters, 400);
+    }
+  })();
+  </script>
 </body>
 
 </html>
