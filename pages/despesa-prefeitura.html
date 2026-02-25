@@ -56,6 +56,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Histórico
       </button>
+      <button id="btn-comparativo" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;" data-tooltip="Compare dois períodos importados e veja a variação de saldo por despesa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Comparar Períodos
+      </button>
     </div>
   </header>
 
@@ -68,12 +72,47 @@
     <div id="historico-lista" style="max-height:320px;overflow-y:auto;"></div>
   </div>
 
+  <!-- Modal Comparativo de Períodos -->
+  <div id="comparativo-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;overflow-y:auto;padding:20px 10px;">
+    <div style="background:var(--bg, #111);border:1px solid var(--line);border-radius:12px;max-width:960px;margin:auto;padding:28px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="margin:0;font-size:18px;color:var(--ink);">📊 Comparativo entre Períodos</h2>
+        <button id="btn-fechar-comparativo" class="ghost" style="font-size:13px;">Fechar ×</button>
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:1;min-width:200px;">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;color:var(--muted);">Período A (base)</label>
+          <select id="comp-periodo-a" style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:13px;">
+            <option value="">Selecione o período base...</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;color:var(--muted);">Período B (comparar com A)</label>
+          <select id="comp-periodo-b" style="width:100%;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:13px;">
+            <option value="">Selecione o período para comparar...</option>
+          </select>
+        </div>
+        <button id="btn-comparar" class="ghost" style="background:rgba(201,169,97,0.15);border-color:var(--accent-2);color:var(--accent-2);white-space:nowrap;">
+          📊 Comparar
+        </button>
+        <button id="btn-exportar-comparativo" class="ghost" style="display:none;white-space:nowrap;" data-tooltip="Exportar resultado para CSV">
+          📥 Exportar CSV
+        </button>
+      </div>
+      <div id="comp-resultado" style="overflow-x:auto;"></div>
+    </div>
+  </div>
+
   <main class="layout">
     <section id="filters" class="panel filters">
       <div class="filters-top">
         <div class="field">
           <label for="search">Busca rápida</label>
           <input id="search" type="text" placeholder="Busque em todos os campos: entidade, programa, ação, valor..." />
+        </div>
+        <div class="field inline">
+          <label for="numDespesa">Nº da despesa</label>
+          <input id="numDespesa" type="text" placeholder="Ex: 00001" data-tooltip="Filtra pelo número exato ou parcial da despesa" style="width:110px;" />
         </div>
         <div class="field inline">
           <label for="minValue">Saldo mínimo</label>
@@ -100,6 +139,12 @@
         <button type="button" class="qf-btn" data-qf-prefix="3.3.90.36,3.3.90.39" data-tooltip="Filtra Serviços de Terceiros PF e PJ (3.3.90.36 e 3.3.90.39)">🔧 Serviços de Terceiros</button>
         <button type="button" class="qf-btn" data-qf-prefix="3.3.90.33" data-tooltip="Filtra despesas de Passagens e Locomoção (código 3.3.90.33)">✈ Passagens</button>
         <button type="button" id="qfClear" style="margin-left:4px;" class="ghost" data-tooltip="Limpa o filtro rápido de natureza de despesa">✕ Limpar Filtro Rápido</button>
+        <span style="width:1px;background:var(--line);height:20px;margin:0 6px;display:inline-block;"></span>
+        <span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">⚠ Saldo crítico:</span>
+        <input id="saldoCriticoThreshold" type="number" value="1000" min="0" step="100"
+          style="width:90px;padding:3px 7px;font-size:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:6px;color:var(--ink);"
+          data-tooltip="Valor limite: despesas com saldo abaixo deste valor são destacadas em laranja" />
+        <button type="button" id="qfSaldoCritico" class="qf-btn" data-tooltip="Mostra apenas despesas com saldo abaixo do limite configurado">⚠ Ver Saldo Crítico</button>
       </div>
       <style>
         .qf-btn {
@@ -457,6 +502,29 @@
           applyQuickFilter(null);
         });
       }
+
+      // ── Saldo Crítico ──────────────────────────────────────
+      const btnSaldoCritico = document.getElementById('qfSaldoCritico');
+      const thresholdInput  = document.getElementById('saldoCriticoThreshold');
+      if (btnSaldoCritico) {
+        btnSaldoCritico.addEventListener('click', () => {
+          const { state } = window.App;
+          if (!state) return;
+          state.saldoCriticoAtivo = !state.saldoCriticoAtivo;
+          btnSaldoCritico.classList.toggle('active', state.saldoCriticoAtivo);
+          btnSaldoCritico.textContent = state.saldoCriticoAtivo ? '⚠ Saldo Crítico ATIVO' : '⚠ Ver Saldo Crítico';
+          if (thresholdInput) state.saldoCriticoThreshold = parseFloat(thresholdInput.value) || 1000;
+          window.App.logic.applyFilters();
+        });
+      }
+      if (thresholdInput) {
+        thresholdInput.addEventListener('change', () => {
+          const { state } = window.App;
+          if (!state) return;
+          state.saldoCriticoThreshold = parseFloat(thresholdInput.value) || 1000;
+          if (state.saldoCriticoAtivo) window.App.logic.applyFilters();
+        });
+      }
     }
 
     // Wait for App to be ready (main.js initializes on DOMContentLoaded)
@@ -467,6 +535,192 @@
     }
   })();
   </script>
+
+  <script>
+  // ── Comparativo entre Períodos ──────────────────────────────────────────
+  (function () {
+    const overlay   = document.getElementById('comparativo-overlay');
+    const btnAbrir  = document.getElementById('btn-comparativo');
+    const btnFechar = document.getElementById('btn-fechar-comparativo');
+    const btnCompar = document.getElementById('btn-comparar');
+    const btnExport = document.getElementById('btn-exportar-comparativo');
+    const selA      = document.getElementById('comp-periodo-a');
+    const selB      = document.getElementById('comp-periodo-b');
+    const resultado = document.getElementById('comp-resultado');
+
+    let _lastCompData = null;
+
+    async function loadPeriodos() {
+      try {
+        const list = await fetch('/api/despesas/importacoes').then(r => r.json());
+        [selA, selB].forEach(sel => {
+          const cur = sel.value;
+          sel.innerHTML = '<option value="">Selecione...</option>';
+          list.forEach(imp => {
+            const opt = document.createElement('option');
+            opt.value = imp.id;
+            opt.textContent = `${imp.periodo}${imp.descricao ? ' – ' + imp.descricao : ''} (${imp.total_rows} linhas)`;
+            sel.appendChild(opt);
+          });
+          sel.value = cur;
+        });
+      } catch (e) {
+        resultado.innerHTML = '<p style="color:#ef4444">Erro ao carregar períodos: ' + e.message + '</p>';
+      }
+    }
+
+    if (btnAbrir) {
+      btnAbrir.addEventListener('click', () => {
+        overlay.style.display = 'block';
+        loadPeriodos();
+      });
+    }
+    if (btnFechar) {
+      btnFechar.addEventListener('click', () => { overlay.style.display = 'none'; });
+    }
+    overlay && overlay.addEventListener('click', e => { if (e.target === overlay) overlay.style.display = 'none'; });
+
+    if (btnCompar) {
+      btnCompar.addEventListener('click', async () => {
+        const idA = selA.value, idB = selB.value;
+        if (!idA || !idB) { alert('Selecione os dois períodos para comparar.'); return; }
+        if (idA === idB) { alert('Selecione períodos diferentes.'); return; }
+
+        resultado.innerHTML = '<p style="color:var(--muted);text-align:center;padding:32px;">⏳ Carregando dados...</p>';
+        btnCompar.disabled = true;
+        btnExport.style.display = 'none';
+
+        try {
+          const [respA, respB] = await Promise.all([
+            fetch(`/api/despesas/importacoes/${idA}`).then(r => r.json()),
+            fetch(`/api/despesas/importacoes/${idB}`).then(r => r.json())
+          ]);
+
+          const { formatter } = window.App.utils;
+          const parseCur = window.App.utils.parseCurrency;
+
+          // Build map by Número da despesa
+          const mapA = new Map();
+          respA.linhas.forEach(r => mapA.set(r['Número da despesa'] || r['Numero da despesa'] || '', r));
+
+          const mapB = new Map();
+          respB.linhas.forEach(r => mapB.set(r['Número da despesa'] || r['Numero da despesa'] || '', r));
+
+          // All keys
+          const allKeys = new Set([...mapA.keys(), ...mapB.keys()]);
+          allKeys.delete('');
+
+          const rows = [];
+          allKeys.forEach(num => {
+            const rA = mapA.get(num);
+            const rB = mapB.get(num);
+            const sA = rA ? parseCur(rA['Saldo atual da despesa']) : null;
+            const sB = rB ? parseCur(rB['Saldo atual da despesa']) : null;
+            const variacao = (sA !== null && sB !== null) ? sB - sA : null;
+            const pct = (sA !== null && sA !== 0 && variacao !== null) ? (variacao / Math.abs(sA)) * 100 : null;
+            const desc = (rA || rB)['Descrição da natureza de despesa'] || (rA || rB)['Natureza de Despesa'] || '';
+            rows.push({ num, desc, sA, sB, variacao, pct });
+          });
+
+          // Sort by absolute variation descending
+          rows.sort((a, b) => Math.abs(b.variacao || 0) - Math.abs(a.variacao || 0));
+
+          _lastCompData = { rows, periodoA: respA.importacao.periodo, periodoB: respB.importacao.periodo };
+
+          const nA = respA.importacao.periodo, nB = respB.importacao.periodo;
+          let totA = 0, totB = 0, totVar = 0;
+          rows.forEach(r => { if (r.sA !== null) totA += r.sA; if (r.sB !== null) totB += r.sB; if (r.variacao !== null) totVar += r.variacao; });
+
+          let html = `
+            <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:12px 20px;flex:1;min-width:160px;">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Total ${nA}</div>
+                <div style="font-size:18px;font-weight:700;color:var(--ink);">${formatter.format(totA)}</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:12px 20px;flex:1;min-width:160px;">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Total ${nB}</div>
+                <div style="font-size:18px;font-weight:700;color:var(--ink);">${formatter.format(totB)}</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:12px 20px;flex:1;min-width:160px;">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Variação total</div>
+                <div style="font-size:18px;font-weight:700;color:${totVar >= 0 ? '#22c55e' : '#ef4444'};">${totVar >= 0 ? '+' : ''}${formatter.format(totVar)}</div>
+              </div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:12px 20px;flex:1;min-width:160px;">
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Despesas comparadas</div>
+                <div style="font-size:18px;font-weight:700;color:var(--ink);">${rows.length}</div>
+              </div>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:rgba(255,255,255,0.06);">
+                  <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);">Nº Despesa</th>
+                  <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);">Descrição</th>
+                  <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);">${nA}</th>
+                  <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);">${nB}</th>
+                  <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);">Variação R$</th>
+                  <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);">Variação %</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+          rows.forEach((r, i) => {
+            const varColor = r.variacao === null ? 'var(--muted)' : r.variacao > 0 ? '#22c55e' : r.variacao < 0 ? '#ef4444' : 'var(--ink)';
+            const varSign  = r.variacao !== null && r.variacao > 0 ? '+' : '';
+            html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);${i % 2 === 0 ? '' : 'background:rgba(255,255,255,0.02);'}">
+              <td style="padding:7px 10px;color:var(--accent-2);font-family:monospace;">${escHtml(r.num)}</td>
+              <td style="padding:7px 10px;color:var(--ink);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(r.desc)}">${escHtml(r.desc.slice(0,50))}${r.desc.length>50?'…':''}</td>
+              <td style="padding:7px 10px;text-align:right;color:var(--ink);">${r.sA !== null ? formatter.format(r.sA) : '<span style="color:var(--muted)">–</span>'}</td>
+              <td style="padding:7px 10px;text-align:right;color:var(--ink);">${r.sB !== null ? formatter.format(r.sB) : '<span style="color:var(--muted)">–</span>'}</td>
+              <td style="padding:7px 10px;text-align:right;font-weight:600;color:${varColor};">${r.variacao !== null ? varSign + formatter.format(r.variacao) : '–'}</td>
+              <td style="padding:7px 10px;text-align:right;color:${varColor};">${r.pct !== null ? varSign + r.pct.toFixed(1) + '%' : '–'}</td>
+            </tr>`;
+          });
+
+          html += '</tbody></table>';
+          resultado.innerHTML = html;
+          btnExport.style.display = '';
+
+        } catch (e) {
+          resultado.innerHTML = '<p style="color:#ef4444;padding:16px;">Erro ao comparar: ' + escHtml(e.message) + '</p>';
+        } finally {
+          btnCompar.disabled = false;
+        }
+      });
+    }
+
+    if (btnExport) {
+      btnExport.addEventListener('click', () => {
+        if (!_lastCompData) return;
+        const { rows, periodoA, periodoB } = _lastCompData;
+        const { formatter } = window.App.utils;
+        let csv = `Número da despesa,Descrição,${periodoA},${periodoB},Variação R$,Variação %\n`;
+        rows.forEach(r => {
+          csv += [
+            `"${r.num}"`, `"${r.desc.replace(/"/g,'""')}"`,
+            r.sA !== null ? r.sA.toFixed(2) : '',
+            r.sB !== null ? r.sB.toFixed(2) : '',
+            r.variacao !== null ? r.variacao.toFixed(2) : '',
+            r.pct !== null ? r.pct.toFixed(2) + '%' : ''
+          ].join(',') + '\n';
+        });
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `comparativo_${periodoA}_vs_${periodoB}.csv`.replace(/[\/\\:*?"<>|]/g, '-');
+        a.click();
+      });
+    }
+
+    function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  })();
+  </script>
+
+  <style>
+    /* Saldo crítico: linha alaranjada na tabela */
+    tr.saldo-critico td { background: rgba(251,146,60,0.10) !important; }
+    tr.saldo-critico:hover td { background: rgba(251,146,60,0.18) !important; }
+    tr.saldo-critico td:last-child { color: #f97316 !important; font-weight: 700; }
+  </style>
 </body>
 
 </html>

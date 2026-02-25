@@ -240,6 +240,10 @@
       if (state.selectedId === row.__id) {
         tr.classList.add("table-row-selected");
       }
+      // Highlight saldo crítico rows
+      if (state.saldoCriticoThreshold !== undefined && row.__saldo <= state.saldoCriticoThreshold && row.__saldo >= 0) {
+        tr.classList.add("saldo-critico");
+      }
       tr.tabIndex = 0;
       tr.addEventListener("click", () => {
         if (selectHandler) selectHandler(row.__id);

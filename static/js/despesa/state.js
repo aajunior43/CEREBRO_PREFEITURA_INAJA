@@ -11,7 +11,10 @@
     natureLabels: new Map(),
     selectedId: null,
     page: 1,
-    pageSize: 50
+    pageSize: 50,
+    saldoCriticoAtivo: false,
+    saldoCriticoThreshold: 1000,
+    numDespesaQuery: ''
   };
 
   window.App.elements = {
@@ -28,6 +31,7 @@
     maxValueStat: document.getElementById("maxValueStat"),
     printSelected: document.getElementById("printSelected"),
     exportCsv: document.getElementById("exportCsv"),
+    numDespesa: document.getElementById("numDespesa"),
     printDate: document.getElementById("printDate"),
     table: document.getElementById("dataTable"),
     tableCount: document.getElementById("tableCount"),

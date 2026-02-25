@@ -31,6 +31,14 @@
     }
   });
 
+  if (elements.numDespesa) {
+    elements.numDespesa.addEventListener("input", () => {
+      const { normalizeText } = window.App.utils;
+      window.App.state.numDespesaQuery = normalizeText(elements.numDespesa.value.trim());
+      applyFilters();
+    });
+  }
+
   if (elements.reset) elements.reset.addEventListener("click", resetFilters);
 
   if (elements.printView) {

@@ -89,6 +89,13 @@
         }
       }
       if (row.__saldo < min || row.__saldo > max) return false;
+      // Saldo crítico: mostrar apenas despesas abaixo do limite
+      if (state.saldoCriticoAtivo && row.__saldo > state.saldoCriticoThreshold) return false;
+      // Busca por número da despesa
+      if (state.numDespesaQuery) {
+        const num = normalizeText(row["Número da despesa"] || "");
+        if (!num.includes(state.numDespesaQuery)) return false;
+      }
       if (!query) return true;
       const hay = normalizeText(state.columns.map((col) => row[col]).join(" "));
       return hay.includes(query);
