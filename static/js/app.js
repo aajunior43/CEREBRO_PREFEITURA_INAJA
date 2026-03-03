@@ -207,25 +207,31 @@ function buildCard(c, done, idx) {
   div.querySelector('.card-name').addEventListener('click', e => {
     e.stopPropagation();
     const nome = c.nome || '';
-    navigator.clipboard.writeText(nome).then(() => {
-      const el = e.currentTarget;
+    const el = e.currentTarget;
+    const feedbackCopy = () => {
       const orig = el.style.color;
       el.style.color = 'var(--green-dark, #16a34a)';
       const prevTitle = el.title;
       el.title = 'Copiado!';
       setTimeout(() => { el.style.color = orig; el.title = prevTitle; }, 1200);
       showToast(`"${nome}" copiado!`, 'success');
-    }).catch(() => {
-      // Fallback para navegadores sem suporte
+    };
+    const fallbackCopy = () => {
       const ta = document.createElement('textarea');
       ta.value = nome;
       ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta);
+      ta.focus();
       ta.select();
-      document.execCommand('copy');
+      try { document.execCommand('copy'); } catch (_) {}
       document.body.removeChild(ta);
-      showToast(`"${nome}" copiado!`, 'success');
-    });
+      feedbackCopy();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(nome).then(feedbackCopy).catch(fallbackCopy);
+    } else {
+      fallbackCopy();
+    }
   });
 
   return div;
@@ -750,50 +756,126 @@ function attachEvents() {
   });
 
   // Logs modal
-  document.getElementById('btn-logs').addEventListener('click', async () => {
-    const overlay = document.getElementById('logs-overlay');
-    const list = document.getElementById('logs-list');
-    overlay.style.display = 'flex';
-    overlay.classList.add('open');
-    list.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
-    try {
-      const logs = await apiGet('/logs');
-      if (logs.length === 0) {
-        list.innerHTML = '<p style="text-align:center;color:var(--text-3);padding:20px;">Nenhum registro encontrado.</p>';
-      } else {
-        list.innerHTML = logs.map(log => {
-          const iconMap = { 'CRIAR': '+', 'EDITAR': '✎', 'EXCLUIR': '×' };
-          return `
-            <div class="log-item">
-              <div class="log-icon ${log.acao.toLowerCase()}">${iconMap[log.acao] || '•'}</div>
-              <div class="log-content">
-                <div class="log-acao">${log.acao}</div>
-                <div class="log-nome">${log.credor_nome || '-'}</div>
-                <div class="log-detalhes">${log.detalhes || ''}</div>
-              </div>
-              <div class="log-data">${log.data ? new Date(log.data).toLocaleString('pt-BR') : '-'}</div>
-            </div>
-          `;
-        }).join('');
-      }
-    } catch (e) {
-      list.innerHTML = '<p style="text-align:center;color:var(--red);padding:20px;">Erro ao carregar logs.</p>';
-    }
-  });
+  (function() {
+    const PAGE_SIZE = 30;
+    let currentAcao = '';
+    let currentOffset = 0;
+    let currentTotal = 0;
 
-  document.getElementById('logs-close').addEventListener('click', () => {
-    const ov = document.getElementById('logs-overlay');
-    ov.classList.remove('open');
-    ov.style.display = 'none';
-  });
-  document.getElementById('logs-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('logs-overlay')) {
+    const iconMap = {
+      'CRIAR':      { icon: '＋', cls: 'criar' },
+      'EDITAR':     { icon: '✎',  cls: 'editar' },
+      'EXCLUIR':    { icon: '✕',  cls: 'excluir' },
+      'EMPENHAR':   { icon: '✓',  cls: 'empenhar' },
+      'DESEMPENHAR':{ icon: '↩',  cls: 'desempenhar' },
+    };
+
+    function renderLogItem(log) {
+      const info = iconMap[log.acao] || { icon: '•', cls: 'outro' };
+      const data = log.data ? new Date(log.data).toLocaleString('pt-BR') : '-';
+
+      // Para EDITAR, renderiza o diff em chips
+      let detalhesHtml = '';
+      if (log.detalhes && log.acao === 'EDITAR' && log.detalhes.includes(' → ')) {
+        const parts = log.detalhes.split(' | ');
+        detalhesHtml = `<div class="log-diff">${parts.map(p => {
+          const [label, change] = p.split(': ');
+          return `<span class="log-diff-chip"><span class="log-diff-label">${label}</span><span class="log-diff-change">${change}</span></span>`;
+        }).join('')}</div>`;
+      } else if (log.detalhes) {
+        detalhesHtml = `<div class="log-detalhes">${log.detalhes}</div>`;
+      }
+
+      return `
+        <div class="log-item">
+          <div class="log-icon ${info.cls}">${info.icon}</div>
+          <div class="log-content">
+            <div class="log-header-row">
+              <span class="log-acao ${info.cls}">${log.acao}</span>
+              <span class="log-nome">${log.credor_nome || '-'}</span>
+            </div>
+            ${detalhesHtml}
+          </div>
+          <div class="log-data">${data}</div>
+        </div>
+      `;
+    }
+
+    async function loadLogs(reset = true) {
+      const list = document.getElementById('logs-list');
+      const countEl = document.getElementById('logs-count');
+      const pagination = document.getElementById('logs-pagination');
+
+      if (reset) {
+        currentOffset = 0;
+        list.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+      }
+
+      try {
+        const params = new URLSearchParams({ limit: PAGE_SIZE, offset: currentOffset });
+        if (currentAcao) params.set('acao', currentAcao);
+        const res = await apiGet('/logs?' + params.toString());
+
+        // Suporte ao novo formato {logs, total} e ao antigo array
+        const logs = Array.isArray(res) ? res : res.logs;
+        currentTotal = Array.isArray(res) ? logs.length : res.total;
+
+        countEl.textContent = currentTotal > 0 ? `${currentTotal}` : '';
+
+        if (reset) {
+          if (logs.length === 0) {
+            list.innerHTML = '<p style="text-align:center;color:var(--text-3);padding:20px;">Nenhum registro encontrado.</p>';
+          } else {
+            list.innerHTML = logs.map(renderLogItem).join('');
+          }
+        } else {
+          list.innerHTML += logs.map(renderLogItem).join('');
+        }
+
+        currentOffset += logs.length;
+        const hasMore = currentOffset < currentTotal;
+        pagination.style.display = hasMore ? 'flex' : 'none';
+
+      } catch (e) {
+        list.innerHTML = '<p style="text-align:center;color:var(--red);padding:20px;">Erro ao carregar logs.</p>';
+      }
+    }
+
+    document.getElementById('btn-logs').addEventListener('click', () => {
+      const overlay = document.getElementById('logs-overlay');
+      overlay.style.display = 'flex';
+      overlay.classList.add('open');
+      loadLogs(true);
+    });
+
+    // Filtros
+    document.querySelectorAll('.log-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.log-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentAcao = btn.dataset.acao;
+        loadLogs(true);
+      });
+    });
+
+    // Carregar mais
+    document.getElementById('logs-load-more').addEventListener('click', () => loadLogs(false));
+
+    document.getElementById('logs-close').addEventListener('click', () => {
       const ov = document.getElementById('logs-overlay');
       ov.classList.remove('open');
       ov.style.display = 'none';
-    }
-  });
-}
+    });
+    document.getElementById('logs-overlay').addEventListener('click', e => {
+      if (e.target === document.getElementById('logs-overlay')) {
+        const ov = document.getElementById('logs-overlay');
+        ov.classList.remove('open');
+        ov.style.display = 'none';
+      }
+    });
+  })(); // fim do módulo logs
+
+} // fim de attachEvents
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {

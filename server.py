@@ -11,8 +11,9 @@ import json
 import os
 import re
 import sys
+import threading
 
-from flask import Flask, request, jsonify, send_from_directory, send_file, Response
+from flask import Flask, request, jsonify, send_from_directory, send_file, Response, g
 
 
 # ── Instala Flask se necessário ─────────────────────────────
@@ -31,11 +32,35 @@ DATA_JS  = os.path.join(BASE_DIR, 'data.js')
 app = Flask(__name__, static_folder=BASE_DIR)
 
 # ── Banco de Dados ───────────────────────────────────────────
+# Conexão thread-local reutilizada durante todo o ciclo de vida da requisição.
+# Evita abrir/fechar conexão a cada chamada (crítico em ambientes OneDrive/rede).
+_db_local = threading.local()
+
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    return conn
+    """Retorna conexão SQLite reutilizável por thread/request."""
+    # Dentro de um contexto Flask, reutiliza via g
+    try:
+        db = getattr(g, '_database', None)
+        if db is None:
+            db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
+            db.row_factory = sqlite3.Row
+            g._database = db
+        return db
+    except RuntimeError:
+        # Fora do contexto Flask (ex: init_db)
+        db = getattr(_db_local, 'conn', None)
+        if db is None:
+            db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
+            db.row_factory = sqlite3.Row
+            _db_local.conn = db
+        return db
+
+@app.teardown_appcontext
+def close_db(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+        g._database = None
 
 def migrate_db():
     """Aplica migrações no banco existente."""
@@ -78,6 +103,25 @@ def migrate_db():
             criado_em            TEXT    DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    # ── Empenhos (CSV histórico – Visualizador) ─────────────────
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS empenhos_importacoes (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            periodo     TEXT    NOT NULL,
+            descricao   TEXT,
+            arquivo     TEXT,
+            total_rows  INTEGER DEFAULT 0,
+            importado_em TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS empenhos_linhas (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            importacao_id   INTEGER NOT NULL
+                            REFERENCES empenhos_importacoes(id) ON DELETE CASCADE,
+            dados           TEXT    NOT NULL
+        )
+    """)
     # ── Despesas da Prefeitura (CSV histórico) ──────────────────
     cur.execute("""
         CREATE TABLE IF NOT EXISTS despesas_importacoes (
@@ -99,12 +143,21 @@ def migrate_db():
         )
     """)
     conn.commit()
-    conn.close()
+
 
 def init_db():
     """Cria as tabelas e popula credores iniciais a partir do data.js."""
     conn = get_db()
     cur  = conn.cursor()
+
+    # PRAGMAs de performance — executados uma única vez na inicialização
+    # NOTA: WAL mode DESABILITADO — OneDrive não sincroniza .db-wal corretamente
+    cur.execute("PRAGMA journal_mode=DELETE")    # Modo padrão: dados sempre no .db principal
+    cur.execute("PRAGMA synchronous=FULL")       # Segurança máxima de gravação
+    cur.execute("PRAGMA cache_size=-8000")       # 8MB de cache em memória
+    cur.execute("PRAGMA temp_store=MEMORY")      # Tabelas temporárias em RAM
+    cur.execute("PRAGMA mmap_size=134217728")    # Memory-map de 128MB
+    conn.commit()
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS credores (
@@ -212,8 +265,14 @@ def init_db():
         print("Populando banco com dados do data.js...")
         _seed_from_data_js(cur)
 
+    # ── Índices para performance ────────────────────────────────
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor ON empenhos(credor_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes ON empenhos(ano, mes)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_departamento ON credores(departamento)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_data ON logs(data)")
+
     conn.commit()
-    conn.close()
+
     print(f"Banco de dados pronto: {DB_PATH}")
 
 def _seed_from_data_js(cur):
@@ -260,6 +319,14 @@ def index():
     resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return resp
 
+
+@app.route('/static/<path:filename>')
+def static_cached(filename):
+    resp = send_from_directory(os.path.join(BASE_DIR, 'static'), filename)
+    resp.headers['Cache-Control'] = 'public, max-age=86400'
+    return resp
+
+
 @app.route('/<path:filename>')
 def static_files(filename):
     if filename.startswith('api/'):
@@ -298,13 +365,20 @@ def auth_adm():
     return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
 # ────────────────────────────────────────────────────────────
 
+@app.route('/api/ping', methods=['GET'])
+def ping():
+    return jsonify({'ok': True})
+
 @app.route('/api/credores', methods=['GET'])
 def get_credores():
+    limit = request.args.get('limit', 1000, type=int)
+    offset = request.args.get('offset', 0, type=int)
     conn = get_db()
     rows = conn.execute(
-        "SELECT * FROM credores WHERE ativo=1 ORDER BY departamento, nome"
+        "SELECT * FROM credores WHERE ativo=1 ORDER BY departamento, nome LIMIT ? OFFSET ?",
+        (limit, offset)
     ).fetchall()
-    conn.close()
+
     return jsonify([row_to_dict(r) for r in rows])
 
 
@@ -339,7 +413,7 @@ def add_credor():
     conn.commit()
     
     row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
-    conn.close()
+
     return jsonify(row_to_dict(row)), 201
 
 
@@ -347,6 +421,11 @@ def add_credor():
 def update_credor(cid):
     data = request.get_json()
     conn = get_db()
+
+    # Captura valores antigos para diff
+    old_row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+    old = row_to_dict(old_row) if old_row else {}
+
     conn.execute("""
         UPDATE credores SET
           nome=?, valor=?, descricao=?, cnpj=?, email=?,
@@ -367,15 +446,41 @@ def update_credor(cid):
         cid,
     ))
     conn.commit()
-    
-    # Log da ação
+
+    # Gera diff com rótulos legíveis
+    labels = {
+        'nome': 'Nome', 'valor': 'Valor', 'descricao': 'Descrição',
+        'cnpj': 'CNPJ', 'email': 'E-mail', 'tipo_valor': 'Tipo',
+        'departamento': 'Departamento', 'obs': 'OBS',
+        'pagamento': 'Pagamento', 'solicitacao': 'Solicitação'
+    }
+    new_vals = {
+        'nome': data.get('nome', '').upper(),
+        'valor': str(float(data.get('valor') or 0)),
+        'descricao': (data.get('descricao') or '').upper(),
+        'cnpj': data.get('cnpj', ''),
+        'email': data.get('email', ''),
+        'tipo_valor': data.get('tipo_valor', 'FIXO'),
+        'departamento': data.get('departamento', ''),
+        'obs': (data.get('obs') or '').upper(),
+        'pagamento': data.get('pagamento', ''),
+        'solicitacao': data.get('solicitacao', ''),
+    }
+    changes = []
+    for key, label in labels.items():
+        old_val = str(old.get(key, '') or '')
+        new_val = str(new_vals.get(key, '') or '')
+        if old_val != new_val:
+            changes.append(f"{label}: {old_val or '—'} → {new_val or '—'}")
+    detalhes = ' | '.join(changes) if changes else 'Sem alterações detectadas'
+
     cur = conn.cursor()
     cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-        ('EDITAR', cid, data.get('nome', '').upper(), f"Credor atualizado - Valor: R$ {data.get('valor', 0)}"))
+        ('EDITAR', cid, data.get('nome', '').upper(), detalhes))
     conn.commit()
-    
+
     row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
-    conn.close()
+
     if not row:
         return jsonify({'error': 'Não encontrado'}), 404
     return jsonify(row_to_dict(row))
@@ -396,15 +501,29 @@ def delete_credor(cid):
     cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
         ('EXCLUIR', cid, nome, 'Credor excluído'))
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM logs ORDER BY data DESC LIMIT 100").fetchall()
-    conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    acao = request.args.get('acao', '').upper()
+    limit = min(int(request.args.get('limit', 100)), 500)
+    offset = int(request.args.get('offset', 0))
+    if acao:
+        rows = conn.execute(
+            "SELECT * FROM logs WHERE acao=? ORDER BY data DESC LIMIT ? OFFSET ?",
+            (acao, limit, offset)
+        ).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)).fetchone()[0]
+    else:
+        rows = conn.execute(
+            "SELECT * FROM logs ORDER BY data DESC LIMIT ? OFFSET ?",
+            (limit, offset)
+        ).fetchall()
+        total = conn.execute("SELECT COUNT(*) FROM logs").fetchone()[0]
+
+    return jsonify({'logs': [row_to_dict(r) for r in rows], 'total': total, 'offset': offset, 'limit': limit})
 
 # ────────────────────────────────────────────────────────────
 # API – Empenhos
@@ -418,7 +537,7 @@ def get_empenhos(ano, mes):
         "SELECT credor_id, timestamp FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
         (ano, mes)
     ).fetchall()
-    conn.close()
+
     return jsonify([row_to_dict(r) for r in rows])
 
 
@@ -452,7 +571,7 @@ def toggle_empenho():
         cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
             (acao, cid, nome, f"{acao} em {mes:02d}/{ano}"))
         conn.commit()
-        conn.close()
+
         return jsonify({'empenhado': bool(new_state)})
     else:
         conn.execute(
@@ -462,7 +581,7 @@ def toggle_empenho():
         cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
             ('EMPENHAR', cid, nome, f"EMPENHAR em {mes:02d}/{ano}"))
         conn.commit()
-        conn.close()
+
         return jsonify({'empenhado': True})
 
 
@@ -474,7 +593,7 @@ def historico_credor(cid):
         "SELECT ano, mes, empenhado, timestamp FROM empenhos WHERE credor_id=? AND empenhado=1 ORDER BY ano DESC, mes DESC",
         (cid,)
     ).fetchall()
-    conn.close()
+
     return jsonify([row_to_dict(r) for r in rows])
 
 
@@ -689,7 +808,7 @@ def listar_pasta():
 def get_rpas():
     conn = get_db()
     rows = conn.execute("SELECT * FROM rpas ORDER BY criado_em DESC").fetchall()
-    conn.close()
+
     return jsonify([row_to_dict(r) for r in rows])
 
 
@@ -733,7 +852,7 @@ def add_rpa():
     new_id = cur.lastrowid
     conn.commit()
     row = conn.execute("SELECT * FROM rpas WHERE id=?", (new_id,)).fetchone()
-    conn.close()
+
     return jsonify(row_to_dict(row)), 201
 
 
@@ -776,7 +895,7 @@ def update_rpa(rid):
     ))
     conn.commit()
     row = conn.execute("SELECT * FROM rpas WHERE id=?", (rid,)).fetchone()
-    conn.close()
+
     if not row:
         return jsonify({'error': 'Não encontrado'}), 404
     return jsonify(row_to_dict(row))
@@ -787,7 +906,7 @@ def delete_rpa(rid):
     conn = get_db()
     conn.execute("DELETE FROM rpas WHERE id=?", (rid,))
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 
@@ -799,7 +918,7 @@ def delete_rpa(rid):
 def kanban_list():
     conn = get_db()
     rows = conn.execute("SELECT * FROM kanban_tasks ORDER BY criado_em ASC").fetchall()
-    conn.close()
+
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/kanban', methods=['POST'])
@@ -814,7 +933,7 @@ def kanban_create():
     )
     conn.commit()
     row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (d['id'],)).fetchone()
-    conn.close()
+
     return jsonify(dict(row)), 201
 
 @app.route('/api/kanban/<task_id>', methods=['PUT'])
@@ -828,7 +947,7 @@ def kanban_update(task_id):
     )
     conn.commit()
     row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
-    conn.close()
+
     if not row:
         return jsonify({'error': 'not found'}), 404
     return jsonify(dict(row))
@@ -838,7 +957,7 @@ def kanban_delete(task_id):
     conn = get_db()
     conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 
@@ -849,7 +968,7 @@ def kanban_delete(task_id):
 def fornecimento_dados_get():
     conn = get_db()
     rows = conn.execute("SELECT tipo, valor FROM fornecimento_dados ORDER BY tipo, valor COLLATE NOCASE").fetchall()
-    conn.close()
+
     result = {'solicitantes': [], 'empresas': [], 'observacoes': []}
     for r in rows:
         if r['tipo'] in result:
@@ -866,7 +985,7 @@ def fornecimento_dados_add():
     conn = get_db()
     conn.execute("INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)", (tipo, valor))
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 @app.route('/api/fornecimento/dados', methods=['DELETE'])
@@ -877,7 +996,7 @@ def fornecimento_dados_del():
     conn = get_db()
     conn.execute("DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor))
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 
@@ -890,7 +1009,7 @@ ALLOWED_CONFIG_KEYS = {'api_openrouter_key', 'api_openrouter_modelo', 'api_cnpja
 def config_get():
     conn = get_db()
     rows = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
-    conn.close()
+
     return jsonify({r['chave']: r['valor'] for r in rows if r['chave'] in ALLOWED_CONFIG_KEYS})
 
 @app.route('/api/config', methods=['POST'])
@@ -905,7 +1024,7 @@ def config_set():
                 (chave, str(valor))
             )
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 import urllib.request as _urllib_req
@@ -1129,7 +1248,7 @@ def despesas_listar_importacoes():
         "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
         "FROM despesas_importacoes ORDER BY importado_em DESC"
     ).fetchall()
-    conn.close()
+
     return jsonify([row_to_dict(r) for r in rows])
 
 
@@ -1173,7 +1292,7 @@ def despesas_importar():
             "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
             "FROM despesas_importacoes WHERE id=?", (imp_id,)
         ).fetchone()
-        conn.close()
+
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
         return jsonify({'error': 'Erro ao salvar no banco', 'detail': str(e)}), 500
@@ -1188,14 +1307,14 @@ def despesas_carregar(imp_id):
         "FROM despesas_importacoes WHERE id=?", (imp_id,)
     ).fetchone()
     if not imp:
-        conn.close()
+
         return jsonify({'error': 'Importação não encontrada'}), 404
 
     linhas_rows = conn.execute(
         "SELECT dados FROM despesas_linhas WHERE importacao_id=? ORDER BY id",
         (imp_id,)
     ).fetchall()
-    conn.close()
+
 
     imp_dict = row_to_dict(imp)
     imp_dict['colunas'] = json.loads(imp_dict['colunas'] or '[]')
@@ -1210,7 +1329,7 @@ def despesas_excluir(imp_id):
     conn.execute("DELETE FROM despesas_linhas WHERE importacao_id=?", (imp_id,))
     conn.execute("DELETE FROM despesas_importacoes WHERE id=?", (imp_id,))
     conn.commit()
-    conn.close()
+
     return jsonify({'ok': True})
 
 
@@ -1223,13 +1342,13 @@ def despesas_resumo(imp_id):
         "FROM despesas_importacoes WHERE id=?", (imp_id,)
     ).fetchone()
     if not imp:
-        conn.close()
+
         return jsonify({'error': 'Importação não encontrada'}), 404
 
     linhas_rows = conn.execute(
         "SELECT dados FROM despesas_linhas WHERE importacao_id=?", (imp_id,)
     ).fetchall()
-    conn.close()
+
 
     colunas = json.loads(imp['colunas'] or '[]')
     linhas = [json.loads(r['dados']) for r in linhas_rows]
@@ -1290,6 +1409,82 @@ def despesas_resumo(imp_id):
 
 
 # ────────────────────────────────────────────────────────────
+# API – Empenhos CSV (Visualizador de Empenhos → BD)
+# ────────────────────────────────────────────────────────────
+
+@app.route('/api/empenhos-csv/importar', methods=['POST'])
+def empenhos_csv_importar():
+    """Salva dados de empenhos (CSV do visualizador) no banco."""
+    try:
+        d = request.get_json(force=True)
+        if not d:
+            return jsonify({'error': 'JSON inválido'}), 400
+        periodo  = (d.get('periodo') or '').strip()
+        descricao = (d.get('descricao') or '').strip()
+        arquivo  = (d.get('arquivo') or '').strip()
+        linhas   = d.get('linhas', [])
+
+        if not periodo:
+            return jsonify({'error': 'Período obrigatório'}), 400
+        if not linhas:
+            return jsonify({'error': 'Nenhuma linha recebida'}), 400
+
+        from datetime import datetime as _dt
+        now = _dt.now().strftime('%Y-%m-%d %H:%M:%S')
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute(
+            "INSERT INTO empenhos_importacoes (periodo, descricao, arquivo, total_rows, importado_em) VALUES (?,?,?,?,?)",
+            (periodo, descricao, arquivo, len(linhas), now)
+        )
+        imp_id = cur.lastrowid
+        cur.executemany(
+            "INSERT INTO empenhos_linhas (importacao_id, dados) VALUES (?,?)",
+            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas]
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes WHERE id=?", (imp_id,)
+        ).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        return jsonify({'error': 'Erro ao salvar', 'detail': str(e)}), 500
+
+
+@app.route('/api/empenhos-csv/importacoes', methods=['GET'])
+def empenhos_csv_listar():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes ORDER BY importado_em DESC"
+    ).fetchall()
+    return jsonify([row_to_dict(r) for r in rows])
+
+
+@app.route('/api/empenhos-csv/importacoes/<int:imp_id>', methods=['GET'])
+def empenhos_csv_carregar(imp_id):
+    conn = get_db()
+    imp = conn.execute(
+        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes WHERE id=?", (imp_id,)
+    ).fetchone()
+    if not imp:
+        return jsonify({'error': 'Importação não encontrada'}), 404
+    linhas_rows = conn.execute(
+        "SELECT dados FROM empenhos_linhas WHERE importacao_id=? ORDER BY id", (imp_id,)
+    ).fetchall()
+    linhas = [json.loads(r['dados']) for r in linhas_rows]
+    return jsonify({'importacao': row_to_dict(imp), 'linhas': linhas})
+
+
+@app.route('/api/empenhos-csv/importacoes/<int:imp_id>', methods=['DELETE'])
+def empenhos_csv_excluir(imp_id):
+    conn = get_db()
+    conn.execute("DELETE FROM empenhos_linhas WHERE importacao_id=?", (imp_id,))
+    conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
+    conn.commit()
+    return jsonify({'ok': True})
+
+
+# ────────────────────────────────────────────────────────────
 # MAIN
 # ────────────────────────────────────────────────────────────
 
@@ -1297,6 +1492,15 @@ if __name__ == '__main__':
     import socket
     init_db()
     migrate_db()
+
+    # ── Fix de performance: Werkzeug faz reverse-DNS lookup em cada requisição
+    #    via socket.getfqdn(), o que trava ~2s no Windows. Desabilitamos isso.
+    try:
+        from werkzeug.serving import WSGIRequestHandler
+        WSGIRequestHandler.address_string = lambda self: self.client_address[0]
+    except Exception:
+        pass
+
     # Detecta o IP local da máquina
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -1311,5 +1515,5 @@ if __name__ == '__main__':
     print(f'  Rede   : http://{local_ip}:5000   << compartilhe este link')
     print('  Para encerrar: feche esta janela ou pressione Ctrl+C')
     print('=' * 60)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
 

@@ -349,19 +349,48 @@
         <div>
           <h1>Empenhos</h1>
           <p>Município de Inajá - PR</p>
+          <div id="viz-periodo-ativo" style="font-size:11px;color:#c9a961;margin-top:2px;min-height:16px;"></div>
         </div>
       </div>
-      <div class="actions" style="display:flex;align-items:center;gap:0.5rem;">
-        <button id="toggleViewBtn" class="vbtn vbtn-outline" style="margin-right: 1rem;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          Dashboard
-        </button>
-        <label for="csvFile" class="vbtn vbtn-primary" style="cursor:pointer;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          Carregar CSV
-        </label>
-        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+      <div class="actions" style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <button id="toggleViewBtn" class="vbtn vbtn-outline" style="margin-right: 0.5rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            Dashboard
+          </button>
+          <button id="btn-viz-historico" class="vbtn vbtn-outline" style="font-size:12px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Histórico
+          </button>
+          <label for="csvFile" class="vbtn vbtn-primary" style="cursor:pointer;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Carregar CSV
+          </label>
+          <input type="file" id="csvFile" accept=".csv" style="display: none;">
+        </div>
+        <!-- Salvar no banco (aparece após carregar CSV) -->
+        <div id="viz-salvar-wrap" style="display:none;flex-direction:column;gap:8px;align-items:flex-end;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+            <input id="viz-input-periodo" type="text" placeholder="Período (ex: Jan/2025)"
+              style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--viz-text,#f1f5f9);outline:none;width:150px;" />
+            <input id="viz-input-descricao" type="text" placeholder="Descrição (opcional)"
+              style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--viz-text,#f1f5f9);outline:none;width:170px;" />
+          </div>
+          <button id="btn-viz-salvar" class="vbtn vbtn-outline" style="font-size:12px;border-color:#c9a961;color:#c9a961;background:rgba(201,169,97,0.12);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Salvar no banco
+          </button>
+        </div>
       </div>
+    </div>
+
+    <!-- Painel de histórico de importações -->
+    <div id="viz-historico-painel" style="display:none;background:rgba(15,15,20,0.98);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="font-size:14px;font-weight:700;color:#f1f5f9;margin:0;">📅 Importações salvas</h3>
+        <button id="viz-fechar-historico" class="vbtn vbtn-outline" style="font-size:11px;padding:4px 10px;">Fechar ×</button>
+      </div>
+      <div id="viz-historico-lista" style="display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;"></div>
     </div>
 
     <div class="print-header" style="display: none;">
@@ -1697,6 +1726,147 @@
       if (sidebar) sidebar.classList.toggle('mobile-open');
     });
   }
+
+  // ── Salvar no banco e Histórico ──────────────────────────────
+  (function () {
+    const API_VIZ = '/api/empenhos-csv';
+    const salvarWrap = document.getElementById('viz-salvar-wrap');
+    const btnSalvar  = document.getElementById('btn-viz-salvar');
+    const btnHist    = document.getElementById('btn-viz-historico');
+    const painel     = document.getElementById('viz-historico-painel');
+    const lista      = document.getElementById('viz-historico-lista');
+    const btnFechar  = document.getElementById('viz-fechar-historico');
+    const inputPeriodo  = document.getElementById('viz-input-periodo');
+    const inputDesc     = document.getElementById('viz-input-descricao');
+
+    // Mostra/oculta "Salvar no banco" após carregar CSV
+    const origSetData = window.App.stateManager.setData;
+    window.App.stateManager.setData = function(newData) {
+      origSetData.call(this, newData);
+      if (newData && newData.length > 0) {
+        salvarWrap.style.display = 'flex';
+      }
+    };
+
+    // Salvar no banco
+    btnSalvar.addEventListener('click', async () => {
+      const periodo = inputPeriodo.value.trim();
+      if (!periodo) { inputPeriodo.focus(); inputPeriodo.style.borderColor = '#ef4444'; return; }
+      inputPeriodo.style.borderColor = 'rgba(255,255,255,0.15)';
+
+      const data = window.App.state.data;
+      if (!data || !data.length) { alert('Nenhum dado carregado.'); return; }
+
+      const arquivo = document.getElementById('csvFile').files[0]?.name || '';
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = 'Salvando…';
+
+      try {
+        const resp = await fetch(API_VIZ + '/importar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            periodo,
+            descricao: inputDesc.value.trim(),
+            arquivo,
+            linhas: data.map(item => ({ ...item.raw, _id: item.id, _credor: item.credor, _valor: item.valor, _data: item.data, _situacao: item.situacao }))
+          })
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || 'Erro ao salvar');
+
+        btnSalvar.textContent = '✓ Salvo!';
+        btnSalvar.style.borderColor = '#10b981';
+        btnSalvar.style.color = '#10b981';
+        btnSalvar.style.background = 'rgba(16,185,129,0.12)';
+        setTimeout(() => {
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no banco';
+          btnSalvar.style.borderColor = '#c9a961';
+          btnSalvar.style.color = '#c9a961';
+          btnSalvar.style.background = 'rgba(201,169,97,0.12)';
+        }, 3000);
+      } catch (e) {
+        alert('Erro ao salvar: ' + e.message);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar no banco';
+      }
+    });
+
+    // Histórico
+    async function renderHistorico() {
+      lista.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">Carregando…</div>';
+      try {
+        const imps = await fetch(API_VIZ + '/importacoes').then(r => r.json());
+        if (!imps.length) {
+          lista.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">Nenhuma importação salva ainda. Carregue um CSV e clique em "Salvar no banco".</div>';
+          return;
+        }
+        lista.innerHTML = '';
+        imps.forEach(imp => {
+          const item = document.createElement('div');
+          item.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;';
+          const dt = imp.importado_em ? new Date(imp.importado_em.replace(' ','T')).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+          item.innerHTML = `
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:13px;color:#f1f5f9;">${escH(imp.periodo)}${imp.descricao ? ' – ' + escH(imp.descricao) : ''}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${imp.total_rows} empenhos${imp.arquivo ? ' · ' + escH(imp.arquivo) : ''} · ${dt}</div>
+            </div>
+            <div style="display:flex;gap:6px;margin-left:12px;">
+              <button class="vbtn vbtn-outline viz-hist-load" data-id="${imp.id}" style="font-size:11px;padding:4px 10px;">Carregar</button>
+              <button class="vbtn vbtn-outline viz-hist-del" data-id="${imp.id}" style="font-size:11px;padding:4px 10px;border-color:#ef4444;color:#ef4444;">✕</button>
+            </div>
+          `;
+          lista.appendChild(item);
+        });
+
+        lista.querySelectorAll('.viz-hist-load').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.disabled = true; btn.textContent = '…';
+            try {
+              const resp = await fetch(API_VIZ + '/importacoes/' + btn.dataset.id).then(r => r.json());
+              const linhas = resp.linhas.map(row => ({
+                id: row._id || '', credor: row._credor || '', valor: row._valor || 0,
+                data: row._data || '', situacao: row._situacao || '', raw: row,
+                historico: '', processo: '', unidade: '', valorLiquidado: 0, valorPago: 0,
+                funcao: '', subfuncao: '', dataLiquidacao: ''
+              }));
+              window.App.stateManager.setData(linhas);
+              window.App.ui.renderFilters();
+              window.App.ui.populateDespesaFilter(linhas);
+              window.App.logic.applyFilters();
+              window.App.ui.renderTable();
+              window.App.ui.renderPagination();
+              window.App.ui.renderStats();
+              painel.style.display = 'none';
+              document.getElementById('viz-periodo-ativo').textContent = '📂 ' + resp.importacao.periodo;
+            } catch(e) { alert('Erro ao carregar: ' + e.message); }
+            finally { btn.disabled = false; btn.textContent = 'Carregar'; }
+          });
+        });
+
+        lista.querySelectorAll('.viz-hist-del').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Excluir esta importação?')) return;
+            await fetch(API_VIZ + '/importacoes/' + btn.dataset.id, { method: 'DELETE' });
+            btn.closest('div[style]').remove();
+            if (!lista.querySelector('[data-id]')) renderHistorico();
+          });
+        });
+      } catch(e) {
+        lista.innerHTML = '<div style="color:#ef4444;font-size:13px;">Erro ao carregar histórico.</div>';
+      }
+    }
+
+    btnHist.addEventListener('click', () => {
+      const open = painel.style.display === 'block';
+      painel.style.display = open ? 'none' : 'block';
+      if (!open) renderHistorico();
+    });
+    btnFechar.addEventListener('click', () => { painel.style.display = 'none'; });
+
+    function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  })();
 
   </script>
 </body>

@@ -149,7 +149,7 @@ const CREDORES_FIXOS = [
   {
     "id": 12,
     "NOME": "PRODASP",
-    "VALOR": 4537.01,
+    "VALOR": 3321.82,
     "DESCRIÇÃO": "REFERENTE A CÂMARA MUNICIPAL",
     "CNPJ": "84.785.070/0001-92",
     "EMAIL": "miihrosada@gmail.com",
@@ -253,7 +253,7 @@ const CREDORES_FIXOS = [
   {
     "id": 20,
     "NOME": "PRODASP",
-    "VALOR": 21072.82,
+    "VALOR": 18600.39,
     "DESCRIÇÃO": "REFERENTE A PREFEITURA MUNICIPAL",
     "CNPJ": "84.785.070/0001-92",
     "EMAIL": "miihrosada@gmail.com",
@@ -353,5 +353,31 @@ const CREDORES_FIXOS = [
     "PAGAMENTO": "",
     "DEPARTAMENTO": "ADMINISTRAÇÃO",
     "OBS": ""
+  },
+  {
+    "id": 28,
+    "NOME": "PRODASP",
+    "VALOR": 4769.74,
+    "DESCRIÇÃO": "REFERENTE A CÂMARA MUNICIPAL",
+    "CNPJ": "84.785.070/0001-92",
+    "EMAIL": "miihrosada@gmail.com",
+    "TIPO DE VALOR": "FIXO",
+    "SOLICITAÇÃO": "",
+    "PAGAMENTO": "20",
+    "DEPARTAMENTO": "ADMINISTRAÇÃO",
+    "OBS": ""
+  },
+  {
+    "id": 29,
+    "NOME": "CLEISON MOREIRA DE SOUZA",
+    "VALOR": 9390.00,
+    "DESCRIÇÃO": "PROFISSIONAL TECNICO",
+    "CNPJ": "",
+    "EMAIL": "",
+    "TIPO DE VALOR": "FIXO",
+    "SOLICITAÇÃO": "",
+    "PAGAMENTO": "",
+    "DEPARTAMENTO": "ADMINISTRAÇÃO",
+    "OBS": "DIVISAO DE CONTABILIDADE"
   }
 ];

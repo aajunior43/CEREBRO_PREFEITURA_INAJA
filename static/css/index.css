@@ -1616,9 +1616,52 @@ body {
 /* ============================================================
    LOGS
    ============================================================ */
+.logs-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.log-filter-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--text-2);
+  box-shadow: var(--neo-out-sm);
+  transition: all .15s;
+}
+.log-filter-btn.active,
+.log-filter-btn:hover {
+  box-shadow: var(--neo-in-sm);
+  color: var(--blue);
+}
+
+.logs-count-badge {
+  display: inline-block;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 .logs-list {
-  max-height: 400px;
+  max-height: 440px;
   overflow-y: auto;
+}
+
+.logs-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 4px;
 }
 
 .log-item {
@@ -1641,38 +1684,90 @@ body {
   justify-content: center;
   flex-shrink: 0;
   font-size: 14px;
+  font-weight: 700;
 }
 
-.log-icon.criar { background: var(--green-bg); color: var(--green); }
-.log-icon.editar { background: var(--blue-light); color: var(--blue); }
-.log-icon.excluir { background: var(--red-bg); color: var(--red); }
+.log-icon.criar      { background: var(--green-bg); color: var(--green); }
+.log-icon.editar     { background: var(--blue-light); color: var(--blue); }
+.log-icon.excluir    { background: var(--red-bg); color: var(--red); }
+.log-icon.empenhar   { background: #d1fae5; color: #059669; }
+.log-icon.desempenhar{ background: #fef9c3; color: #b45309; }
+.log-icon.outro      { background: var(--bg-2); color: var(--text-3); }
 
 .log-content {
   flex: 1;
+  min-width: 0;
+}
+
+.log-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .log-acao {
   font-weight: 700;
-  font-size: 13px;
-  color: var(--text);
+  font-size: 11px;
+  letter-spacing: .05em;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
 }
+.log-acao.criar      { background: var(--green-bg); color: var(--green); }
+.log-acao.editar     { background: var(--blue-light); color: var(--blue); }
+.log-acao.excluir    { background: var(--red-bg); color: var(--red); }
+.log-acao.empenhar   { background: #d1fae5; color: #059669; }
+.log-acao.desempenhar{ background: #fef9c3; color: #b45309; }
+.log-acao.outro      { background: var(--bg-2); color: var(--text-3); }
 
 .log-nome {
-  font-size: 12px;
-  color: var(--text-2);
-  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .log-detalhes {
   font-size: 11px;
   color: var(--text-3);
-  margin-top: 4px;
+  margin-top: 5px;
+}
+
+/* Diff chips para EDITAR */
+.log-diff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.log-diff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--blue-light);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11px;
+  max-width: 100%;
+  overflow: hidden;
+}
+.log-diff-label {
+  font-weight: 700;
+  color: var(--blue);
+  white-space: nowrap;
+}
+.log-diff-change {
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .log-data {
   font-size: 10px;
   color: var(--text-3);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ============================================================
