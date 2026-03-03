@@ -1745,6 +1745,12 @@
       origSetData.call(this, newData);
       if (newData && newData.length > 0) {
         salvarWrap.style.display = 'flex';
+        // Preenche período com a data atual se ainda estiver vazio
+        if (!inputPeriodo.value) {
+          const now = new Date();
+          const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+          inputPeriodo.value = `${now.getDate().toString().padStart(2,'0')}/${meses[now.getMonth()]}/${now.getFullYear()}`;
+        }
       }
     };
 
