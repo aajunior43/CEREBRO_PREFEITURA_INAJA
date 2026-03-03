@@ -377,7 +377,7 @@ const DEFAULT_FAIXAS = [
   { limInf: 2428.81, limSup: 2800.00, aliq: 7.5,  parcela: 182.16 },
   { limInf: 2800.01, limSup: 3566.00, aliq: 15,   parcela: 394.16 },
   { limInf: 3566.01, limSup: 4743.33, aliq: 22.5, parcela: 661.62 },
-  { limInf: 4743.34, limSup: null,    aliq: 27.5, parcela: 898.01 }
+  { limInf: 4743.34, limSup: null,    aliq: 27.5, parcela: 1065.14 }
 ];
 
 let config = {};
@@ -437,7 +437,16 @@ function carregarConfig() {
 
 function carregarFaixas() {
   try { faixasIRRF = JSON.parse(localStorage.getItem('rpa_faixas')) || []; } catch { faixasIRRF = []; }
-  if (!faixasIRRF.length) faixasIRRF = JSON.parse(JSON.stringify(DEFAULT_FAIXAS));
+  if (!faixasIRRF.length) {
+    faixasIRRF = JSON.parse(JSON.stringify(DEFAULT_FAIXAS));
+  } else {
+    // Migração: atualiza parcela da faixa superior se ainda estiver com valor antigo (898.01)
+    const top = faixasIRRF[faixasIRRF.length - 1];
+    if (top && top.parcela === 898.01) {
+      top.parcela = 1065.14;
+      localStorage.setItem('rpa_faixas', JSON.stringify(faixasIRRF));
+    }
+  }
 }
 
 async function carregarRPAs() {
