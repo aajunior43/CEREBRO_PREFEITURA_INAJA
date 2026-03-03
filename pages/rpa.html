@@ -72,6 +72,12 @@
     .empty-rpa svg { width: 48px; height: 48px; margin: 0 auto 12px; display: block; }
     .cpf-warning { background: var(--orange-bg); color: var(--orange); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; margin-top: 6px; }
     .section-divider { border: none; border-top: 1px solid rgba(184,194,204,0.3); margin: 16px 0; }
+    .modelos-dropdown { display:none; position:absolute; top:calc(100% + 4px); left:0; z-index:200; background:var(--card); border-radius:var(--radius-sm); box-shadow:0 6px 20px rgba(0,0,0,0.18); min-width:270px; padding:4px 0; border:1px solid rgba(184,194,204,0.2); }
+    .modelo-item { padding:10px 16px; cursor:pointer; border-bottom:1px solid rgba(184,194,204,0.15); transition:background 0.12s; }
+    .modelo-item:hover { background:var(--hover); }
+    .modelo-item:last-child { border-bottom:none; }
+    .modelo-item strong { display:block; font-size:13px; color:var(--text); }
+    .modelo-item small { font-size:11px; color:var(--text-3); }
     @media print { .rpa-tabs, .rpa-actions, header, .main-content { display: none !important; } }
   </style>
   <script src="/static/js/shared-header.js"></script>
@@ -99,6 +105,10 @@
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn-rpa btn-rpa-secondary" onclick="limparForm()">🗑️ Limpar</button>
+            <div style="position:relative;display:inline-block;" id="modelos-wrap">
+              <button class="btn-rpa btn-rpa-secondary" onclick="toggleModelosDropdown()">📁 Modelos ▾</button>
+              <div class="modelos-dropdown" id="modelos-dropdown"></div>
+            </div>
             <button class="btn-rpa btn-rpa-secondary" onclick="exportarJSON()">⬇️ Exportar JSON</button>
             <button class="btn-rpa btn-rpa-secondary" onclick="importarJSON()">⬆️ Importar JSON</button>
             <button class="btn-rpa btn-rpa-green" onclick="gerarPDF()" data-tooltip="Gerar Recibo de Pagamento Autônomo em PDF">🖨️ Gerar PDF</button>
@@ -731,8 +741,62 @@ async function excluirRPA(id) {
   }
 }
 
+// ============================================================
+// MODELOS RÁPIDOS
+// ============================================================
+const MODELOS = [
+  {
+    nome: 'CLEISON MOREIRA DE SOUZA',
+    cpf: '042.809.699-00',
+    descricao: 'Prestação de serviços técnicos junto à Divisão de Contabilidade',
+    local: 'Divisão de Contabilidade - Secretaria Municipal de Administração',
+    carga: '40h mensais',
+    valor: 9390.00,
+    obs: 'INSS: R$ 877,24 | IR: R$ 1.257,87 | Líquido: R$ 7.254,89'
+  }
+];
+
+function toggleModelosDropdown() {
+  const dd = document.getElementById('modelos-dropdown');
+  const isOpen = dd.style.display === 'block';
+  if (!isOpen) {
+    dd.innerHTML = MODELOS.map((m, i) =>
+      `<div class="modelo-item" onclick="carregarModelo(${i})">
+        <strong>${m.nome}</strong>
+        <small>R$ ${m.valor.toLocaleString('pt-BR', {minimumFractionDigits:2})} · ${m.local.split(' - ')[0]}</small>
+      </div>`
+    ).join('');
+    dd.style.display = 'block';
+    setTimeout(() => document.addEventListener('click', fecharModelosDropdown, { once: true }), 50);
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+function fecharModelosDropdown(e) {
+  const wrap = document.getElementById('modelos-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('modelos-dropdown').style.display = 'none';
+  }
+}
+
+function carregarModelo(idx) {
+  const m = MODELOS[idx];
+  if (!m) return;
+  document.getElementById('modelos-dropdown').style.display = 'none';
+  limparForm();
+  document.getElementById('f-nome').value = m.nome;
+  document.getElementById('f-cpf').value = m.cpf;
+  document.getElementById('f-descricao').value = m.descricao;
+  document.getElementById('f-local').value = m.local;
+  document.getElementById('f-carga').value = m.carga;
+  document.getElementById('f-valor').value = m.valor;
+  if (m.obs) document.getElementById('f-obs').value = m.obs;
+  calcularImpostos();
+  toast('Modelo carregado: ' + m.nome, 'success');
+}
+
 function limparForm() {
-  editandoId = null;
   document.getElementById('form-title').textContent = 'Novo RPA';
   document.getElementById('rpa-numero-display').textContent = '—';
   ['f-numero','f-nome','f-cpf','f-endereco-prestador','f-descricao','f-periodo','f-carga','f-local','f-obs'].forEach(id => {
