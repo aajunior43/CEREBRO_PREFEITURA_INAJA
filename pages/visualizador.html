@@ -251,6 +251,35 @@
   .viz-app .step-sub-value { font-size: 0.75rem; color: #f87171; margin-top: 2px; }
   .viz-app .step-sub-value.green { color: #4ade80; }
 
+  /* Status pills */
+  .viz-app .status-pills-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .viz-app .status-pill {
+    padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; border: 1px solid; transition: all 0.15s; white-space: nowrap;
+  }
+  .viz-app .status-pill:not(.active) { background: transparent; color: var(--viz-secondary); border-color: var(--viz-border); }
+  .viz-app .status-pill.active { color: white; }
+  .viz-app .status-pill[data-color="yellow"].active { background: #f59e0b; border-color: #f59e0b; }
+  .viz-app .status-pill[data-color="blue"].active { background: #3b82f6; border-color: #3b82f6; }
+  .viz-app .status-pill[data-color="green"].active { background: #10b981; border-color: #10b981; }
+  .viz-app .status-pill[data-color="red"].active { background: #ef4444; border-color: #ef4444; }
+  .viz-app .status-pill[data-color="gray"].active { background: #6b7280; border-color: #6b7280; }
+
+  /* Month pills grid */
+  .viz-app .month-pills-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  }
+  .viz-app .month-pill {
+    padding: 4px 2px; font-size: 0.72rem; font-weight: 600; text-align: center;
+    cursor: pointer; border: 1px solid var(--viz-border); border-radius: 4px;
+    background: transparent; color: var(--viz-secondary); transition: all 0.15s;
+  }
+  .viz-app .month-pill.active { background: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+  .viz-app .month-pill:hover:not(.active) { background: var(--viz-hover); }
+
+  /* Value range pills */
+  .viz-app .val-range-pill.active { background: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+
   /* Footer */
   .viz-app .viz-footer {
     background-color: var(--viz-card); padding: 0.5rem; text-align: center;
@@ -404,7 +433,7 @@
     <div class="app-container">
       <aside class="sidebar">
         <div class="sidebar-header">
-          <h3>Filtros</h3>
+          <h3>Filtros <span id="activeFilterCount" style="font-size:11px;background:#3b82f6;color:white;padding:1px 6px;border-radius:10px;display:none;">0</span></h3>
           <button id="clearFilters" class="vbtn vbtn-sm vbtn-outline">Limpar</button>
         </div>
 
@@ -427,6 +456,18 @@
             <button class="vbtn vbtn-xs vbtn-outline date-shortcut-btn" data-range="lastYear">Ano Passado</button>
           </div>
           <div id="dateError" class="hint error-message" style="display: none; color: #ef4444;">Data inicial deve ser menor que a final.</div>
+          <div style="margin-top:0.5rem;display:flex;gap:6px;align-items:center;">
+            <label style="font-size:0.8rem;white-space:nowrap;margin:0;">Ano:</label>
+            <select id="anoFilter" style="flex:1;" class="vw-100">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div id="mesesWrap" style="display:none;margin-top:6px;">
+            <label style="font-size:0.8rem;margin-bottom:4px;display:block;">Mês:</label>
+            <div class="month-pills-grid" id="monthPills">
+              <!-- 12 pills Jan-Dez gerados no JS -->
+            </div>
+          </div>
         </div>
 
         <div class="filter-group">
@@ -448,7 +489,7 @@
             <span>até</span>
             <input type="number" id="maxVal" placeholder="Máx">
           </div>
-          <div class="checkbox-group" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem;">
+          <div class="checkbox-group" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; display: none;">
             <div class="checkbox-wrapper">
               <input type="checkbox" id="valRange1" value="low">
               <label for="valRange1" style="font-size: 0.85rem;">Pequeno (&lt; R$ 1k)</label>
@@ -461,6 +502,12 @@
               <input type="checkbox" id="valRange3" value="high">
               <label for="valRange3" style="font-size: 0.85rem;">Alto (&gt; R$ 10k)</label>
             </div>
+          </div>
+          <div class="date-shortcuts" style="margin-top:0.5rem;">
+            <button class="vbtn vbtn-xs vbtn-outline val-range-pill" data-range="low">&lt; R$ 1k</button>
+            <button class="vbtn vbtn-xs vbtn-outline val-range-pill" data-range="medium">R$ 1k-10k</button>
+            <button class="vbtn vbtn-xs vbtn-outline val-range-pill" data-range="high">&gt; R$ 10k</button>
+            <button class="vbtn vbtn-xs vbtn-outline val-range-pill" data-range="veryhigh">&gt; R$ 50k</button>
           </div>
         </div>
 
@@ -512,10 +559,8 @@
         </div>
 
         <div class="filter-group">
-          <label for="statusFilter">Situação</label>
-          <select id="statusFilter">
-            <option value="">Todas</option>
-          </select>
+          <label>Situação</label>
+          <div id="statusPills" class="status-pills-wrap"></div>
         </div>
 
         <button id="printList" class="vbtn vbtn-secondary vw-100 vmt-2">
@@ -527,8 +572,8 @@
       <main class="main-content">
         <div id="activeFilters" class="active-filters-container"></div>
         <div class="stats-bar" id="statsBar" style="display: none;">
-          <span id="totalRecords">0 registros encontrados</span>
-          <span id="totalValue">Total: R$ 0,00</span>
+          <span id="totalRecords">0 registros</span>
+          <span id="totalValue" style="display:flex;gap:12px;flex-wrap:wrap;"></span>
         </div>
 
         <!-- Dashboard View -->
@@ -711,7 +756,7 @@
       startDate: null, endDate: null,
       credor: [], unidade: '', status: '',
       atraso: false, daysAtraso: 30,
-      valRanges: [], minExec: 0, despesa: '', credorType: ''
+      valRanges: [], minExec: 0, despesa: '', credorType: '', ano: '', mes: ''
     },
     pagination: { currentPage: 1, itemsPerPage: 100, totalPages: 0 },
     sorting: { column: 'data', direction: 'desc' }
@@ -759,6 +804,7 @@
           if (filters.valRanges.includes('low') && v < 1000) inRange = true;
           if (filters.valRanges.includes('medium') && v >= 1000 && v <= 10000) inRange = true;
           if (filters.valRanges.includes('high') && v > 10000) inRange = true;
+          if (filters.valRanges.includes('veryhigh') && v > 50000) inRange = true;
           if (!inRange) return false;
         }
         if (filters.minExec > 0) {
@@ -792,6 +838,16 @@
         if (filters.credor && filters.credor.length > 0) { if (!filters.credor.includes(item.credor)) return false; }
         if (filters.unidade) { if (item.unidade !== filters.unidade) return false; }
         if (filters.status) { if (item.situacao !== filters.status) return false; }
+        if (filters.ano) {
+          if (!item.data) return false;
+          const parts = item.data.split('/');
+          if (parts.length < 3 || !parts[2].startsWith(filters.ano)) return false;
+        }
+        if (filters.mes) {
+          if (!item.data) return false;
+          const parts = item.data.split('/');
+          if (parts.length < 2 || parseInt(parts[1]) !== parseInt(filters.mes)) return false;
+        }
         if (filters.atraso) {
           const valorLiquidado = item.valorLiquidado || 0;
           const valorPago = item.valorPago || 0;
@@ -1015,8 +1071,45 @@
 
       // Status options
       const statusSelect = document.getElementById('statusFilter');
-      const status = window.App.logic.getUniqueValues('situacao');
-      statusSelect.innerHTML = '<option value="">Todas</option>' + status.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+      if (statusSelect) {
+        const status = window.App.logic.getUniqueValues('situacao');
+        statusSelect.innerHTML = '<option value="">Todas</option>' + status.map(s => '<option value="' + s + '">' + s + '</option>').join('');
+      }
+
+      // Populate year select from data
+      const anoSel = document.getElementById('anoFilter');
+      if (anoSel) {
+        const years = new Set();
+        window.App.state.data.forEach(item => {
+          if (item.data) {
+            const parts = item.data.split('/');
+            if (parts.length >= 3) years.add(parts[2].substring(0,4));
+          }
+        });
+        const sortedYears = Array.from(years).filter(y => y.match(/^\d{4}$/)).sort().reverse();
+        anoSel.innerHTML = '<option value="">Todos</option>' + sortedYears.map(y => '<option value="' + y + '">' + y + '</option>').join('');
+      }
+
+      // Month pills
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const monthPillsContainer = document.getElementById('monthPills');
+      if (monthPillsContainer) {
+        monthPillsContainer.innerHTML = meses.map((m, i) =>
+          '<button class="month-pill" data-mes="' + (i+1) + '">' + m + '</button>'
+        ).join('');
+        monthPillsContainer.querySelectorAll('.month-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const active = btn.classList.contains('active');
+            monthPillsContainer.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active'));
+            if (!active) { btn.classList.add('active'); window.App.state.filters.mes = btn.dataset.mes; }
+            else { window.App.state.filters.mes = ''; }
+            window.App.main.handleFilterChange();
+          });
+        });
+      }
+
+      // Status pills
+      renderStatusPills();
     },
 
     populateDespesaFilter: (data) => {
@@ -1105,6 +1198,9 @@
       if (filters.minExec > 0) addChip('Execução > ' + filters.minExec + '%', 'minExec');
       if (filters.despesa) addChip('Natureza: ' + filters.despesa, 'despesa');
       if (filters.credorType) addChip('Tipo: ' + filters.credorType, 'credorType');
+      const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      if (filters.ano) addChip('Ano: ' + filters.ano, 'ano');
+      if (filters.mes) addChip('Mês: ' + (mesesNomes[parseInt(filters.mes)-1] || filters.mes), 'mes');
       container.innerHTML = chips.map((chip) =>
         '<div class="filter-chip"><span>' + chip.label + '</span>' +
         '<span class="close-chip" data-type="' + chip.type + '">&times;</span></div>'
@@ -1112,6 +1208,9 @@
       container.querySelectorAll('.close-chip').forEach(btn => {
         btn.addEventListener('click', (e) => { window.App.main.removeFilter(e.target.dataset.type); });
       });
+      const count = chips.length;
+      const badge = document.getElementById('activeFilterCount');
+      if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline' : 'none'; }
     },
 
     renderPagination: () => {
@@ -1134,9 +1233,18 @@
       const statsBar = document.getElementById('statsBar');
       if (window.App.state.data.length > 0) {
         statsBar.style.display = 'flex';
-        totalRecords.textContent = window.App.state.filteredData.length + ' registros encontrados';
-        const sum = window.App.state.filteredData.reduce((acc, item) => acc + item.valor, 0);
-        totalValue.textContent = 'Total: ' + window.App.utils.formatCurrency(sum);
+        const filtered = window.App.state.filteredData;
+        const total = window.App.state.data.length;
+        totalRecords.textContent = filtered.length + (filtered.length !== total ? ' de ' + total : '') + ' registros';
+        const sumEmp = filtered.reduce((a, i) => a + (i.valor || 0), 0);
+        const sumLiq = filtered.reduce((a, i) => a + (i.valorLiquidado || 0), 0);
+        const sumPago = filtered.reduce((a, i) => a + (i.valorPago || 0), 0);
+        const pct = sumEmp > 0 ? Math.round(sumPago / sumEmp * 100) : 0;
+        const fmt = window.App.utils.formatCurrency;
+        totalValue.innerHTML =
+          '<span style="color:#3b82f6">\uD83D\uDD35 Empenhado: <b>' + fmt(sumEmp) + '</b></span>' +
+          (sumLiq > 0 ? '<span style="color:#f59e0b">\uD83D\uDFE1 Liquidado: <b>' + fmt(sumLiq) + '</b></span>' : '') +
+          (sumPago > 0 ? '<span style="color:#10b981">\uD83D\uDFE2 Pago: <b>' + fmt(sumPago) + '</b> (' + pct + '%)</span>' : '');
       } else { statsBar.style.display = 'none'; }
     },
 
@@ -1521,7 +1629,21 @@
         if (window.App.ui.updateCredorList) window.App.ui.updateCredorList();
         window.App.main.handleFilterChange();
       });
-      document.getElementById('statusFilter').addEventListener('change', window.App.main.handleFilterChange);
+      document.getElementById('anoFilter').addEventListener('change', window.App.main.handleFilterChange);
+      // Val range pills
+      document.querySelectorAll('.val-range-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const range = btn.dataset.range;
+          const active = btn.classList.contains('active');
+          btn.classList.toggle('active', !active);
+          const ranges = window.App.state.filters.valRanges;
+          if (!active) { if (!ranges.includes(range)) ranges.push(range); }
+          else { const idx = ranges.indexOf(range); if (idx > -1) ranges.splice(idx, 1); }
+          const cb = document.querySelector('input[value="' + range + '"]');
+          if (cb) cb.checked = !active;
+          window.App.main.handleFilterChange();
+        });
+      });
       const checkAtraso = document.getElementById('checkAtraso');
       const daysAtrasoInput = document.getElementById('daysAtraso');
       const atrasoContainer = document.getElementById('atrasoInputContainer');
@@ -1614,7 +1736,12 @@
       const selectedCheckboxes = document.querySelectorAll('.credor-checkbox:checked');
       filters.credor = Array.from(selectedCheckboxes).map(cb => cb.value);
       filters.unidade = document.getElementById('unidadeFilter').value;
-      filters.status = document.getElementById('statusFilter').value;
+      const anoFilter = document.getElementById('anoFilter');
+      if (anoFilter) {
+        filters.ano = anoFilter.value;
+        document.getElementById('mesesWrap').style.display = filters.ano ? 'block' : 'none';
+        if (!filters.ano) { filters.mes = ''; document.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active')); }
+      }
       window.App.logic.applyFilters();
       window.App.ui.renderTable();
       window.App.ui.renderPagination();
@@ -1644,7 +1771,6 @@
       document.getElementById('credorSearchInput').value = '';
       document.querySelectorAll('.dropdown-item').forEach(item => item.style.display = 'flex');
       document.getElementById('unidadeFilter').value = '';
-      document.getElementById('statusFilter').value = '';
       const checkAtraso = document.getElementById('checkAtraso');
       checkAtraso.checked = false;
       document.getElementById('atrasoInputContainer').style.display = 'none';
@@ -1653,6 +1779,18 @@
       window.App.state.filters.daysAtraso = 30;
       document.querySelectorAll('input[id^="valRange"]').forEach(chk => chk.checked = false);
       window.App.state.filters.valRanges = [];
+      // Clear ano/mes
+      const anoFilter = document.getElementById('anoFilter');
+      if (anoFilter) { anoFilter.value = ''; window.App.state.filters.ano = ''; }
+      const mesesWrap = document.getElementById('mesesWrap');
+      if (mesesWrap) mesesWrap.style.display = 'none';
+      document.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active'));
+      window.App.state.filters.mes = '';
+      // Clear status pills
+      window.App.state.filters.status = '';
+      document.querySelectorAll('.status-pill').forEach(b => b.classList.remove('active'));
+      // Clear val range pills
+      document.querySelectorAll('.val-range-pill').forEach(b => b.classList.remove('active'));
       const execSlider = document.getElementById('execSlider');
       if (execSlider) { execSlider.value = 0; document.getElementById('execValue').textContent = '0%'; window.App.state.filters.minExec = 0; }
       const despesaFilter = document.getElementById('despesaFilter');
@@ -1678,7 +1816,14 @@
         case 'unidade':
           document.getElementById('unidadeFilter').value = ''; filters.unidade = '';
           if (window.App.ui.updateCredorList) window.App.ui.updateCredorList(); break;
-        case 'status': document.getElementById('statusFilter').value = ''; filters.status = ''; break;
+        case 'status': document.querySelectorAll('.status-pill').forEach(b => b.classList.remove('active')); filters.status = ''; break;
+        case 'ano':
+          document.getElementById('anoFilter').value = ''; filters.ano = '';
+          document.getElementById('mesesWrap').style.display = 'none';
+          filters.mes = ''; document.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active')); break;
+        case 'mes':
+          document.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active'));
+          filters.mes = ''; break;
         case 'atraso':
           document.getElementById('checkAtraso').checked = false;
           document.getElementById('atrasoInputContainer').style.display = 'none';
@@ -1701,6 +1846,37 @@
       document.querySelector('.table-container').scrollTop = 0;
     }
   };
+  function renderStatusPills() {
+    const container = document.getElementById('statusPills');
+    if (!container) return;
+    const colorMap = (s) => {
+      const sl = (s||'').toLowerCase();
+      if (sl.includes('empenhado')) return 'yellow';
+      if (sl.includes('liquidado')) return 'blue';
+      if (sl.includes('pago') || sl.includes('quitado')) return 'green';
+      if (sl.includes('anulado') || sl.includes('cancelado')) return 'red';
+      return 'gray';
+    };
+    const counts = {};
+    window.App.state.data.forEach(item => {
+      const s = item.situacao || 'Empenhado';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    const current = window.App.state.filters.status;
+    const pills = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+    container.innerHTML = pills.map(([s, n]) =>
+      '<button class="status-pill' + (current === s ? ' active' : '') + '" data-color="' + colorMap(s) + '" data-status="' + s + '">' + s + ' (' + n + ')</button>'
+    ).join('');
+    container.querySelectorAll('.status-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wasActive = btn.classList.contains('active');
+        container.querySelectorAll('.status-pill').forEach(b => b.classList.remove('active'));
+        if (!wasActive) { btn.classList.add('active'); window.App.state.filters.status = btn.dataset.status; }
+        else { window.App.state.filters.status = ''; }
+        window.App.main.handleFilterChange();
+      });
+    });
+  }
   document.addEventListener('DOMContentLoaded', window.App.main.init);
   </script>
 
