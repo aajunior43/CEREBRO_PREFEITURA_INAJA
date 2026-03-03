@@ -22,6 +22,7 @@ let state = {
   expandAll: false,
   credores: [],
   empenhados: {},
+  sort: { col: 'nome', dir: 'asc' },
 };
 
 // ── API Calls ────────────────────────────────────────────────
@@ -90,7 +91,7 @@ function renderMonthNav() {
 }
 
 function filteredCredores() {
-  return state.credores.filter(c => {
+  const list = state.credores.filter(c => {
     const name = (c.nome || '').toLowerCase();
     const search = state.searchTerm.toLowerCase();
     if (search &&
@@ -105,6 +106,21 @@ function filteredCredores() {
     }
     return true;
   });
+
+  const { col, dir } = state.sort;
+  list.sort((a, b) => {
+    let va, vb;
+    if (col === 'nome') { va = (a.nome || '').toLowerCase(); vb = (b.nome || '').toLowerCase(); }
+    else if (col === 'valor') { va = a.valor || 0; vb = b.valor || 0; }
+    else if (col === 'departamento') { va = (a.departamento || '').toLowerCase(); vb = (b.departamento || '').toLowerCase(); }
+    else if (col === 'tipo') { va = (a.tipo_valor || '').toLowerCase(); vb = (b.tipo_valor || '').toLowerCase(); }
+    else if (col === 'status') { va = state.empenhados[a.id] ? 1 : 0; vb = state.empenhados[b.id] ? 1 : 0; }
+    else { return 0; }
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return list;
 }
 
 function renderCards() {
@@ -136,6 +152,20 @@ function buildCard(c, done, idx) {
   const tipo = c.tipo_valor || 'FIXO';
   const valor = c.valor || 0;
   const obs = c.obs || '';
+
+  // Vencimento badge
+  let vencimentoBadge = '';
+  if (c.validade) {
+    const valDate = new Date(c.validade + 'T00:00:00');
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const diffDias = Math.ceil((valDate - hoje) / (1000 * 60 * 60 * 24));
+    if (diffDias < 0) {
+      vencimentoBadge = `<span class="badge-vencimento vencido" title="Contrato vencido em ${valDate.toLocaleDateString('pt-BR')}">VENCIDO</span>`;
+    } else if (diffDias <= 30) {
+      vencimentoBadge = `<span class="badge-vencimento atencao" title="Contrato vence em ${valDate.toLocaleDateString('pt-BR')}">⚠️ ${diffDias}d</span>`;
+    }
+  }
   const isVariavel = tipo.toUpperCase().includes('VAR');
   const valorStr = (isVariavel && !valor) ? '— variável' : formatBRL(valor);
 
@@ -151,7 +181,7 @@ function buildCard(c, done, idx) {
   div.innerHTML = `
     <div class="card-row">
       <div class="col-name">
-        <span class="card-name" title="Clique para copiar" style="cursor:pointer;">${c.nome || '—'}${obs ? `<span class="badge-obs">${obs}</span>` : ''}</span>
+        <span class="card-name" title="Clique para copiar" style="cursor:pointer;">${c.nome || '—'}${vencimentoBadge}${obs ? `<span class="badge-obs">${obs}</span>` : ''}</span>
         <span class="card-desc">${c.descricao || '—'}</span>
       </div>
       <div class="col-dept">
@@ -181,6 +211,10 @@ function buildCard(c, done, idx) {
       ${c.email ? `<div class="detail-row"><span class="detail-label">E-mail</span><span class="detail-value">${c.email}</span></div>` : ''}
       ${c.solicitacao ? `<div class="detail-row"><span class="detail-label">Solicitação</span><span class="detail-value">${c.solicitacao}</span></div>` : ''}
       ${c.pagamento ? `<div class="detail-row"><span class="detail-label">Pagamento</span><span class="detail-value">${c.pagamento} dias</span></div>` : ''}
+      <div class="detail-row hist-row">
+        <span class="detail-label">Histórico</span>
+        <div class="historico-pills" id="hist-${c.id}"><span style="font-size:11px;color:var(--text-3)">▸ expandir para carregar</span></div>
+      </div>
     </div>
   `;
 
@@ -192,6 +226,19 @@ function buildCard(c, done, idx) {
   div.querySelector('.btn-expand').addEventListener('click', e => {
     e.stopPropagation();
     div.classList.toggle('expanded');
+    // Lazy load histórico ao expandir
+    if (div.classList.contains('expanded')) {
+      const histEl = div.querySelector('.historico-pills');
+      if (histEl && !histEl.dataset.loaded) {
+        histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">...</span>';
+        apiGet(`/credores/${c.id}/historico?meses=6`).then(hist => {
+          histEl.innerHTML = hist.map(h =>
+            `<span class="hist-pill ${h.empenhado ? 'hist-emp' : 'hist-pend'}" title="${h.mes_nome}/${h.ano}">${h.mes_nome}</span>`
+          ).join('');
+          histEl.dataset.loaded = '1';
+        }).catch(() => { histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">—</span>'; });
+      }
+    }
   });
 
   div.querySelector('.btn-edit').addEventListener('click', e => {
@@ -260,6 +307,35 @@ function renderStats() {
   document.getElementById('stat-restante').textContent = formatBRL(valorPend);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-label').textContent = `${pct}% concluído`;
+
+  // Dept breakdown
+  const depts = {};
+  state.credores.forEach(c => {
+    const d = c.departamento || 'OUTRO';
+    if (!depts[d]) depts[d] = { total: 0, done: 0, valor: 0 };
+    depts[d].total++;
+    if (state.empenhados[c.id]) { depts[d].done++; depts[d].valor += (Number(c.valor) || 0); }
+  });
+  const deptColors = { 'ADMINISTRAÇÃO': 'var(--blue)', 'ASSISTÊNCIA SOCIAL': 'var(--purple)', 'EDUCAÇÃO': 'var(--green)', 'SAÚDE': 'var(--orange)' };
+  const deptEl = document.getElementById('dept-stats-row');
+  if (deptEl) {
+    deptEl.innerHTML = Object.entries(depts).sort((a,b) => b[1].total - a[1].total).map(([d, s]) =>
+      `<button class="dept-stat-btn" data-dept="${d}" style="--dept-color:${deptColors[d]||'var(--text-3)'}">
+        <span class="dept-stat-name">${d.split(' ')[0]}</span>
+        <span class="dept-stat-count">${s.done}/${s.total}</span>
+        <span class="dept-stat-valor">${s.valor > 0 ? formatBRL(s.valor) : '—'}</span>
+      </button>`
+    ).join('');
+    deptEl.querySelectorAll('.dept-stat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.dept;
+        const sel = document.getElementById('filter-dept');
+        if (sel.value === d) { sel.value = ''; state.filterDept = ''; btn.classList.remove('active-dept'); }
+        else { sel.value = d; state.filterDept = d; deptEl.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept')); btn.classList.add('active-dept'); }
+        renderCards();
+      });
+    });
+  }
 }
 
 // ── Template CSS compartilhado (print) ───────────────────────
@@ -483,6 +559,53 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
       </div>
 
     </div>`;
+}
+
+// ── Exportar CSV ───────────────────────────────────────────────
+function exportCSV() {
+  const lista = filteredCredores();
+  if (!lista.length) { showToast('Nenhum credor para exportar', 'error'); return; }
+  const mesNome = MESES[state.month];
+  const ano = state.year;
+  const header = ['Nome', 'Departamento', 'Valor', 'Tipo', 'CNPJ', 'Descrição', 'Status', 'Observações'];
+  const rows = lista.map(c => [
+    c.nome || '',
+    c.departamento || '',
+    (c.valor || 0).toFixed(2).replace('.', ','),
+    c.tipo_valor || 'FIXO',
+    c.cnpj || '',
+    c.descricao || '',
+    state.empenhados[c.id] ? 'Empenhado' : 'Pendente',
+    c.obs || '',
+  ]);
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `credores_${mesNome}_${ano}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  showToast(`CSV exportado: ${lista.length} credores`, 'success');
+}
+
+// ── Empenhar em Lote ───────────────────────────────────────────
+async function batchEmpenhar() {
+  const pending = filteredCredores().filter(c => !state.empenhados[c.id]);
+  if (pending.length === 0) { showToast('Nenhum credor pendente na lista atual', 'info'); return; }
+  if (!confirm(`Empenhar ${pending.length} credor(es) pendente(s) de ${MESES[state.month]}/${state.year}?`)) return;
+  setLoading(true);
+  try {
+    const results = await Promise.all(pending.map(c =>
+      apiPost('/empenhos', { credor_id: c.id, ano: state.year, mes: state.month + 1 })
+    ));
+    results.forEach((res, i) => { state.empenhados[pending[i].id] = res.empenhado; });
+    showToast(`✓ ${pending.length} credor(es) empenhado(s)!`, 'success');
+    render();
+  } catch (e) {
+    showToast('Erro ao empenhar em lote', 'error');
+    console.error(e);
+  } finally {
+    setLoading(false);
+  }
 }
 
 // ── Imprimir Credor (individual) ──────────────────────────────
@@ -874,6 +997,29 @@ function attachEvents() {
       }
     });
   })(); // fim do módulo logs
+
+  // Sort columns
+  document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = btn.dataset.col;
+      if (state.sort.col === col) {
+        state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sort.col = col;
+        state.sort.dir = 'asc';
+      }
+      document.querySelectorAll('.sort-btn').forEach(b => {
+        b.classList.remove('active');
+        b.querySelector('.sort-arrow').textContent = '';
+      });
+      btn.classList.add('active');
+      btn.querySelector('.sort-arrow').textContent = state.sort.dir === 'asc' ? '↑' : '↓';
+      renderCards();
+    });
+  });
+
+  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+  document.getElementById('btn-empenhar-todos').addEventListener('click', batchEmpenhar);
 
 } // fim de attachEvents
 

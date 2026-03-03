@@ -812,6 +812,31 @@ def get_rpas():
     return jsonify([row_to_dict(r) for r in rows])
 
 
+@app.route('/api/credores/<int:cid>/historico', methods=['GET'])
+def get_historico_credor(cid):
+    conn = get_db()
+    meses = int(request.args.get('meses', 6))
+    from datetime import date
+    resultado = []
+    hoje = date.today()
+    for i in range(meses - 1, -1, -1):
+        m = hoje.month - i
+        y = hoje.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        row = conn.execute(
+            "SELECT id FROM empenhos WHERE credor_id=? AND ano=? AND mes=?",
+            (cid, y, m)
+        ).fetchone()
+        resultado.append({
+            'ano': y, 'mes': m,
+            'mes_nome': ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1],
+            'empenhado': row is not None
+        })
+    return jsonify(resultado)
+
+
 @app.route('/api/rpas', methods=['POST'])
 def add_rpa():
     d = request.get_json()

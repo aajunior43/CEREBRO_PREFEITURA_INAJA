@@ -334,6 +334,9 @@
     </div>
   </div>
 
+  <!-- DEPT STATS -->
+  <div class="dept-stats-row" id="dept-stats-row"></div>
+
   <!-- PROGRESS BAR -->
   <div class="progress-section">
     <div class="progress-bar-wrap">
@@ -383,6 +386,20 @@
         </svg>
         Imprimir Lote
       </button>
+      <button class="btn btn-secondary" id="btn-export-csv" title="Exportar lista como CSV">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Exportar CSV
+      </button>
+      <button class="btn btn-secondary" id="btn-empenhar-todos" title="Empenhar todos os pendentes visíveis">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Empenhar Todos
+      </button>
       <button class="btn btn-primary" id="btn-add-credor" title="Adicionar credor" data-tooltip="Adicionar novo credor fixo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -397,11 +414,11 @@
   <main class="main-content">
     <!-- Cabeçalho das colunas -->
     <div class="list-header">
-      <span>Credor / Descrição</span>
-      <span>Departamento</span>
-      <span>Valor</span>
-      <span>Tipo</span>
-      <span style="text-align:right">Ação</span>
+      <button class="sort-btn active" data-col="nome">Credor / Descrição <span class="sort-arrow">↑</span></button>
+      <button class="sort-btn" data-col="departamento">Departamento <span class="sort-arrow"></span></button>
+      <button class="sort-btn" data-col="valor">Valor <span class="sort-arrow"></span></button>
+      <button class="sort-btn" data-col="tipo">Tipo <span class="sort-arrow"></span></button>
+      <span style="text-align:right;padding:8px 18px 8px 0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-3);">Ação</span>
     </div>
     <div class="empenhos-list" id="empenhos-grid">
       <!-- Linhas inseridas pelo JS -->
