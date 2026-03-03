@@ -752,6 +752,7 @@ const MODELOS = [
     local: 'Divisão de Contabilidade - Secretaria Municipal de Administração',
     carga: '40h mensais',
     valor: 9390.00,
+    issAtivo: false,
     obs: 'INSS: R$ 877,24 | IR: R$ 1.257,87 | Líquido: R$ 7.254,89'
   }
 ];
@@ -791,6 +792,7 @@ function carregarModelo(idx) {
   document.getElementById('f-local').value = m.local;
   document.getElementById('f-carga').value = m.carga;
   document.getElementById('f-valor').value = m.valor;
+  if (m.issAtivo !== undefined) config.issAtivo = m.issAtivo;
   if (m.obs) document.getElementById('f-obs').value = m.obs;
   calcularImpostos();
   toast('Modelo carregado: ' + m.nome, 'success');
