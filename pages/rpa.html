@@ -1039,11 +1039,6 @@ function montarHTMLRecibo(rpa) {
       <p style="color:#777;font-size:10px;">CPF: ${escHtml(rpa.cpfPrestador)}</p>
       <p style="color:#777;font-size:10px;">Prestador de Serviço</p>
     </div>
-    <div class="assinatura">
-      <p>${escHtml(c.nomeEntidade)}</p>
-      <p style="color:#777;font-size:10px;">CNPJ: ${escHtml(c.cnpjEntidade)}</p>
-      <p style="color:#777;font-size:10px;">Tomador de Serviço</p>
-    </div>
   </div>
 
   <div class="rodape">Documento gerado em ${new Date().toLocaleString('pt-BR')} | ${escHtml(c.nomeEntidade)}</div>
