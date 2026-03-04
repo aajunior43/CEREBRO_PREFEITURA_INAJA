@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="/static/js/brasao_b64.js"></script>
   <style>
     /* ── PAGE ── */
     .forn-page { min-height: calc(100vh - 64px); padding: 20px 16px 60px; }
@@ -120,6 +121,42 @@
     .upload-area svg { width: 36px; height: 36px; margin-bottom: 8px; }
 
     .hidden { display: none !important; }
+
+    /* ── DOC PREVIEW ── */
+    .doc-preview { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; font-family: Arial, sans-serif; font-size: 12px; color: #2d3748; min-height: 350px; }
+    .dp-header { background: linear-gradient(135deg, #1e3a5f, #2d5986); padding: 14px 20px; display: flex; align-items: center; gap: 14px; }
+    .dp-header img { height: 48px; width: auto; }
+    .dp-header-center { flex: 1; text-align: center; }
+    .dp-header-center h2 { font-size: 15px; font-weight: 900; color: #fff; margin: 0; }
+    .dp-header-center p { font-size: 10px; color: rgba(255,255,255,.7); margin: 3px 0 0; }
+    .dp-separator { border: none; border-top: 3px solid #1e3a5f; margin: 0 20px 16px; }
+    .dp-doc-title { text-align: center; padding: 14px 20px 0; font-size: 14px; font-weight: 900; color: #1e3a5f; text-transform: uppercase; letter-spacing: 2px; }
+    .dp-info-box { margin: 12px 20px; background: #f0f5ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 10px 16px; display: flex; gap: 24px; font-size: 12px; flex-wrap: wrap; }
+    .dp-info-box span { color: #4a5568; } .dp-info-box strong { color: #1e3a5f; }
+    .dp-table-wrap { padding: 0 20px 12px; }
+    .dp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .dp-table thead tr { background: #1e3a5f; }
+    .dp-table th { color: #fff; padding: 8px 10px; font-size: 11px; text-align: left; font-weight: 700; }
+    .dp-table tbody tr:nth-child(even) { background: #edf2ff; }
+    .dp-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; color: #2d3748; }
+    .dp-total-row { margin: 0 20px 12px; background: #1e3a5f; color: #fff; padding: 8px 14px; border-radius: 4px; text-align: right; font-weight: 700; font-size: 14px; }
+    .dp-obs-row { margin: 0 20px 16px; font-size: 11px; color: #718096; }
+    .dp-sign-row { margin: 0 20px 20px; text-align: center; }
+    .dp-sign-line { width: 280px; border-top: 1px solid #2d3748; margin: 0 auto 6px; padding-top: 4px; }
+    .dp-sign-name { font-size: 12px; font-weight: 700; color: #2d3748; }
+    .dp-sign-sub { font-size: 10px; color: #718096; }
+    .dp-footer { background: #f7fafc; border-top: 2px solid #1e3a5f; padding: 8px 20px; font-size: 10px; color: #a0aec0; text-align: center; }
+    .dp-empty { padding: 40px; text-align: center; color: #a0aec0; font-size: 13px; }
+
+    /* ── QUEUE / BATCH MANUAL ── */
+    .queue-item { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .queue-item-info { flex: 1; }
+    .queue-item-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .queue-item-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .queue-item-total { font-size: 13px; font-weight: 700; color: var(--green-dark); }
+    .bl-item { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+    .bl-item input { background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 8px 10px; font-family: inherit; font-size: 12px; color: var(--text); outline: none; width: 100%; }
+    .bl-item-remove { background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; padding: 4px 8px; }
   </style>
   <script src="/static/js/shared-header.js"></script>
 </head>
@@ -176,11 +213,13 @@
           <div class="grid2" style="margin-bottom:14px;">
             <div class="fg">
               <label>Solicitante</label>
-              <input type="text" id="f-solicitante" placeholder="Nome do solicitante" />
+              <input type="text" id="f-solicitante" placeholder="Nome do solicitante" list="dl-solicitantes" />
+              <datalist id="dl-solicitantes"></datalist>
             </div>
             <div class="fg">
               <label>Empresa</label>
-              <input type="text" id="f-empresa" placeholder="Nome da empresa" />
+              <input type="text" id="f-empresa" placeholder="Nome da empresa" list="dl-empresas" />
+              <datalist id="dl-empresas"></datalist>
             </div>
           </div>
           <div class="grid2" style="margin-bottom:14px;">
@@ -214,18 +253,30 @@
           </div>
         </div>
 
-        <!-- Preview -->
-        <div class="forn-card">
-          <h3><svg viewBox="0 0 24 24"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg> Pré-visualização</h3>
-          <div class="preview-mini" id="preview-box">
-            <div class="ph">PREFEITURA MUNICIPAL DE INAJÁ</div>
-            <div style="text-align:center;font-size:8px;color:#666;margin-bottom:6px;">Estado do Paraná</div>
-            <div id="preview-info" style="margin-bottom:6px;"></div>
-            <table><thead><tr><th>Item</th><th>Descrição</th><th>Qtd</th><th>Unit.</th><th>Total</th></tr></thead><tbody id="preview-tbody"></tbody></table>
-            <div id="preview-total" style="text-align:right;font-weight:700;margin:4px 0;"></div>
-            <div id="preview-obs" style="font-size:8px;color:#666;margin-top:4px;"></div>
-            <div class="pf">Documento gerado eletronicamente</div>
+      </div>
+    </div>
+
+    <!-- Preview full-width -->
+    <div class="forn-card" style="margin-top:0;">
+      <h3><svg viewBox="0 0 24 24"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg> Pré-visualização do Documento</h3>
+      <div class="doc-preview" id="preview-box">
+        <div class="dp-empty" id="dp-empty">Preencha os dados acima para ver a pré-visualização</div>
+        <div id="dp-content" style="display:none;">
+          <div class="dp-header">
+            <img id="dp-brasao" src="" alt="Brasão" />
+            <div class="dp-header-center"><h2>PREFEITURA MUNICIPAL DE INAJÁ</h2><p>Estado do Paraná</p></div>
           </div>
+          <div class="dp-doc-title">Solicitação de Aquisição / Fornecimento</div>
+          <hr class="dp-separator" />
+          <div class="dp-info-box" id="dp-info"></div>
+          <div class="dp-table-wrap">
+            <table class="dp-table"><thead><tr><th>#</th><th>Item</th><th>Descrição</th><th>Qtd</th><th>Preço Unit.</th><th>Total</th></tr></thead>
+            <tbody id="dp-tbody"></tbody></table>
+          </div>
+          <div class="dp-total-row" id="dp-total"></div>
+          <div class="dp-obs-row" id="dp-obs-preview"></div>
+          <div class="dp-sign-row" id="dp-sign"></div>
+          <div class="dp-footer">Prefeitura Municipal de Inajá – Documento gerado eletronicamente</div>
         </div>
       </div>
     </div>
@@ -233,8 +284,42 @@
 
   <!-- ════════ TAB 2 – LOTE ════════ -->
   <div class="forn-panel" id="tab-batch">
+
+    <!-- Manual Entry -->
     <div class="forn-card">
-      <h3><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar Lote</h3>
+      <h3><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Adicionar Solicitação ao Lote</h3>
+      <div class="grid2" style="margin-bottom:12px;">
+        <div class="fg"><label>Solicitante</label><input type="text" id="bl-sol" placeholder="Nome do solicitante" /></div>
+        <div class="fg"><label>Empresa</label><input type="text" id="bl-emp" placeholder="Nome da empresa" /></div>
+      </div>
+      <div class="fg" style="margin-bottom:12px;">
+        <label>Observações</label>
+        <input type="text" id="bl-obs" placeholder="Opcional..." />
+      </div>
+      <div id="bl-items-container"></div>
+      <div class="btn-row" style="margin:10px 0;">
+        <button class="btn btn-ghost btn-sm" id="bl-add-item">+ Item</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" id="bl-add-to-queue">➕ Adicionar à Fila</button>
+        <button class="btn btn-ghost btn-sm" id="bl-clear-form">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="forn-card" id="queue-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M9 12h6m-3-3v6M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/></svg> Fila de Lote <span id="queue-count" style="background:var(--blue);color:#fff;border-radius:50px;padding:2px 10px;font-size:11px;margin-left:8px;">0</span></h3>
+      <div id="queue-list"></div>
+      <div class="btn-row" style="margin-top:14px;" id="queue-actions">
+        <button class="btn btn-blue" id="btn-batch-pdf">📄 Exportar Lote PDF</button>
+        <button class="btn btn-green" id="btn-batch-json">💾 Exportar JSON</button>
+        <button class="btn btn-red btn-sm" id="btn-clear-queue">🗑 Limpar Fila</button>
+      </div>
+    </div>
+
+    <!-- Import via Arquivo -->
+    <div class="forn-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar via Arquivo</h3>
       <p style="font-size:12px;color:var(--text-3);margin-bottom:14px;">Formato: <code>SOLICITANTE|EMPRESA|OBS|ITEM:DESC:QTD:VALOR;ITEM:DESC:QTD:VALOR</code></p>
       <div class="btn-row" style="margin-bottom:16px;">
         <button class="btn btn-ghost btn-sm" id="btn-download-template">📥 Baixar Template</button>
@@ -247,14 +332,10 @@
       <div id="batch-results" class="hidden"></div>
     </div>
 
-    <!-- Batch Summary & Actions -->
+    <!-- Batch Summary (from file import) -->
     <div class="forn-card hidden" id="batch-actions-card">
-      <h3><svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Resultado do Lote</h3>
+      <h3><svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Resultado da Importação</h3>
       <div id="batch-summary" style="margin-bottom:14px;"></div>
-      <div class="btn-row">
-        <button class="btn btn-blue" id="btn-batch-pdf">📄 Exportar Lote PDF</button>
-        <button class="btn btn-green" id="btn-batch-json">💾 Exportar JSON</button>
-      </div>
     </div>
   </div>
 
@@ -481,18 +562,36 @@ function updateTotals() {
 }
 
 function updatePreview() {
-  const info = document.getElementById('preview-info');
-  info.innerHTML = `<b>Solicitante:</b> ${esc($sol.value) || '—'} &nbsp; <b>Empresa:</b> ${esc($emp.value) || '—'} &nbsp; <b>Data:</b> ${esc($dat.value) || '—'}`;
+  const hasContent = $sol.value.trim() || $emp.value.trim() || items.length > 0;
+  document.getElementById('dp-empty').style.display = hasContent ? 'none' : '';
+  document.getElementById('dp-content').style.display = hasContent ? '' : 'none';
 
-  const tbody = document.getElementById('preview-tbody');
-  tbody.innerHTML = items.map(i => {
-    const t = (parseFloat(i.qtd) || 0) * parseMoney(i.preco);
-    return `<tr><td>${esc(i.nome)}</td><td>${esc(i.desc)}</td><td>${esc(i.qtd)}</td><td>${esc(i.preco)}</td><td>${fmtMoney(t)}</td></tr>`;
+  // Brasão
+  const brasaoEl = document.getElementById('dp-brasao');
+  if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
+    brasaoEl.src = BRASAO_B64; brasaoEl.style.display = '';
+  } else { brasaoEl.style.display = 'none'; }
+
+  // Info
+  document.getElementById('dp-info').innerHTML =
+    `<span><strong>Solicitante:</strong> ${esc($sol.value) || '—'}</span>` +
+    `<span><strong>Empresa:</strong> ${esc($emp.value) || '—'}</span>` +
+    `<span><strong>Data:</strong> ${esc($dat.value) || '—'}</span>`;
+
+  // Table
+  document.getElementById('dp-tbody').innerHTML = items.map((i, idx) => {
+    const t = (parseFloat(i.qtd)||0) * parseMoney(i.preco);
+    return `<tr><td>${idx+1}</td><td>${esc(i.nome)}</td><td>${esc(i.desc)}</td><td>${esc(i.qtd)}</td><td>${esc(i.preco)}</td><td>${fmtMoney(t)}</td></tr>`;
   }).join('');
 
-  document.getElementById('preview-total').textContent = items.length ? 'TOTAL: ' + fmtMoney(getGrandTotal()) : '';
-  const obsEl = document.getElementById('preview-obs');
-  obsEl.textContent = $obs.value ? 'Obs: ' + $obs.value : '';
+  document.getElementById('dp-total').textContent = items.length ? 'TOTAL: ' + fmtMoney(getGrandTotal()) : '';
+  document.getElementById('dp-obs-preview').textContent = $obs.value ? '📝 ' + $obs.value : '';
+
+  // Signature
+  document.getElementById('dp-sign').innerHTML = $sol.value.trim() ? `
+    <div class="dp-sign-line"></div>
+    <div class="dp-sign-name">${esc($sol.value)}</div>
+    <div class="dp-sign-sub">Assinatura do Solicitante</div>` : '';
 }
 
 // Listen for form changes
@@ -555,46 +654,61 @@ function generatePDF(req) {
 
   let y = 0;
 
+  // Metadados do PDF — sobrescreve autor/criador padrão do sistema
+  doc.setProperties({
+    title: 'Solicitação de Aquisição / Fornecimento',
+    subject: 'Solicitação de Aquisição',
+    author: 'Prefeitura Municipal de Inajá',
+    creator: 'Sistema de Aquisições – Prefeitura Municipal de Inajá',
+    keywords: 'solicitação, aquisição, fornecimento, inajá'
+  });
+
   // Header bar
   doc.setFillColor(...blue);
-  doc.rect(0, 0, W, 22, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(...white);
-  doc.text('PREFEITURA MUNICIPAL DE INAJÁ', W / 2, 10, { align: 'center' });
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Estado do Paraná', W / 2, 16, { align: 'center' });
-  doc.setFontSize(7);
-  doc.text('Rua Juvenal Lioto, 22 – Centro – CEP 87.670-000 – Inajá – PR', W / 2, 20, { align: 'center' });
-  y = 28;
+  doc.rect(0, 0, W, 30, 'F');
+  // Brasão centralizado — já contém o texto da prefeitura
+  if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
+    try {
+      const imgProps = doc.getImageProperties(BRASAO_B64);
+      const imgH = 26;
+      const imgW = imgH * (imgProps.width / imgProps.height);
+      doc.addImage(BRASAO_B64, 'PNG', (W - imgW) / 2, 2, imgW, imgH);
+    } catch(e) { /* sem brasão se falhar */ }
+  }
+  y = 38;
 
   // Title
-  doc.setFontSize(12);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...dark);
   doc.text('SOLICITAÇÃO DE AQUISIÇÃO / FORNECIMENTO', W / 2, y, { align: 'center' });
-  y += 10;
+  y += 5;
+  // Linha separadora sob o título
+  doc.setDrawColor(...blue);
+  doc.setLineWidth(0.5);
+  doc.line(M, y, W - M, y);
+  y += 8;
 
   // Info box
   doc.setDrawColor(...blue);
   doc.setLineWidth(0.3);
-  doc.roundedRect(M, y, pw, 22, 2, 2, 'S');
+  doc.setFillColor(240, 245, 255);
+  doc.roundedRect(M, y, pw, 26, 2, 2, 'FD');
   doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...dark);
-  doc.text('Solicitante:', M + 4, y + 7);
+  doc.text('Solicitante:', M + 4, y + 8);
   doc.setFont('helvetica', 'normal');
-  doc.text(req.solicitante || '—', M + 30, y + 7);
+  doc.text(req.solicitante || '—', M + 32, y + 8);
   doc.setFont('helvetica', 'bold');
-  doc.text('Empresa:', M + 4, y + 14);
+  doc.text('Empresa:', M + 4, y + 17);
   doc.setFont('helvetica', 'normal');
-  doc.text(req.empresa || '—', M + 25, y + 14);
+  doc.text(req.empresa || '—', M + 27, y + 17);
   doc.setFont('helvetica', 'bold');
-  doc.text('Data:', pw - 10, y + 7);
+  doc.text('Data:', W - M - 32, y + 8);
   doc.setFont('helvetica', 'normal');
-  doc.text(req.data || '—', pw + 2, y + 7);
-  y += 28;
+  doc.text(req.data || '—', W - M - 18, y + 8);
+  y += 34;
 
   // Items table
   const cols = [
@@ -631,18 +745,18 @@ function generatePDF(req) {
     grandTotal += total;
     const bg = idx % 2 === 0 ? lightBlue : white;
     doc.setFillColor(...bg);
-    doc.rect(M, y, pw, 7, 'F');
+    doc.rect(M, y, pw, 8, 'F');
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...dark);
     cx = M;
     const vals = [String(idx + 1), item.nome || '', item.desc || '', String(qtd), fmtMoney(preco), fmtMoney(total)];
     cols.forEach((c, ci) => {
-      doc.text(String(vals[ci]).substring(0, Math.floor(c.w / 1.8)), cx + 2, y + 5);
+      doc.text(String(vals[ci]).substring(0, Math.floor(c.w / 1.8)), cx + 2, y + 5.5);
       cx += c.w;
     });
-    y += 7;
-    if (y > 270) { doc.addPage(); y = 15; }
+    y += 8;
+    if (y > 255) { doc.addPage(); y = 20; }
   });
 
   // Total row
@@ -669,19 +783,24 @@ function generatePDF(req) {
     y += lines.length * 4 + 6;
   }
 
-  // Signature
-  if (y > 250) { doc.addPage(); y = 30; }
-  y = Math.max(y, 220);
-  doc.setDrawColor(...dark);
+  // Signature — sempre perto do rodapé, mas nunca sobre o conteúdo
+  if (y > 252) { doc.addPage(); y = 30; }
+  y = Math.max(y + 20, 252);
+  // Linha divisória antes da assinatura
+  doc.setDrawColor(200, 210, 225);
   doc.setLineWidth(0.3);
-  doc.line(W / 2 - 40, y, W / 2 + 40, y);
+  doc.line(M, y - 6, W - M, y - 6);
+  doc.setDrawColor(...dark);
+  doc.setLineWidth(0.4);
+  doc.line(W / 2 - 45, y, W / 2 + 45, y);
   doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(...dark);
   doc.text(req.solicitante || 'Solicitante', W / 2, y + 5, { align: 'center' });
   doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(...gray);
-  doc.text('Assinatura do Solicitante', W / 2, y + 9, { align: 'center' });
+  doc.text('Assinatura do Solicitante', W / 2, y + 10, { align: 'center' });
 
   // Footer bar
   doc.setFillColor(...blue);
@@ -753,6 +872,7 @@ function processBatchFile(file) {
     });
 
     processedRequests = results.valid;
+    if (typeof renderQueue === 'function') renderQueue();
     const resDiv = document.getElementById('batch-results');
     resDiv.classList.remove('hidden');
     resDiv.innerHTML = `
@@ -809,6 +929,92 @@ document.getElementById('btn-batch-json').addEventListener('click', () => {
   if (!processedRequests.length) { alert('Nenhuma solicitação processada.'); return; }
   download('lote_solicitacoes.json', JSON.stringify(processedRequests, null, 2), 'application/json');
 });
+
+/* ═══════════ BATCH MANUAL ═══════════ */
+let blItems = [];
+let blItemCounter = 0;
+
+function renderBlItems() {
+  const c = document.getElementById('bl-items-container');
+  c.innerHTML = blItems.map(it => `
+    <div class="bl-item">
+      <input type="text" placeholder="Item" value="${esc(it.nome)}" data-bid="${it.id}" data-field="nome" />
+      <input type="text" placeholder="Descrição" value="${esc(it.desc)}" data-bid="${it.id}" data-field="desc" />
+      <input type="number" placeholder="Qtd" value="${esc(it.qtd)}" data-bid="${it.id}" data-field="qtd" min="0" />
+      <input type="text" placeholder="Preço" value="${esc(it.preco)}" data-bid="${it.id}" data-field="preco" />
+      <button class="bl-item-remove" data-bid="${it.id}">&times;</button>
+    </div>`).join('');
+  c.querySelectorAll('input[data-bid]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const it = blItems.find(i => i.id === Number(inp.dataset.bid));
+      if (it) it[inp.dataset.field] = inp.value;
+    });
+  });
+  c.querySelectorAll('.bl-item-remove').forEach(btn => {
+    btn.addEventListener('click', () => { blItems = blItems.filter(i => i.id !== Number(btn.dataset.bid)); renderBlItems(); });
+  });
+}
+
+document.getElementById('bl-add-item').addEventListener('click', () => {
+  blItems.push({ id: ++blItemCounter, nome: '', desc: '', qtd: '', preco: '' });
+  renderBlItems();
+});
+
+document.getElementById('bl-clear-form').addEventListener('click', () => {
+  document.getElementById('bl-sol').value = '';
+  document.getElementById('bl-emp').value = '';
+  document.getElementById('bl-obs').value = '';
+  blItems = []; renderBlItems();
+});
+
+document.getElementById('bl-add-to-queue').addEventListener('click', () => {
+  const sol = document.getElementById('bl-sol').value.trim();
+  const emp = document.getElementById('bl-emp').value.trim();
+  const obs = document.getElementById('bl-obs').value.trim();
+  if (!sol) { alert('Informe o solicitante.'); return; }
+  if (!blItems.length) { alert('Adicione pelo menos um item.'); return; }
+  processedRequests.push({ solicitante: sol, empresa: emp, obs, data: todayStr(), items: blItems.map(i => ({...i})) });
+  blItems = []; blItemCounter = 0; renderBlItems();
+  document.getElementById('bl-sol').value = '';
+  document.getElementById('bl-emp').value = '';
+  document.getElementById('bl-obs').value = '';
+  renderQueue();
+});
+
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  const count = document.getElementById('queue-count');
+  const actions = document.getElementById('queue-actions');
+  count.textContent = processedRequests.length;
+  actions.style.display = processedRequests.length ? '' : 'none';
+  list.innerHTML = processedRequests.length === 0
+    ? '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:13px;">Nenhuma solicitação na fila</div>'
+    : processedRequests.map((r, i) => {
+        const tot = r.items.reduce((s, it) => s + (parseFloat(it.qtd)||0) * parseMoney(it.preco), 0);
+        return `<div class="queue-item">
+          <div class="queue-item-info">
+            <div class="queue-item-name">${esc(r.solicitante)} — ${esc(r.empresa) || '—'}</div>
+            <div class="queue-item-meta">${r.items.length} item(s) · ${r.data}${r.obs ? ' · ' + esc(r.obs) : ''}</div>
+          </div>
+          <div class="queue-item-total">${fmtMoney(tot)}</div>
+          <button class="btn btn-red btn-sm" data-qi="${i}">✕</button>
+        </div>`;
+      }).join('');
+  list.querySelectorAll('[data-qi]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      processedRequests.splice(Number(btn.dataset.qi), 1);
+      renderQueue();
+    });
+  });
+}
+
+document.getElementById('btn-clear-queue').addEventListener('click', () => {
+  if (!confirm('Limpar toda a fila?')) return;
+  processedRequests = []; renderQueue();
+});
+
+// Init queue display
+renderQueue();
 
 /* ═══════════ TAB 3 – DADOS (SQLite via API) ═══════════ */
 let _dmCache = { solicitantes: [], empresas: [], observacoes: [] };
@@ -895,6 +1101,14 @@ function renderChips() {
   renderChipList('solic-chips', _dmCache.solicitantes, 'solicitantes', $sol);
   renderChipList('emp-chips',   _dmCache.empresas,     'empresas',     $emp);
   renderChipList('obs-chips',   _dmCache.observacoes,  'observacoes',  $obs);
+  updateDataLists();
+}
+
+function updateDataLists() {
+  const solDL = document.getElementById('dl-solicitantes');
+  const empDL = document.getElementById('dl-empresas');
+  if (solDL) solDL.innerHTML = (_dmCache.solicitantes||[]).map(s => `<option value="${esc(s)}">`).join('');
+  if (empDL) empDL.innerHTML = (_dmCache.empresas||[]).map(s => `<option value="${esc(s)}">`).join('');
 }
 
 function renderChipList(containerId, arr, key, targetInput) {

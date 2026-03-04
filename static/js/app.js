@@ -347,7 +347,9 @@ function renderStats() {
 function _printCSS() {
   return `
     @page { margin: 15mm 12mm; }
-    * { margin:0; padding:0; box-sizing:border-box; }
+    * { margin:0; padding:0; box-sizing:border-box;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important; }
     body {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 13px;
@@ -528,7 +530,7 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
     <div style="${pb}">
       <div class="doc-banner">
         <div class="doc-banner-left">
-          <img class="doc-banner-brasao" src="${typeof BRASAO_B64 !== 'undefined' ? BRASAO_B64 : ''}" alt="Bras&#227;o" />
+          <img class="doc-banner-brasao" src="${typeof BRASAO_B64 !== 'undefined' && BRASAO_B64 ? BRASAO_B64 : '/static/img/brasao.png'}" alt="Bras&#227;o" />
           <div class="doc-banner-text">
             <h1>Prefeitura Municipal de Inaj&#225;</h1>
           </div>

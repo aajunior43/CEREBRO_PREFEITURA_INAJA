@@ -13,7 +13,7 @@ import re
 import sys
 import threading
 
-from flask import Flask, request, jsonify, send_from_directory, send_file, Response, g
+from flask import Flask, request, jsonify, send_from_directory, send_file, Response
 
 
 # ── Instala Flask se necessário ─────────────────────────────
@@ -37,30 +37,19 @@ app = Flask(__name__, static_folder=BASE_DIR)
 _db_local = threading.local()
 
 def get_db():
-    """Retorna conexão SQLite reutilizável por thread/request."""
-    # Dentro de um contexto Flask, reutiliza via g
-    try:
-        db = getattr(g, '_database', None)
-        if db is None:
-            db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
-            db.row_factory = sqlite3.Row
-            g._database = db
-        return db
-    except RuntimeError:
-        # Fora do contexto Flask (ex: init_db)
-        db = getattr(_db_local, 'conn', None)
-        if db is None:
-            db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
-            db.row_factory = sqlite3.Row
-            _db_local.conn = db
-        return db
+    """Retorna conexão SQLite persistente por thread (reutilizada entre requests)."""
+    db = getattr(_db_local, 'conn', None)
+    if db is None:
+        db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
+        db.row_factory = sqlite3.Row
+        _db_local.conn = db
+    return db
 
 @app.teardown_appcontext
 def close_db(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
-        g._database = None
+    # Conexão mantida aberta entre requisições para evitar overhead de re-abertura
+    # (crítico em ambientes OneDrive onde abrir arquivo tem latência alta)
+    pass
 
 def migrate_db():
     """Aplica migrações no banco existente."""
@@ -153,7 +142,7 @@ def init_db():
     # PRAGMAs de performance — executados uma única vez na inicialização
     # NOTA: WAL mode DESABILITADO — OneDrive não sincroniza .db-wal corretamente
     cur.execute("PRAGMA journal_mode=DELETE")    # Modo padrão: dados sempre no .db principal
-    cur.execute("PRAGMA synchronous=FULL")       # Segurança máxima de gravação
+    cur.execute("PRAGMA synchronous=NORMAL")      # Mais rápido; seguro para uso local
     cur.execute("PRAGMA cache_size=-8000")       # 8MB de cache em memória
     cur.execute("PRAGMA temp_store=MEMORY")      # Tabelas temporárias em RAM
     cur.execute("PRAGMA mmap_size=134217728")    # Memory-map de 128MB
@@ -817,22 +806,34 @@ def get_historico_credor(cid):
     conn = get_db()
     meses = int(request.args.get('meses', 6))
     from datetime import date
-    resultado = []
     hoje = date.today()
+
+    # Calcula o intervalo de meses desejado
+    resultado = []
+    periodo = []
     for i in range(meses - 1, -1, -1):
         m = hoje.month - i
         y = hoje.year
         while m <= 0:
             m += 12
             y -= 1
-        row = conn.execute(
-            "SELECT id FROM empenhos WHERE credor_id=? AND ano=? AND mes=?",
-            (cid, y, m)
-        ).fetchone()
+        periodo.append((y, m))
+
+    # Uma única query para todos os meses
+    placeholders = ','.join('(?,?)' for _ in periodo)
+    params = [v for pair in periodo for v in pair]
+    rows = conn.execute(
+        f"SELECT ano, mes FROM empenhos WHERE credor_id=? AND empenhado=1 AND (ano,mes) IN ({placeholders})",
+        [cid] + params
+    ).fetchall()
+    empenhados = {(r['ano'], r['mes']) for r in rows}
+
+    mes_nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+    for y, m in periodo:
         resultado.append({
             'ano': y, 'mes': m,
-            'mes_nome': ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1],
-            'empenhado': row is not None
+            'mes_nome': mes_nomes[m - 1],
+            'empenhado': (y, m) in empenhados
         })
     return jsonify(resultado)
 
