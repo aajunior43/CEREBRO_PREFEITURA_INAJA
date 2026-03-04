@@ -31,6 +31,46 @@ DATA_JS  = os.path.join(BASE_DIR, 'data.js')
 
 app = Flask(__name__, static_folder=BASE_DIR)
 
+# ── Cache de arquivos estáticos em RAM ───────────────────────
+# Todos os arquivos estáticos são lidos do disco UMA VEZ no startup e
+# mantidos em memória. Requisições subsequentes não tocam o OneDrive,
+# eliminando a latência do interceptor de sincronização em cada leitura.
+import mimetypes as _mimetypes
+
+_file_cache: dict[str, tuple[bytes, str]] = {}   # url_path -> (bytes, mimetype)
+
+_SKIP_EXTS = {'.db', '.db-shm', '.db-wal', '.pyc', '.pyo', '.log', '.bat'}
+_SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer',
+              'PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL'}
+
+def _preload_static_files():
+    """Lê todos os arquivos estáticos para RAM no startup."""
+    count, total_kb = 0, 0
+    for root, dirs, files in os.walk(BASE_DIR):
+        # Não descer em diretórios que não precisamos servir
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
+        rel_root = os.path.relpath(root, BASE_DIR).replace('\\', '/')
+        if rel_root == '.':
+            rel_root = ''
+        for fname in files:
+            ext = os.path.splitext(fname)[1].lower()
+            if ext in _SKIP_EXTS:
+                continue
+            fpath = os.path.join(root, fname)
+            url = ('/' + rel_root + '/' + fname).replace('//', '/')
+            mime, _ = _mimetypes.guess_type(fpath)
+            if mime is None:
+                mime = 'application/octet-stream'
+            try:
+                with open(fpath, 'rb') as f:
+                    data = f.read()
+                _file_cache[url] = (data, mime)
+                count += 1
+                total_kb += len(data) // 1024
+            except OSError:
+                pass
+    print(f"Cache estático: {count} arquivos, {total_kb} KB em RAM")
+
 # ── Banco de Dados ───────────────────────────────────────────
 # Conexão thread-local reutilizada durante todo o ciclo de vida da requisição.
 # Evita abrir/fechar conexão a cada chamada (crítico em ambientes OneDrive/rede).
@@ -303,6 +343,10 @@ def row_to_dict(row):
 
 @app.route('/')
 def index():
+    entry = _file_cache.get('/index.html')
+    if entry:
+        return Response(entry[0], mimetype=entry[1],
+                        headers={'Cache-Control': 'no-cache, no-store, must-revalidate'})
     resp = send_file(os.path.join(BASE_DIR, 'index.html'))
     resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return resp
@@ -310,6 +354,11 @@ def index():
 
 @app.route('/static/<path:filename>')
 def static_cached(filename):
+    url = '/static/' + filename
+    entry = _file_cache.get(url)
+    if entry:
+        return Response(entry[0], mimetype=entry[1],
+                        headers={'Cache-Control': 'public, max-age=86400'})
     resp = send_from_directory(os.path.join(BASE_DIR, 'static'), filename)
     resp.headers['Cache-Control'] = 'public, max-age=86400'
     return resp
@@ -319,6 +368,11 @@ def static_cached(filename):
 def static_files(filename):
     if filename.startswith('api/'):
         return jsonify({'error': 'Rota não encontrada: ' + filename}), 404
+    url = '/' + filename
+    entry = _file_cache.get(url)
+    if entry:
+        cc = 'no-cache, no-store, must-revalidate' if filename.endswith('.html') else 'public, max-age=3600'
+        return Response(entry[0], mimetype=entry[1], headers={'Cache-Control': cc})
     resp = send_from_directory(BASE_DIR, filename)
     if filename.endswith('.html'):
         resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -1517,6 +1571,7 @@ if __name__ == '__main__':
     import socket
     init_db()
     migrate_db()
+    _preload_static_files()   # carrega todos os arquivos estáticos em RAM
 
     # ── Fix de performance: Werkzeug faz reverse-DNS lookup em cada requisição
     #    via socket.getfqdn(), o que trava ~2s no Windows. Desabilitamos isso.
