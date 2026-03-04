@@ -37,11 +37,19 @@ app = Flask(__name__, static_folder=BASE_DIR)
 _db_local = threading.local()
 
 def get_db():
-    """Retorna conexão SQLite persistente por thread (reutilizada entre requests)."""
+    """Retorna conexão SQLite persistente por thread (reutilizada entre requests).
+    PRAGMAs de performance aplicados em TODA nova conexão (incluindo threads do Flask)."""
     db = getattr(_db_local, 'conn', None)
     if db is None:
         db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
         db.row_factory = sqlite3.Row
+        # Aplicar PRAGMAs em cada nova conexão — threads do Flask criam conexões
+        # independentes e precisam dos mesmos settings para não cair nos defaults lentos
+        db.execute("PRAGMA journal_mode=DELETE")  # sem WAL (OneDrive não suporta .db-wal)
+        db.execute("PRAGMA synchronous=NORMAL")   # sem espera de confirmação do OS a cada write
+        db.execute("PRAGMA cache_size=-8000")     # 8MB de cache em memória
+        db.execute("PRAGMA temp_store=MEMORY")    # tabelas temporárias em RAM
+        db.execute("PRAGMA mmap_size=0")          # desabilita mmap — perigoso no OneDrive
         _db_local.conn = db
     return db
 
@@ -138,15 +146,6 @@ def init_db():
     """Cria as tabelas e popula credores iniciais a partir do data.js."""
     conn = get_db()
     cur  = conn.cursor()
-
-    # PRAGMAs de performance — executados uma única vez na inicialização
-    # NOTA: WAL mode DESABILITADO — OneDrive não sincroniza .db-wal corretamente
-    cur.execute("PRAGMA journal_mode=DELETE")    # Modo padrão: dados sempre no .db principal
-    cur.execute("PRAGMA synchronous=NORMAL")      # Mais rápido; seguro para uso local
-    cur.execute("PRAGMA cache_size=-8000")       # 8MB de cache em memória
-    cur.execute("PRAGMA temp_store=MEMORY")      # Tabelas temporárias em RAM
-    cur.execute("PRAGMA mmap_size=134217728")    # Memory-map de 128MB
-    conn.commit()
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS credores (
