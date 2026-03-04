@@ -193,13 +193,13 @@ function buildCard(c, done, idx) {
       </div>
       <div class="col-action">
         <button class="btn-expand" title="Ver detalhes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <button class="btn-edit" title="Editar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="btn-print" title="Imprimir">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
         <button class="btn-empenhar ${done ? 'done-btn' : 'pending'}">
           ${done ? '✓ Empenhado' : '○ Empenhar'}
@@ -330,11 +330,16 @@ function renderStats() {
       btn.addEventListener('click', () => {
         const d = btn.dataset.dept;
         const sel = document.getElementById('filter-dept');
-        if (sel.value === d) { sel.value = ''; state.filterDept = ''; btn.classList.remove('active-dept'); }
+        if (state.filterDept === d) { sel.value = ''; state.filterDept = ''; btn.classList.remove('active-dept'); }
         else { sel.value = d; state.filterDept = d; deptEl.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept')); btn.classList.add('active-dept'); }
         renderCards();
       });
     });
+    // Restore active state from current filter
+    if (state.filterDept) {
+      const activeBtn = deptEl.querySelector(`.dept-stat-btn[data-dept="${state.filterDept}"]`);
+      if (activeBtn) activeBtn.classList.add('active-dept');
+    }
   }
 }
 
@@ -833,6 +838,11 @@ function attachEvents() {
 
   document.getElementById('filter-dept').addEventListener('change', e => {
     state.filterDept = e.target.value;
+    document.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept'));
+    if (state.filterDept) {
+      const btn = document.querySelector(`.dept-stat-btn[data-dept="${state.filterDept}"]`);
+      if (btn) btn.classList.add('active-dept');
+    }
     renderCards();
   });
 
@@ -845,7 +855,7 @@ function attachEvents() {
     state.expandAll = !state.expandAll;
     document.querySelectorAll('.empenho-card').forEach(c => c.classList.toggle('expanded', state.expandAll));
     const btn = document.getElementById('btn-expand-all');
-    const svgExpand = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
+    const svgExpand = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
     btn.innerHTML = state.expandAll
       ? `${svgExpand} Recolher`
       : `${svgExpand} Expandir`;

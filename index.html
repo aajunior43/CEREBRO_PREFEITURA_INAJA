@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Controle de Empenhos Mensais – Prefeitura de Inajá</title>
+  <link rel="preload" href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,7 +36,7 @@
                   <!-- Desktop Navigation -->
       <nav class="desktop-nav">
         <button class="nav-tab active" data-tab="credores-fixos" data-tooltip="Lista de credores com empenhos mensais">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
@@ -44,7 +45,7 @@
           Credores Fixos
         </button>
         <button class="nav-tab" data-tab="adm" data-requires-auth="true" data-tooltip="Configurações de API e sistema">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
@@ -658,6 +659,52 @@
     <p>Desenvolvido por <strong>Aleksandro Alves</strong></p>
   </footer>
 
+  <!-- BOTTOM NAV — Mobile -->
+  <nav class="bottom-nav" id="bottom-nav" aria-label="Navegação mobile">
+    <div class="bottom-nav-items">
+      <button class="bottom-nav-item active" id="bnav-home" data-tab="credores-fixos">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+        <span>Credores</span>
+        <span class="bottom-nav-indicator"></span>
+      </button>
+      <a class="bottom-nav-item" href="/pages/rpa.html">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span>RPA</span>
+        <span class="bottom-nav-indicator"></span>
+      </a>
+      <a class="bottom-nav-item" href="/pages/extratos.html">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <span>Extratos</span>
+        <span class="bottom-nav-indicator"></span>
+      </a>
+      <a class="bottom-nav-item" href="/pages/cnpj.html">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        </svg>
+        <span>CNPJ</span>
+        <span class="bottom-nav-indicator"></span>
+      </a>
+      <button class="bottom-nav-item" id="bnav-menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <span>Menu</span>
+        <span class="bottom-nav-indicator"></span>
+      </button>
+    </div>
+  </nav>
+
   <div id="toast" class="toast"></div>
 
   <!-- Modal Modelos OpenRouter (ADM) -->
@@ -880,6 +927,105 @@
 
   <script src="/static/js/brasao_b64.js"></script>
   <script src="/static/js/app.js"></script>
+
+  <!-- UX Enhancements: Bottom Nav, Swipe Month, Ripple, Counter -->
+  <script>
+  (function() {
+    'use strict';
+
+    /* ── Bottom Nav: sync com abas principais ─────────────────── */
+    const bnavHome = document.getElementById('bnav-home');
+    const bnavMenu = document.getElementById('bnav-menu');
+    if (bnavHome) {
+      bnavHome.addEventListener('click', () => {
+        const credBtn = document.querySelector('[data-tab="credores-fixos"]');
+        if (credBtn) credBtn.click();
+      });
+    }
+    if (bnavMenu) {
+      bnavMenu.addEventListener('click', () => {
+        const hamburger = document.getElementById('hamburger');
+        if (hamburger) hamburger.click();
+      });
+    }
+
+    /* ── Swipe horizontal no navegador de mês ─────────────────── */
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const SWIPE_THRESHOLD = 50;
+    const SWIPE_VERTICAL_LIMIT = 60;
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dy) > SWIPE_VERTICAL_LIMIT) return;
+      if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+
+      const mobileNavOpen = document.getElementById('mobile-nav')?.classList.contains('open');
+      if (mobileNavOpen) return;
+
+      if (dx < 0) {
+        document.getElementById('btn-next-month')?.click();
+      } else {
+        document.getElementById('btn-prev-month')?.click();
+      }
+    }, { passive: true });
+
+    /* ── Ripple effect nos botões ──────────────────────────────── */
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-primary, .btn-secondary');
+      if (!btn) return;
+      const ripple = document.createElement('span');
+      ripple.className = 'btn-ripple';
+      const size = Math.max(btn.offsetWidth, btn.offsetHeight);
+      const rect = btn.getBoundingClientRect();
+      ripple.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${e.clientX - rect.left - size/2}px;
+        top:${e.clientY - rect.top - size/2}px;`;
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 550);
+    });
+
+    /* ── Counter animation nas stat cards ─────────────────────── */
+    function animateCounter(el, target, duration) {
+      if (isNaN(target) || target === 0) return;
+      const start = Date.now();
+      const isCurrency = el.textContent.includes('R$');
+      const prefix = isCurrency ? 'R$ ' : '';
+      const formatted = (n) => isCurrency
+        ? n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : Math.round(n).toString();
+      const tick = () => {
+        const elapsed = Date.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = prefix + formatted(target * eased);
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+
+    // Observa mudanças nos stat values e anima
+    const statIds = ['stat-total', 'stat-done', 'stat-pending', 'stat-valor', 'stat-restante'];
+    statIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const observer = new MutationObserver(() => {
+        const raw = el.textContent.replace(/[R$\s.]/g, '').replace(',', '.');
+        const num = parseFloat(raw);
+        if (!isNaN(num) && num > 0) animateCounter(el, num, 600);
+      });
+      observer.observe(el, { childList: true, characterData: true, subtree: true });
+    });
+
+  })();
+  </script>
 </body>
 
 </html>

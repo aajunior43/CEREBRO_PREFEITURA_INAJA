@@ -217,6 +217,101 @@
   function initDOM() {
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
 
+    /* ── Breadcrumb ──────────────────────────────────────────── */
+    const allPages = [
+      ...NAV_ITEMS.documentos.map(i => ({...i, cat: 'Documentos'})),
+      ...NAV_ITEMS.financeiro.map(i => ({...i, cat: 'Financeiro'})),
+      ...NAV_ITEMS.ferramentas.map(i => ({...i, cat: 'Ferramentas'})),
+    ];
+    const currentPage = allPages.find(p => isActive(p.href));
+    if (currentPage) {
+      const crumb = document.createElement('div');
+      crumb.className = 'shd-breadcrumb';
+      crumb.innerHTML = `
+        <a href="/" class="shd-bc-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Início
+        </a>
+        <span class="shd-bc-sep">›</span>
+        <span class="shd-bc-cat">${currentPage.cat}</span>
+        <span class="shd-bc-sep">›</span>
+        <span class="shd-bc-current">${currentPage.name.replace('📖 ', '')}</span>`;
+      const firstMainEl = document.body.querySelector('main, .page-wrap, section, .content') || document.body.children[1];
+      if (firstMainEl) {
+        document.body.insertBefore(crumb, firstMainEl);
+      } else {
+        document.body.querySelector('#shd-header')?.insertAdjacentElement('afterend', crumb);
+      }
+    }
+
+    /* ── Bottom nav em sub-páginas ───────────────────────────── */
+    if (!document.getElementById('shd-bottom-nav')) {
+      const bnav = document.createElement('nav');
+      bnav.className = 'bottom-nav';
+      bnav.id = 'shd-bottom-nav';
+      bnav.setAttribute('aria-label', 'Navegação mobile');
+      bnav.innerHTML = `
+        <div class="bottom-nav-items">
+          <a class="bottom-nav-item" href="/">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <span>Credores</span>
+            <span class="bottom-nav-indicator"></span>
+          </a>
+          <a class="bottom-nav-item${isActive('/pages/rpa.html')?' active':''}" href="/pages/rpa.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>RPA</span>
+            <span class="bottom-nav-indicator"></span>
+          </a>
+          <a class="bottom-nav-item${isActive('/pages/extratos.html')?' active':''}" href="/pages/extratos.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span>Extratos</span>
+            <span class="bottom-nav-indicator"></span>
+          </a>
+          <a class="bottom-nav-item${isActive('/pages/cnpj.html')?' active':''}" href="/pages/cnpj.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            <span>CNPJ</span>
+            <span class="bottom-nav-indicator"></span>
+          </a>
+          <button class="bottom-nav-item" id="shd-bnav-menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <span>Menu</span>
+            <span class="bottom-nav-indicator"></span>
+          </button>
+        </div>`;
+      document.body.appendChild(bnav);
+      document.getElementById('shd-bnav-menu')?.addEventListener('click', () => {
+        document.getElementById('shd-mobile-nav').classList.contains('open') ? closeMobile() : openMobile();
+      });
+    }
+
+    /* ── Breadcrumb CSS (injeta uma vez) ─────────────────────── */
+    if (!document.getElementById('shd-breadcrumb-style')) {
+      const s = document.createElement('style');
+      s.id = 'shd-breadcrumb-style';
+      s.textContent = `
+        .shd-breadcrumb {
+          display: flex; align-items: center; gap: 6px;
+          padding: 8px 28px; font-size: 12px; font-weight: 500;
+          color: var(--text-3); background: var(--bg);
+          border-bottom: 1px solid var(--border);
+        }
+        .shd-bc-link {
+          display: inline-flex; align-items: center; gap: 4px;
+          color: var(--text-3); text-decoration: none;
+          transition: color 0.15s;
+        }
+        .shd-bc-link:hover { color: var(--blue); }
+        .shd-bc-sep { color: var(--text-3); opacity: 0.5; }
+        .shd-bc-cat { color: var(--text-3); }
+        .shd-bc-current { color: var(--text-2); font-weight: 600; }
+        @media (max-width: 600px) {
+          .shd-breadcrumb { padding: 6px 16px; font-size: 11px; }
+          body { padding-bottom: 64px; }
+        }
+      `;
+      document.head.appendChild(s);
+    }
+
     // Rodapé em todas as sub-páginas
     if (!document.querySelector('.shd-footer')) {
       document.body.insertAdjacentHTML('beforeend',
