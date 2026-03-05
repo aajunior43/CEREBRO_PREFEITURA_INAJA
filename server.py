@@ -111,7 +111,13 @@ def close_db(exception):
 
 @app.after_request
 def compress_response(response):
-    """Comprime respostas JSON/texto da API com gzip."""
+    """Comprime respostas JSON/texto da API com gzip e adiciona cache headers."""
+    # Cache-Control para APIs GET (dados mudam pouco entre requests)
+    if (request.method == 'GET' and request.path.startswith('/api/')
+            and response.status_code == 200
+            and 'Cache-Control' not in response.headers):
+        response.headers['Cache-Control'] = 'public, max-age=5'
+
     if (response.status_code < 200 or response.status_code >= 300
             or response.direct_passthrough
             or 'Content-Encoding' in response.headers):
@@ -1616,9 +1622,11 @@ if __name__ == '__main__':
 
     # ── Fix de performance: Werkzeug faz reverse-DNS lookup em cada requisição
     #    via socket.getfqdn(), o que trava ~2s no Windows. Desabilitamos isso.
+    #    Também habilitamos HTTP/1.1 para keep-alive (reutiliza conexão TCP).
     try:
         from werkzeug.serving import WSGIRequestHandler
         WSGIRequestHandler.address_string = lambda self: self.client_address[0]
+        WSGIRequestHandler.protocol_version = 'HTTP/1.1'
     except Exception:
         pass
 
