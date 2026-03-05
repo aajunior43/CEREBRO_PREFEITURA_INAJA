@@ -14,7 +14,8 @@
         .kb-page {
             min-height: calc(100vh - 64px);
             padding: 20px 16px 60px;
-            background: var(--bg)
+            background: var(--bg);
+        }
 
         /* ── HERO ── */
         .kb-hero {
@@ -358,7 +359,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px
+            padding: 16px;
         }
 
         .kb-modal {
@@ -367,7 +368,7 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, .22);
             width: 100%;
             max-width: 480px;
-            overflow: hidden
+            overflow: hidden;
         }
 
         .kb-modal-head {
@@ -576,7 +577,7 @@
 
         <!-- Toolbar -->
         <div class="kb-toolbar">
-            <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()" data-tooltip="Criar nova tarefa no Kanban">➕ Nova Tarefa</button>
+            <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
             <div class="kb-stats">
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
@@ -615,11 +616,10 @@
             </div>
         </div>
 
-        </div>
     </div>
 
     <!-- Task Modal -->
-    <div class="kb-overlay" id="task-modal" style="display:none" onclick="if(event.target===this)closeTaskModal()">
+    <div class="kb-overlay" id="task-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;align-items:center;justify-content:center;z-index:5000" onclick="if(event.target===this)closeTaskModal()">
         <div class="kb-modal">
             <div class="kb-modal-head">
                 <h3 id="modal-title">✏️ Nova Tarefa</h3><button class="kb-close" onclick="closeTaskModal()">✕</button>
@@ -654,7 +654,7 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <div class="kb-overlay" id="confirm-modal" style="display:none">
+    <div class="kb-overlay" id="confirm-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;align-items:center;justify-content:center;z-index:5000">
         <div class="kb-modal kb-confirm-modal">
             <div class="kb-modal-head">
                 <h3>⚠️ Confirmar exclusão</h3><button class="kb-close" onclick="closeConfirm()">✕</button>
