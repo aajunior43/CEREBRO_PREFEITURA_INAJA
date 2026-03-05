@@ -28,7 +28,10 @@ let state = {
 // ── API Calls ────────────────────────────────────────────────
 async function apiGet(path) {
   const r = await fetch(API + path);
-  if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || `GET ${path} → ${r.status}`);
+  }
   return r.json();
 }
 
@@ -38,7 +41,10 @@ async function apiPost(path, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || `POST ${path} → ${r.status}`);
+  }
   return r.json();
 }
 
@@ -48,13 +54,19 @@ async function apiPut(path, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`PUT ${path} → ${r.status}`);
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || `PUT ${path} → ${r.status}`);
+  }
   return r.json();
 }
 
 async function apiDelete(path) {
   const r = await fetch(API + path, { method: 'DELETE' });
-  if (!r.ok) throw new Error(`DELETE ${path} → ${r.status}`);
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    throw new Error(d.error || `DELETE ${path} → ${r.status}`);
+  }
   return r.json();
 }
 
@@ -743,6 +755,14 @@ async function onFormSubmit(e) {
   e.preventDefault();
   const nome = document.getElementById('form-nome').value.trim();
   if (!nome) { showToast('Informe o nome do credor', 'error'); return; }
+  const email = document.getElementById('form-email').value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('E-mail inválido', 'error'); return;
+  }
+  const valorRaw = document.getElementById('form-valor').value;
+  if (valorRaw && isNaN(parseFloat(valorRaw))) {
+    showToast('Valor deve ser numérico', 'error'); return;
+  }
 
   const payload = {
     nome,
@@ -773,7 +793,7 @@ async function onFormSubmit(e) {
     closeModal();
     render();
   } catch (err) {
-    showToast('Erro ao salvar credor', 'error');
+    showToast(err.message || 'Erro ao salvar credor', 'error');
     console.error(err);
   } finally {
     setLoading(false);
@@ -792,7 +812,7 @@ async function onDeleteCredor() {
     render();
     showToast('Credor removido', 'info');
   } catch (err) {
-    showToast('Erro ao remover', 'error');
+    showToast(err.message || 'Erro ao remover', 'error');
   } finally {
     setLoading(false);
   }
