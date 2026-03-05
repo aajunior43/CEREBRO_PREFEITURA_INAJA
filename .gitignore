@@ -15,6 +15,7 @@ empenhos.db-wal
 
 # Logs
 *.log
+logs/
 
 # Excel / dados importados
 *.xlsx

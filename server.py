@@ -13,6 +13,11 @@ import re
 import sys
 import threading
 import gzip as _gzip
+import hashlib
+import time as _time
+import logging
+from logging.handlers import RotatingFileHandler
+from collections import defaultdict
 
 from flask import Flask, request, jsonify, send_from_directory, send_file, Response
 
@@ -31,6 +36,31 @@ DB_PATH  = os.path.join(BASE_DIR, 'empenhos.db')
 DATA_JS  = os.path.join(BASE_DIR, 'data.js')
 
 app = Flask(__name__, static_folder=BASE_DIR)
+
+# ── Logging para arquivo ─────────────────────────────────────
+_LOG_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(_LOG_DIR, exist_ok=True)
+_log_handler = RotatingFileHandler(
+    os.path.join(_LOG_DIR, 'server.log'), maxBytes=2*1024*1024, backupCount=3, encoding='utf-8')
+_log_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+_log_handler.setLevel(logging.WARNING)
+app.logger.addHandler(_log_handler)
+
+# ── Rate limiter simples (sem dependência externa) ───────────
+_rate_buckets: dict[str, list[float]] = defaultdict(list)
+_RATE_LOCK = threading.Lock()
+_SERVER_START = _time.time()
+
+def _rate_limited(key: str, max_hits: int = 5, window: int = 60) -> bool:
+    """Retorna True se o key excedeu max_hits em window segundos."""
+    now = _time.time()
+    with _RATE_LOCK:
+        hits = _rate_buckets[key]
+        _rate_buckets[key] = [t for t in hits if now - t < window]
+        if len(_rate_buckets[key]) >= max_hits:
+            return True
+        _rate_buckets[key].append(now)
+        return False
 
 # ── Cache de arquivos estáticos em RAM ───────────────────────
 # Todos os arquivos estáticos são lidos do disco UMA VEZ no startup e
@@ -433,6 +463,7 @@ def not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
+    app.logger.error('500 em %s: %s', request.path, e)
     if request.path.startswith('/api/'):
         return jsonify({'error': 'Erro interno do servidor', 'detail': str(e)}), 500
     return str(e), 500
@@ -441,16 +472,23 @@ def server_error(e):
 # API – Autenticação ADM
 # ────────────────────────────────────────────────────────────
 
-# Senha armazenada no servidor — nunca exposta ao cliente
-_ADM_PASSWORD = os.environ.get('ADM_PASSWORD', '1999')
+# Senha armazenada como hash SHA-256 — nunca em texto puro em memória
+_ADM_RAW = os.environ.get('ADM_PASSWORD', '1999')
+_ADM_HASH = hashlib.sha256(_ADM_RAW.encode()).hexdigest()
+del _ADM_RAW  # limpa texto puro da memória
 
 @app.route('/api/auth/adm', methods=['POST'])
 def auth_adm():
-    """Verifica a senha da área administrativa."""
+    """Verifica a senha da área administrativa (com rate limit)."""
+    ip = request.remote_addr or 'unknown'
+    if _rate_limited(f'auth:{ip}', max_hits=5, window=60):
+        app.logger.warning('Rate limit auth: %s', ip)
+        return jsonify({'ok': False, 'error': 'Muitas tentativas. Aguarde 1 minuto.'}), 429
     d = request.get_json(force=True) or {}
     senha = d.get('senha', '')
-    if senha == _ADM_PASSWORD:
+    if hashlib.sha256(senha.encode()).hexdigest() == _ADM_HASH:
         return jsonify({'ok': True})
+    app.logger.warning('Senha incorreta de %s', ip)
     return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
 # ────────────────────────────────────────────────────────────
 
@@ -458,161 +496,194 @@ def auth_adm():
 def ping():
     return jsonify({'ok': True})
 
+@app.route('/api/health', methods=['GET'])
+def health():
+    """Status do servidor para monitoramento."""
+    try:
+        conn = get_db()
+        conn.execute("SELECT 1").fetchone()
+        db_ok = True
+    except Exception:
+        db_ok = False
+    return jsonify({
+        'status': 'ok' if db_ok else 'degraded',
+        'db': db_ok,
+        'uptime_s': int(_time.time() - _SERVER_START),
+        'cache_files': len(_file_cache),
+        'cache_gzip': len(_gzip_cache),
+    })
+
 @app.route('/api/credores', methods=['GET'])
 def get_credores():
-    limit = request.args.get('limit', 1000, type=int)
-    offset = request.args.get('offset', 0, type=int)
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM credores WHERE ativo=1 ORDER BY departamento, nome LIMIT ? OFFSET ?",
-        (limit, offset)
-    ).fetchall()
-
-    return jsonify([row_to_dict(r) for r in rows])
+    try:
+        limit = request.args.get('limit', 1000, type=int)
+        offset = request.args.get('offset', 0, type=int)
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT * FROM credores WHERE ativo=1 ORDER BY departamento, nome LIMIT ? OFFSET ?",
+            (limit, offset)
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/credores: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/credores', methods=['POST'])
 def add_credor():
     data = request.get_json()
-    conn = get_db()
-    cur  = conn.cursor()
-    cur.execute("""
-        INSERT INTO credores
-          (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)
-    """, (
-        data.get('nome', '').upper(),
-        float(data.get('valor') or 0),
-        (data.get('descricao') or '').upper(),
-        data.get('cnpj', ''),
-        data.get('email', ''),
-        data.get('tipo_valor', 'FIXO'),
-        data.get('solicitacao', ''),
-        data.get('pagamento', ''),
-        data.get('validade', ''),
-        data.get('departamento', ''),
-        (data.get('obs') or '').upper(),
-    ))
-    new_id = cur.lastrowid
-    conn.commit()
-    
-    # Log da ação
-    cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-        ('CRIAR', new_id, data.get('nome', '').upper(), f"Criado novo credor - Valor: R$ {data.get('valor', 0)}"))
-    conn.commit()
-    
-    row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
-
-    return jsonify(row_to_dict(row)), 201
+    if not data or not data.get('nome', '').strip():
+        return jsonify({'error': 'Campo "nome" é obrigatório'}), 400
+    try:
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute("""
+            INSERT INTO credores
+              (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            data.get('nome', '').upper(),
+            float(data.get('valor') or 0),
+            (data.get('descricao') or '').upper(),
+            data.get('cnpj', ''),
+            data.get('email', ''),
+            data.get('tipo_valor', 'FIXO'),
+            data.get('solicitacao', ''),
+            data.get('pagamento', ''),
+            data.get('validade', ''),
+            data.get('departamento', ''),
+            (data.get('obs') or '').upper(),
+        ))
+        new_id = cur.lastrowid
+        conn.commit()
+        
+        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('CRIAR', new_id, data.get('nome', '').upper(), f"Criado novo credor - Valor: R$ {data.get('valor', 0)}"))
+        conn.commit()
+        
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/credores: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/credores/<int:cid>', methods=['PUT'])
 def update_credor(cid):
     data = request.get_json()
-    conn = get_db()
+    if not data:
+        return jsonify({'error': 'JSON body obrigatório'}), 400
+    try:
+        conn = get_db()
 
-    # Captura valores antigos para diff
-    old_row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
-    old = row_to_dict(old_row) if old_row else {}
+        # Captura valores antigos para diff
+        old_row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+        if not old_row:
+            return jsonify({'error': 'Credor não encontrado'}), 404
+        old = row_to_dict(old_row)
 
-    conn.execute("""
-        UPDATE credores SET
-          nome=?, valor=?, descricao=?, cnpj=?, email=?,
-          tipo_valor=?, solicitacao=?, pagamento=?, validade=?, departamento=?, obs=?
-        WHERE id=?
-    """, (
-        data.get('nome', '').upper(),
-        float(data.get('valor') or 0),
-        (data.get('descricao') or '').upper(),
-        data.get('cnpj', ''),
-        data.get('email', ''),
-        data.get('tipo_valor', 'FIXO'),
-        data.get('solicitacao', ''),
-        data.get('pagamento', ''),
-        data.get('validade', ''),
-        data.get('departamento', ''),
-        (data.get('obs') or '').upper(),
-        cid,
-    ))
-    conn.commit()
+        conn.execute("""
+            UPDATE credores SET
+              nome=?, valor=?, descricao=?, cnpj=?, email=?,
+              tipo_valor=?, solicitacao=?, pagamento=?, validade=?, departamento=?, obs=?
+            WHERE id=?
+        """, (
+            data.get('nome', '').upper(),
+            float(data.get('valor') or 0),
+            (data.get('descricao') or '').upper(),
+            data.get('cnpj', ''),
+            data.get('email', ''),
+            data.get('tipo_valor', 'FIXO'),
+            data.get('solicitacao', ''),
+            data.get('pagamento', ''),
+            data.get('validade', ''),
+            data.get('departamento', ''),
+            (data.get('obs') or '').upper(),
+            cid,
+        ))
+        conn.commit()
 
-    # Gera diff com rótulos legíveis
-    labels = {
-        'nome': 'Nome', 'valor': 'Valor', 'descricao': 'Descrição',
-        'cnpj': 'CNPJ', 'email': 'E-mail', 'tipo_valor': 'Tipo',
-        'departamento': 'Departamento', 'obs': 'OBS',
-        'pagamento': 'Pagamento', 'solicitacao': 'Solicitação'
-    }
-    new_vals = {
-        'nome': data.get('nome', '').upper(),
-        'valor': str(float(data.get('valor') or 0)),
-        'descricao': (data.get('descricao') or '').upper(),
-        'cnpj': data.get('cnpj', ''),
-        'email': data.get('email', ''),
-        'tipo_valor': data.get('tipo_valor', 'FIXO'),
-        'departamento': data.get('departamento', ''),
-        'obs': (data.get('obs') or '').upper(),
-        'pagamento': data.get('pagamento', ''),
-        'solicitacao': data.get('solicitacao', ''),
-    }
-    changes = []
-    for key, label in labels.items():
-        old_val = str(old.get(key, '') or '')
-        new_val = str(new_vals.get(key, '') or '')
-        if old_val != new_val:
-            changes.append(f"{label}: {old_val or '—'} → {new_val or '—'}")
-    detalhes = ' | '.join(changes) if changes else 'Sem alterações detectadas'
+        # Gera diff com rótulos legíveis
+        labels = {
+            'nome': 'Nome', 'valor': 'Valor', 'descricao': 'Descrição',
+            'cnpj': 'CNPJ', 'email': 'E-mail', 'tipo_valor': 'Tipo',
+            'departamento': 'Departamento', 'obs': 'OBS',
+            'pagamento': 'Pagamento', 'solicitacao': 'Solicitação'
+        }
+        new_vals = {
+            'nome': data.get('nome', '').upper(),
+            'valor': str(float(data.get('valor') or 0)),
+            'descricao': (data.get('descricao') or '').upper(),
+            'cnpj': data.get('cnpj', ''),
+            'email': data.get('email', ''),
+            'tipo_valor': data.get('tipo_valor', 'FIXO'),
+            'departamento': data.get('departamento', ''),
+            'obs': (data.get('obs') or '').upper(),
+            'pagamento': data.get('pagamento', ''),
+            'solicitacao': data.get('solicitacao', ''),
+        }
+        changes = []
+        for key, label in labels.items():
+            old_val = str(old.get(key, '') or '')
+            new_val = str(new_vals.get(key, '') or '')
+            if old_val != new_val:
+                changes.append(f"{label}: {old_val or '—'} → {new_val or '—'}")
+        detalhes = ' | '.join(changes) if changes else 'Sem alterações detectadas'
 
-    cur = conn.cursor()
-    cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-        ('EDITAR', cid, data.get('nome', '').upper(), detalhes))
-    conn.commit()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('EDITAR', cid, data.get('nome', '').upper(), detalhes))
+        conn.commit()
 
-    row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
-
-    if not row:
-        return jsonify({'error': 'Não encontrado'}), 404
-    return jsonify(row_to_dict(row))
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+        return jsonify(row_to_dict(row))
+    except Exception as e:
+        app.logger.error('PUT /api/credores/%s: %s', cid, e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/credores/<int:cid>', methods=['DELETE'])
 def delete_credor(cid):
-    conn = get_db()
-    cur = conn.cursor()
-    # Pegar nome antes de excluir
-    row = conn.execute("SELECT nome FROM credores WHERE id=?", (cid,)).fetchone()
-    nome = row[0] if row else 'Desconhecido'
-    
-    conn.execute("UPDATE credores SET ativo=0 WHERE id=?", (cid,))
-    conn.execute("DELETE FROM empenhos WHERE credor_id=?", (cid,))
-    
-    # Log da ação
-    cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-        ('EXCLUIR', cid, nome, 'Credor excluído'))
-    conn.commit()
-
-    return jsonify({'ok': True})
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        row = conn.execute("SELECT nome FROM credores WHERE id=?", (cid,)).fetchone()
+        nome = row[0] if row else 'Desconhecido'
+        
+        conn.execute("UPDATE credores SET ativo=0 WHERE id=?", (cid,))
+        conn.execute("DELETE FROM empenhos WHERE credor_id=?", (cid,))
+        
+        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('EXCLUIR', cid, nome, 'Credor excluído'))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/credores/%s: %s', cid, e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
-    conn = get_db()
-    acao = request.args.get('acao', '').upper()
-    limit = min(int(request.args.get('limit', 100)), 500)
-    offset = int(request.args.get('offset', 0))
-    if acao:
-        rows = conn.execute(
-            "SELECT * FROM logs WHERE acao=? ORDER BY data DESC LIMIT ? OFFSET ?",
-            (acao, limit, offset)
-        ).fetchall()
-        total = conn.execute("SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)).fetchone()[0]
-    else:
-        rows = conn.execute(
-            "SELECT * FROM logs ORDER BY data DESC LIMIT ? OFFSET ?",
-            (limit, offset)
-        ).fetchall()
-        total = conn.execute("SELECT COUNT(*) FROM logs").fetchone()[0]
-
-    return jsonify({'logs': [row_to_dict(r) for r in rows], 'total': total, 'offset': offset, 'limit': limit})
+    try:
+        conn = get_db()
+        acao = request.args.get('acao', '').upper()
+        limit = min(int(request.args.get('limit', 100)), 500)
+        offset = int(request.args.get('offset', 0))
+        if acao:
+            rows = conn.execute(
+                "SELECT * FROM logs WHERE acao=? ORDER BY data DESC LIMIT ? OFFSET ?",
+                (acao, limit, offset)
+            ).fetchall()
+            total = conn.execute("SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)).fetchone()[0]
+        else:
+            rows = conn.execute(
+                "SELECT * FROM logs ORDER BY data DESC LIMIT ? OFFSET ?",
+                (limit, offset)
+            ).fetchall()
+            total = conn.execute("SELECT COUNT(*) FROM logs").fetchone()[0]
+        return jsonify({'logs': [row_to_dict(r) for r in rows], 'total': total, 'offset': offset, 'limit': limit})
+    except Exception as e:
+        app.logger.error('GET /api/logs: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 # ────────────────────────────────────────────────────────────
 # API – Empenhos
@@ -621,69 +692,79 @@ def get_logs():
 @app.route('/api/empenhos/<int:ano>/<int:mes>', methods=['GET'])
 def get_empenhos(ano, mes):
     """Retorna lista de credor_ids empenhados no mês/ano."""
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT credor_id, timestamp FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
-        (ano, mes)
-    ).fetchall()
-
-    return jsonify([row_to_dict(r) for r in rows])
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT credor_id, timestamp FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
+            (ano, mes)
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/empenhos/%s/%s: %s', ano, mes, e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/empenhos', methods=['POST'])
 def toggle_empenho():
     """Marca ou desmarca um empenho. Retorna o estado atual."""
-    data      = request.get_json()
-    cid       = int(data['credor_id'])
-    ano       = int(data['ano'])
-    mes       = int(data['mes'])
-    from datetime import datetime
-    ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        data      = request.get_json()
+        if not data or 'credor_id' not in data or 'ano' not in data or 'mes' not in data:
+            return jsonify({'error': 'credor_id, ano e mes são obrigatórios'}), 400
+        cid       = int(data['credor_id'])
+        ano       = int(data['ano'])
+        mes       = int(data['mes'])
+        from datetime import datetime
+        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    conn = get_db()
-    cur = conn.cursor()
-    nome_row = conn.execute("SELECT nome FROM credores WHERE id=?", (cid,)).fetchone()
-    nome = nome_row['nome'] if nome_row else 'Desconhecido'
+        conn = get_db()
+        cur = conn.cursor()
+        nome_row = conn.execute("SELECT nome FROM credores WHERE id=?", (cid,)).fetchone()
+        nome = nome_row['nome'] if nome_row else 'Desconhecido'
 
-    existing = conn.execute(
-        "SELECT id, empenhado FROM empenhos WHERE credor_id=? AND ano=? AND mes=?",
-        (cid, ano, mes)
-    ).fetchone()
+        existing = conn.execute(
+            "SELECT id, empenhado FROM empenhos WHERE credor_id=? AND ano=? AND mes=?",
+            (cid, ano, mes)
+        ).fetchone()
 
-    if existing:
-        new_state = 0 if existing['empenhado'] == 1 else 1
-        conn.execute(
-            "UPDATE empenhos SET empenhado=?, timestamp=? WHERE id=?",
-            (new_state, ts, existing['id'])
-        )
-        acao = 'EMPENHAR' if new_state == 1 else 'DESEMPENHAR'
-        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            (acao, cid, nome, f"{acao} em {mes:02d}/{ano}"))
-        conn.commit()
-
-        return jsonify({'empenhado': bool(new_state)})
-    else:
-        conn.execute(
-            "INSERT INTO empenhos (credor_id, ano, mes, empenhado, timestamp) VALUES (?,?,?,1,?)",
-            (cid, ano, mes, ts)
-        )
-        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('EMPENHAR', cid, nome, f"EMPENHAR em {mes:02d}/{ano}"))
-        conn.commit()
-
-        return jsonify({'empenhado': True})
+        if existing:
+            new_state = 0 if existing['empenhado'] == 1 else 1
+            conn.execute(
+                "UPDATE empenhos SET empenhado=?, timestamp=? WHERE id=?",
+                (new_state, ts, existing['id'])
+            )
+            acao = 'EMPENHAR' if new_state == 1 else 'DESEMPENHAR'
+            cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+                (acao, cid, nome, f"{acao} em {mes:02d}/{ano}"))
+            conn.commit()
+            return jsonify({'empenhado': bool(new_state)})
+        else:
+            conn.execute(
+                "INSERT INTO empenhos (credor_id, ano, mes, empenhado, timestamp) VALUES (?,?,?,1,?)",
+                (cid, ano, mes, ts)
+            )
+            cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+                ('EMPENHAR', cid, nome, f"EMPENHAR em {mes:02d}/{ano}"))
+            conn.commit()
+            return jsonify({'empenhado': True})
+    except Exception as e:
+        app.logger.error('POST /api/empenhos: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/empenhos/historico/<int:cid>', methods=['GET'])
 def historico_credor(cid):
     """Retorna histórico completo de empenhos de um credor."""
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT ano, mes, empenhado, timestamp FROM empenhos WHERE credor_id=? AND empenhado=1 ORDER BY ano DESC, mes DESC",
-        (cid,)
-    ).fetchall()
-
-    return jsonify([row_to_dict(r) for r in rows])
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT ano, mes, empenhado, timestamp FROM empenhos WHERE credor_id=? AND empenhado=1 ORDER BY ano DESC, mes DESC",
+            (cid,)
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/empenhos/historico/%s: %s', cid, e)
+        return jsonify({'error': str(e)}), 500
 
 
 # ────────────────────────────────────────────────────────────
@@ -941,150 +1022,186 @@ def get_historico_credor(cid):
 @app.route('/api/rpas', methods=['POST'])
 def add_rpa():
     d = request.get_json()
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO rpas (
-            numero_rpa, nome_prestador, cpf_prestador, endereco_prestador,
-            descricao_servico, periodo_referencia, carga_horaria, local_execucao,
-            valor_bruto, num_dependentes, pensao_alimenticia,
-            inss, iss, deducao_dependentes, base_calculo_irrf,
-            aliquota_irrf, parcela_deduzir_irrf, ir, valor_liquido,
-            observacoes, data_emissao
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    """, (
-        d.get('numeroRPA', ''),
-        d.get('nomePrestador', ''),
-        d.get('cpfPrestador', ''),
-        d.get('enderecoPrestador', ''),
-        d.get('descricaoServico', ''),
-        d.get('periodoReferencia', ''),
-        d.get('cargaHoraria', ''),
-        d.get('localExecucao', ''),
-        float(d.get('valorBruto') or 0),
-        int(d.get('numDependentes') or 0),
-        float(d.get('pensaoAlimenticia') or 0),
-        float(d.get('inss') or 0),
-        float(d.get('iss') or 0),
-        float(d.get('deducaoDependentes') or 0),
-        float(d.get('baseCalculoIRRF') or 0),
-        float(d.get('aliquotaIRRF') or 0),
-        float(d.get('parcelaDeduzirIRRF') or 0),
-        float(d.get('ir') or 0),
-        float(d.get('valorLiquido') or 0),
-        d.get('observacoes', ''),
-        d.get('dataEmissao', ''),
-    ))
-    new_id = cur.lastrowid
-    conn.commit()
-    row = conn.execute("SELECT * FROM rpas WHERE id=?", (new_id,)).fetchone()
-
-    return jsonify(row_to_dict(row)), 201
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO rpas (
+                numero_rpa, nome_prestador, cpf_prestador, endereco_prestador,
+                descricao_servico, periodo_referencia, carga_horaria, local_execucao,
+                valor_bruto, num_dependentes, pensao_alimenticia,
+                inss, iss, deducao_dependentes, base_calculo_irrf,
+                aliquota_irrf, parcela_deduzir_irrf, ir, valor_liquido,
+                observacoes, data_emissao
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            d.get('numeroRPA', ''),
+            d.get('nomePrestador', ''),
+            d.get('cpfPrestador', ''),
+            d.get('enderecoPrestador', ''),
+            d.get('descricaoServico', ''),
+            d.get('periodoReferencia', ''),
+            d.get('cargaHoraria', ''),
+            d.get('localExecucao', ''),
+            float(d.get('valorBruto') or 0),
+            int(d.get('numDependentes') or 0),
+            float(d.get('pensaoAlimenticia') or 0),
+            float(d.get('inss') or 0),
+            float(d.get('iss') or 0),
+            float(d.get('deducaoDependentes') or 0),
+            float(d.get('baseCalculoIRRF') or 0),
+            float(d.get('aliquotaIRRF') or 0),
+            float(d.get('parcelaDeduzirIRRF') or 0),
+            float(d.get('ir') or 0),
+            float(d.get('valorLiquido') or 0),
+            d.get('observacoes', ''),
+            d.get('dataEmissao', ''),
+        ))
+        new_id = cur.lastrowid
+        conn.commit()
+        row = conn.execute("SELECT * FROM rpas WHERE id=?", (new_id,)).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/rpas: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/rpas/<int:rid>', methods=['PUT'])
 def update_rpa(rid):
     d = request.get_json()
-    conn = get_db()
-    conn.execute("""
-        UPDATE rpas SET
-            numero_rpa=?, nome_prestador=?, cpf_prestador=?, endereco_prestador=?,
-            descricao_servico=?, periodo_referencia=?, carga_horaria=?, local_execucao=?,
-            valor_bruto=?, num_dependentes=?, pensao_alimenticia=?,
-            inss=?, iss=?, deducao_dependentes=?, base_calculo_irrf=?,
-            aliquota_irrf=?, parcela_deduzir_irrf=?, ir=?, valor_liquido=?,
-            observacoes=?, data_emissao=?
-        WHERE id=?
-    """, (
-        d.get('numeroRPA', ''),
-        d.get('nomePrestador', ''),
-        d.get('cpfPrestador', ''),
-        d.get('enderecoPrestador', ''),
-        d.get('descricaoServico', ''),
-        d.get('periodoReferencia', ''),
-        d.get('cargaHoraria', ''),
-        d.get('localExecucao', ''),
-        float(d.get('valorBruto') or 0),
-        int(d.get('numDependentes') or 0),
-        float(d.get('pensaoAlimenticia') or 0),
-        float(d.get('inss') or 0),
-        float(d.get('iss') or 0),
-        float(d.get('deducaoDependentes') or 0),
-        float(d.get('baseCalculoIRRF') or 0),
-        float(d.get('aliquotaIRRF') or 0),
-        float(d.get('parcelaDeduzirIRRF') or 0),
-        float(d.get('ir') or 0),
-        float(d.get('valorLiquido') or 0),
-        d.get('observacoes', ''),
-        d.get('dataEmissao', ''),
-        rid,
-    ))
-    conn.commit()
-    row = conn.execute("SELECT * FROM rpas WHERE id=?", (rid,)).fetchone()
-
-    if not row:
-        return jsonify({'error': 'Não encontrado'}), 404
-    return jsonify(row_to_dict(row))
+    try:
+        conn = get_db()
+        conn.execute("""
+            UPDATE rpas SET
+                numero_rpa=?, nome_prestador=?, cpf_prestador=?, endereco_prestador=?,
+                descricao_servico=?, periodo_referencia=?, carga_horaria=?, local_execucao=?,
+                valor_bruto=?, num_dependentes=?, pensao_alimenticia=?,
+                inss=?, iss=?, deducao_dependentes=?, base_calculo_irrf=?,
+                aliquota_irrf=?, parcela_deduzir_irrf=?, ir=?, valor_liquido=?,
+                observacoes=?, data_emissao=?
+            WHERE id=?
+        """, (
+            d.get('numeroRPA', ''),
+            d.get('nomePrestador', ''),
+            d.get('cpfPrestador', ''),
+            d.get('enderecoPrestador', ''),
+            d.get('descricaoServico', ''),
+            d.get('periodoReferencia', ''),
+            d.get('cargaHoraria', ''),
+            d.get('localExecucao', ''),
+            float(d.get('valorBruto') or 0),
+            int(d.get('numDependentes') or 0),
+            float(d.get('pensaoAlimenticia') or 0),
+            float(d.get('inss') or 0),
+            float(d.get('iss') or 0),
+            float(d.get('deducaoDependentes') or 0),
+            float(d.get('baseCalculoIRRF') or 0),
+            float(d.get('aliquotaIRRF') or 0),
+            float(d.get('parcelaDeduzirIRRF') or 0),
+            float(d.get('ir') or 0),
+            float(d.get('valorLiquido') or 0),
+            d.get('observacoes', ''),
+            d.get('dataEmissao', ''),
+            rid,
+        ))
+        conn.commit()
+        row = conn.execute("SELECT * FROM rpas WHERE id=?", (rid,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Não encontrado'}), 404
+        return jsonify(row_to_dict(row))
+    except Exception as e:
+        app.logger.error('PUT /api/rpas/%s: %s', rid, e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/rpas/<int:rid>', methods=['DELETE'])
 def delete_rpa(rid):
-    conn = get_db()
-    conn.execute("DELETE FROM rpas WHERE id=?", (rid,))
-    conn.commit()
-
-    return jsonify({'ok': True})
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM rpas WHERE id=?", (rid,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/rpas/%s: %s', rid, e)
+        return jsonify({'error': str(e)}), 500
 
 
 # ────────────────────────────────────────────────────────────
 # API – Kanban Tasks
 # ────────────────────────────────────────────────────────────
 
+_KANBAN_STATUSES = {'todo', 'doing', 'done', 'blocked'}
+_KANBAN_PRIORITIES = {'low', 'medium', 'high', 'urgent'}
+
 @app.route('/api/kanban', methods=['GET'])
 def kanban_list():
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM kanban_tasks ORDER BY criado_em ASC").fetchall()
-
-    return jsonify([dict(r) for r in rows])
+    try:
+        conn = get_db()
+        rows = conn.execute("SELECT * FROM kanban_tasks ORDER BY criado_em ASC").fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/kanban: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/kanban', methods=['POST'])
 def kanban_create():
     d = request.json or {}
     if not d.get('id') or not d.get('title'):
         return jsonify({'error': 'id e title são obrigatórios'}), 400
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO kanban_tasks (id, title, description, status, priority) VALUES (?,?,?,?,?)",
-        (d['id'], d['title'], d.get('description',''), d.get('status','todo'), d.get('priority','medium'))
-    )
-    conn.commit()
-    row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (d['id'],)).fetchone()
-
-    return jsonify(dict(row)), 201
+    status = d.get('status', 'todo')
+    priority = d.get('priority', 'medium')
+    if status not in _KANBAN_STATUSES:
+        return jsonify({'error': f'status inválido. Use: {", ".join(sorted(_KANBAN_STATUSES))}'}), 400
+    if priority not in _KANBAN_PRIORITIES:
+        return jsonify({'error': f'priority inválida. Use: {", ".join(sorted(_KANBAN_PRIORITIES))}'}), 400
+    try:
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO kanban_tasks (id, title, description, status, priority) VALUES (?,?,?,?,?)",
+            (d['id'], d['title'], d.get('description',''), status, priority)
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (d['id'],)).fetchone()
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/kanban: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/kanban/<task_id>', methods=['PUT'])
 def kanban_update(task_id):
     d = request.json or {}
-    conn = get_db()
-    conn.execute(
-        """UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?,
-           atualizado_em=datetime('now','localtime') WHERE id=?""",
-        (d.get('title'), d.get('description',''), d.get('status'), d.get('priority'), task_id)
-    )
-    conn.commit()
-    row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
-
-    if not row:
-        return jsonify({'error': 'not found'}), 404
-    return jsonify(dict(row))
+    status = d.get('status')
+    priority = d.get('priority')
+    if status and status not in _KANBAN_STATUSES:
+        return jsonify({'error': f'status inválido. Use: {", ".join(sorted(_KANBAN_STATUSES))}'}), 400
+    if priority and priority not in _KANBAN_PRIORITIES:
+        return jsonify({'error': f'priority inválida. Use: {", ".join(sorted(_KANBAN_PRIORITIES))}'}), 400
+    try:
+        conn = get_db()
+        conn.execute(
+            """UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?,
+               atualizado_em=datetime('now','localtime') WHERE id=?""",
+            (d.get('title'), d.get('description',''), d.get('status'), d.get('priority'), task_id)
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'not found'}), 404
+        return jsonify(dict(row))
+    except Exception as e:
+        app.logger.error('PUT /api/kanban/%s: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/kanban/<task_id>', methods=['DELETE'])
 def kanban_delete(task_id):
-    conn = get_db()
-    conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
-    conn.commit()
-
-    return jsonify({'ok': True})
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/kanban/%s: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
 
 
 # ────────────────────────────────────────────────────────────
@@ -1092,14 +1209,17 @@ def kanban_delete(task_id):
 # ────────────────────────────────────────────────────────────
 @app.route('/api/fornecimento/dados', methods=['GET'])
 def fornecimento_dados_get():
-    conn = get_db()
-    rows = conn.execute("SELECT tipo, valor FROM fornecimento_dados ORDER BY tipo, valor COLLATE NOCASE").fetchall()
-
-    result = {'solicitantes': [], 'empresas': [], 'observacoes': []}
-    for r in rows:
-        if r['tipo'] in result:
-            result[r['tipo']].append(r['valor'])
-    return jsonify(result)
+    try:
+        conn = get_db()
+        rows = conn.execute("SELECT tipo, valor FROM fornecimento_dados ORDER BY tipo, valor COLLATE NOCASE").fetchall()
+        result = {'solicitantes': [], 'empresas': [], 'observacoes': []}
+        for r in rows:
+            if r['tipo'] in result:
+                result[r['tipo']].append(r['valor'])
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error('GET /api/fornecimento/dados: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/fornecimento/dados', methods=['POST'])
 def fornecimento_dados_add():
@@ -1108,22 +1228,28 @@ def fornecimento_dados_add():
     valor = d.get('valor', '').strip()
     if tipo not in ('solicitantes', 'empresas', 'observacoes') or not valor:
         return jsonify({'error': 'tipo ou valor inválido'}), 400
-    conn = get_db()
-    conn.execute("INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)", (tipo, valor))
-    conn.commit()
-
-    return jsonify({'ok': True})
+    try:
+        conn = get_db()
+        conn.execute("INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)", (tipo, valor))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('POST /api/fornecimento/dados: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/fornecimento/dados', methods=['DELETE'])
 def fornecimento_dados_del():
     d = request.get_json(force=True)
     tipo  = d.get('tipo', '').strip()
     valor = d.get('valor', '').strip()
-    conn = get_db()
-    conn.execute("DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor))
-    conn.commit()
-
-    return jsonify({'ok': True})
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/fornecimento/dados: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 
 # ────────────────────────────────────────────────────────────
@@ -1133,25 +1259,31 @@ ALLOWED_CONFIG_KEYS = {'api_openrouter_key', 'api_openrouter_modelo', 'api_cnpja
 
 @app.route('/api/config', methods=['GET'])
 def config_get():
-    conn = get_db()
-    rows = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
-
-    return jsonify({r['chave']: r['valor'] for r in rows if r['chave'] in ALLOWED_CONFIG_KEYS})
+    try:
+        conn = get_db()
+        rows = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
+        return jsonify({r['chave']: r['valor'] for r in rows if r['chave'] in ALLOWED_CONFIG_KEYS})
+    except Exception as e:
+        app.logger.error('GET /api/config: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/config', methods=['POST'])
 def config_set():
     d = request.get_json(force=True)
-    conn = get_db()
-    for chave, valor in d.items():
-        if chave in ALLOWED_CONFIG_KEYS:
-            conn.execute(
-                "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?,?,datetime('now','localtime')) "
-                "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor, atualizado_em=excluded.atualizado_em",
-                (chave, str(valor))
-            )
-    conn.commit()
-
-    return jsonify({'ok': True})
+    try:
+        conn = get_db()
+        for chave, valor in d.items():
+            if chave in ALLOWED_CONFIG_KEYS:
+                conn.execute(
+                    "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?,?,datetime('now','localtime')) "
+                    "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor, atualizado_em=excluded.atualizado_em",
+                    (chave, str(valor))
+                )
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('POST /api/config: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 import urllib.request as _urllib_req
 import urllib.error as _urllib_err
