@@ -12,6 +12,7 @@ import os
 import re
 import sys
 import threading
+import gzip as _gzip
 
 from flask import Flask, request, jsonify, send_from_directory, send_file, Response
 
@@ -38,13 +39,17 @@ app = Flask(__name__, static_folder=BASE_DIR)
 import mimetypes as _mimetypes
 
 _file_cache: dict[str, tuple[bytes, str]] = {}   # url_path -> (bytes, mimetype)
+_gzip_cache: dict[str, bytes] = {}               # url_path -> gzip(bytes)
+
+_COMPRESSIBLE = {'text/html', 'text/css', 'text/javascript', 'application/javascript',
+                 'application/json', 'image/svg+xml', 'text/plain', 'text/xml'}
 
 _SKIP_EXTS = {'.db', '.db-shm', '.db-wal', '.pyc', '.pyo', '.log', '.bat'}
 _SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer',
               'PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL'}
 
 def _preload_static_files():
-    """Lê todos os arquivos estáticos para RAM no startup."""
+    """Lê todos os arquivos estáticos para RAM no startup (+ versões gzip)."""
     count, total_kb = 0, 0
     for root, dirs, files in os.walk(BASE_DIR):
         # Não descer em diretórios que não precisamos servir
@@ -65,11 +70,16 @@ def _preload_static_files():
                 with open(fpath, 'rb') as f:
                     data = f.read()
                 _file_cache[url] = (data, mime)
+                # Pré-comprime texto para servir gzip sem gastar CPU por request
+                base_mime = (mime or '').split(';')[0].strip()
+                if base_mime in _COMPRESSIBLE and len(data) > 256:
+                    _gzip_cache[url] = _gzip.compress(data, compresslevel=6)
                 count += 1
                 total_kb += len(data) // 1024
             except OSError:
                 pass
     print(f"Cache estático: {count} arquivos, {total_kb} KB em RAM")
+    print(f"Cache gzip: {len(_gzip_cache)} arquivos comprimidos")
 
 # ── Banco de Dados ───────────────────────────────────────────
 # Conexão thread-local reutilizada durante todo o ciclo de vida da requisição.
@@ -98,6 +108,23 @@ def close_db(exception):
     # Conexão mantida aberta entre requisições para evitar overhead de re-abertura
     # (crítico em ambientes OneDrive onde abrir arquivo tem latência alta)
     pass
+
+@app.after_request
+def compress_response(response):
+    """Comprime respostas JSON/texto da API com gzip."""
+    if (response.status_code < 200 or response.status_code >= 300
+            or response.direct_passthrough
+            or 'Content-Encoding' in response.headers):
+        return response
+    mime = (response.content_type or '').split(';')[0].strip()
+    if mime in _COMPRESSIBLE and 'gzip' in request.headers.get('Accept-Encoding', ''):
+        data = response.get_data()
+        if len(data) > 256:
+            response.set_data(_gzip.compress(data, compresslevel=6))
+            response.headers['Content-Encoding'] = 'gzip'
+            response.headers['Vary'] = 'Accept-Encoding'
+            response.headers['Content-Length'] = len(response.get_data())
+    return response
 
 def migrate_db():
     """Aplica migrações no banco existente."""
@@ -337,31 +364,45 @@ def _seed_from_data_js(cur):
 def row_to_dict(row):
     return dict(row)
 
+def _serve_cached(url, cache_control):
+    """Serve arquivo do cache com gzip se o cliente aceitar."""
+    entry = _file_cache.get(url)
+    if not entry:
+        return None
+    data, mime = entry
+    headers = {'Cache-Control': cache_control}
+    accept_enc = request.headers.get('Accept-Encoding', '')
+    gz = _gzip_cache.get(url)
+    if gz and 'gzip' in accept_enc:
+        headers['Content-Encoding'] = 'gzip'
+        headers['Vary'] = 'Accept-Encoding'
+        headers['Content-Length'] = str(len(gz))
+        return Response(gz, mimetype=mime, headers=headers)
+    return Response(data, mimetype=mime, headers=headers)
+
 # ────────────────────────────────────────────────────────────
 # ROTAS – Statics
 # ────────────────────────────────────────────────────────────
 
 @app.route('/')
 def index():
-    entry = _file_cache.get('/index.html')
-    if entry:
-        return Response(entry[0], mimetype=entry[1],
-                        headers={'Cache-Control': 'no-cache, no-store, must-revalidate'})
-    resp = send_file(os.path.join(BASE_DIR, 'index.html'))
-    resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    return resp
+    resp = _serve_cached('/index.html', 'no-cache, no-store, must-revalidate')
+    if resp:
+        return resp
+    r = send_file(os.path.join(BASE_DIR, 'index.html'))
+    r.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return r
 
 
 @app.route('/static/<path:filename>')
 def static_cached(filename):
     url = '/static/' + filename
-    entry = _file_cache.get(url)
-    if entry:
-        return Response(entry[0], mimetype=entry[1],
-                        headers={'Cache-Control': 'public, max-age=86400'})
-    resp = send_from_directory(os.path.join(BASE_DIR, 'static'), filename)
-    resp.headers['Cache-Control'] = 'public, max-age=86400'
-    return resp
+    resp = _serve_cached(url, 'public, max-age=86400')
+    if resp:
+        return resp
+    r = send_from_directory(os.path.join(BASE_DIR, 'static'), filename)
+    r.headers['Cache-Control'] = 'public, max-age=86400'
+    return r
 
 
 @app.route('/<path:filename>')
@@ -369,14 +410,14 @@ def static_files(filename):
     if filename.startswith('api/'):
         return jsonify({'error': 'Rota não encontrada: ' + filename}), 404
     url = '/' + filename
-    entry = _file_cache.get(url)
-    if entry:
-        cc = 'no-cache, no-store, must-revalidate' if filename.endswith('.html') else 'public, max-age=3600'
-        return Response(entry[0], mimetype=entry[1], headers={'Cache-Control': cc})
-    resp = send_from_directory(BASE_DIR, filename)
+    cc = 'no-cache, no-store, must-revalidate' if filename.endswith('.html') else 'public, max-age=3600'
+    resp = _serve_cached(url, cc)
+    if resp:
+        return resp
+    r = send_from_directory(BASE_DIR, filename)
     if filename.endswith('.html'):
-        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    return resp
+        r.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return r
 
 @app.errorhandler(404)
 def not_found(e):
