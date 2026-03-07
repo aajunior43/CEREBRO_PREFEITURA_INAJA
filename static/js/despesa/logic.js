@@ -93,11 +93,11 @@
       if (state.saldoCriticoAtivo && row.__saldo > state.saldoCriticoThreshold) return false;
       // Busca por número da despesa
       if (state.numDespesaQuery) {
-        const num = normalizeText(row["Número da despesa"] || "");
+        const num = row.__numDespesaNorm || normalizeText(row["Número da despesa"] || "");
         if (!num.includes(state.numDespesaQuery)) return false;
       }
       if (!query) return true;
-      const hay = normalizeText(state.columns.map((col) => row[col]).join(" "));
+      const hay = row.__searchable || "";
       return hay.includes(query);
     });
 
@@ -245,6 +245,8 @@
       row["Origem do Recurso"] = getOrigemRecurso(row["Descrição do recurso"]);
       row["Secretaria/Órgão"] = getSecretaria(row["Descrição do organograma"]);
       row["Área de Atuação"] = getAreaAtuacao(row["Descrição da função"]);
+      row.__searchable = normalizeText(state.columns.map((col) => row[col] || "").join(" "));
+      row.__numDespesaNorm = normalizeText(row["Número da despesa"] || "");
 
       return row;
     });
@@ -314,15 +316,31 @@
     );
     const content = [`\ufeff${headerLine}`, ...lines].join("\r\n");
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
     const stamp = new Date().toISOString().slice(0, 10);
-    link.href = url;
-    link.download = `despesas-visiveis-${stamp}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+    const fileName = `despesas-visiveis-${stamp}.csv`;
+    const savePromise = window.DocumentAutosave
+      ? window.DocumentAutosave.saveText(content, {
+          nome: fileName,
+          categoria: 'relatorios_csv',
+          referencia: stamp,
+          descricao: 'Exportação CSV de despesas visíveis',
+          mimeType: 'text/csv;charset=utf-8;'
+        }).catch((err) => console.warn('Falha no autosave de despesas visíveis:', err))
+      : Promise.resolve();
+    Promise.resolve(savePromise).finally(() => {
+      if (window.DocumentAutosave) {
+        window.DocumentAutosave.downloadBlob(blob, fileName);
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    });
   };
 
   window.App.logic.initFilters = function () {

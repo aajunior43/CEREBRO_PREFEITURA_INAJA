@@ -53,6 +53,7 @@
   /* ── HTML do header ──────────────────────────────────────── */
   const NAV_ITEMS = {
     documentos: [
+      { href: '/pages/documentos.html',      name: 'Centro de Documentos',   desc: 'Salvar e organizar arquivos' },
       { href: '/pages/rpa.html',             name: 'RPA',                    desc: 'Recibo de Pagamento Autônomo' },
       { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
       { href: '/pages/gerador-empenho.html', name: 'Texto de Empenho',      desc: 'Gerar descrição de empenho com IA' },

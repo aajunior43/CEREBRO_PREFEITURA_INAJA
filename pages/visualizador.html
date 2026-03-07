@@ -749,6 +749,7 @@
   window.App.state = {
     data: [],
     filteredData: [],
+    uniqueValuesCache: {},
     filters: {
       globalSearch: '', minVal: null, maxVal: null,
       startDate: null, endDate: null,
@@ -764,6 +765,7 @@
     setData: (newData) => {
       window.App.state.data = newData;
       window.App.state.filteredData = [...newData];
+      window.App.state.uniqueValuesCache = {};
       window.App.stateManager.updatePagination();
     },
     updateFilteredData: (newData) => {
@@ -785,13 +787,19 @@
   window.App.logic = {
     applyFilters: () => {
       const { data, filters, sorting } = window.App.state;
+      const searchLower = (filters.globalSearch || '').toLowerCase().trim();
+      const terms = searchLower ? searchLower.split(/\s+/).filter(t => t.length > 0) : [];
+      const positiveTerms = terms.filter(t => !t.startsWith('-'));
+      const negativeTerms = terms.filter(t => t.startsWith('-') && t.length > 1).map(t => t.slice(1));
+      const selectedCredores = filters.credor && filters.credor.length ? new Set(filters.credor) : null;
+      const minVal = filters.minVal !== null && filters.minVal !== '' ? parseFloat(filters.minVal) : null;
+      const maxVal = filters.maxVal !== null && filters.maxVal !== '' ? parseFloat(filters.maxVal) : null;
+      const startDate = filters.startDate ? window.App.logic.parseDateInput(filters.startDate) : null;
+      const endDate = filters.endDate ? window.App.logic.parseDateInput(filters.endDate) : null;
+      const mesInt = filters.mes ? parseInt(filters.mes) : null;
       let result = data.filter(item => {
-        if (filters.globalSearch) {
-          const searchLower = filters.globalSearch.toLowerCase();
-          const terms = searchLower.split(/\s+/).filter(t => t.length > 0);
-          const positiveTerms = terms.filter(t => !t.startsWith('-'));
-          const negativeTerms = terms.filter(t => t.startsWith('-') && t.length > 1).map(t => t.slice(1));
-          const searchable = [item.id, item.credor, item.historico, item.processo, item.unidade, item.situacao].join(' ').toLowerCase();
+        if (searchLower) {
+          const searchable = item._searchable || '';
           const matchesPositive = positiveTerms.length === 0 || positiveTerms.every(term => searchable.includes(term));
           const matchesNegative = negativeTerms.some(term => searchable.includes(term));
           if (!matchesPositive || matchesNegative) return false;
@@ -806,54 +814,37 @@
           if (!inRange) return false;
         }
         if (filters.minExec > 0) {
-          const exec = item.valor > 0 ? (item.valorPago / item.valor) * 100 : 0;
+          const exec = item._execPct || 0;
           if (exec < filters.minExec) return false;
         }
         if (filters.despesa) {
-          const rawCode = item.raw && item.raw['numNaturezaDesp'] ? item.raw['numNaturezaDesp'] : '';
-          const code = rawCode.replace(/\D/g, '').substring(0, 6);
-          if (code !== filters.despesa) return false;
+          if (item._naturezaCode !== filters.despesa) return false;
         }
         if (filters.credorType) {
-          const digits = item.credor.replace(/\D/g, '');
-          let type = 'PF';
-          if (digits.length === 14) type = 'PJ';
-          else if (digits.length === 11) type = 'PF';
-          else {
-            const pjKeywords = ['LTDA','ME','EPP','S.A','SA','EIRELI','INSTITUTO','ASSOCIACAO','ASSOCIAÇÃO','CONDOMINIO','PREFEITURA','MUNICIPIO','SECRETARIA','FUNDO','IGREJA','BANCO','COOPERATIVA'];
-            const upperName = item.credor.toUpperCase();
-            if (pjKeywords.some(k => upperName.includes(k))) type = 'PJ';
-          }
-          if (type !== filters.credorType) return false;
+          if (item._credorType !== filters.credorType) return false;
         }
-        if (filters.minVal !== null && filters.minVal !== '') { if (item.valor < parseFloat(filters.minVal)) return false; }
-        if (filters.maxVal !== null && filters.maxVal !== '') { if (item.valor > parseFloat(filters.maxVal)) return false; }
-        if (filters.startDate || filters.endDate) {
-          const itemDate = window.App.logic.parseDateForSort(item.data);
-          if (filters.startDate) { const start = window.App.logic.parseDateInput(filters.startDate); if (start && itemDate < start) return false; }
-          if (filters.endDate) { const end = window.App.logic.parseDateInput(filters.endDate); if (end && itemDate > end) return false; }
+        if (minVal !== null && item.valor < minVal) return false;
+        if (maxVal !== null && item.valor > maxVal) return false;
+        if (startDate || endDate) {
+          const itemDate = item._dateTs || 0;
+          if (startDate && itemDate < startDate) return false;
+          if (endDate && itemDate > endDate) return false;
         }
-        if (filters.credor && filters.credor.length > 0) { if (!filters.credor.includes(item.credor)) return false; }
+        if (selectedCredores && !selectedCredores.has(item.credor)) return false;
         if (filters.unidade) { if (item.unidade !== filters.unidade) return false; }
         if (filters.status) { if (item.situacao !== filters.status) return false; }
         if (filters.ano) {
-          if (!item.data) return false;
-          const parts = item.data.split('/');
-          if (parts.length < 3 || !parts[2].startsWith(filters.ano)) return false;
+          if (item._year !== filters.ano) return false;
         }
-        if (filters.mes) {
-          if (!item.data) return false;
-          const parts = item.data.split('/');
-          if (parts.length < 2 || parseInt(parts[1]) !== parseInt(filters.mes)) return false;
+        if (mesInt) {
+          if (item._month !== mesInt) return false;
         }
         if (filters.atraso) {
           const valorLiquidado = item.valorLiquidado || 0;
           const valorPago = item.valorPago || 0;
           if (valorLiquidado <= 0) return false;
           if (valorPago >= (valorLiquidado - 0.01)) return false;
-          let referenceDateTs = 0;
-          if (item.dataLiquidacao) { referenceDateTs = window.App.logic.parseDateForSort(item.dataLiquidacao); }
-          else { referenceDateTs = window.App.logic.parseDateForSort(item.data); }
+          let referenceDateTs = item._liquidacaoTs || item._dateTs || 0;
           const itemDate = new Date(referenceDateTs);
           const today = new Date();
           const days = window.App.utils.getBusinessDays(itemDate, today);
@@ -864,7 +855,7 @@
       if (sorting.column) {
         result.sort((a, b) => {
           let valA = a[sorting.column]; let valB = b[sorting.column];
-          if (sorting.column === 'data') { valA = window.App.logic.parseDateForSort(valA); valB = window.App.logic.parseDateForSort(valB); }
+          if (sorting.column === 'data') { valA = a._dateTs || 0; valB = b._dateTs || 0; }
           if (valA < valB) return sorting.direction === 'asc' ? -1 : 1;
           if (valA > valB) return sorting.direction === 'asc' ? 1 : -1;
           return 0;
@@ -889,8 +880,12 @@
       return null;
     },
     getUniqueValues: (field) => {
+      const cache = window.App.state.uniqueValuesCache || {};
+      if (cache[field]) return cache[field];
       const values = new Set(window.App.state.data.map(item => item[field]));
-      return Array.from(values).sort();
+      cache[field] = Array.from(values).sort();
+      window.App.state.uniqueValuesCache = cache;
+      return cache[field];
     }
   };
 
@@ -934,7 +929,6 @@
 
             const headers = parseCSVLine(lines[0], delimiter).map(h => h.replace(/^["']|["']$/g, '').trim());
 
-            // Column mapping (case-insensitive, flexible)
             const findCol = (patterns) => {
               for (const p of patterns) {
                 const idx = headers.findIndex(h => {
@@ -977,30 +971,61 @@
                 return idx !== -1 && idx < fields.length ? fields[idx].replace(/^["']|["']$/g, '').trim() : '';
               };
 
-              const valorStr = getField('valor');
-              const valor = window.App.utils.parseBRL(valorStr);
+              const id = getField('id') || String(i);
+              const dataEmissao = getField('data') || '';
+              const credor = getField('credor') || 'Desconhecido';
+              const historico = getField('historico') || '';
+              const processo = getField('processo') || '';
+              const unidade = getField('unidade') || '';
+              const situacao = getField('situacao') || 'Empenhado';
+              const valor = window.App.utils.parseBRL(getField('valor'));
+              const valorLiquidado = window.App.utils.parseBRL(getField('valorLiquidado'));
+              const valorPago = window.App.utils.parseBRL(getField('valorPago'));
+              const funcao = getField('funcao') || '';
+              const subfuncao = getField('subfuncao') || '';
+              const dataLiquidacao = getField('dataLiquidacao') || '';
+              const rawNatureza = colMap.naturezaDesp !== -1 && colMap.naturezaDesp < fields.length
+                ? fields[colMap.naturezaDesp].replace(/^["']|["']$/g, '').trim()
+                : '';
+              const naturezaCode = rawNatureza.replace(/\D/g, '').substring(0, 6);
+              const credorDigits = credor.replace(/\D/g, '');
+              let credorType = 'PF';
+              if (credorDigits.length === 14) credorType = 'PJ';
+              else if (credorDigits.length !== 11) {
+                const upperName = credor.toUpperCase();
+                const pjKeywords = ['LTDA','ME','EPP','S.A','SA','EIRELI','INSTITUTO','ASSOCIACAO','ASSOCIAÇÃO','CONDOMINIO','PREFEITURA','MUNICIPIO','SECRETARIA','FUNDO','IGREJA','BANCO','COOPERATIVA'];
+                if (pjKeywords.some(k => upperName.includes(k))) credorType = 'PJ';
+              }
+              const dateTs = window.App.logic.parseDateForSort(dataEmissao);
+              const liquidacaoTs = window.App.logic.parseDateForSort(dataLiquidacao);
+              const dateParts = dataEmissao.split('/');
 
               const item = {
-                id: getField('id') || String(i),
-                data: getField('data') || '',
-                credor: getField('credor') || 'Desconhecido',
-                historico: getField('historico') || '',
-                processo: getField('processo') || '',
-                unidade: getField('unidade') || '',
-                situacao: getField('situacao') || 'Empenhado',
+                id: id,
+                data: dataEmissao,
+                credor: credor,
+                historico: historico,
+                processo: processo,
+                unidade: unidade,
+                situacao: situacao,
                 valor: valor,
-                valorLiquidado: window.App.utils.parseBRL(getField('valorLiquidado')),
-                valorPago: window.App.utils.parseBRL(getField('valorPago')),
-                funcao: getField('funcao') || '',
-                subfuncao: getField('subfuncao') || '',
-                dataLiquidacao: getField('dataLiquidacao') || '',
+                valorLiquidado: valorLiquidado,
+                valorPago: valorPago,
+                funcao: funcao,
+                subfuncao: subfuncao,
+                dataLiquidacao: dataLiquidacao,
+                _dateTs: dateTs,
+                _liquidacaoTs: liquidacaoTs,
+                _year: dateParts.length >= 3 ? dateParts[2].substring(0, 4) : '',
+                _month: dateParts.length >= 2 ? parseInt(dateParts[1]) || 0 : 0,
+                _naturezaCode: naturezaCode,
+                _credorType: credorType,
+                _execPct: valor > 0 ? (valorPago / valor) * 100 : 0,
+                _searchable: [id, credor, historico, processo, unidade, situacao].join(' ').toLowerCase(),
                 raw: raw
               };
 
-              if (colMap.naturezaDesp !== -1 && colMap.naturezaDesp < fields.length) {
-                raw['numNaturezaDesp'] = fields[colMap.naturezaDesp].replace(/^["']|["']$/g, '').trim();
-              }
-
+              if (rawNatureza) raw['numNaturezaDesp'] = rawNatureza;
               data.push(item);
             }
             resolve(data);
@@ -1011,8 +1036,7 @@
       });
     }
   };
-  </script>﻿
-  <script>
+
   // ===== UI =====
   window.App.ui = {
     renderTable: () => {
@@ -1023,16 +1047,14 @@
         return;
       }
       tbody.innerHTML = data.map(item => {
-        let daysRefDate = item.data;
         let daysLabel = 'Dias desde Empenho';
         const isLiquidated = (item.valorLiquidado || 0) > 0;
         const isPaid = (item.valorPago || 0) >= ((item.valorLiquidado || 0) - 0.01);
         if (isLiquidated && !isPaid && item.dataLiquidacao) {
-          daysRefDate = item.dataLiquidacao;
           daysLabel = 'Dias de Atraso (desde Liquidação)';
         }
-        const itemDateTs = window.App.logic.parseDateForSort(daysRefDate);
-        const days = window.App.utils.getBusinessDays(new Date(itemDateTs), new Date());
+        const itemDateTs = (isLiquidated && !isPaid && item._liquidacaoTs) ? item._liquidacaoTs : (item._dateTs || 0);
+        const days = itemDateTs ? window.App.utils.getBusinessDays(new Date(itemDateTs), new Date()) : 0;
         const statusClass = 'status-' + item.situacao.toLowerCase().replace(/ /g, '-').replace(/ç/g, 'c').replace(/ã/g, 'a');
         return '<tr data-id="' + item.id + '">' +
           '<td>' + item.id + '</td>' +
@@ -1543,6 +1565,14 @@
 
   // ===== MAIN =====
   window.App.main = {
+    refreshView: () => {
+      window.App.ui.renderTable();
+      window.App.ui.renderPagination();
+      window.App.ui.renderStats();
+      if (window.App.ui.renderActiveFilters) window.App.ui.renderActiveFilters();
+      const dashboardView = document.getElementById('dashboardView');
+      if (dashboardView && dashboardView.style.display !== 'none' && window.App.charts) window.App.charts.renderAll();
+    },
     init: () => {
       document.getElementById('csvFile').addEventListener('change', window.App.main.handleFileUpload);
       const toggleViewBtn = document.getElementById('toggleViewBtn');
@@ -1700,9 +1730,7 @@
           window.App.ui.renderFilters();
           window.App.ui.populateDespesaFilter(data);
           window.App.logic.applyFilters();
-          window.App.ui.renderTable();
-          window.App.ui.renderPagination();
-          window.App.ui.renderStats();
+          window.App.main.refreshView();
           e.target.value = '';
         } else { alert('Nenhum dado válido encontrado no arquivo CSV.'); }
       } catch (err) { console.error(err); alert('Erro ao processar o arquivo CSV: ' + err.message); }
@@ -1741,12 +1769,7 @@
         if (!filters.ano) { filters.mes = ''; document.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active')); }
       }
       window.App.logic.applyFilters();
-      window.App.ui.renderTable();
-      window.App.ui.renderPagination();
-      window.App.ui.renderStats();
-      if (window.App.ui.renderActiveFilters) window.App.ui.renderActiveFilters();
-      const dashboardView = document.getElementById('dashboardView');
-      if (dashboardView && dashboardView.style.display !== 'none' && window.App.charts) window.App.charts.renderAll();
+      window.App.main.refreshView();
     },
     updateCredorSelectionDisplay: () => {
       const selectedCheckboxes = document.querySelectorAll('.credor-checkbox:checked');

@@ -129,6 +129,28 @@ function render() {
   console.debug(`render() ${(performance.now() - t0).toFixed(1)}ms`);
 }
 
+async function autosaveGeneratedText(text, options) {
+  if (!window.DocumentAutosave) return;
+  try {
+    await window.DocumentAutosave.saveText(text, options);
+  } catch (err) {
+    console.warn('Falha ao salvar documento gerado automaticamente:', err);
+  }
+}
+
+function downloadGeneratedBlob(blob, fileName) {
+  if (window.DocumentAutosave) {
+    window.DocumentAutosave.downloadBlob(blob, fileName);
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function renderMonthNav() {
   document.getElementById('current-month-name').textContent = MESES[state.month];
   document.getElementById('current-month-year').textContent = state.year;
@@ -601,7 +623,7 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
 }
 
 // ── Exportar CSV ───────────────────────────────────────────────
-function exportCSV() {
+async function exportCSV() {
   const lista = filteredCredores();
   if (!lista.length) { showToast('Nenhum credor para exportar', 'error'); return; }
   const mesNome = MESES[state.month];
@@ -619,10 +641,15 @@ function exportCSV() {
   ]);
   const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';')).join('\r\n');
   const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `credores_${mesNome}_${ano}.csv`; a.click();
-  URL.revokeObjectURL(url);
+  const fileName = `credores_${mesNome}_${ano}.csv`;
+  await autosaveGeneratedText('\ufeff' + csv, {
+    nome: fileName,
+    categoria: 'relatorios_csv',
+    referencia: `${ano}-${String(state.month + 1).padStart(2, '0')}`,
+    descricao: `Exportação CSV de credores fixos de ${mesNome}/${ano}`,
+    mimeType: 'text/csv;charset=utf-8;'
+  });
+  downloadGeneratedBlob(blob, fileName);
   showToast(`CSV exportado: ${lista.length} credores`, 'success');
 }
 
@@ -651,7 +678,7 @@ async function batchEmpenhar() {
 }
 
 // ── Imprimir Credor (individual) ──────────────────────────────
-function printCredor(c) {
+async function printCredor(c) {
   const done = !!state.empenhados[c.id];
   const mesNome = MESES[state.month];
   const ano = state.year;
@@ -668,6 +695,14 @@ function printCredor(c) {
   <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
 </body></html>`;
 
+  await autosaveGeneratedText(html, {
+    nome: `solicitacao_${(c.nome || 'credor').replace(/[^a-z0-9]+/gi, '_')}_${ano}_${state.month + 1}.html`,
+    categoria: 'relatorios_html',
+    referencia: `${ano}-${String(state.month + 1).padStart(2, '0')}`,
+    descricao: `Relatório individual gerado para ${c.nome || 'credor'}`,
+    mimeType: 'text/html;charset=utf-8;'
+  });
+
   const win = window.open('', '_blank', 'width=760,height=750');
   if (!win) {
     showToast('Bloqueador de popups ativado. Permita popups para imprimir.', 'error');
@@ -678,7 +713,7 @@ function printCredor(c) {
 }
 
 // ── Imprimir em Lote ─────────────────────────────────────────
-function printLote() {
+async function printLote() {
   const lista = filteredCredores();
   if (lista.length === 0) { showToast('Nenhum credor para imprimir', 'error'); return; }
 
@@ -700,6 +735,14 @@ function printLote() {
   ${pages}
   <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
 </body></html>`;
+
+  await autosaveGeneratedText(html, {
+    nome: `solicitacoes_lote_${ano}_${state.month + 1}.html`,
+    categoria: 'relatorios_html',
+    referencia: `${ano}-${String(state.month + 1).padStart(2, '0')}`,
+    descricao: `Relatório em lote de ${lista.length} credores para ${mesNome}/${ano}`,
+    mimeType: 'text/html;charset=utf-8;'
+  });
 
   const win = window.open('', '_blank', 'width=760,height=750');
   if (!win) {

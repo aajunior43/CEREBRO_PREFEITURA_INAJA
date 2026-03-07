@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Centro de Documentos – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <style>
+    .docs-wrap { max-width: 1120px; margin: 24px auto 70px; padding: 0 20px; }
+    .docs-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
+    .docs-hero h2 { font-size:24px; font-weight:800; color:var(--text); margin:0; }
+    .docs-hero p { font-size:13px; color:var(--text-3); margin-top:6px; max-width:720px; }
+    .docs-grid { display:grid; grid-template-columns: minmax(320px, 390px) minmax(0, 1fr); gap:18px; align-items:start; }
+    .docs-card { background:var(--bg); border-radius:var(--radius); box-shadow:var(--neo); padding:22px; }
+    .docs-card h3 { font-size:15px; font-weight:800; color:var(--text); margin:0 0 16px; }
+    .docs-form { display:flex; flex-direction:column; gap:12px; }
+    .docs-label { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; }
+    .docs-input, .docs-select, .docs-textarea { width:100%; background:var(--bg); border:none; border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); padding:12px 14px; font-family:inherit; font-size:13px; color:var(--text); outline:none; }
+    .docs-textarea { min-height:88px; resize:vertical; }
+    .docs-file { padding:10px; background:var(--bg); border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); }
+    .docs-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+    .docs-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:var(--radius-sm); padding:11px 16px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+    .docs-btn-primary { background:linear-gradient(135deg, var(--blue), var(--blue-dark)); color:#fff; box-shadow:3px 3px 10px rgba(79,128,200,.35); }
+    .docs-btn-secondary { background:var(--bg); color:var(--text-2); box-shadow:var(--neo-sm); }
+    .docs-toolbar { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; }
+    .docs-empty { text-align:center; padding:38px 16px; color:var(--text-3); font-size:13px; }
+    .docs-list { display:flex; flex-direction:column; gap:12px; }
+    .doc-item { background:var(--bg-2, rgba(0,0,0,.03)); border-radius:var(--radius-sm); padding:16px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; }
+    .doc-main { min-width:0; }
+    .doc-name { font-size:14px; font-weight:800; color:var(--text); word-break:break-word; }
+    .doc-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .doc-badge { font-size:11px; font-weight:700; color:var(--text-2); background:rgba(184,194,204,.16); border-radius:999px; padding:4px 10px; }
+    .doc-desc { font-size:12px; color:var(--text-3); margin-top:10px; line-height:1.6; white-space:pre-wrap; }
+    .doc-actions { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
+    .doc-link, .doc-danger { border:none; border-radius:10px; padding:9px 12px; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; }
+    .doc-link { background:rgba(79,128,200,.12); color:var(--blue); }
+    .doc-danger { background:rgba(239,68,68,.12); color:var(--red); }
+    .docs-status { display:none; margin-top:10px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:12px; }
+    .docs-status.ok { display:block; background:rgba(34,197,94,.12); color:#15803d; }
+    .docs-status.err { display:block; background:rgba(239,68,68,.12); color:#dc2626; }
+    @media (max-width: 900px) {
+      .docs-grid { grid-template-columns: 1fr; }
+      .docs-toolbar { grid-template-columns: 1fr; }
+      .doc-item { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="docs-wrap">
+    <div class="docs-hero">
+      <div>
+        <h2>📁 Centro de Documentos</h2>
+        <p>Salve e organize contratos, notas, pareceres, anexos e qualquer arquivo do processo administrativo em uma estrutura central por categoria e referência.</p>
+      </div>
+    </div>
+
+    <div class="docs-grid">
+      <section class="docs-card">
+        <h3>⬆ Enviar documento</h3>
+        <form id="docs-form" class="docs-form">
+          <div>
+            <div class="docs-label">Categoria</div>
+            <select id="doc-categoria" class="docs-select">
+              <option value="contratos">Contratos</option>
+              <option value="notas">Notas</option>
+              <option value="pareceres">Pareceres</option>
+              <option value="oficios">Ofícios</option>
+              <option value="credores">Credores</option>
+              <option value="rpas">RPAs</option>
+              <option value="geral">Geral</option>
+            </select>
+          </div>
+          <div>
+            <div class="docs-label">Referência</div>
+            <input id="doc-referencia" class="docs-input" type="text" placeholder="Ex: contrato-2026-001, credor-prodasp, proc-123" />
+          </div>
+          <div>
+            <div class="docs-label">Descrição</div>
+            <textarea id="doc-descricao" class="docs-textarea" placeholder="Descreva rapidamente o conteúdo do documento"></textarea>
+          </div>
+          <div>
+            <div class="docs-label">Arquivo</div>
+            <input id="doc-arquivo" class="docs-file" type="file" required />
+          </div>
+          <div class="docs-actions">
+            <button type="submit" class="docs-btn docs-btn-primary" id="doc-enviar-btn">Salvar documento</button>
+            <button type="button" class="docs-btn docs-btn-secondary" id="doc-limpar-btn">Limpar</button>
+          </div>
+          <div id="docs-status" class="docs-status"></div>
+        </form>
+      </section>
+
+      <section class="docs-card">
+        <h3>🗂 Arquivos salvos</h3>
+        <div class="docs-toolbar">
+          <select id="filtro-categoria" class="docs-select">
+            <option value="">Todas as categorias</option>
+            <option value="contratos">Contratos</option>
+            <option value="notas">Notas</option>
+            <option value="pareceres">Pareceres</option>
+            <option value="oficios">Ofícios</option>
+            <option value="credores">Credores</option>
+            <option value="rpas">RPAs</option>
+            <option value="geral">Geral</option>
+          </select>
+          <input id="filtro-referencia" class="docs-input" type="text" placeholder="Filtrar por referência" />
+          <input id="filtro-busca" class="docs-input" type="text" placeholder="Buscar por nome/descrição" />
+          <button class="docs-btn docs-btn-secondary" id="docs-atualizar-btn" type="button">Atualizar</button>
+        </div>
+        <div id="docs-list" class="docs-list"></div>
+        <div id="docs-empty" class="docs-empty" style="display:none;">Nenhum documento encontrado.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const docsForm = document.getElementById('docs-form');
+    const docsStatus = document.getElementById('docs-status');
+    const docsList = document.getElementById('docs-list');
+    const docsEmpty = document.getElementById('docs-empty');
+    const filtroCategoria = document.getElementById('filtro-categoria');
+    const filtroReferencia = document.getElementById('filtro-referencia');
+    const filtroBusca = document.getElementById('filtro-busca');
+    let docsCache = [];
+    let docsTimer = null;
+
+    function fmtBytes(n) {
+      const value = Number(n) || 0;
+      if (value < 1024) return `${value} B`;
+      if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+      return `${(value / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function setStatus(msg, ok) {
+      docsStatus.textContent = msg;
+      docsStatus.className = `docs-status ${ok ? 'ok' : 'err'}`;
+    }
+
+    function clearStatus() {
+      docsStatus.textContent = '';
+      docsStatus.className = 'docs-status';
+    }
+
+    function esc(v) {
+      return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function renderDocs() {
+      const search = (filtroBusca.value || '').trim().toLowerCase();
+      const ref = (filtroReferencia.value || '').trim().toLowerCase();
+      const categoria = filtroCategoria.value;
+      const list = docsCache.filter(doc => {
+        if (categoria && doc.categoria !== categoria) return false;
+        if (ref && !(doc.referencia || '').toLowerCase().includes(ref)) return false;
+        if (search) {
+          const bucket = `${doc.nome_original || ''} ${doc.descricao || ''} ${doc.referencia || ''}`.toLowerCase();
+          if (!bucket.includes(search)) return false;
+        }
+        return true;
+      });
+
+      docsList.innerHTML = list.map(doc => `
+        <div class="doc-item">
+          <div class="doc-main">
+            <div class="doc-name">${esc(doc.nome_original)}</div>
+            <div class="doc-meta">
+              <span class="doc-badge">${esc(doc.categoria || 'geral')}</span>
+              <span class="doc-badge">${esc(doc.referencia || 'sem referência')}</span>
+              <span class="doc-badge">${fmtBytes(doc.tamanho)}</span>
+              <span class="doc-badge">${esc(doc.criado_em || '')}</span>
+            </div>
+            ${doc.descricao ? `<div class="doc-desc">${esc(doc.descricao)}</div>` : ''}
+          </div>
+          <div class="doc-actions">
+            <a class="doc-link" href="/api/documentos/${doc.id}/download">Baixar</a>
+            <button class="doc-danger" data-delete-id="${doc.id}" type="button">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+
+      docsEmpty.style.display = list.length ? 'none' : '';
+    }
+
+    async function carregarDocumentos() {
+      const params = new URLSearchParams();
+      if (filtroCategoria.value) params.set('categoria', filtroCategoria.value);
+      if (filtroReferencia.value.trim()) params.set('referencia', filtroReferencia.value.trim());
+      const res = await fetch('/api/documentos' + (params.toString() ? `?${params.toString()}` : ''));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Falha ao carregar documentos');
+      docsCache = data;
+      renderDocs();
+    }
+
+    async function enviarDocumento(e) {
+      e.preventDefault();
+      clearStatus();
+      const arquivo = document.getElementById('doc-arquivo').files[0];
+      if (!arquivo) {
+        setStatus('Selecione um arquivo.', false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append('arquivo', arquivo);
+      fd.append('categoria', document.getElementById('doc-categoria').value);
+      fd.append('referencia', document.getElementById('doc-referencia').value.trim());
+      fd.append('descricao', document.getElementById('doc-descricao').value.trim());
+      const btn = document.getElementById('doc-enviar-btn');
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+      try {
+        const res = await fetch('/api/documentos', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao salvar documento');
+        docsForm.reset();
+        setStatus('Documento salvo com sucesso.', true);
+        await carregarDocumentos();
+      } catch (err) {
+        setStatus(err.message || 'Erro ao salvar documento.', false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar documento';
+      }
+    }
+
+    async function excluirDocumento(id) {
+      if (!confirm('Deseja excluir este documento?')) return;
+      try {
+        const res = await fetch(`/api/documentos/${id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Erro ao excluir documento');
+        await carregarDocumentos();
+      } catch (err) {
+        setStatus(err.message || 'Erro ao excluir documento.', false);
+      }
+    }
+
+    docsForm.addEventListener('submit', enviarDocumento);
+    document.getElementById('doc-limpar-btn').addEventListener('click', () => { docsForm.reset(); clearStatus(); });
+    document.getElementById('docs-atualizar-btn').addEventListener('click', carregarDocumentos);
+    docsList.addEventListener('click', e => {
+      const btn = e.target.closest('[data-delete-id]');
+      if (!btn) return;
+      excluirDocumento(btn.dataset.deleteId);
+    });
+
+    [filtroCategoria, filtroReferencia, filtroBusca].forEach(el => {
+      el.addEventListener('input', () => {
+        clearTimeout(docsTimer);
+        docsTimer = setTimeout(() => {
+          if (el === filtroCategoria || el === filtroReferencia) carregarDocumentos().catch(err => setStatus(err.message, false));
+          else renderDocs();
+        }, 120);
+      });
+      el.addEventListener('change', () => {
+        if (el === filtroCategoria || el === filtroReferencia) carregarDocumentos().catch(err => setStatus(err.message, false));
+        else renderDocs();
+      });
+    });
+
+    carregarDocumentos().catch(err => setStatus(err.message || 'Erro ao carregar documentos.', false));
+  </script>
+</body>
+</html>

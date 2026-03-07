@@ -3,6 +3,7 @@
   const { decodeBuffer } = window.App.utils;
   const { loadCSV, applyFilters, resetFilters, initFilters, sortBy, exportVisibleCSV } = window.App.logic;
   const UI = window.App.ui;
+  const debouncedApplyFilters = window.App.utils.debounce(applyFilters, 180);
 
   UI.setSortHandler(sortBy);
   UI.setSelectHandler((id) => {
@@ -26,7 +27,7 @@
 
   ["search", "minValue", "maxValue"].forEach((id) => {
     if (elements[id]) {
-      elements[id].addEventListener("input", applyFilters);
+      elements[id].addEventListener("input", debouncedApplyFilters);
       elements[id].addEventListener("change", applyFilters);
     }
   });
@@ -35,7 +36,7 @@
     elements.numDespesa.addEventListener("input", () => {
       const { normalizeText } = window.App.utils;
       window.App.state.numDespesaQuery = normalizeText(elements.numDespesa.value.trim());
-      applyFilters();
+      debouncedApplyFilters();
     });
   }
 

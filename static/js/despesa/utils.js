@@ -17,6 +17,15 @@
       .replace(/[\u0300-\u036f]/g, "");
   };
 
+  window.App.utils.debounce = function (fn, wait) {
+    let timeoutId = null;
+    return function (...args) {
+      const context = this;
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn.apply(context, args), wait);
+    };
+  };
+
   window.App.utils.decodeBuffer = function (buffer) {
     const utf8 = new TextDecoder("utf-8").decode(buffer);
     if (utf8.includes("\uFFFD")) {

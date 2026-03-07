@@ -336,6 +336,7 @@
   <script src="/static/js/despesa/utils.js"></script>
   <script src="/static/js/despesa/csv.js"></script>
   <script src="/static/js/despesa/ui.js"></script>
+  <script src="/static/js/document-autosave.js"></script>
   <script src="/static/js/despesa/logic.js"></script>
   <script src="/static/js/despesa/main.js"></script>
   <script src="/static/js/despesa/historico.js"></script>
@@ -693,7 +694,6 @@
       btnExport.addEventListener('click', () => {
         if (!_lastCompData) return;
         const { rows, periodoA, periodoB } = _lastCompData;
-        const { formatter } = window.App.utils;
         let csv = `Número da despesa,Descrição,${periodoA},${periodoB},Variação R$,Variação %\n`;
         rows.forEach(r => {
           csv += [
@@ -705,10 +705,26 @@
           ].join(',') + '\n';
         });
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `comparativo_${periodoA}_vs_${periodoB}.csv`.replace(/[\/\\:*?"<>|]/g, '-');
-        a.click();
+        const fileName = `comparativo_${periodoA}_vs_${periodoB}.csv`.replace(/[\/\\:*?"<>|]/g, '-');
+        const savePromise = window.DocumentAutosave
+          ? window.DocumentAutosave.saveText('\uFEFF' + csv, {
+              nome: fileName,
+              categoria: 'relatorios_csv',
+              referencia: `${periodoA}_vs_${periodoB}`,
+              descricao: `Comparativo de despesa entre ${periodoA} e ${periodoB}`,
+              mimeType: 'text/csv;charset=utf-8;'
+            }).catch(err => console.warn('Falha no autosave do comparativo:', err))
+          : Promise.resolve();
+        Promise.resolve(savePromise).finally(() => {
+          if (window.DocumentAutosave) {
+            window.DocumentAutosave.downloadBlob(blob, fileName);
+            return;
+          }
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = fileName;
+          a.click();
+        });
       });
     }
 

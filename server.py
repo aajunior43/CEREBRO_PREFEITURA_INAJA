@@ -15,6 +15,7 @@ import gzip as _gzip
 import hashlib
 import time as _time
 import logging
+import mimetypes
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 import urllib.error as _urllib_error
@@ -29,6 +30,9 @@ from services.openrouter_service import chat_completion, listar_modelos, parse_h
 BASE_DIR = str(settings.base_dir)
 DB_PATH = str(settings.db_path)
 DATA_JS = str(settings.data_js_path)
+DOCUMENTS_DIR = os.path.join(BASE_DIR, 'documentos_centro')
+
+os.makedirs(DOCUMENTS_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=BASE_DIR)
 
@@ -70,7 +74,7 @@ _COMPRESSIBLE = {'text/html', 'text/css', 'text/javascript', 'application/javasc
                  'application/json', 'image/svg+xml', 'text/plain', 'text/xml'}
 
 _SKIP_EXTS = {'.db', '.db-shm', '.db-wal', '.pyc', '.pyo', '.log', '.bat'}
-_SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer',
+_SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer', 'documentos_centro',
               'PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL'}
 
 def _preload_static_files():
@@ -120,6 +124,7 @@ def get_db():
         db.row_factory = sqlite3.Row
         # Aplicar PRAGMAs em cada nova conexão — threads do Flask criam conexões
         # independentes e precisam dos mesmos settings para não cair nos defaults lentos
+        db.execute("PRAGMA foreign_keys=ON")
         db.execute("PRAGMA journal_mode=DELETE")  # sem WAL (OneDrive não suporta .db-wal)
         db.execute("PRAGMA synchronous=NORMAL")   # sem espera de confirmação do OS a cada write
         db.execute("PRAGMA cache_size=-8000")     # 8MB de cache em memória
@@ -133,6 +138,25 @@ def close_db(exception):
     # Conexão mantida aberta entre requisições para evitar overhead de re-abertura
     # (crítico em ambientes OneDrive onde abrir arquivo tem latência alta)
     pass
+
+def ensure_db_indexes(cur):
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor ON empenhos(credor_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes ON empenhos(ano, mes)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_departamento ON credores(departamento)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_nome ON credores(nome)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_ativo ON credores(ativo)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_data ON logs(data)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_rpas_cpf ON rpas(cpf_prestador)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_rpas_periodo ON rpas(periodo_referencia)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_rpas_data_emissao ON rpas(data_emissao)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_categoria ON documentos_centro(categoria)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_referencia ON documentos_centro(referencia)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_criado_em ON documentos_centro(criado_em)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_categoria_ref ON documentos_centro(categoria, referencia)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_importacoes_periodo ON despesas_importacoes(periodo)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_linhas_importacao ON despesas_linhas(importacao_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_importacoes_periodo ON empenhos_importacoes(periodo)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_linhas_importacao ON empenhos_linhas(importacao_id)")
 
 @app.before_request
 def mark_request_start():
@@ -227,6 +251,20 @@ def migrate_db():
             dados           TEXT    NOT NULL
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS documentos_centro (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_original   TEXT    NOT NULL,
+            nome_arquivo    TEXT    NOT NULL,
+            categoria       TEXT    NOT NULL,
+            referencia      TEXT    DEFAULT '',
+            descricao       TEXT    DEFAULT '',
+            tamanho         INTEGER DEFAULT 0,
+            extensao        TEXT    DEFAULT '',
+            caminho_relativo TEXT   NOT NULL,
+            criado_em       TEXT    DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
     # ── Despesas da Prefeitura (CSV histórico) ──────────────────
     cur.execute("""
         CREATE TABLE IF NOT EXISTS despesas_importacoes (
@@ -247,6 +285,7 @@ def migrate_db():
             dados           TEXT    NOT NULL
         )
     """)
+    ensure_db_indexes(cur)
     conn.commit()
 
 
@@ -354,6 +393,20 @@ def init_db():
             atualizado_em TEXT DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS documentos_centro (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_original   TEXT    NOT NULL,
+            nome_arquivo    TEXT    NOT NULL,
+            categoria       TEXT    NOT NULL,
+            referencia      TEXT    DEFAULT '',
+            descricao       TEXT    DEFAULT '',
+            tamanho         INTEGER DEFAULT 0,
+            extensao        TEXT    DEFAULT '',
+            caminho_relativo TEXT   NOT NULL,
+            criado_em       TEXT    DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
 
     # Popula credores iniciais se a tabela estiver vazia
     count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
@@ -361,11 +414,7 @@ def init_db():
         print("Populando banco com dados do data.js...")
         _seed_from_data_js(cur)
 
-    # ── Índices para performance ────────────────────────────────
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor ON empenhos(credor_id)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes ON empenhos(ano, mes)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_departamento ON credores(departamento)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_data ON logs(data)")
+    ensure_db_indexes(cur)
 
     conn.commit()
 
@@ -404,6 +453,41 @@ def _seed_from_data_js(cur):
 # ── Helpers ──────────────────────────────────────────────────
 def row_to_dict(row):
     return dict(row)
+
+def _slugify(value: str, fallback: str = 'geral') -> str:
+    text = (value or '').strip().lower()
+    text = re.sub(r'[^a-z0-9_-]+', '-', text)
+    text = re.sub(r'-+', '-', text).strip('-')
+    return text or fallback
+
+def _build_document_storage(categoria: str, referencia: str, original_name: str) -> tuple[str, str, str]:
+    categoria_slug = _slugify(categoria, 'geral')
+    referencia_slug = _slugify(referencia, 'sem-referencia') if referencia else 'sem-referencia'
+    ext = os.path.splitext(original_name or '')[1].lower()
+    ext = ext[:20]
+    unique_name = f"{int(_time.time() * 1000)}_{hashlib.sha1((original_name + str(_time.time())).encode()).hexdigest()[:10]}{ext}"
+    relative_dir = os.path.join(categoria_slug, referencia_slug)
+    abs_dir = os.path.join(DOCUMENTS_DIR, relative_dir)
+    os.makedirs(abs_dir, exist_ok=True)
+    return unique_name, relative_dir.replace('\\', '/'), os.path.join(abs_dir, unique_name)
+
+def _persist_document_file(original_name: str, content: bytes, categoria: str = 'gerados', referencia: str = '', descricao: str = '', mime_type: str = ''):
+    nome_arquivo, relative_dir, abs_path = _build_document_storage(categoria, referencia, original_name)
+    with open(abs_path, 'wb') as fh:
+        fh.write(content)
+    tamanho = os.path.getsize(abs_path)
+    extensao = os.path.splitext(original_name)[1].lower()
+    caminho_relativo = f"{relative_dir}/{nome_arquivo}" if relative_dir else nome_arquivo
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO documentos_centro (nome_original, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo) VALUES (?,?,?,?,?,?,?,?)",
+        (original_name, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo)
+    )
+    new_id = cur.lastrowid
+    conn.commit()
+    row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (new_id,)).fetchone()
+    return row_to_dict(row)
 
 def _serve_cached(url, cache_control):
     """Serve arquivo do cache com gzip se o cliente aceitar."""
@@ -718,6 +802,96 @@ def admin_summary():
         app.logger.error('GET /api/admin/summary: %s', e)
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/kanban', methods=['GET'])
+def kanban_listar():
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/kanban: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban', methods=['POST'])
+def kanban_criar():
+    try:
+        data = request.get_json(force=True) or {}
+        task_id = (data.get('id') or '').strip()
+        title = (data.get('title') or '').strip()
+        description = (data.get('description') or '').strip()
+        status = (data.get('status') or 'todo').strip()
+        priority = (data.get('priority') or 'medium').strip()
+        if not task_id:
+            return jsonify({'error': 'id é obrigatório'}), 400
+        if not title:
+            return jsonify({'error': 'title é obrigatório'}), 400
+        if status not in {'todo', 'in-progress', 'done'}:
+            status = 'todo'
+        if priority not in {'low', 'medium', 'high'}:
+            priority = 'medium'
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO kanban_tasks (id, title, description, status, priority, criado_em, atualizado_em) VALUES (?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
+            (task_id, title, description, status, priority)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
+            (task_id,)
+        ).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Já existe uma tarefa com esse id'}), 409
+    except Exception as e:
+        app.logger.error('POST /api/kanban: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/<task_id>', methods=['PUT'])
+def kanban_atualizar(task_id):
+    try:
+        data = request.get_json(force=True) or {}
+        title = (data.get('title') or '').strip()
+        description = (data.get('description') or '').strip()
+        status = (data.get('status') or 'todo').strip()
+        priority = (data.get('priority') or 'medium').strip()
+        if not title:
+            return jsonify({'error': 'title é obrigatório'}), 400
+        if status not in {'todo', 'in-progress', 'done'}:
+            status = 'todo'
+        if priority not in {'low', 'medium', 'high'}:
+            priority = 'medium'
+        conn = get_db()
+        cur = conn.execute(
+            "UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?, atualizado_em=datetime('now','localtime') WHERE id=?",
+            (title, description, status, priority, task_id)
+        )
+        if cur.rowcount == 0:
+            return jsonify({'error': 'Tarefa não encontrada'}), 404
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
+            (task_id,)
+        ).fetchone()
+        return jsonify(row_to_dict(row))
+    except Exception as e:
+        app.logger.error('PUT /api/kanban/%s: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/<task_id>', methods=['DELETE'])
+def kanban_excluir(task_id):
+    try:
+        conn = get_db()
+        cur = conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
+        conn.commit()
+        if cur.rowcount == 0:
+            return jsonify({'error': 'Tarefa não encontrada'}), 404
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/kanban/%s: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
+
 import urllib.request as _urllib_req
 import urllib.error as _urllib_err
 
@@ -834,6 +1008,108 @@ def cnpj_buscar():
     except Exception as e2:
         return jsonify({'error': f'CNPJ não encontrado: {e2}'}), 404
 
+@app.route('/api/documentos', methods=['GET'])
+def documentos_listar():
+    try:
+        categoria = (request.args.get('categoria') or '').strip()
+        referencia = (request.args.get('referencia') or '').strip()
+        conn = get_db()
+        sql = "SELECT * FROM documentos_centro WHERE 1=1"
+        params = []
+        if categoria:
+            sql += " AND categoria=?"
+            params.append(categoria)
+        if referencia:
+            sql += " AND referencia LIKE ?"
+            params.append(f"%{referencia}%")
+        sql += " ORDER BY criado_em DESC, id DESC"
+        rows = conn.execute(sql, tuple(params)).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/documentos: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/documentos', methods=['POST'])
+def documentos_enviar():
+    file = request.files.get('arquivo')
+    categoria = (request.form.get('categoria') or 'geral').strip()
+    referencia = (request.form.get('referencia') or '').strip()
+    descricao = (request.form.get('descricao') or '').strip()
+    if not file or not file.filename:
+        return jsonify({'error': 'Arquivo é obrigatório'}), 400
+    try:
+        nome_arquivo, relative_dir, abs_path = _build_document_storage(categoria, referencia, file.filename)
+        file.save(abs_path)
+        tamanho = os.path.getsize(abs_path)
+        extensao = os.path.splitext(file.filename)[1].lower()
+        caminho_relativo = f"{relative_dir}/{nome_arquivo}" if relative_dir else nome_arquivo
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO documentos_centro (nome_original, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo) VALUES (?,?,?,?,?,?,?,?)",
+            (file.filename, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo)
+        )
+        new_id = cur.lastrowid
+        conn.commit()
+        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (new_id,)).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/documentos: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/documentos/conteudo', methods=['POST'])
+def documentos_salvar_conteudo():
+    try:
+        nome = (request.form.get('nome') or '').strip()
+        categoria = (request.form.get('categoria') or 'gerados').strip()
+        referencia = (request.form.get('referencia') or '').strip()
+        descricao = (request.form.get('descricao') or '').strip()
+        arquivo = request.files.get('arquivo')
+        if not nome or not arquivo:
+            return jsonify({'error': 'nome e arquivo são obrigatórios'}), 400
+        saved = _persist_document_file(nome, arquivo.read(), categoria, referencia, descricao, arquivo.mimetype or '')
+        return jsonify(saved), 201
+    except Exception as e:
+        app.logger.error('POST /api/documentos/conteudo: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/documentos/<int:doc_id>/download', methods=['GET'])
+def documentos_download(doc_id):
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (doc_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Documento não encontrado'}), 404
+        abs_path = os.path.join(DOCUMENTS_DIR, row['caminho_relativo'].replace('/', os.sep))
+        if not os.path.exists(abs_path):
+            return jsonify({'error': 'Arquivo físico não encontrado'}), 404
+        mime, _ = mimetypes.guess_type(abs_path)
+        return send_file(abs_path, mimetype=mime or 'application/octet-stream', as_attachment=True, download_name=row['nome_original'])
+    except Exception as e:
+        app.logger.error('GET /api/documentos/%s/download: %s', doc_id, e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/documentos/<int:doc_id>', methods=['DELETE'])
+def documentos_excluir(doc_id):
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (doc_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Documento não encontrado'}), 404
+        abs_path = os.path.join(DOCUMENTS_DIR, row['caminho_relativo'].replace('/', os.sep))
+        conn.execute("DELETE FROM documentos_centro WHERE id=?", (doc_id,))
+        conn.commit()
+        if os.path.exists(abs_path):
+            try:
+                os.remove(abs_path)
+            except OSError as file_err:
+                app.logger.warning('Arquivo de documento não removido imediatamente %s: %s', abs_path, file_err)
+                return jsonify({'ok': True, 'file_removed': False})
+        return jsonify({'ok': True, 'file_removed': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/documentos/%s: %s', doc_id, e)
+        return jsonify({'error': str(e)}), 500
+
 # ────────────────────────────────────────────────────────────
 # PDF – Mesclar / Dividir / Proteger
 # ────────────────────────────────────────────────────────────
@@ -853,6 +1129,8 @@ def pdf_mesclar():
             writer.add_page(page)
     buf = _io.BytesIO()
     writer.write(buf)
+    buf.seek(0)
+    _persist_document_file('mesclado.pdf', buf.getvalue(), 'gerados_pdf', 'mesclar', 'PDF gerado automaticamente pelo módulo de mesclagem', 'application/pdf')
     buf.seek(0)
     return send_file(buf, mimetype='application/pdf', as_attachment=True,
                      download_name='mesclado.pdf')
@@ -892,6 +1170,8 @@ def pdf_dividir():
         buf = _io.BytesIO()
         writer.write(buf)
         buf.seek(0)
+        _persist_document_file(groups[0][0], buf.getvalue(), 'gerados_pdf', 'dividir', 'PDF gerado automaticamente pelo módulo de divisão', 'application/pdf')
+        buf.seek(0)
         return send_file(buf, mimetype='application/pdf', as_attachment=True,
                          download_name=groups[0][0])
     zip_buf = _io.BytesIO()
@@ -903,6 +1183,8 @@ def pdf_dividir():
             pdf_buf = _io.BytesIO()
             writer.write(pdf_buf)
             zf.writestr(name, pdf_buf.getvalue())
+    zip_buf.seek(0)
+    _persist_document_file('dividido.zip', zip_buf.getvalue(), 'gerados_pdf', 'dividir', 'ZIP gerado automaticamente pelo módulo de divisão de PDF', 'application/zip')
     zip_buf.seek(0)
     return send_file(zip_buf, mimetype='application/zip', as_attachment=True,
                      download_name='dividido.zip')
@@ -920,6 +1202,8 @@ def pdf_proteger():
     writer.encrypt(senha)
     buf = _io.BytesIO()
     writer.write(buf)
+    buf.seek(0)
+    _persist_document_file('protegido.pdf', buf.getvalue(), 'gerados_pdf', 'proteger', 'PDF protegido gerado automaticamente', 'application/pdf')
     buf.seek(0)
     return send_file(buf, mimetype='application/pdf', as_attachment=True,
                      download_name='protegido.pdf')
@@ -1160,6 +1444,9 @@ def empenhos_csv_excluir(imp_id):
     conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
     conn.commit()
     return jsonify({'ok': True})
+
+init_db()
+migrate_db()
 
 # ────────────────────────────────────────────────────────────
 # MAIN
