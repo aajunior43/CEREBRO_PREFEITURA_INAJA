@@ -25,6 +25,30 @@ let state = {
   sort: { col: 'nome', dir: 'asc' },
 };
 
+let _filterCacheKey = '';
+let _filterCacheResult = [];
+let _searchDebounceTimer = null;
+
+function invalidateFilterCache() {
+  _filterCacheKey = '';
+  _filterCacheResult = [];
+}
+
+function getFilterCacheKey() {
+  const empenhoKeys = Object.keys(state.empenhados).sort().join(',');
+  return JSON.stringify({
+    year: state.year,
+    month: state.month,
+    search: state.searchTerm,
+    dept: state.filterDept,
+    status: state.filterStatus,
+    sortCol: state.sort.col,
+    sortDir: state.sort.dir,
+    credoresLen: state.credores.length,
+    empenhos: empenhoKeys,
+  });
+}
+
 // ── API Calls ────────────────────────────────────────────────
 async function apiGet(path) {
   const r = await fetch(API + path);
@@ -73,13 +97,19 @@ async function apiDelete(path) {
 // ── Carregar dados do mês ────────────────────────────────────
 async function loadMonth() {
   const m = state.month + 1;
-  const [empList] = await Promise.all([
-    apiGet(`/empenhos/${state.year}/${m}`),
-  ]);
   state.empenhados = {};
-  empList.forEach(e => {
-    state.empenhados[e.credor_id] = true;
-  });
+  try {
+    const [empList] = await Promise.all([
+      apiGet(`/empenhos/${state.year}/${m}`),
+    ]);
+    empList.forEach(e => {
+      state.empenhados[e.credor_id] = true;
+    });
+    return { ok: true };
+  } catch (err) {
+    console.warn(`Falha ao carregar empenhos de ${m}/${state.year}:`, err);
+    return { ok: false, error: err };
+  }
 }
 
 // ── Helpers de formatação ────────────────────────────────────
@@ -92,9 +122,11 @@ function formatBRL(value) {
 
 // ── Render ───────────────────────────────────────────────────
 function render() {
+  const t0 = performance.now();
   renderMonthNav();
   renderCards();
   renderStats();
+  console.debug(`render() ${(performance.now() - t0).toFixed(1)}ms`);
 }
 
 function renderMonthNav() {
@@ -103,6 +135,8 @@ function renderMonthNav() {
 }
 
 function filteredCredores() {
+  const cacheKey = getFilterCacheKey();
+  if (_filterCacheKey === cacheKey) return _filterCacheResult;
   const list = state.credores.filter(c => {
     const name = (c.nome || '').toLowerCase();
     const search = state.searchTerm.toLowerCase();
@@ -132,6 +166,8 @@ function filteredCredores() {
     if (va > vb) return dir === 'asc' ? 1 : -1;
     return 0;
   });
+  _filterCacheKey = cacheKey;
+  _filterCacheResult = list;
   return list;
 }
 
@@ -148,10 +184,13 @@ function renderCards() {
   }
   empty.style.display = 'none';
 
+  const fragment = document.createDocumentFragment();
+
   list.forEach((c, idx) => {
     const done = !!state.empenhados[c.id];
-    grid.appendChild(buildCard(c, done, idx));
+    fragment.appendChild(buildCard(c, done, idx));
   });
+  grid.appendChild(fragment);
 }
 
 function buildCard(c, done, idx) {
@@ -204,16 +243,16 @@ function buildCard(c, done, idx) {
         <span class="badge-tipo ${tipoClass}">${isVariavel ? 'Variável' : 'Fixo'}</span>
       </div>
       <div class="col-action">
-        <button class="btn-expand" title="Ver detalhes">
+        <button class="btn-expand" data-action="expand" title="Ver detalhes">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
         </button>
-        <button class="btn-edit" title="Editar">
+        <button class="btn-edit" data-action="edit" title="Editar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="btn-print" title="Imprimir">
+        <button class="btn-print" data-action="print" title="Imprimir">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
-        <button class="btn-empenhar ${done ? 'done-btn' : 'pending'}">
+        <button class="btn-empenhar ${done ? 'done-btn' : 'pending'}" data-action="toggle">
           ${done ? '✓ Empenhado' : '○ Empenhar'}
         </button>
       </div>
@@ -230,70 +269,50 @@ function buildCard(c, done, idx) {
     </div>
   `;
 
-  div.querySelector('.btn-empenhar').addEventListener('click', async e => {
-    e.stopPropagation();
-    await onToggle(c.id, c.nome);
-  });
-
-  div.querySelector('.btn-expand').addEventListener('click', e => {
-    e.stopPropagation();
-    div.classList.toggle('expanded');
-    // Lazy load histórico ao expandir
-    if (div.classList.contains('expanded')) {
-      const histEl = div.querySelector('.historico-pills');
-      if (histEl && !histEl.dataset.loaded) {
-        histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">...</span>';
-        apiGet(`/credores/${c.id}/historico?meses=6`).then(hist => {
-          histEl.innerHTML = hist.map(h =>
-            `<span class="hist-pill ${h.empenhado ? 'hist-emp' : 'hist-pend'}" title="${h.mes_nome}/${h.ano}">${h.mes_nome}</span>`
-          ).join('');
-          histEl.dataset.loaded = '1';
-        }).catch(() => { histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">—</span>'; });
-      }
-    }
-  });
-
-  div.querySelector('.btn-edit').addEventListener('click', e => {
-    e.stopPropagation();
-    openModal(c.id);
-  });
-
-  div.querySelector('.btn-print').addEventListener('click', e => {
-    e.stopPropagation();
-    printCredor(c);
-  });
-
-  div.querySelector('.card-name').addEventListener('click', e => {
-    e.stopPropagation();
-    const nome = c.nome || '';
-    const el = e.currentTarget;
-    const feedbackCopy = () => {
-      const orig = el.style.color;
-      el.style.color = 'var(--green-dark, #16a34a)';
-      const prevTitle = el.title;
-      el.title = 'Copiado!';
-      setTimeout(() => { el.style.color = orig; el.title = prevTitle; }, 1200);
-      showToast(`"${nome}" copiado!`, 'success');
-    };
-    const fallbackCopy = () => {
-      const ta = document.createElement('textarea');
-      ta.value = nome;
-      ta.style.position = 'fixed'; ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      try { document.execCommand('copy'); } catch (_) {}
-      document.body.removeChild(ta);
-      feedbackCopy();
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(nome).then(feedbackCopy).catch(fallbackCopy);
-    } else {
-      fallbackCopy();
-    }
-  });
-
   return div;
+}
+
+function copyCredorName(nome, el) {
+  const feedbackCopy = () => {
+    const orig = el.style.color;
+    el.style.color = 'var(--green-dark, #16a34a)';
+    const prevTitle = el.title;
+    el.title = 'Copiado!';
+    setTimeout(() => { el.style.color = orig; el.title = prevTitle; }, 1200);
+    showToast(`"${nome}" copiado!`, 'success');
+  };
+  const fallbackCopy = () => {
+    const ta = document.createElement('textarea');
+    ta.value = nome;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+    feedbackCopy();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(nome).then(feedbackCopy).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+}
+
+function handleCardExpand(cardEl, credorId) {
+  cardEl.classList.toggle('expanded');
+  if (!cardEl.classList.contains('expanded')) return;
+  const histEl = cardEl.querySelector('.historico-pills');
+  if (histEl && !histEl.dataset.loaded) {
+    histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">...</span>';
+    apiGet(`/credores/${credorId}/historico?meses=6`).then(hist => {
+      histEl.innerHTML = hist.map(h =>
+        `<span class="hist-pill ${h.empenhado ? 'hist-emp' : 'hist-pend'}" title="${h.mes_nome}/${h.ano}">${h.mes_nome}</span>`
+      ).join('');
+      histEl.dataset.loaded = '1';
+    }).catch(() => { histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">—</span>'; });
+  }
 }
 
 // ── Stats ─────────────────────────────────────────────────────
@@ -344,6 +363,7 @@ function renderStats() {
         const sel = document.getElementById('filter-dept');
         if (state.filterDept === d) { sel.value = ''; state.filterDept = ''; btn.classList.remove('active-dept'); }
         else { sel.value = d; state.filterDept = d; deptEl.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept')); btn.classList.add('active-dept'); }
+        invalidateFilterCache();
         renderCards();
       });
     });
@@ -613,10 +633,13 @@ async function batchEmpenhar() {
   if (!confirm(`Empenhar ${pending.length} credor(es) pendente(s) de ${MESES[state.month]}/${state.year}?`)) return;
   setLoading(true);
   try {
-    const results = await Promise.all(pending.map(c =>
-      apiPost('/empenhos', { credor_id: c.id, ano: state.year, mes: state.month + 1 })
-    ));
-    results.forEach((res, i) => { state.empenhados[pending[i].id] = res.empenhado; });
+    const results = await apiPost('/empenhos/lote', {
+      itens: pending.map(c => ({ credor_id: c.id, ano: state.year, mes: state.month + 1 }))
+    });
+    (results.resultados || []).forEach(res => {
+      state.empenhados[res.credor_id] = !!res.empenhado;
+    });
+    invalidateFilterCache();
     showToast(`✓ ${pending.length} credor(es) empenhado(s)!`, 'success');
     render();
   } catch (e) {
@@ -697,6 +720,7 @@ async function onToggle(id, nome) {
       mes: state.month + 1,
     });
     state.empenhados[id] = res.empenhado;
+    invalidateFilterCache();
     render();
     showToast(
       res.empenhado ? `✓ ${nome} empenhado!` : `↩ ${nome} desmarcado`,
@@ -790,6 +814,7 @@ async function onFormSubmit(e) {
       state.credores.push(created);
       showToast('Credor adicionado!', 'success');
     }
+    invalidateFilterCache();
     closeModal();
     render();
   } catch (err) {
@@ -808,6 +833,7 @@ async function onDeleteCredor() {
     await apiDelete(`/credores/${idVal}`);
     state.credores = state.credores.filter(c => c.id !== idVal);
     delete state.empenhados[idVal];
+    invalidateFilterCache();
     closeModal();
     render();
     showToast('Credor removido', 'info');
@@ -835,11 +861,37 @@ function showToast(msg, type = 'info') {
 
 // ── Eventos ───────────────────────────────────────────────────
 function attachEvents() {
+  const grid = document.getElementById('empenhos-grid');
+  grid.addEventListener('click', e => {
+    const cardEl = e.target.closest('.empenho-card');
+    if (!cardEl) return;
+    const credorId = Number(cardEl.dataset.id);
+    const credor = state.credores.find(x => x.id === credorId);
+    if (!credor) return;
+
+    const nameEl = e.target.closest('.card-name');
+    if (nameEl) {
+      e.stopPropagation();
+      copyCredorName(credor.nome || '', nameEl);
+      return;
+    }
+
+    const actionBtn = e.target.closest('[data-action]');
+    if (!actionBtn) return;
+    e.stopPropagation();
+    const action = actionBtn.dataset.action;
+    if (action === 'toggle') onToggle(credor.id, credor.nome);
+    else if (action === 'expand') handleCardExpand(cardEl, credor.id);
+    else if (action === 'edit') openModal(credor.id);
+    else if (action === 'print') printCredor(credor);
+  });
+
   document.getElementById('btn-prev-month').addEventListener('click', async () => {
     if (state.month === 0) { state.month = 11; state.year--; }
     else state.month--;
     setLoading(true);
     await loadMonth();
+    invalidateFilterCache();
     setLoading(false);
     render();
   });
@@ -849,17 +901,24 @@ function attachEvents() {
     else state.month++;
     setLoading(true);
     await loadMonth();
+    invalidateFilterCache();
     setLoading(false);
     render();
   });
 
   document.getElementById('search-input').addEventListener('input', e => {
-    state.searchTerm = e.target.value;
-    renderCards();
+    const nextValue = e.target.value;
+    clearTimeout(_searchDebounceTimer);
+    _searchDebounceTimer = setTimeout(() => {
+      state.searchTerm = nextValue;
+      invalidateFilterCache();
+      renderCards();
+    }, 120);
   });
 
   document.getElementById('filter-dept').addEventListener('change', e => {
     state.filterDept = e.target.value;
+    invalidateFilterCache();
     document.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept'));
     if (state.filterDept) {
       const btn = document.querySelector(`.dept-stat-btn[data-dept="${state.filterDept}"]`);
@@ -870,6 +929,7 @@ function attachEvents() {
 
   document.getElementById('filter-status').addEventListener('change', e => {
     state.filterStatus = e.target.value;
+    invalidateFilterCache();
     renderCards();
   });
 
@@ -1040,6 +1100,7 @@ function attachEvents() {
         state.sort.col = col;
         state.sort.dir = 'asc';
       }
+      invalidateFilterCache();
       document.querySelectorAll('.sort-btn').forEach(b => {
         b.classList.remove('active');
         b.querySelector('.sort-arrow').textContent = '';
@@ -1060,12 +1121,15 @@ async function init() {
   setLoading(true);
   try {
     attachEvents();
-    const [credores] = await Promise.all([
+    const [credores, monthResult] = await Promise.all([
       apiGet('/credores'),
       loadMonth(),
     ]);
     state.credores = credores;
     render();
+    if (monthResult && monthResult.ok === false) {
+      showToast(`Aviso: não foi possível carregar os empenhos de ${MESES[state.month]}/${state.year}.`, 'error');
+    }
   } catch (err) {
     console.error('Falha ao conectar com o servidor:', err);
     document.getElementById('empenhos-grid').innerHTML = `

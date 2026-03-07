@@ -21,12 +21,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Instala Flask se necessario
-python -c "import flask" >nul 2>&1
+:: Instala dependencias se necessario
+python -c "import flask, PyPDF2, openpyxl" >nul 2>&1
 if errorlevel 1 (
-    echo  Instalando Flask, aguarde...
-    python -m pip install flask --quiet
-    echo  Flask instalado com sucesso!
+    echo  Instalando dependencias do projeto, aguarde...
+    python -m pip install -r requirements.txt --quiet
+    echo  Dependencias instaladas com sucesso!
     echo.
 )
 

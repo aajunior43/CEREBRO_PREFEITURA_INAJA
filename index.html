@@ -557,6 +557,100 @@
     </div>
     <div class="adm-content">
       <div class="adm-section">
+        <h3>📊 Visão Geral</h3>
+        <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Resumo operacional dos módulos principais e do estado atual da aplicação.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;">
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;">Credores ativos</div>
+            <div id="adm-overview-credores" style="font-size:28px;font-weight:800;color:var(--text);margin-top:6px;">—</div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;">RPAs</div>
+            <div id="adm-overview-rpas" style="font-size:28px;font-weight:800;color:var(--text);margin-top:6px;">—</div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;">Tarefas kanban</div>
+            <div id="adm-overview-kanban" style="font-size:28px;font-weight:800;color:var(--text);margin-top:6px;">—</div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;">Importações CSV</div>
+            <div id="adm-overview-importacoes" style="font-size:28px;font-weight:800;color:var(--text);margin-top:6px;">—</div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;">Logs</div>
+            <div id="adm-overview-logs" style="font-size:28px;font-weight:800;color:var(--text);margin-top:6px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-section">
+        <h3>🩺 Diagnóstico do Sistema</h3>
+        <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Estado do servidor, banco de dados e caches internos.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+          <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <span style="font-size:13px;font-weight:700;color:var(--text);">Status geral</span>
+              <span id="adm-health-status" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(184,194,204,.2);color:var(--text-2);">Carregando</span>
+            </div>
+            <div style="margin-top:12px;font-size:12px;color:var(--text-2);line-height:1.7;">
+              <div><strong>Banco:</strong> <span id="adm-health-db">—</span></div>
+              <div><strong>Uptime:</strong> <span id="adm-health-uptime">—</span></div>
+            </div>
+          </div>
+          <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Cache de arquivos</div>
+            <div id="adm-health-cache-files" style="font-size:24px;font-weight:800;color:var(--text);margin-top:8px;">—</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Arquivos estáticos em memória</div>
+          </div>
+          <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--text);">Cache gzip</div>
+            <div id="adm-health-cache-gzip" style="font-size:24px;font-weight:800;color:var(--text);margin-top:8px;">—</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px;">Arquivos pré-comprimidos</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-section">
+        <h3>🧾 Auditoria Recente</h3>
+        <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Últimas ações registradas no sistema.</p>
+        <div id="adm-recent-logs" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-secondary btn-sm" id="adm-open-full-logs">📜 Ver logs completos</button>
+          <button class="btn btn-secondary btn-sm" id="adm-refresh-summary">🔄 Atualizar painel</button>
+        </div>
+      </div>
+
+      <div class="adm-section">
+        <h3>🛠 Informações Técnicas</h3>
+        <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Dados úteis para suporte, configuração e manutenção leve.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Aplicação</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.8;">
+              <div><strong>Host:</strong> <span id="adm-tech-host">—</span></div>
+              <div><strong>Porta:</strong> <span id="adm-tech-port">—</span></div>
+              <div><strong>Debug:</strong> <span id="adm-tech-debug">—</span></div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Arquivos</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.6;word-break:break-word;">
+              <div><strong>Banco:</strong><br><span id="adm-tech-db-path">—</span></div>
+              <div style="margin-top:8px;"><strong>Log:</strong><br><span id="adm-tech-log-file">—</span></div>
+            </div>
+          </div>
+          <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;">Integrações</div>
+            <div style="font-size:12px;color:var(--text-2);line-height:1.8;">
+              <div><strong>OpenRouter:</strong> <span id="adm-tech-openrouter-status">—</span></div>
+              <div><strong>Modelo padrão:</strong> <span id="adm-tech-openrouter-model">—</span></div>
+              <div><strong>CNPJá:</strong> <span id="adm-tech-cnpja-status">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-section">
         <h3>🔑 Chaves de API</h3>
         <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Configure as integrações utilizadas nos módulos do sistema.</p>
 
@@ -725,64 +819,143 @@
 
   <script>
     let _admTodosModelos = [];
-
+    
+    function admFmtNumber(value) {
+      return Number(value || 0).toLocaleString('pt-BR');
+    }
+    
+    function admFmtBool(value) {
+      return value ? 'Sim' : 'Não';
+    }
+    
+    function admFmtUptime(totalSeconds) {
+      const secs = Number(totalSeconds || 0);
+      const hours = Math.floor(secs / 3600);
+      const minutes = Math.floor((secs % 3600) / 60);
+      const seconds = secs % 60;
+      if (hours > 0) return `${hours}h ${minutes}min`;
+      if (minutes > 0) return `${minutes}min ${seconds}s`;
+      return `${seconds}s`;
+    }
+    
+    function admRenderRecentLogs(logs) {
+      const el = document.getElementById('adm-recent-logs');
+      if (!el) return;
+      if (!logs || !logs.length) {
+        el.innerHTML = '<div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:14px;font-size:12px;color:var(--text-3);">Nenhum log recente encontrado.</div>';
+        return;
+      }
+      el.innerHTML = logs.map(log => `
+        <div style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:12px 14px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+          <div style="min-width:0;flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:rgba(79,128,200,.12);color:var(--blue);">${log.acao || 'AÇÃO'}</span>
+              <span style="font-size:12px;font-weight:600;color:var(--text);">${log.credor_nome || 'Sistema'}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-2);margin-top:6px;line-height:1.5;">${log.detalhes || 'Sem detalhes'}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);white-space:nowrap;">${log.data || '—'}</div>
+        </div>
+      `).join('');
+    }
+    
+    async function admCarregarResumo() {
+      try {
+        const res = await fetch('/api/admin/summary');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Falha ao carregar resumo');
+        
+        document.getElementById('adm-overview-credores').textContent = admFmtNumber(data.overview?.credores_ativos);
+        document.getElementById('adm-overview-rpas').textContent = admFmtNumber(data.overview?.rpas_total);
+        document.getElementById('adm-overview-kanban').textContent = admFmtNumber(data.overview?.kanban_total);
+        document.getElementById('adm-overview-importacoes').textContent = admFmtNumber(data.overview?.importacoes_total);
+        document.getElementById('adm-overview-logs').textContent = admFmtNumber(data.overview?.logs_total);
+        
+        const statusEl = document.getElementById('adm-health-status');
+        const ok = data.health?.status === 'ok';
+        statusEl.textContent = ok ? 'Operacional' : 'Degradado';
+        statusEl.style.background = ok ? 'var(--green-bg)' : 'var(--red-bg)';
+        statusEl.style.color = ok ? 'var(--green-dark)' : 'var(--red)';
+        document.getElementById('adm-health-db').textContent = admFmtBool(data.health?.db);
+        document.getElementById('adm-health-uptime').textContent = admFmtUptime(data.health?.uptime_s);
+        document.getElementById('adm-health-cache-files').textContent = admFmtNumber(data.health?.cache_files);
+        document.getElementById('adm-health-cache-gzip').textContent = admFmtNumber(data.health?.cache_gzip);
+        
+        document.getElementById('adm-tech-host').textContent = data.technical?.host || '—';
+        document.getElementById('adm-tech-port').textContent = data.technical?.port ?? '—';
+        document.getElementById('adm-tech-debug').textContent = admFmtBool(data.technical?.debug);
+        document.getElementById('adm-tech-db-path').textContent = data.technical?.db_path || '—';
+        document.getElementById('adm-tech-log-file').textContent = data.technical?.log_file || '—';
+        document.getElementById('adm-tech-openrouter-status').textContent = data.config_status?.openrouter_key_configured ? 'Configurado' : 'Não configurado';
+        document.getElementById('adm-tech-openrouter-model').textContent = data.config_status?.openrouter_model || '—';
+        document.getElementById('adm-tech-cnpja-status').textContent = data.config_status?.cnpja_key_configured ? 'Configurado' : 'Não configurado';
+        
+        admRenderRecentLogs(data.recent_logs || []);
+      } catch (e) {
+        const logsEl = document.getElementById('adm-recent-logs');
+        if (logsEl) {
+          logsEl.innerHTML = `<div style="background:var(--red-bg);border-radius:var(--radius-sm);padding:14px;font-size:12px;color:var(--red);font-weight:600;">Erro ao carregar resumo ADM: ${e.message}</div>`;
+        }
+      }
+    }
+    
     async function admCarregarChaves() {
-      const keyEl   = document.getElementById('adm-or-key');
-      const modEl   = document.getElementById('adm-or-modelo');
+      const keyEl = document.getElementById('adm-or-key');
+      const modEl = document.getElementById('adm-or-modelo');
       const cnpjaEl = document.getElementById('adm-cnpja-key');
       if (!keyEl) return;
-      // Carrega do banco primeiro; fallback para localStorage
       try {
         const r = await fetch('/api/config');
         const cfg = await r.json();
-        if (cfg.api_openrouter_key)    { keyEl.value   = cfg.api_openrouter_key;    localStorage.setItem('api_openrouter_key',    cfg.api_openrouter_key); }
+        if (cfg.api_openrouter_key) { keyEl.value = cfg.api_openrouter_key; localStorage.setItem('api_openrouter_key', cfg.api_openrouter_key); }
         else keyEl.value = localStorage.getItem('api_openrouter_key') || '';
-        if (cfg.api_openrouter_modelo) { modEl.value   = cfg.api_openrouter_modelo; localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); }
+        if (cfg.api_openrouter_modelo) { modEl.value = cfg.api_openrouter_modelo; localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); }
         else modEl.value = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
         if (cnpjaEl) {
           if (cfg.api_cnpja_key) { cnpjaEl.value = cfg.api_cnpja_key; localStorage.setItem('api_cnpja_key', cfg.api_cnpja_key); }
           else cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
         }
-      } catch(e) {
-        keyEl.value   = localStorage.getItem('api_openrouter_key')    || '';
-        modEl.value   = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+      } catch (e) {
+        keyEl.value = localStorage.getItem('api_openrouter_key') || '';
+        modEl.value = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
         if (cnpjaEl) cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
       }
     }
-
+    
     async function admSalvarChaves() {
       const k = document.getElementById('adm-or-key').value.trim();
       const m = document.getElementById('adm-or-modelo').value.trim() || 'meta-llama/llama-3.2-3b-instruct:free';
-      // Salva no banco (persistente) E no localStorage (compatibilidade)
       try {
         await fetch('/api/config', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
+          method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ api_openrouter_key: k, api_openrouter_modelo: m })
         });
-      } catch(e) { console.warn('Falha ao salvar no banco:', e); }
-      localStorage.setItem('api_openrouter_key',    k);
+      } catch (e) { console.warn('Falha ao salvar no banco:', e); }
+      localStorage.setItem('api_openrouter_key', k);
       localStorage.setItem('api_openrouter_modelo', m);
-      localStorage.setItem('ext_ia_key',    k);
+      localStorage.setItem('ext_ia_key', k);
       localStorage.setItem('ext_ia_modelo', m);
       showToast('✅ Configurações salvas no banco!', 'success');
       admStatusMsg('✅ Salvo com sucesso', 'success');
+      admCarregarResumo();
     }
-
+    
     function admToggleKey() {
       const inp = document.getElementById('adm-or-key');
       inp.type = inp.type === 'password' ? 'text' : 'password';
     }
-
+    
     async function admTestarChave() {
       const k = document.getElementById('adm-or-key').value.trim();
       if (!k) { showToast('Preencha a chave primeiro', 'error'); return; }
       const btn = document.getElementById('adm-btn-testar');
-      btn.textContent = '⏳ Testando...'; btn.disabled = true;
+      btn.textContent = '⏳ Testando...';
+      btn.disabled = true;
       admStatusMsg('', '');
       try {
         const res = await fetch('/api/extratos/modelos-openrouter', {
           method: 'POST',
-          headers: {'Content-Type':'application/json'},
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: k })
         });
         const data = await res.json();
@@ -790,22 +963,25 @@
         const n = (data.modelos || []).length;
         admStatusMsg(`✅ Conexão OK — ${n} modelos disponíveis`, 'success');
         showToast(`Chave válida · ${n} modelos`, 'success');
-      } catch(e) {
+      } catch (e) {
         admStatusMsg('❌ ' + e.message, 'error');
         showToast('Chave inválida: ' + e.message, 'error');
       } finally {
-        btn.textContent = '🔌 Testar Conexão'; btn.disabled = false;
+        btn.textContent = '🔌 Testar Conexão';
+        btn.disabled = false;
       }
     }
-
+    
     async function admVerModelos() {
       const k = document.getElementById('adm-or-key').value.trim();
       if (!k) { showToast('Preencha a chave API primeiro', 'error'); return; }
       const btn = document.getElementById('adm-btn-modelos');
-      btn.textContent = '⏳...'; btn.disabled = true;
+      btn.textContent = '⏳...';
+      btn.disabled = true;
       try {
         const res = await fetch('/api/extratos/modelos-openrouter', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_key: k })
         });
         const data = await res.json();
@@ -814,19 +990,23 @@
         admRenderModelos(_admTodosModelos);
         document.getElementById('adm-modelos-filtro').value = '';
         document.getElementById('adm-modelos-modal').style.display = 'flex';
-      } catch(e) {
+      } catch (e) {
         showToast('Erro: ' + e.message, 'error');
       } finally {
-        btn.textContent = '📋 Ver Modelos'; btn.disabled = false;
+        btn.textContent = '📋 Ver Modelos';
+        btn.disabled = false;
       }
     }
-
+    
     function admRenderModelos(lista) {
       document.getElementById('adm-modelos-count').textContent = lista.length + ' modelos';
       const el = document.getElementById('adm-modelos-lista');
-      if (!lista.length) { el.innerHTML = '<p style="padding:20px;color:var(--text-3);text-align:center;">Nenhum modelo.</p>'; return; }
+      if (!lista.length) {
+        el.innerHTML = '<p style="padding:20px;color:var(--text-3);text-align:center;">Nenhum modelo.</p>';
+        return;
+      }
       el.innerHTML = lista.map(m => `
-        <div onclick="admSelecionarModelo('${m.id.replace(/'/g,"\\'")}')"
+        <div onclick="admSelecionarModelo('${m.id.replace(/'/g, "\\'")}')"
           style="display:flex;align-items:flex-start;justify-content:space-between;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;gap:8px;"
           onmouseover="this.style.background='rgba(79,128,200,.08)'" onmouseout="this.style.background=''"
           title="Clique para selecionar">
@@ -834,102 +1014,113 @@
             <div style="font-size:13px;font-weight:600;color:var(--text);">${m.name || m.id}</div>
             <div style="font-size:11px;color:var(--text-3);font-family:monospace;">${m.id}</div>
           </div>
-          <span style="font-size:10px;color:var(--text-3);white-space:nowrap;margin-top:2px;">${m.context_length ? m.context_length.toLocaleString()+' ctx' : ''}</span>
+          <span style="font-size:10px;color:var(--text-3);white-space:nowrap;margin-top:2px;">${m.context_length ? m.context_length.toLocaleString() + ' ctx' : ''}</span>
         </div>`).join('');
     }
-
+    
     function admFiltrarModelos() {
       const q = document.getElementById('adm-modelos-filtro').value.toLowerCase();
-      admRenderModelos(q ? _admTodosModelos.filter(m => (m.name||'').toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) : _admTodosModelos);
+      admRenderModelos(q ? _admTodosModelos.filter(m => (m.name || '').toLowerCase().includes(q) || m.id.toLowerCase().includes(q)) : _admTodosModelos);
     }
-
+    
     function admSelecionarModelo(id) {
       document.getElementById('adm-or-modelo').value = id;
       document.getElementById('adm-modelos-modal').style.display = 'none';
       showToast('Modelo selecionado: ' + id, 'success');
     }
-
+    
     function admStatusMsg(msg, type) {
       const el = document.getElementById('adm-key-status');
       if (!el) return;
       el.style.display = msg ? '' : 'none';
       el.textContent = msg;
-      const colors = { success: ['var(--green-bg)','var(--green-dark)'], error: ['var(--red-bg)','var(--red)'], '': ['',''] };
+      const colors = { success: ['var(--green-bg)', 'var(--green-dark)'], error: ['var(--red-bg)', 'var(--red)'], '': ['', ''] };
       const [bg, fg] = colors[type] || colors[''];
-      el.style.background = bg; el.style.color = fg;
+      el.style.background = bg;
+      el.style.color = fg;
     }
-
+    
     function admToggleCnpjaKey() {
       const inp = document.getElementById('adm-cnpja-key');
       inp.type = inp.type === 'password' ? 'text' : 'password';
     }
-
+    
     async function admSalvarCnpja() {
       const k = document.getElementById('adm-cnpja-key').value.trim();
       try {
         await fetch('/api/config', {
-          method: 'POST', headers: {'Content-Type':'application/json'},
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ api_cnpja_key: k })
         });
-      } catch(e) { console.warn('Falha ao salvar no banco:', e); }
+      } catch (e) { console.warn('Falha ao salvar no banco:', e); }
       localStorage.setItem('api_cnpja_key', k);
       showToast('✅ Chave CNPJá salva no banco!', 'success');
       admCnpjaStatus('✅ Salvo com sucesso', 'success');
+      admCarregarResumo();
     }
-
+    
     async function admTestarCnpja() {
       const k = document.getElementById('adm-cnpja-key').value.trim();
       const btn = document.getElementById('adm-btn-testar-cnpja');
-      btn.textContent = '⏳ Testando...'; btn.disabled = true;
+      btn.textContent = '⏳ Testando...';
+      btn.disabled = true;
       admCnpjaStatus('', '');
       try {
         const res = await fetch('/api/cnpj/buscar', {
           method: 'POST',
-          headers: {'Content-Type':'application/json'},
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ cnpj: '00000000000191', api_key_cnpja: k })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro');
         admCnpjaStatus(`✅ OK — ${data.razao_social || 'Conexão bem-sucedida'}`, 'success');
         showToast('CNPJá: conexão OK', 'success');
-      } catch(e) {
+      } catch (e) {
         admCnpjaStatus('❌ ' + e.message, 'error');
         showToast('Erro: ' + e.message, 'error');
       } finally {
-        btn.textContent = '🔌 Testar'; btn.disabled = false;
+        btn.textContent = '🔌 Testar';
+        btn.disabled = false;
       }
     }
-
+    
     function admCnpjaStatus(msg, type) {
       const el = document.getElementById('adm-cnpja-status');
       if (!el) return;
       el.style.display = msg ? '' : 'none';
       el.textContent = msg;
-      const colors = { success: ['var(--green-bg)','var(--green-dark)'], error: ['var(--red-bg)','var(--red)'] };
-      const [bg, fg] = colors[type] || ['',''];
-      el.style.background = bg; el.style.color = fg;
+      const colors = { success: ['var(--green-bg)', 'var(--green-dark)'], error: ['var(--red-bg)', 'var(--red)'] };
+      const [bg, fg] = colors[type] || ['', ''];
+      el.style.background = bg;
+      el.style.color = fg;
     }
-
-    // Carregar chaves quando painel ADM abrir
+    
     document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('adm-open-full-logs')?.addEventListener('click', () => {
+        document.getElementById('btn-logs')?.click();
+      });
+      document.getElementById('adm-refresh-summary')?.addEventListener('click', () => {
+        admCarregarResumo();
+      });
       const obs = new MutationObserver(() => {
         const panel = document.getElementById('adm-panel');
-        if (panel && panel.style.display !== 'none') admCarregarChaves();
+        if (panel && panel.style.display !== 'none') {
+          admCarregarChaves();
+          admCarregarResumo();
+        }
       });
       const panel = document.getElementById('adm-panel');
       if (panel) obs.observe(panel, { attributes: true, attributeFilter: ['style'] });
     });
   </script>
-
+  
   <script src="/static/js/brasao_b64.js" defer></script>
   <script src="/static/js/app.js" defer></script>
-
-  <!-- UX Enhancements: Bottom Nav, Swipe Month, Ripple, Counter -->
+  
   <script>
   (function() {
     'use strict';
-
-    /* ── Bottom Nav: sync com abas principais ─────────────────── */
+  
     const bnavHome = document.getElementById('bnav-home');
     const bnavMenu = document.getElementById('bnav-menu');
     if (bnavHome) {
@@ -944,35 +1135,28 @@
         if (hamburger) hamburger.click();
       });
     }
-
-    /* ── Swipe horizontal no navegador de mês ─────────────────── */
+  
     let touchStartX = 0;
     let touchStartY = 0;
     const SWIPE_THRESHOLD = 50;
     const SWIPE_VERTICAL_LIMIT = 60;
-
+  
     document.addEventListener('touchstart', (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
     }, { passive: true });
-
+  
     document.addEventListener('touchend', (e) => {
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.abs(dy) > SWIPE_VERTICAL_LIMIT) return;
       if (Math.abs(dx) < SWIPE_THRESHOLD) return;
-
       const mobileNavOpen = document.getElementById('mobile-nav')?.classList.contains('open');
       if (mobileNavOpen) return;
-
-      if (dx < 0) {
-        document.getElementById('btn-next-month')?.click();
-      } else {
-        document.getElementById('btn-prev-month')?.click();
-      }
+      if (dx < 0) document.getElementById('btn-next-month')?.click();
+      else document.getElementById('btn-prev-month')?.click();
     }, { passive: true });
-
-    /* ── Ripple effect nos botões ──────────────────────────────── */
+  
     document.addEventListener('click', (e) => {
       const btn = e.target.closest('.btn-primary, .btn-secondary');
       if (!btn) return;
@@ -980,15 +1164,11 @@
       ripple.className = 'btn-ripple';
       const size = Math.max(btn.offsetWidth, btn.offsetHeight);
       const rect = btn.getBoundingClientRect();
-      ripple.style.cssText = `
-        width:${size}px; height:${size}px;
-        left:${e.clientX - rect.left - size/2}px;
-        top:${e.clientY - rect.top - size/2}px;`;
+      ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - rect.left - size / 2}px;top:${e.clientY - rect.top - size / 2}px;`;
       btn.appendChild(ripple);
       setTimeout(() => ripple.remove(), 550);
     });
-
-    /* ── Counter animation nas stat cards ─────────────────────── */
+  
     function animateCounter(el, target, duration) {
       if (isNaN(target) || target === 0) return;
       const start = Date.now();
@@ -1006,8 +1186,7 @@
       };
       requestAnimationFrame(tick);
     }
-
-    // Observa mudanças nos stat values e anima
+  
     const statIds = ['stat-total', 'stat-done', 'stat-pending', 'stat-valor', 'stat-restante'];
     statIds.forEach(id => {
       const el = document.getElementById(id);
@@ -1019,9 +1198,8 @@
       });
       observer.observe(el, { childList: true, characterData: true, subtree: true });
     });
-
   })();
-  </script>
-</body>
-
-</html>
+   </script>
+ </body>
+ 
+ </html>

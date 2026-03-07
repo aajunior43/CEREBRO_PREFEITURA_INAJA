@@ -10,7 +10,6 @@ import sqlite3
 import json
 import os
 import re
-import sys
 import threading
 import gzip as _gzip
 import hashlib
@@ -18,30 +17,26 @@ import time as _time
 import logging
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
+import urllib.error as _urllib_error
 
-from flask import Flask, request, jsonify, send_from_directory, send_file, Response
-
-
-# ── Instala Flask se necessário ─────────────────────────────
-try:
-    import flask
-except ImportError:
-    print("Instalando Flask...")
-    os.system(f'"{sys.executable}" -m pip install flask')
-    import flask  # noqa
+from flask import Flask, request, jsonify, send_from_directory, send_file, Response, g
+from config import settings
+from services.empenhos_service import listar_empenhos_mes, listar_historico_credor, persistir_empenho
+from services.extratos_service import listar_subpastas, processar_extratos, validar_origem_destino
+from services.openrouter_service import chat_completion, listar_modelos, parse_http_error
 
 # ── Configurações ───────────────────────────────────────────
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH  = os.path.join(BASE_DIR, 'empenhos.db')
-DATA_JS  = os.path.join(BASE_DIR, 'data.js')
+BASE_DIR = str(settings.base_dir)
+DB_PATH = str(settings.db_path)
+DATA_JS = str(settings.data_js_path)
 
 app = Flask(__name__, static_folder=BASE_DIR)
 
 # ── Logging para arquivo ─────────────────────────────────────
-_LOG_DIR = os.path.join(BASE_DIR, 'logs')
+_LOG_DIR = str(settings.log_dir)
 os.makedirs(_LOG_DIR, exist_ok=True)
 _log_handler = RotatingFileHandler(
-    os.path.join(_LOG_DIR, 'server.log'), maxBytes=2*1024*1024, backupCount=3, encoding='utf-8')
+    str(settings.log_file), maxBytes=2*1024*1024, backupCount=3, encoding='utf-8')
 _log_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
 _log_handler.setLevel(logging.WARNING)
 app.logger.addHandler(_log_handler)
@@ -139,9 +134,19 @@ def close_db(exception):
     # (crítico em ambientes OneDrive onde abrir arquivo tem latência alta)
     pass
 
+@app.before_request
+def mark_request_start():
+    g._request_started_at = _time.perf_counter()
+
 @app.after_request
 def compress_response(response):
     """Comprime respostas JSON/texto da API com gzip e adiciona cache headers."""
+    started_at = getattr(g, '_request_started_at', None)
+    if started_at is not None:
+        elapsed_ms = (_time.perf_counter() - started_at) * 1000
+        response.headers['X-Response-Time-ms'] = f'{elapsed_ms:.1f}'
+        if request.path.startswith('/api/') and elapsed_ms >= 250:
+            app.logger.warning('Slow request %.1fms %s %s [%s]', elapsed_ms, request.method, request.path, response.status_code)
     # Cache-Control para APIs GET (dados mudam pouco entre requests)
     if (request.method == 'GET' and request.path.startswith('/api/')
             and response.status_code == 200
@@ -412,7 +417,7 @@ def _serve_cached(url, cache_control):
     if gz and 'gzip' in accept_enc:
         headers['Content-Encoding'] = 'gzip'
         headers['Vary'] = 'Accept-Encoding'
-        headers['Content-Length'] = str(len(gz))
+        headers['Content-Length'] = len(gz)
         return Response(gz, mimetype=mime, headers=headers)
     return Response(data, mimetype=mime, headers=headers)
 
@@ -473,7 +478,7 @@ def server_error(e):
 # ────────────────────────────────────────────────────────────
 
 # Senha armazenada como hash SHA-256 — nunca em texto puro em memória
-_ADM_RAW = os.environ.get('ADM_PASSWORD', '1999')
+_ADM_RAW = settings.admin_password
 _ADM_HASH = hashlib.sha256(_ADM_RAW.encode()).hexdigest()
 del _ADM_RAW  # limpa texto puro da memória
 
@@ -490,7 +495,6 @@ def auth_adm():
         return jsonify({'ok': True})
     app.logger.warning('Senha incorreta de %s', ip)
     return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
-# ────────────────────────────────────────────────────────────
 
 @app.route('/api/ping', methods=['GET'])
 def ping():
@@ -528,7 +532,6 @@ def get_credores():
         app.logger.error('GET /api/credores: %s', e)
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/api/credores', methods=['POST'])
 def add_credor():
     data = request.get_json()
@@ -539,8 +542,8 @@ def add_credor():
         cur  = conn.cursor()
         cur.execute("""
             INSERT INTO credores
-              (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+              (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, departamento, obs)
+            VALUES (?,?,?,?,?,?,?,?,?,?)
         """, (
             data.get('nome', '').upper(),
             float(data.get('valor') or 0),
@@ -550,15 +553,11 @@ def add_credor():
             data.get('tipo_valor', 'FIXO'),
             data.get('solicitacao', ''),
             data.get('pagamento', ''),
-            data.get('validade', ''),
             data.get('departamento', ''),
             (data.get('obs') or '').upper(),
         ))
         new_id = cur.lastrowid
         conn.commit()
-        
-        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('CRIAR', new_id, data.get('nome', '').upper(), f"Criado novo credor - Valor: R$ {data.get('valor', 0)}"))
         conn.commit()
         
         row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
@@ -567,695 +566,68 @@ def add_credor():
         app.logger.error('POST /api/credores: %s', e)
         return jsonify({'error': str(e)}), 500
 
-
-@app.route('/api/credores/<int:cid>', methods=['PUT'])
-def update_credor(cid):
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'JSON body obrigatório'}), 400
-    try:
-        conn = get_db()
-
-        # Captura valores antigos para diff
-        old_row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
-        if not old_row:
-            return jsonify({'error': 'Credor não encontrado'}), 404
-        old = row_to_dict(old_row)
-
-        conn.execute("""
-            UPDATE credores SET
-              nome=?, valor=?, descricao=?, cnpj=?, email=?,
-              tipo_valor=?, solicitacao=?, pagamento=?, validade=?, departamento=?, obs=?
-            WHERE id=?
-        """, (
-            data.get('nome', '').upper(),
-            float(data.get('valor') or 0),
-            (data.get('descricao') or '').upper(),
-            data.get('cnpj', ''),
-            data.get('email', ''),
-            data.get('tipo_valor', 'FIXO'),
-            data.get('solicitacao', ''),
-            data.get('pagamento', ''),
-            data.get('validade', ''),
-            data.get('departamento', ''),
-            (data.get('obs') or '').upper(),
-            cid,
-        ))
-        conn.commit()
-
-        # Gera diff com rótulos legíveis
-        labels = {
-            'nome': 'Nome', 'valor': 'Valor', 'descricao': 'Descrição',
-            'cnpj': 'CNPJ', 'email': 'E-mail', 'tipo_valor': 'Tipo',
-            'departamento': 'Departamento', 'obs': 'OBS',
-            'pagamento': 'Pagamento', 'solicitacao': 'Solicitação'
-        }
-        new_vals = {
-            'nome': data.get('nome', '').upper(),
-            'valor': str(float(data.get('valor') or 0)),
-            'descricao': (data.get('descricao') or '').upper(),
-            'cnpj': data.get('cnpj', ''),
-            'email': data.get('email', ''),
-            'tipo_valor': data.get('tipo_valor', 'FIXO'),
-            'departamento': data.get('departamento', ''),
-            'obs': (data.get('obs') or '').upper(),
-            'pagamento': data.get('pagamento', ''),
-            'solicitacao': data.get('solicitacao', ''),
-        }
-        changes = []
-        for key, label in labels.items():
-            old_val = str(old.get(key, '') or '')
-            new_val = str(new_vals.get(key, '') or '')
-            if old_val != new_val:
-                changes.append(f"{label}: {old_val or '—'} → {new_val or '—'}")
-        detalhes = ' | '.join(changes) if changes else 'Sem alterações detectadas'
-
-        cur = conn.cursor()
-        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('EDITAR', cid, data.get('nome', '').upper(), detalhes))
-        conn.commit()
-
-        row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
-        return jsonify(row_to_dict(row))
-    except Exception as e:
-        app.logger.error('PUT /api/credores/%s: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/credores/<int:cid>', methods=['DELETE'])
-def delete_credor(cid):
-    try:
-        conn = get_db()
-        cur = conn.cursor()
-        row = conn.execute("SELECT nome FROM credores WHERE id=?", (cid,)).fetchone()
-        nome = row[0] if row else 'Desconhecido'
-        
-        conn.execute("UPDATE credores SET ativo=0 WHERE id=?", (cid,))
-        conn.execute("DELETE FROM empenhos WHERE credor_id=?", (cid,))
-        
-        cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('EXCLUIR', cid, nome, 'Credor excluído'))
-        conn.commit()
-        return jsonify({'ok': True})
-    except Exception as e:
-        app.logger.error('DELETE /api/credores/%s: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/logs', methods=['GET'])
-def get_logs():
-    try:
-        conn = get_db()
-        acao = request.args.get('acao', '').upper()
-        limit = min(int(request.args.get('limit', 100)), 500)
-        offset = int(request.args.get('offset', 0))
-        if acao:
-            rows = conn.execute(
-                "SELECT * FROM logs WHERE acao=? ORDER BY data DESC LIMIT ? OFFSET ?",
-                (acao, limit, offset)
-            ).fetchall()
-            total = conn.execute("SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)).fetchone()[0]
-        else:
-            rows = conn.execute(
-                "SELECT * FROM logs ORDER BY data DESC LIMIT ? OFFSET ?",
-                (limit, offset)
-            ).fetchall()
-            total = conn.execute("SELECT COUNT(*) FROM logs").fetchone()[0]
-        return jsonify({'logs': [row_to_dict(r) for r in rows], 'total': total, 'offset': offset, 'limit': limit})
-    except Exception as e:
-        app.logger.error('GET /api/logs: %s', e)
-        return jsonify({'error': str(e)}), 500
-
-# ────────────────────────────────────────────────────────────
-# API – Empenhos
-# ────────────────────────────────────────────────────────────
-
 @app.route('/api/empenhos/<int:ano>/<int:mes>', methods=['GET'])
 def get_empenhos(ano, mes):
-    """Retorna lista de credor_ids empenhados no mês/ano."""
     try:
         conn = get_db()
-        rows = conn.execute(
-            "SELECT credor_id, timestamp FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
-            (ano, mes)
-        ).fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
+        return jsonify(listar_empenhos_mes(conn, ano, mes, row_to_dict))
     except Exception as e:
         app.logger.error('GET /api/empenhos/%s/%s: %s', ano, mes, e)
         return jsonify({'error': str(e)}), 500
 
-
 @app.route('/api/empenhos', methods=['POST'])
 def toggle_empenho():
-    """Marca ou desmarca um empenho. Retorna o estado atual."""
+    d = request.get_json(force=True) or {}
+    credor_id = d.get('credor_id')
+    ano = d.get('ano')
+    mes = d.get('mes')
+    if not credor_id or not ano or not mes:
+        return jsonify({'error': 'credor_id, ano e mes são obrigatórios'}), 400
     try:
-        data      = request.get_json()
-        if not data or 'credor_id' not in data or 'ano' not in data or 'mes' not in data:
-            return jsonify({'error': 'credor_id, ano e mes são obrigatórios'}), 400
-        cid       = int(data['credor_id'])
-        ano       = int(data['ano'])
-        mes       = int(data['mes'])
-        from datetime import datetime
-        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
         conn = get_db()
-        cur = conn.cursor()
-        nome_row = conn.execute("SELECT nome FROM credores WHERE id=?", (cid,)).fetchone()
-        nome = nome_row['nome'] if nome_row else 'Desconhecido'
-
-        existing = conn.execute(
-            "SELECT id, empenhado FROM empenhos WHERE credor_id=? AND ano=? AND mes=?",
-            (cid, ano, mes)
-        ).fetchone()
-
-        if existing:
-            new_state = 0 if existing['empenhado'] == 1 else 1
-            conn.execute(
-                "UPDATE empenhos SET empenhado=?, timestamp=? WHERE id=?",
-                (new_state, ts, existing['id'])
-            )
-            acao = 'EMPENHAR' if new_state == 1 else 'DESEMPENHAR'
-            cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-                (acao, cid, nome, f"{acao} em {mes:02d}/{ano}"))
-            conn.commit()
-            return jsonify({'empenhado': bool(new_state)})
-        else:
-            conn.execute(
-                "INSERT INTO empenhos (credor_id, ano, mes, empenhado, timestamp) VALUES (?,?,?,1,?)",
-                (cid, ano, mes, ts)
-            )
-            cur.execute("INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-                ('EMPENHAR', cid, nome, f"EMPENHAR em {mes:02d}/{ano}"))
-            conn.commit()
-            return jsonify({'empenhado': True})
+        result = persistir_empenho(conn, credor_id, ano, mes, _time.strftime('%Y-%m-%d %H:%M:%S'))
+        conn.commit()
+        return jsonify({'ok': True, 'empenhado': result['empenhado']})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
         app.logger.error('POST /api/empenhos: %s', e)
         return jsonify({'error': str(e)}), 500
 
-
-@app.route('/api/empenhos/historico/<int:cid>', methods=['GET'])
-def historico_credor(cid):
-    """Retorna histórico completo de empenhos de um credor."""
+@app.route('/api/empenhos/lote', methods=['POST'])
+def empenho_lote():
+    d = request.get_json(force=True) or {}
+    itens = d.get('itens') or []
+    if not itens:
+        return jsonify({'error': 'Nenhum item informado'}), 400
     try:
         conn = get_db()
-        rows = conn.execute(
-            "SELECT ano, mes, empenhado, timestamp FROM empenhos WHERE credor_id=? AND empenhado=1 ORDER BY ano DESC, mes DESC",
-            (cid,)
-        ).fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
+        resultados = []
+        for item in itens:
+            credor_id = item.get('credor_id')
+            ano = item.get('ano')
+            mes = item.get('mes')
+            if not credor_id or not ano or not mes:
+                return jsonify({'error': 'Todos os itens devem conter credor_id, ano e mes'}), 400
+            resultados.append(persistir_empenho(conn, credor_id, ano, mes, _time.strftime('%Y-%m-%d %H:%M:%S')))
+        conn.commit()
+        return jsonify({'ok': True, 'resultados': resultados})
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
     except Exception as e:
-        app.logger.error('GET /api/empenhos/historico/%s: %s', cid, e)
+        app.logger.error('POST /api/empenhos/lote: %s', e)
         return jsonify({'error': str(e)}), 500
-
-
-# ────────────────────────────────────────────────────────────
-# API – Organizador de Extratos (RENOMER)
-# ────────────────────────────────────────────────────────────
-
-import sys as _sys
-from pathlib import Path as _Path
-from datetime import datetime as _datetime
-
-# Garante que o pacote renomer está no path
-_renomer_pkg = _Path(__file__).parent
-if str(_renomer_pkg) not in _sys.path:
-    _sys.path.insert(0, str(_renomer_pkg))
-
-from renomer.organizador_local_avancado import OrganizadorLocalAvancado as _OrgLocal
-from renomer.organizador_ia import OrganizadorIA as _OrgIA
-
-
-def _adaptar_resultado(r):
-    """Converte formato RENOMER → formato esperado pela API (extratos.html)."""
-    base = {
-        'nome': r.get('nome_original', ''),
-        'sucesso': r.get('sucesso', False),
-        'data': r.get('detalhes', {}).get('data', {}),
-        'conta': r.get('detalhes', {}).get('conta', {}),
-        'banco': r.get('detalhes', {}).get('banco'),
-        'tipo_conta': r.get('detalhes', {}).get('tipo_conta'),
-        'confianca': r.get('detalhes', {}).get('confianca'),
-    }
-    if r.get('sucesso'):
-        base['nome_novo'] = _Path(r.get('arquivo_destino', '')).name
-        base['estrutura'] = r.get('estrutura', '')
-        base['destino'] = r.get('arquivo_destino', '')
-        base['acao'] = r.get('acao', '')
-        if r.get('metodo'):
-            base['metodo'] = r['metodo']
-    else:
-        base['erro'] = r.get('erro', 'Erro desconhecido')
-    return base
-
-
-@app.route('/api/extratos/preview', methods=['POST'])
-def extratos_preview():
-    """Escaneia pasta de origem e retorna prévia sem mover nada."""
-    d = request.get_json()
-    origem = d.get('origem', '').strip()
-    destino = d.get('destino', '').strip()
-
-    if not origem or not _Path(origem).is_dir():
-        return jsonify({'error': 'Pasta de origem inválida ou não encontrada'}), 400
-    if not destino:
-        return jsonify({'error': 'Pasta de destino obrigatória'}), 400
-    if _Path(origem).resolve() == _Path(destino).resolve():
-        return jsonify({'error': 'Origem e destino não podem ser iguais'}), 400
-
-    arquivos = []
-    for ext in ['*.pdf', '*.PDF', '*.ofx', '*.OFX']:
-        arquivos.extend(_Path(origem).rglob(ext))
-
-    usar_ia   = d.get('usar_ia', False)
-    api_key_ia = d.get('api_key_ia', '').strip()
-    modelo_ia  = d.get('modelo_ia', 'openai/gpt-4o-mini').strip() or 'openai/gpt-4o-mini'
-
-    if usar_ia and api_key_ia:
-        org = _OrgIA(origem, destino, api_key_ia, modelo_ia)
-    else:
-        org = _OrgLocal(origem, destino)
-    resultados = [_adaptar_resultado(org.processar_arquivo(a, modo_teste=True)) for a in arquivos]
-    sucessos = [r for r in resultados if r['sucesso']]
-    erros = [r for r in resultados if not r['sucesso']]
-
-    return jsonify({
-        'total': len(arquivos),
-        'sucessos': len(sucessos),
-        'erros': len(erros),
-        'resultados': resultados
-    })
-
-
-@app.route('/api/extratos/organizar', methods=['POST'])
-def extratos_organizar():
-    """Organiza os arquivos de fato (copia para destino)."""
-    d = request.get_json()
-    origem = d.get('origem', '').strip()
-    destino = d.get('destino', '').strip()
-
-    if not origem or not _Path(origem).is_dir():
-        return jsonify({'error': 'Pasta de origem inválida ou não encontrada'}), 400
-    if not destino:
-        return jsonify({'error': 'Pasta de destino obrigatória'}), 400
-    if _Path(origem).resolve() == _Path(destino).resolve():
-        return jsonify({'error': 'Origem e destino não podem ser iguais'}), 400
-
-    try:
-        _Path(destino).mkdir(parents=True, exist_ok=True)
-    except Exception as e:
-        return jsonify({'error': f'Não foi possível criar pasta de destino: {e}'}), 400
-
-    arquivos = []
-    for ext in ['*.pdf', '*.PDF', '*.ofx', '*.OFX']:
-        arquivos.extend(_Path(origem).rglob(ext))
-
-    usar_ia   = d.get('usar_ia', False)
-    api_key_ia = d.get('api_key_ia', '').strip()
-    modelo_ia  = d.get('modelo_ia', 'openai/gpt-4o-mini').strip() or 'openai/gpt-4o-mini'
-
-    if usar_ia and api_key_ia:
-        org = _OrgIA(origem, destino, api_key_ia, modelo_ia)
-    else:
-        org = _OrgLocal(origem, destino)
-    resultados = [_adaptar_resultado(org.processar_arquivo(a, modo_teste=False)) for a in arquivos]
-    sucessos = [r for r in resultados if r['sucesso']]
-    erros = [r for r in resultados if not r['sucesso']]
-
-    return jsonify({
-        'total': len(arquivos),
-        'sucessos': len(sucessos),
-        'erros': len(erros),
-        'resultados': resultados,
-        'concluido_em': _datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-    })
-
-
-@app.route('/api/extratos/modelos-openrouter', methods=['POST'])
-def modelos_openrouter():
-    """Retorna lista de modelos disponíveis no OpenRouter."""
-    import urllib.request, urllib.error
-    d = request.get_json()
-    api_key = d.get('api_key', '').strip()
-    if not api_key:
-        return jsonify({'error': 'Chave API obrigatória'}), 400
-    try:
-        req = urllib.request.Request(
-            "https://openrouter.ai/api/v1/models",
-            headers={"Authorization": f"Bearer {api_key}",
-                     "Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, timeout=15) as r:
-            data = json.loads(r.read().decode())
-        return jsonify({'modelos': data.get('data', [])})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/ia/chat', methods=['POST'])
-def ia_chat_proxy():
-    """Proxy para OpenRouter chat completions (evita CORS no browser)."""
-    import urllib.request, urllib.error
-    d = request.get_json() or {}
-    api_key = d.get('api_key', '').strip()
-    model   = d.get('model', 'meta-llama/llama-3.1-8b-instruct:free').strip()
-    messages = d.get('messages', [])
-    max_tokens = int(d.get('max_tokens', 500))
-    temperature = float(d.get('temperature', 0.3))
-    if not api_key:
-        return jsonify({'error': 'Chave API obrigatória'}), 400
-    payload = json.dumps({
-        'model': model,
-        'messages': messages,
-        'max_tokens': max_tokens,
-        'temperature': temperature
-    }).encode('utf-8')
-    try:
-        req = urllib.request.Request(
-            'https://openrouter.ai/api/v1/chat/completions',
-            data=payload,
-            headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json',
-                'HTTP-Referer': 'https://localhost',
-                'X-Title': 'CEREBRO_PREFEITURA'
-            },
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=60) as r:
-            data = json.loads(r.read().decode())
-        return jsonify(data)
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8', errors='replace')
-        try:
-            err = json.loads(body)
-        except Exception:
-            err = {'message': body}
-        return jsonify({'error': err, 'model_used': model}), e.code
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/extratos/listar-pasta', methods=['POST'])
-def listar_pasta():
-    """Lista subpastas de um caminho para navegação."""
-    d = request.get_json()
-    caminho = d.get('caminho', '').strip()
-    p = _Path(caminho) if caminho else _Path.home()
-    if not p.exists():
-        p = _Path.home()
-    try:
-        itens = [{'nome': str(i.name), 'caminho': str(i), 'tipo': 'dir' if i.is_dir() else 'file'}
-                 for i in sorted(p.iterdir()) if i.is_dir()]
-        return jsonify({'caminho_atual': str(p), 'pai': str(p.parent), 'itens': itens})
-    except PermissionError:
-        return jsonify({'error': 'Sem permissão para acessar esta pasta'}), 403
-
-
-# ────────────────────────────────────────────────────────────
-# API – RPAs
-# ────────────────────────────────────────────────────────────
-
-@app.route('/api/rpas', methods=['GET'])
-def get_rpas():
-    conn = get_db()
-    rows = conn.execute("SELECT * FROM rpas ORDER BY criado_em DESC").fetchall()
-
-    return jsonify([row_to_dict(r) for r in rows])
-
 
 @app.route('/api/credores/<int:cid>/historico', methods=['GET'])
 def get_historico_credor(cid):
-    conn = get_db()
-    meses = int(request.args.get('meses', 6))
-    from datetime import date
-    hoje = date.today()
-
-    # Calcula o intervalo de meses desejado
-    resultado = []
-    periodo = []
-    for i in range(meses - 1, -1, -1):
-        m = hoje.month - i
-        y = hoje.year
-        while m <= 0:
-            m += 12
-            y -= 1
-        periodo.append((y, m))
-
-    # Uma única query para todos os meses
-    placeholders = ','.join('(?,?)' for _ in periodo)
-    params = [v for pair in periodo for v in pair]
-    rows = conn.execute(
-        f"SELECT ano, mes FROM empenhos WHERE credor_id=? AND empenhado=1 AND (ano,mes) IN ({placeholders})",
-        [cid] + params
-    ).fetchall()
-    empenhados = {(r['ano'], r['mes']) for r in rows}
-
-    mes_nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
-    for y, m in periodo:
-        resultado.append({
-            'ano': y, 'mes': m,
-            'mes_nome': mes_nomes[m - 1],
-            'empenhado': (y, m) in empenhados
-        })
-    return jsonify(resultado)
-
-
-@app.route('/api/rpas', methods=['POST'])
-def add_rpa():
-    d = request.get_json()
+    meses = request.args.get('meses', 6, type=int)
+    meses = max(1, min(meses, 24))
     try:
         conn = get_db()
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO rpas (
-                numero_rpa, nome_prestador, cpf_prestador, endereco_prestador,
-                descricao_servico, periodo_referencia, carga_horaria, local_execucao,
-                valor_bruto, num_dependentes, pensao_alimenticia,
-                inss, iss, deducao_dependentes, base_calculo_irrf,
-                aliquota_irrf, parcela_deduzir_irrf, ir, valor_liquido,
-                observacoes, data_emissao
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            d.get('numeroRPA', ''),
-            d.get('nomePrestador', ''),
-            d.get('cpfPrestador', ''),
-            d.get('enderecoPrestador', ''),
-            d.get('descricaoServico', ''),
-            d.get('periodoReferencia', ''),
-            d.get('cargaHoraria', ''),
-            d.get('localExecucao', ''),
-            float(d.get('valorBruto') or 0),
-            int(d.get('numDependentes') or 0),
-            float(d.get('pensaoAlimenticia') or 0),
-            float(d.get('inss') or 0),
-            float(d.get('iss') or 0),
-            float(d.get('deducaoDependentes') or 0),
-            float(d.get('baseCalculoIRRF') or 0),
-            float(d.get('aliquotaIRRF') or 0),
-            float(d.get('parcelaDeduzirIRRF') or 0),
-            float(d.get('ir') or 0),
-            float(d.get('valorLiquido') or 0),
-            d.get('observacoes', ''),
-            d.get('dataEmissao', ''),
-        ))
-        new_id = cur.lastrowid
-        conn.commit()
-        row = conn.execute("SELECT * FROM rpas WHERE id=?", (new_id,)).fetchone()
-        return jsonify(row_to_dict(row)), 201
+        return jsonify(listar_historico_credor(conn, cid, meses, _time.localtime()))
     except Exception as e:
-        app.logger.error('POST /api/rpas: %s', e)
+        app.logger.error('GET /api/credores/%s/historico: %s', cid, e)
         return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/rpas/<int:rid>', methods=['PUT'])
-def update_rpa(rid):
-    d = request.get_json()
-    try:
-        conn = get_db()
-        conn.execute("""
-            UPDATE rpas SET
-                numero_rpa=?, nome_prestador=?, cpf_prestador=?, endereco_prestador=?,
-                descricao_servico=?, periodo_referencia=?, carga_horaria=?, local_execucao=?,
-                valor_bruto=?, num_dependentes=?, pensao_alimenticia=?,
-                inss=?, iss=?, deducao_dependentes=?, base_calculo_irrf=?,
-                aliquota_irrf=?, parcela_deduzir_irrf=?, ir=?, valor_liquido=?,
-                observacoes=?, data_emissao=?
-            WHERE id=?
-        """, (
-            d.get('numeroRPA', ''),
-            d.get('nomePrestador', ''),
-            d.get('cpfPrestador', ''),
-            d.get('enderecoPrestador', ''),
-            d.get('descricaoServico', ''),
-            d.get('periodoReferencia', ''),
-            d.get('cargaHoraria', ''),
-            d.get('localExecucao', ''),
-            float(d.get('valorBruto') or 0),
-            int(d.get('numDependentes') or 0),
-            float(d.get('pensaoAlimenticia') or 0),
-            float(d.get('inss') or 0),
-            float(d.get('iss') or 0),
-            float(d.get('deducaoDependentes') or 0),
-            float(d.get('baseCalculoIRRF') or 0),
-            float(d.get('aliquotaIRRF') or 0),
-            float(d.get('parcelaDeduzirIRRF') or 0),
-            float(d.get('ir') or 0),
-            float(d.get('valorLiquido') or 0),
-            d.get('observacoes', ''),
-            d.get('dataEmissao', ''),
-            rid,
-        ))
-        conn.commit()
-        row = conn.execute("SELECT * FROM rpas WHERE id=?", (rid,)).fetchone()
-        if not row:
-            return jsonify({'error': 'Não encontrado'}), 404
-        return jsonify(row_to_dict(row))
-    except Exception as e:
-        app.logger.error('PUT /api/rpas/%s: %s', rid, e)
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/rpas/<int:rid>', methods=['DELETE'])
-def delete_rpa(rid):
-    try:
-        conn = get_db()
-        conn.execute("DELETE FROM rpas WHERE id=?", (rid,))
-        conn.commit()
-        return jsonify({'ok': True})
-    except Exception as e:
-        app.logger.error('DELETE /api/rpas/%s: %s', rid, e)
-        return jsonify({'error': str(e)}), 500
-
-
-# ────────────────────────────────────────────────────────────
-# API – Kanban Tasks
-# ────────────────────────────────────────────────────────────
-
-_KANBAN_STATUSES = {'todo', 'doing', 'done', 'blocked'}
-_KANBAN_PRIORITIES = {'low', 'medium', 'high', 'urgent'}
-
-@app.route('/api/kanban', methods=['GET'])
-def kanban_list():
-    try:
-        conn = get_db()
-        rows = conn.execute("SELECT * FROM kanban_tasks ORDER BY criado_em ASC").fetchall()
-        return jsonify([dict(r) for r in rows])
-    except Exception as e:
-        app.logger.error('GET /api/kanban: %s', e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/kanban', methods=['POST'])
-def kanban_create():
-    d = request.json or {}
-    if not d.get('id') or not d.get('title'):
-        return jsonify({'error': 'id e title são obrigatórios'}), 400
-    status = d.get('status', 'todo')
-    priority = d.get('priority', 'medium')
-    if status not in _KANBAN_STATUSES:
-        return jsonify({'error': f'status inválido. Use: {", ".join(sorted(_KANBAN_STATUSES))}'}), 400
-    if priority not in _KANBAN_PRIORITIES:
-        return jsonify({'error': f'priority inválida. Use: {", ".join(sorted(_KANBAN_PRIORITIES))}'}), 400
-    try:
-        conn = get_db()
-        conn.execute(
-            "INSERT INTO kanban_tasks (id, title, description, status, priority) VALUES (?,?,?,?,?)",
-            (d['id'], d['title'], d.get('description',''), status, priority)
-        )
-        conn.commit()
-        row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (d['id'],)).fetchone()
-        return jsonify(dict(row)), 201
-    except Exception as e:
-        app.logger.error('POST /api/kanban: %s', e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/kanban/<task_id>', methods=['PUT'])
-def kanban_update(task_id):
-    d = request.json or {}
-    status = d.get('status')
-    priority = d.get('priority')
-    if status and status not in _KANBAN_STATUSES:
-        return jsonify({'error': f'status inválido. Use: {", ".join(sorted(_KANBAN_STATUSES))}'}), 400
-    if priority and priority not in _KANBAN_PRIORITIES:
-        return jsonify({'error': f'priority inválida. Use: {", ".join(sorted(_KANBAN_PRIORITIES))}'}), 400
-    try:
-        conn = get_db()
-        conn.execute(
-            """UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?,
-               atualizado_em=datetime('now','localtime') WHERE id=?""",
-            (d.get('title'), d.get('description',''), d.get('status'), d.get('priority'), task_id)
-        )
-        conn.commit()
-        row = conn.execute("SELECT * FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
-        if not row:
-            return jsonify({'error': 'not found'}), 404
-        return jsonify(dict(row))
-    except Exception as e:
-        app.logger.error('PUT /api/kanban/%s: %s', task_id, e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/kanban/<task_id>', methods=['DELETE'])
-def kanban_delete(task_id):
-    try:
-        conn = get_db()
-        conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
-        conn.commit()
-        return jsonify({'ok': True})
-    except Exception as e:
-        app.logger.error('DELETE /api/kanban/%s: %s', task_id, e)
-        return jsonify({'error': str(e)}), 500
-
-
-# ────────────────────────────────────────────────────────────
-# API – Fornecimento Dados (solicitantes / empresas / observações)
-# ────────────────────────────────────────────────────────────
-@app.route('/api/fornecimento/dados', methods=['GET'])
-def fornecimento_dados_get():
-    try:
-        conn = get_db()
-        rows = conn.execute("SELECT tipo, valor FROM fornecimento_dados ORDER BY tipo, valor COLLATE NOCASE").fetchall()
-        result = {'solicitantes': [], 'empresas': [], 'observacoes': []}
-        for r in rows:
-            if r['tipo'] in result:
-                result[r['tipo']].append(r['valor'])
-        return jsonify(result)
-    except Exception as e:
-        app.logger.error('GET /api/fornecimento/dados: %s', e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/fornecimento/dados', methods=['POST'])
-def fornecimento_dados_add():
-    d = request.get_json(force=True)
-    tipo  = d.get('tipo', '').strip()
-    valor = d.get('valor', '').strip()
-    if tipo not in ('solicitantes', 'empresas', 'observacoes') or not valor:
-        return jsonify({'error': 'tipo ou valor inválido'}), 400
-    try:
-        conn = get_db()
-        conn.execute("INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)", (tipo, valor))
-        conn.commit()
-        return jsonify({'ok': True})
-    except Exception as e:
-        app.logger.error('POST /api/fornecimento/dados: %s', e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/fornecimento/dados', methods=['DELETE'])
-def fornecimento_dados_del():
-    d = request.get_json(force=True)
-    tipo  = d.get('tipo', '').strip()
-    valor = d.get('valor', '').strip()
-    try:
-        conn = get_db()
-        conn.execute("DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor))
-        conn.commit()
-        return jsonify({'ok': True})
-    except Exception as e:
-        app.logger.error('DELETE /api/fornecimento/dados: %s', e)
-        return jsonify({'error': str(e)}), 500
-
-
-# ────────────────────────────────────────────────────────────
-# API – Configurações (chave/valor persistido no banco)
-# ────────────────────────────────────────────────────────────
-ALLOWED_CONFIG_KEYS = {'api_openrouter_key', 'api_openrouter_modelo', 'api_cnpja_key'}
 
 @app.route('/api/config', methods=['GET'])
 def config_get():
@@ -1283,6 +655,67 @@ def config_set():
         return jsonify({'ok': True})
     except Exception as e:
         app.logger.error('POST /api/config: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/summary', methods=['GET'])
+def admin_summary():
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT chave, valor, atualizado_em FROM configuracoes WHERE chave IN (?,?,?)",
+            ('api_openrouter_key', 'api_openrouter_modelo', 'api_cnpja_key')
+        ).fetchall()
+        cfg = {row['chave']: row_to_dict(row) for row in rows}
+
+        credores_ativos = conn.execute("SELECT COUNT(*) AS total FROM credores WHERE ativo=1").fetchone()['total']
+        rpas_total = conn.execute("SELECT COUNT(*) AS total FROM rpas").fetchone()['total']
+        kanban_total = conn.execute("SELECT COUNT(*) AS total FROM kanban_tasks").fetchone()['total']
+        importacoes_total = conn.execute("SELECT COUNT(*) AS total FROM empenhos_importacoes").fetchone()['total']
+        logs_total = conn.execute("SELECT COUNT(*) AS total FROM logs").fetchone()['total']
+        recent_logs = conn.execute(
+            "SELECT id, acao, credor_id, credor_nome, detalhes, data FROM logs ORDER BY data DESC LIMIT 8"
+        ).fetchall()
+
+        try:
+            conn.execute("SELECT 1").fetchone()
+            db_ok = True
+        except Exception:
+            db_ok = False
+
+        return jsonify({
+            'overview': {
+                'credores_ativos': credores_ativos,
+                'rpas_total': rpas_total,
+                'kanban_total': kanban_total,
+                'importacoes_total': importacoes_total,
+                'logs_total': logs_total,
+            },
+            'health': {
+                'status': 'ok' if db_ok else 'degraded',
+                'db': db_ok,
+                'uptime_s': int(_time.time() - _SERVER_START),
+                'cache_files': len(_file_cache),
+                'cache_gzip': len(_gzip_cache),
+            },
+            'config_status': {
+                'openrouter_key_configured': bool(cfg.get('api_openrouter_key', {}).get('valor', '').strip()),
+                'openrouter_model': cfg.get('api_openrouter_modelo', {}).get('valor', settings.openrouter_default_model) or settings.openrouter_default_model,
+                'openrouter_updated_at': cfg.get('api_openrouter_key', {}).get('atualizado_em') or cfg.get('api_openrouter_modelo', {}).get('atualizado_em'),
+                'cnpja_key_configured': bool(cfg.get('api_cnpja_key', {}).get('valor', '').strip()),
+                'cnpja_updated_at': cfg.get('api_cnpja_key', {}).get('atualizado_em'),
+            },
+            'recent_logs': [row_to_dict(row) for row in recent_logs],
+            'technical': {
+                'host': settings.host,
+                'port': settings.port,
+                'debug': settings.debug,
+                'db_path': DB_PATH,
+                'log_file': str(settings.log_file),
+                'base_dir': BASE_DIR,
+            }
+        })
+    except Exception as e:
+        app.logger.error('GET /api/admin/summary: %s', e)
         return jsonify({'error': str(e)}), 500
 
 import urllib.request as _urllib_req
@@ -1366,7 +799,7 @@ def _buscar_receitaws(cnpj: str) -> dict:
         'porte': d.get('porte',''),
         'simples': d.get('simples',''),
         'mei': d.get('mei',''),
-        'endereco': f"{d.get('logradouro','')} {d.get('numero','')} - {d.get('bairro','')} - {d.get('municipio','')}/{d.get('uf','')} - CEP {d.get('cep','')}",
+        'endereco': f"{d.get('logradouro','')} {d.get('numero','')}".strip(),
         'cnae_principal': d.get('atividade_principal',[{}])[0].get('text','') if d.get('atividade_principal') else '',
         'cnaes_secundarios': [a.get('text','') for a in d.get('atividades_secundarias', [])],
         'socios': socios,
@@ -1400,8 +833,6 @@ def cnpj_buscar():
         return jsonify(_buscar_receitaws(cnpj))
     except Exception as e2:
         return jsonify({'error': f'CNPJ não encontrado: {e2}'}), 404
-
-
 
 # ────────────────────────────────────────────────────────────
 # PDF – Mesclar / Dividir / Proteger
@@ -1493,7 +924,6 @@ def pdf_proteger():
     return send_file(buf, mimetype='application/pdf', as_attachment=True,
                      download_name='protegido.pdf')
 
-
 # ────────────────────────────────────────────────────────────
 # API – Despesas da Prefeitura (histórico CSV → BD)
 # ────────────────────────────────────────────────────────────
@@ -1508,7 +938,6 @@ def despesas_listar_importacoes():
     ).fetchall()
 
     return jsonify([row_to_dict(r) for r in rows])
-
 
 @app.route('/api/despesas/importar', methods=['POST'])
 def despesas_importar():
@@ -1555,7 +984,6 @@ def despesas_importar():
     except Exception as e:
         return jsonify({'error': 'Erro ao salvar no banco', 'detail': str(e)}), 500
 
-
 @app.route('/api/despesas/importacoes/<int:imp_id>', methods=['GET'])
 def despesas_carregar(imp_id):
     """Retorna os dados completos de uma importação."""
@@ -1573,12 +1001,10 @@ def despesas_carregar(imp_id):
         (imp_id,)
     ).fetchall()
 
-
     imp_dict = row_to_dict(imp)
     imp_dict['colunas'] = json.loads(imp_dict['colunas'] or '[]')
     linhas = [json.loads(r['dados']) for r in linhas_rows]
     return jsonify({'importacao': imp_dict, 'linhas': linhas})
-
 
 @app.route('/api/despesas/importacoes/<int:imp_id>', methods=['DELETE'])
 def despesas_excluir(imp_id):
@@ -1589,7 +1015,6 @@ def despesas_excluir(imp_id):
     conn.commit()
 
     return jsonify({'ok': True})
-
 
 @app.route('/api/despesas/importacoes/<int:imp_id>/resumo', methods=['GET'])
 def despesas_resumo(imp_id):
@@ -1606,7 +1031,6 @@ def despesas_resumo(imp_id):
     linhas_rows = conn.execute(
         "SELECT dados FROM despesas_linhas WHERE importacao_id=?", (imp_id,)
     ).fetchall()
-
 
     colunas = json.loads(imp['colunas'] or '[]')
     linhas = [json.loads(r['dados']) for r in linhas_rows]
@@ -1665,7 +1089,6 @@ def despesas_resumo(imp_id):
         'colunas': colunas,
     })
 
-
 # ────────────────────────────────────────────────────────────
 # API – Empenhos CSV (Visualizador de Empenhos → BD)
 # ────────────────────────────────────────────────────────────
@@ -1708,7 +1131,6 @@ def empenhos_csv_importar():
     except Exception as e:
         return jsonify({'error': 'Erro ao salvar', 'detail': str(e)}), 500
 
-
 @app.route('/api/empenhos-csv/importacoes', methods=['GET'])
 def empenhos_csv_listar():
     conn = get_db()
@@ -1716,7 +1138,6 @@ def empenhos_csv_listar():
         "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes ORDER BY importado_em DESC"
     ).fetchall()
     return jsonify([row_to_dict(r) for r in rows])
-
 
 @app.route('/api/empenhos-csv/importacoes/<int:imp_id>', methods=['GET'])
 def empenhos_csv_carregar(imp_id):
@@ -1732,7 +1153,6 @@ def empenhos_csv_carregar(imp_id):
     linhas = [json.loads(r['dados']) for r in linhas_rows]
     return jsonify({'importacao': row_to_dict(imp), 'linhas': linhas})
 
-
 @app.route('/api/empenhos-csv/importacoes/<int:imp_id>', methods=['DELETE'])
 def empenhos_csv_excluir(imp_id):
     conn = get_db()
@@ -1740,7 +1160,6 @@ def empenhos_csv_excluir(imp_id):
     conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
     conn.commit()
     return jsonify({'ok': True})
-
 
 # ────────────────────────────────────────────────────────────
 # MAIN
@@ -1772,9 +1191,8 @@ if __name__ == '__main__':
         local_ip = '127.0.0.1'
     print('=' * 60)
     print('  Sistema de Empenhos – Prefeitura Municipal de Inajá')
-    print(f'  Local  : http://localhost:5000')
-    print(f'  Rede   : http://{local_ip}:5000   << compartilhe este link')
+    print(f'  Local  : http://localhost:{settings.port}')
+    print(f'  Rede   : http://{local_ip}:{settings.port}   << compartilhe este link')
     print('  Para encerrar: feche esta janela ou pressione Ctrl+C')
     print('=' * 60)
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
-
+    app.run(host=settings.host, port=settings.port, debug=settings.debug, threaded=True)
