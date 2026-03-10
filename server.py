@@ -33,6 +33,11 @@ BASE_DIR = str(settings.base_dir)
 DB_PATH = str(settings.db_path)
 DATA_JS = str(settings.data_js_path)
 DOCUMENTS_DIR = os.path.join(BASE_DIR, 'documentos_centro')
+ALLOWED_CONFIG_KEYS = {
+    'api_openrouter_key',
+    'api_openrouter_modelo',
+    'api_cnpja_key',
+}
 
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
 
@@ -208,6 +213,8 @@ def close_db(exception):
 def ensure_db_indexes(cur):
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor ON empenhos(credor_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes ON empenhos(ano, mes)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes_empenhado ON empenhos(ano, mes, empenhado)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor_ano_mes ON empenhos(credor_id, ano, mes)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_departamento ON credores(departamento)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_nome ON credores(nome)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_ativo ON credores(ativo)")
@@ -766,7 +773,7 @@ def index():
 def static_cached(filename):
     url = '/static/' + filename
     ext = os.path.splitext(filename)[1].lower()
-    cc = 'no-cache, no-store, must-revalidate' if ext in {'.js', '.css', '.html'} else 'public, max-age=86400'
+    cc = 'no-cache, must-revalidate' if ext in {'.js', '.css', '.html'} else 'public, max-age=86400'
     resp = _serve_cached(url, cc)
     if resp:
         return resp
@@ -780,13 +787,13 @@ def static_files(filename):
     if filename.startswith('api/'):
         return jsonify({'error': 'Rota não encontrada: ' + filename}), 404
     url = '/' + filename
-    cc = 'no-cache, no-store, must-revalidate' if filename.endswith('.html') else 'public, max-age=3600'
+    cc = 'no-cache, must-revalidate' if filename.endswith('.html') else 'public, max-age=3600'
     resp = _serve_cached(url, cc)
     if resp:
         return resp
     r = send_from_directory(BASE_DIR, filename)
     if filename.endswith('.html'):
-        r.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        r.headers['Cache-Control'] = 'no-cache, must-revalidate'
     return r
 
 @app.errorhandler(404)
@@ -846,6 +853,10 @@ def health():
         'cache_gzip': len(_gzip_cache),
     })
 
+def _should_include_credores_summary(args) -> bool:
+    raw = (args.get('include_summary') or '').strip().lower()
+    return raw in {'1', 'true', 'yes', 'on'}
+
 @app.route('/api/credores', methods=['GET'])
 def get_credores():
     try:
@@ -876,26 +887,28 @@ def get_credores():
             (*params, limit, offset)
         ).fetchall()
         itens = [row_to_dict(r) for r in rows]
-        resumo = conn.execute(
-            f"""
-            SELECT
-                COUNT(*) AS total,
-                SUM(CASE WHEN COALESCE(tipo_valor, 'FIXO') LIKE 'VAR%' THEN 1 ELSE 0 END) AS variaveis,
-                SUM(CASE WHEN COALESCE(tipo_valor, 'FIXO') NOT LIKE 'VAR%' THEN 1 ELSE 0 END) AS fixos,
-                SUM(CASE WHEN COALESCE(cnpj, '')='' THEN 1 ELSE 0 END) AS sem_cnpj,
-                SUM(CASE WHEN COALESCE(email, '')='' THEN 1 ELSE 0 END) AS sem_email,
-                SUM(CASE WHEN COALESCE(validade, '')<>'' AND date(validade) < date('now','localtime') THEN 1 ELSE 0 END) AS vencidos,
-                SUM(CASE WHEN COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', '+30 day') THEN 1 ELSE 0 END) AS vencendo_30
-            FROM credores
-            WHERE ativo=1
-            """
-        ).fetchone()
+        resumo = None
+        if _should_include_credores_summary(request.args):
+            resumo = conn.execute(
+                """
+                SELECT
+                    COUNT(*) AS total,
+                    SUM(CASE WHEN COALESCE(tipo_valor, 'FIXO') LIKE 'VAR%' THEN 1 ELSE 0 END) AS variaveis,
+                    SUM(CASE WHEN COALESCE(tipo_valor, 'FIXO') NOT LIKE 'VAR%' THEN 1 ELSE 0 END) AS fixos,
+                    SUM(CASE WHEN COALESCE(cnpj, '')='' THEN 1 ELSE 0 END) AS sem_cnpj,
+                    SUM(CASE WHEN COALESCE(email, '')='' THEN 1 ELSE 0 END) AS sem_email,
+                    SUM(CASE WHEN COALESCE(validade, '')<>'' AND date(validade) < date('now','localtime') THEN 1 ELSE 0 END) AS vencidos,
+                    SUM(CASE WHEN COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', '+30 day') THEN 1 ELSE 0 END) AS vencendo_30
+                FROM credores
+                WHERE ativo=1
+                """
+            ).fetchone()
         return jsonify({
             'items': itens,
             'total': total,
             'limit': limit,
             'offset': offset,
-            'summary': row_to_dict(resumo),
+            'summary': row_to_dict(resumo) if resumo else None,
         })
     except Exception as e:
         app.logger.error('GET /api/credores: %s', e)
@@ -1171,14 +1184,16 @@ def admin_summary():
         app.logger.error('GET /api/admin/summary: %s', e)
         return jsonify({'error': str(e)}), 500
 
-def _get_openrouter_config(conn):
+def _get_openrouter_config(conn, api_key_override: str = '', model_override: str = ''):
     rows = conn.execute(
         "SELECT chave, valor FROM configuracoes WHERE chave IN (?, ?)",
         ('api_openrouter_key', 'api_openrouter_modelo')
     ).fetchall()
     cfg = {row['chave']: (row['valor'] or '').strip() for row in rows}
-    api_key = cfg.get('api_openrouter_key', '')
-    model = cfg.get('api_openrouter_modelo', '') or settings.openrouter_default_model
+    env_api_key = (os.environ.get('OPENROUTER_API_KEY') or '').strip()
+    env_model = (os.environ.get('OPENROUTER_MODEL') or '').strip()
+    api_key = (api_key_override or '').strip() or cfg.get('api_openrouter_key', '') or env_api_key
+    model = (model_override or '').strip() or cfg.get('api_openrouter_modelo', '') or env_model or settings.openrouter_default_model
     return api_key, model
 
 def _normalize_kanban_status(value: str) -> str:
@@ -1261,11 +1276,11 @@ def _sanitize_kanban_task_payload(task: dict) -> dict:
         'priority': _normalize_kanban_priority(task.get('priority') or 'medium'),
     }
 
-def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None):
+def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None, api_key_override: str = '', model_override: str = ''):
     conn = get_db()
-    api_key, model = _get_openrouter_config(conn)
+    api_key, model = _get_openrouter_config(conn, api_key_override=api_key_override, model_override=model_override)
     if not api_key:
-        return None, ('Configure a chave do OpenRouter em Configurações para usar a IA do Kanban.', 400)
+        return None, ('A IA do Kanban não encontrou a chave do OpenRouter. Salve a mesma chave usada nas outras abas em Configurações.', 400)
     system_map = {
         'create': (
             'Você é um assistente de Kanban. Responda apenas JSON válido com as chaves '
@@ -1319,6 +1334,52 @@ def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = Non
         return None, (message, err.code or 502)
     except Exception as err:
         return None, (str(err), 500)
+
+@app.route('/api/extratos/modelos-openrouter', methods=['GET', 'POST'])
+def extratos_modelos_openrouter():
+    try:
+        data = request.get_json(silent=True) or {}
+        conn = get_db()
+        api_key, selected_model = _get_openrouter_config(
+            conn,
+            api_key_override=(data.get('api_key') or request.args.get('api_key') or '').strip(),
+            model_override=(data.get('model') or request.args.get('model') or '').strip()
+        )
+        if not api_key:
+            return jsonify({
+                'error': 'Nenhuma chave do OpenRouter foi encontrada. Use a mesma chave já configurada nas outras abas.',
+                'modelos': [],
+                'models': [],
+                'selected_model': selected_model,
+            }), 400
+        models = listar_modelos(api_key)
+        normalized = []
+        for model in models:
+            if not isinstance(model, dict):
+                continue
+            pricing = model.get('pricing') or {}
+            prompt_price = str(pricing.get('prompt') or '').strip()
+            completion_price = str(pricing.get('completion') or '').strip()
+            if prompt_price != '0' or completion_price != '0':
+                continue
+            normalized.append({
+                'id': (model.get('id') or '').strip(),
+                'name': (model.get('name') or model.get('id') or '').strip(),
+                'context_length': model.get('context_length'),
+                'pricing': pricing,
+            })
+        return jsonify({
+            'modelos': normalized,
+            'models': normalized,
+            'selected_model': selected_model,
+        })
+    except urllib.error.HTTPError as err:
+        detail = parse_http_error(err)
+        message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao listar modelos do OpenRouter'
+        return jsonify({'error': message, 'modelos': [], 'models': []}), err.code or 502
+    except Exception as e:
+        app.logger.error('%s /api/extratos/modelos-openrouter: %s', request.method, e)
+        return jsonify({'error': str(e), 'modelos': [], 'models': []}), 500
 
 @app.route('/api/kanban', methods=['GET'])
 def kanban_listar():
@@ -1426,7 +1487,12 @@ def kanban_ai_create_from_text():
     prompt = (data.get('prompt') or '').strip()
     if not prompt:
         return jsonify({'error': 'Informe o texto para a IA gerar a tarefa'}), 400
-    parsed, error = _kanban_ai_completion('create', prompt)
+    parsed, error = _kanban_ai_completion(
+        'create',
+        prompt,
+        api_key_override=(data.get('api_key') or '').strip(),
+        model_override=(data.get('model') or '').strip()
+    )
     if error:
         return jsonify({'error': error[0]}), error[1]
     task = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
@@ -1443,7 +1509,13 @@ def kanban_ai_improve_task():
         return jsonify({'error': 'Envie uma tarefa válida para a IA melhorar'}), 400
     current_task = _sanitize_kanban_task_payload(task)
     current_task['title'] = (task.get('title') or '').strip()
-    parsed, error = _kanban_ai_completion('improve', prompt, current_task)
+    parsed, error = _kanban_ai_completion(
+        'improve',
+        prompt,
+        current_task,
+        api_key_override=(data.get('api_key') or '').strip(),
+        model_override=(data.get('model') or '').strip()
+    )
     if error:
         return jsonify({'error': error[0]}), error[1]
     improved = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
@@ -1460,7 +1532,13 @@ def kanban_ai_breakdown_task():
         return jsonify({'error': 'Envie uma tarefa válida para a IA quebrar em subtarefas'}), 400
     current_task = _sanitize_kanban_task_payload(task)
     current_task['title'] = (task.get('title') or '').strip()
-    parsed, error = _kanban_ai_completion('breakdown', prompt, current_task)
+    parsed, error = _kanban_ai_completion(
+        'breakdown',
+        prompt,
+        current_task,
+        api_key_override=(data.get('api_key') or '').strip(),
+        model_override=(data.get('model') or '').strip()
+    )
     if error:
         return jsonify({'error': error[0]}), error[1]
     items = parsed.get('tasks') if isinstance(parsed, dict) else parsed

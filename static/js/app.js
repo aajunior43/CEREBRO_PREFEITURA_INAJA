@@ -33,6 +33,7 @@ let state = {
 let _filterCacheKey = '';
 let _filterCacheResult = [];
 let _searchDebounceTimer = null;
+let _brasaoB64Promise = null;
 
 function invalidateFilterCache() {
   _filterCacheKey = '';
@@ -102,6 +103,28 @@ async function apiDelete(path) {
   return r.json();
 }
 
+function shouldRequestSummary() {
+  return !state.searchTerm
+    && !state.filterDept
+    && !state.filterTipo
+    && !state.filterCadastro
+    && !state.filterVencimento;
+}
+
+async function ensureBrasaoB64() {
+  if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) return BRASAO_B64;
+  if (_brasaoB64Promise) return _brasaoB64Promise;
+  _brasaoB64Promise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/static/js/brasao_b64.js';
+    script.async = true;
+    script.onload = () => resolve(typeof BRASAO_B64 !== 'undefined' ? BRASAO_B64 : '');
+    script.onerror = () => reject(new Error('Falha ao carregar brasão otimizado'));
+    document.head.appendChild(script);
+  });
+  return _brasaoB64Promise;
+}
+
 async function loadCredores() {
   const params = new URLSearchParams({
     limit: '1000',
@@ -117,6 +140,9 @@ async function loadCredores() {
     params.set('somente_vencidos', '1');
   } else if (state.filterVencimento === '30') {
     params.set('vencendo_dias', '30');
+  }
+  if (shouldRequestSummary()) {
+    params.set('include_summary', '1');
   }
   const res = await apiGet(`/credores?${params.toString()}`);
   const items = Array.isArray(res)
@@ -708,6 +734,7 @@ async function batchEmpenhar() {
 
 // ── Imprimir Credor (individual) ──────────────────────────────
 async function printCredor(c) {
+  try { await ensureBrasaoB64(); } catch (_) {}
   const done = !!state.empenhados[c.id];
   const mesNome = MESES[state.month];
   const ano = state.year;
@@ -745,6 +772,7 @@ async function printCredor(c) {
 async function printLote() {
   const lista = filteredCredores();
   if (lista.length === 0) { showToast('Nenhum credor para imprimir', 'error'); return; }
+  try { await ensureBrasaoB64(); } catch (_) {}
 
   const mesNome = MESES[state.month];
   const ano = state.year;
@@ -1295,39 +1323,60 @@ function toggleTheme() {
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   syncThemeLabel();
+  const syncExtraThemeLabels = () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const sidebarLabel = document.querySelector('.theme-label-sidebar');
+    if (sidebarLabel) sidebarLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+    const mobileLabel = document.querySelector('.theme-label-mobile');
+    if (mobileLabel) mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+  };
+  syncExtraThemeLabels();
   
   // Hamburger menu
   const hamburger = document.getElementById('hamburger');
+  const bnavMenu = document.getElementById('bnav-menu');
   const mobileNav = document.getElementById('mobile-nav');
   const mobileOverlay = document.getElementById('mobile-nav-overlay');
   const mobileNavClose = document.getElementById('mobile-nav-close');
   
   function openMobileNav() {
-    hamburger.classList.add('active');
-    mobileNav.classList.add('open');
-    mobileOverlay.classList.add('open');
+    hamburger?.classList.add('active');
+    bnavMenu?.classList.add('active');
+    mobileNav?.classList.add('open');
+    mobileOverlay?.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
   
   function closeMobileNav() {
-    hamburger.classList.remove('active');
-    mobileNav.classList.remove('open');
-    mobileOverlay.classList.remove('open');
+    hamburger?.classList.remove('active');
+    bnavMenu?.classList.remove('active');
+    mobileNav?.classList.remove('open');
+    mobileOverlay?.classList.remove('open');
     document.body.style.overflow = '';
   }
   
-  hamburger.addEventListener('click', () => {
+  hamburger?.addEventListener('click', () => {
+    if (!mobileNav) return;
     if (mobileNav.classList.contains('open')) closeMobileNav();
     else openMobileNav();
   });
   
-  mobileOverlay.addEventListener('click', closeMobileNav);
-  mobileNavClose.addEventListener('click', closeMobileNav);
+  bnavMenu?.addEventListener('click', () => {
+    if (!mobileNav) return;
+    if (mobileNav.classList.contains('open')) closeMobileNav();
+    else openMobileNav();
+  });
+  
+  mobileOverlay?.addEventListener('click', closeMobileNav);
+  mobileNavClose?.addEventListener('click', closeMobileNav);
   
   // Mobile logs button
-  document.getElementById('mobile-logs').addEventListener('click', () => {
+  document.getElementById('mobile-logs')?.addEventListener('click', () => {
     closeMobileNav();
-    document.getElementById('btn-logs').click();
+    document.getElementById('btn-logs')?.click();
+  });
+  document.getElementById('sidebar-logs')?.addEventListener('click', () => {
+    document.getElementById('btn-logs')?.click();
   });
 
   // Mobile theme toggle
@@ -1336,26 +1385,23 @@ document.addEventListener('DOMContentLoaded', () => {
     mobileThemeToggle.addEventListener('click', () => {
       toggleTheme();
       syncThemeLabel();
-      // Sync mobile label too
-      const mobileLabel = mobileThemeToggle.querySelector('.theme-label-mobile');
-      if (mobileLabel) {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
-      }
+      syncExtraThemeLabels();
     });
-    // Set initial mobile label
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const mobileLabel = mobileThemeToggle.querySelector('.theme-label-mobile');
-    if (mobileLabel) mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
   }
+  document.getElementById('sidebar-theme-toggle')?.addEventListener('click', () => {
+    toggleTheme();
+    syncThemeLabel();
+    syncExtraThemeLabels();
+  });
   
   // Dropdown menu
-  const dropdown = document.getElementById('dropdown-toggle').parentElement;
-  document.getElementById('dropdown-toggle').addEventListener('click', (e) => {
+  const dropdownToggle = document.getElementById('dropdown-toggle');
+  const dropdown = dropdownToggle?.parentElement;
+  dropdownToggle?.addEventListener('click', (e) => {
     e.stopPropagation();
-    dropdown.classList.toggle('open');
+    dropdown?.classList.toggle('open');
   });
-  document.addEventListener('click', () => dropdown.classList.remove('open'));
+  document.addEventListener('click', () => dropdown?.classList.remove('open'));
 
   // Nav group dropdowns (Documentos / Financeiro / Ferramentas)
   document.querySelectorAll('.nav-group-btn').forEach(btn => {
@@ -1383,10 +1429,11 @@ document.addEventListener('DOMContentLoaded', () => {
   );
   
   // Theme toggle in dropdown
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    dropdown.classList.remove('open');
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    dropdown?.classList.remove('open');
     toggleTheme();
     syncThemeLabel();
+    syncExtraThemeLabels();
   });
   
   // ADM Authentication — resets on every page load (never persisted)
@@ -1457,8 +1504,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function setActiveTab(tabName) {
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(m => m.classList.remove('active'));
+    document.querySelectorAll('.bottom-nav-item[data-tab]').forEach(b => b.classList.remove('active'));
     document.querySelector(`.nav-tab[data-tab="${tabName}"]`)?.classList.add('active');
     document.querySelector(`.mobile-nav-item[data-tab="${tabName}"]`)?.classList.add('active');
+    document.querySelector(`.bottom-nav-item[data-tab="${tabName}"]`)?.classList.add('active');
   }
 
   function handleTabClick(tabName, requiresAuth) {
@@ -1495,17 +1544,17 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   
   // Password modal events
-  document.getElementById('password-close').addEventListener('click', hidePasswordModal);
-  document.getElementById('password-submit').addEventListener('click', checkPassword);
-  document.getElementById('password-input').addEventListener('keypress', (e) => {
+  document.getElementById('password-close')?.addEventListener('click', hidePasswordModal);
+  document.getElementById('password-submit')?.addEventListener('click', checkPassword);
+  document.getElementById('password-input')?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') checkPassword();
   });
   
   // ADM logout
-  document.getElementById('adm-logout').addEventListener('click', () => {
+  document.getElementById('adm-logout')?.addEventListener('click', () => {
     isAdmAuthenticated = false;
     hideAdmPanel();
-    document.querySelector('.nav-tab[data-tab="credores-fixos"]').click();
+    document.querySelector('.nav-tab[data-tab="credores-fixos"]')?.click();
     showToast('Saiu da área administrativa', 'info');
   });
   

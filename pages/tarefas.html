@@ -923,10 +923,12 @@
             if (aiBusy) throw new Error('A IA do Kanban já está processando outra solicitação');
             aiBusy = true;
             try {
+                const apiKey = (localStorage.getItem('api_openrouter_key') || localStorage.getItem('ext_ia_key') || '').trim();
+                const model = (localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim();
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ ...payload, api_key: apiKey, model })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || 'Erro ao consultar IA do Kanban');

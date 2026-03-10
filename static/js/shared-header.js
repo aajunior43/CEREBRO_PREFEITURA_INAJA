@@ -120,42 +120,27 @@
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
         </svg>
-        Credores Fixos
+        Credores
       </a>
-
-      <div class="nav-sep"></div>
-
+      <a href="/pages/extratos.html" class="nav-tab" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        Extratos
+      </a>
+      <a href="/pages/tarefas.html" class="nav-tab" style="text-decoration:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Tarefas
+      </a>
       <div class="nav-group">
         <button class="nav-group-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Documentos
+          Módulos
           <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="nav-group-menu">
           <div class="nav-group-title">Documentos</div>
           ${buildGroupItems(NAV_ITEMS.documentos)}
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>
-          Financeiro
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="nav-group-menu">
           <div class="nav-group-title">Financeiro</div>
           ${buildGroupItems(NAV_ITEMS.financeiro)}
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          Ferramentas
-          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div class="nav-group-menu">
           <div class="nav-group-title">Ferramentas</div>
           ${buildGroupItems(NAV_ITEMS.ferramentas)}
         </div>
@@ -192,6 +177,8 @@
     <button class="mobile-nav-close" id="shd-mobile-nav-close">&times;</button>
   </div>
   <a href="/" class="mobile-nav-item" style="text-decoration:none;">Credores Fixos</a>
+  <a href="/pages/extratos.html" class="mobile-nav-item${isActive('/pages/extratos.html') ? ' active' : ''}" style="text-decoration:none;">Extratos</a>
+  <a href="/pages/tarefas.html" class="mobile-nav-item${isActive('/pages/tarefas.html') ? ' active' : ''}" style="text-decoration:none;">Tarefas</a>
   <div class="mobile-nav-divider"></div>
   <div class="mobile-nav-label">Documentos</div>
   ${buildMobileItems(NAV_ITEMS.documentos)}
@@ -258,14 +245,14 @@
             <span>Credores</span>
             <span class="bottom-nav-indicator"></span>
           </a>
-          <a class="bottom-nav-item${isActive('/pages/rpa.html')?' active':''}" href="/pages/rpa.html">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span>RPA</span>
-            <span class="bottom-nav-indicator"></span>
-          </a>
           <a class="bottom-nav-item${isActive('/pages/extratos.html')?' active':''}" href="/pages/extratos.html">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
             <span>Extratos</span>
+            <span class="bottom-nav-indicator"></span>
+          </a>
+          <a class="bottom-nav-item${isActive('/pages/tarefas.html')?' active':''}" href="/pages/tarefas.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>Tarefas</span>
             <span class="bottom-nav-indicator"></span>
           </a>
           <a class="bottom-nav-item${isActive('/pages/cnpj.html')?' active':''}" href="/pages/cnpj.html">
@@ -281,7 +268,9 @@
         </div>`;
       document.body.appendChild(bnav);
       document.getElementById('shd-bnav-menu')?.addEventListener('click', () => {
-        document.getElementById('shd-mobile-nav').classList.contains('open') ? closeMobile() : openMobile();
+        const mobile = document.getElementById('shd-mobile-nav');
+        if (!mobile) return;
+        mobile.classList.contains('open') ? closeMobile() : openMobile();
       });
     }
 
@@ -393,11 +382,13 @@
       document.body.style.overflow = '';
     }
 
-    document.getElementById('shd-hamburger').addEventListener('click', () => {
-      document.getElementById('shd-mobile-nav').classList.contains('open') ? closeMobile() : openMobile();
+    document.getElementById('shd-hamburger')?.addEventListener('click', () => {
+      const mobile = document.getElementById('shd-mobile-nav');
+      if (!mobile) return;
+      mobile.classList.contains('open') ? closeMobile() : openMobile();
     });
-    document.getElementById('shd-mobile-nav-close').addEventListener('click', closeMobile);
-    document.getElementById('shd-mobile-overlay').addEventListener('click', closeMobile);
+    document.getElementById('shd-mobile-nav-close')?.addEventListener('click', closeMobile);
+    document.getElementById('shd-mobile-overlay')?.addEventListener('click', closeMobile);
 
     // Nav group dropdowns
     document.querySelectorAll('#shd-header .nav-group-btn').forEach(btn => {
@@ -417,24 +408,24 @@
 
     // Dropdown (3 dots)
     const ddToggle = document.getElementById('shd-dropdown-toggle');
-    const ddParent = ddToggle.parentElement;
-    ddToggle.addEventListener('click', e => {
+    const ddParent = ddToggle?.parentElement;
+    ddToggle?.addEventListener('click', e => {
       e.stopPropagation();
-      ddParent.classList.toggle('open');
+      ddParent?.classList.toggle('open');
     });
 
     // Close all on outside click
     document.addEventListener('click', () => {
       document.querySelectorAll('#shd-header .nav-group').forEach(g => g.classList.remove('open'));
-      ddParent.classList.remove('open');
+      ddParent?.classList.remove('open');
     });
 
     // Theme toggle (desktop + mobile)
-    document.getElementById('shd-theme-toggle').addEventListener('click', () => {
-      ddParent.classList.remove('open');
+    document.getElementById('shd-theme-toggle')?.addEventListener('click', () => {
+      ddParent?.classList.remove('open');
       toggleTheme();
     });
-    document.getElementById('shd-mobile-theme').addEventListener('click', () => {
+    document.getElementById('shd-mobile-theme')?.addEventListener('click', () => {
       closeMobile();
       toggleTheme();
     });
