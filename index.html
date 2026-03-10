@@ -374,6 +374,25 @@
         <option value="pendente">Pendentes</option>
         <option value="empenhado">Empenhados</option>
       </select>
+
+      <select id="filter-tipo" class="select-filter">
+        <option value="">Todos os Tipos</option>
+        <option value="FIXO">Fixos</option>
+        <option value="VARIÁVEL">Variáveis</option>
+      </select>
+
+      <select id="filter-cadastro" class="select-filter">
+        <option value="">Cadastro Completo ou Incompleto</option>
+        <option value="sem_cnpj">Sem CNPJ</option>
+        <option value="sem_email">Sem E-mail</option>
+        <option value="com_pendencias">Com Pendências</option>
+      </select>
+
+      <select id="filter-vencimento" class="select-filter">
+        <option value="">Todos os Contratos</option>
+        <option value="vencidos">Somente Vencidos</option>
+        <option value="30">Vencendo em 30 dias</option>
+      </select>
     </div>
 
     <div class="toolbar-actions">
@@ -413,6 +432,11 @@
         Novo Credor
       </button>
     </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;padding:0 24px 12px;align-items:center;">
+    <span id="credores-counter" style="font-size:13px;color:var(--text-2);font-weight:600;">0 exibidos de 0 cadastrados</span>
+    <span id="credores-summary" style="font-size:12px;color:var(--text-3);">Fixos: 0 | Variáveis: 0 | Sem CNPJ: 0 | Sem e-mail: 0 | Vencidos: 0 | Vencendo 30d: 0</span>
   </div>
 
   <!-- EMPENHOS LIST -->

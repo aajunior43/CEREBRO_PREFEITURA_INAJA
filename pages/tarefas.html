@@ -12,7 +12,7 @@
         /* ── PAGE ── */
         .kb-page {
             min-height: calc(100vh - 64px);
-            padding: 20px 16px 60px;
+            padding: 20px 24px 60px;
             background: var(--bg);
         }
 
@@ -21,7 +21,7 @@
             display: flex;
             align-items: center;
             gap: 14px;
-            max-width: 1100px;
+            max-width: 1680px;
             margin: 0 auto 18px
         }
 
@@ -52,7 +52,7 @@
 
         /* ── TOOLBAR ── */
         .kb-toolbar {
-            max-width: 1100px;
+            max-width: 1680px;
             margin: 0 auto 18px;
             display: flex;
             gap: 8px;
@@ -147,11 +147,17 @@
 
         /* ── COLUMNS ── */
         .kb-grid {
-            max-width: 1100px;
+            max-width: 1680px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px
+            grid-template-columns: repeat(3, minmax(360px, 1fr));
+            gap: 20px
+        }
+
+        @media(max-width:1200px) {
+            .kb-grid {
+                grid-template-columns: repeat(2, minmax(320px, 1fr))
+            }
         }
 
         @media(max-width:700px) {
@@ -162,6 +168,10 @@
             .kb-stats {
                 display: none
             }
+
+            .kb-page {
+                padding: 16px 12px 48px
+            }
         }
 
         .kb-col {
@@ -171,7 +181,7 @@
             background: var(--bg);
             display: flex;
             flex-direction: column;
-            min-height: 300px
+            min-height: 420px
         }
 
         .kb-col-head {
@@ -286,6 +296,39 @@
             display: flex;
             align-items: center;
             justify-content: space-between
+        }
+
+        .kb-attachments {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px
+        }
+
+        .kb-attachment-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            background: rgba(6, 182, 212, .08);
+            color: var(--text-2)
+        }
+
+        .kb-attachment-chip a {
+            color: inherit;
+            text-decoration: none;
+            font-weight: 700
+        }
+
+        .kb-attachment-del {
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #dc2626;
+            font-size: 12px;
+            padding: 0
         }
 
         .kb-priority {
@@ -445,6 +488,37 @@
             resize: vertical
         }
 
+        .kb-file-help {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 4px
+        }
+
+        .kb-dropzone {
+            margin-top: 8px;
+            border: 2px dashed rgba(6, 182, 212, .35);
+            border-radius: 10px;
+            padding: 14px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-3);
+            background: rgba(6, 182, 212, .03);
+            transition: all .15s
+        }
+
+        .kb-dropzone.drag-over {
+            border-color: #06b6d4;
+            background: rgba(6, 182, 212, .10);
+            color: var(--text)
+        }
+
+        .kb-dropzone-file {
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-2)
+        }
+
         /* ── CONFIRM MODAL ── */
         .kb-confirm-modal {
             max-width: 380px
@@ -458,7 +532,7 @@
 
         /* ── BACKUP HISTORY ── */
         .kb-hist {
-            max-width: 1100px;
+            max-width: 1680px;
             margin: 20px auto 0
         }
 
@@ -577,6 +651,7 @@
         <!-- Toolbar -->
         <div class="kb-toolbar">
             <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
+            <button class="kb-btn kb-btn-violet" onclick="openAiCreate()">✨ Criar com IA</button>
             <div class="kb-stats">
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
@@ -644,8 +719,19 @@
                         </select>
                     </div>
                 </div>
+                <div>
+                    <label class="kb-label">Anexar arquivo</label>
+                    <input class="kb-input" id="t-file" type="file" />
+                    <div class="kb-dropzone" id="t-dropzone">
+                        Arraste e solte um arquivo aqui
+                        <div class="kb-dropzone-file" id="t-dropzone-file">Nenhum arquivo selecionado</div>
+                    </div>
+                    <div class="kb-file-help">Após salvar a tarefa, o arquivo será enviado e ficará guardado no banco de dados.</div>
+                </div>
             </div>
             <div class="kb-modal-foot">
+                <button class="kb-btn kb-btn-violet" id="modal-ai-improve-btn" onclick="improveCurrentTaskWithAi()" style="display:none">✨ Melhorar com IA</button>
+                <button class="kb-btn kb-btn-violet" id="modal-ai-breakdown-btn" onclick="breakdownCurrentTaskWithAi()" style="display:none">🧩 Quebrar em subtarefas</button>
                 <button class="kb-btn kb-btn-ghost" onclick="closeTaskModal()">Cancelar</button>
                 <button class="kb-btn kb-btn-cyan" id="modal-save-btn" onclick="saveTask()">Salvar</button>
             </div>
@@ -683,6 +769,8 @@
         let editingId = null;
         let deletingId = null;
         let dragTaskId = null;
+        let pendingModalFile = null;
+        let aiBusy = false;
 
         // ── INIT ───────────────────────────────────────────────────────────────────
         async function loadAll() {
@@ -722,20 +810,48 @@
             card.dataset.id = task.id;
             const prioLabel = { high: '🔴 Alta', medium: '🟡 Média', low: '🟢 Baixa' };
             const prioClass = { high: 'kb-prio-high', medium: 'kb-prio-medium', low: 'kb-prio-low' };
+            const attachments = Array.isArray(task.attachments) ? task.attachments : [];
             card.innerHTML = `
       <div class="kb-card-top">
         <div class="kb-card-title">${esc(task.title)}</div>
         <div class="kb-card-actions">
           <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar">✏️</button>
+          <button class="kb-icon-btn" onclick="breakdownTaskWithAi('${task.id}')" title="Quebrar em subtarefas com IA">✨</button>
           <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${task.id}')" title="Excluir">🗑</button>
         </div>
       </div>
       ${task.description ? `<div class="kb-card-desc">${esc(task.description)}</div>` : ''}
+      ${attachments.length ? `<div class="kb-attachments">${attachments.map(att => `
+        <span class="kb-attachment-chip">
+          <a href="/api/kanban/${task.id}/attachments/${att.id}/download" target="_blank" rel="noopener">📎 ${esc(att.file_name)}</a>
+          <button class="kb-attachment-del" onclick="deleteAttachment('${task.id}', ${att.id})" title="Excluir anexo">✕</button>
+        </span>`).join('')}</div>` : ''}
       <div class="kb-card-foot">
         <span class="kb-priority ${prioClass[task.priority]}">${prioLabel[task.priority]}</span>
       </div>`;
             card.addEventListener('dragstart', e => { dragTaskId = task.id; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             card.addEventListener('dragend', () => { dragTaskId = null; card.classList.remove('dragging'); document.querySelectorAll('.kb-col-body').forEach(b => b.classList.remove('drag-over')); });
+            card.addEventListener('dragover', e => {
+                if (e.dataTransfer?.types?.includes('Files')) {
+                    e.preventDefault();
+                    card.classList.add('drag-over');
+                }
+            });
+            card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+            card.addEventListener('drop', async e => {
+                if (!e.dataTransfer?.files?.length) return;
+                e.preventDefault();
+                e.stopPropagation();
+                card.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                try {
+                    await uploadAttachment(task.id, file);
+                    await loadAll();
+                    showToast('Arquivo anexado à tarefa', 'success');
+                } catch (err) {
+                    showToast(err.message || 'Erro ao anexar arquivo', 'error');
+                }
+            });
             return card;
         }
 
@@ -769,19 +885,131 @@
         function colName(c) { return { todo: 'A Fazer', 'in-progress': 'Em Progresso', done: 'Concluído' }[c] || c; }
 
         // ── CRUD ───────────────────────────────────────────────────────────────────
-        function openTaskModal() { editingId = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; document.getElementById('t-title').value = ''; document.getElementById('t-desc').value = ''; document.getElementById('t-status').value = 'todo'; document.getElementById('t-prio').value = 'medium'; document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
+        function syncDropzoneLabel() {
+            const label = document.getElementById('t-dropzone-file');
+            const file = pendingModalFile || document.getElementById('t-file').files[0];
+            if (label) label.textContent = file ? file.name : 'Nenhum arquivo selecionado';
+        }
+
+        function updateTaskModalAiButtons() {
+            document.getElementById('modal-ai-improve-btn').style.display = editingId ? 'inline-flex' : 'none';
+            document.getElementById('modal-ai-breakdown-btn').style.display = editingId ? 'inline-flex' : 'none';
+        }
+
+        function fillTaskModal(task) {
+            document.getElementById('t-title').value = task.title || '';
+            document.getElementById('t-desc').value = task.description || '';
+            document.getElementById('t-status').value = task.status || 'todo';
+            document.getElementById('t-prio').value = task.priority || 'medium';
+        }
+
+        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); updateTaskModalAiButtons(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
         function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; }
 
         function openEdit(id) {
             const task = tasks.find(t => t.id === id); if (!task) return;
             editingId = id;
             document.getElementById('modal-title').textContent = '✏️ Editar Tarefa';
-            document.getElementById('t-title').value = task.title;
-            document.getElementById('t-desc').value = task.description || '';
-            document.getElementById('t-status').value = task.status;
-            document.getElementById('t-prio').value = task.priority;
+            fillTaskModal(task);
+            document.getElementById('t-file').value = '';
+            pendingModalFile = null;
+            syncDropzoneLabel();
+            updateTaskModalAiButtons();
             document.getElementById('task-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('t-title').focus(), 100);
+        }
+
+        async function callKanbanAi(url, payload) {
+            if (aiBusy) throw new Error('A IA do Kanban já está processando outra solicitação');
+            aiBusy = true;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Erro ao consultar IA do Kanban');
+                return data;
+            } finally {
+                aiBusy = false;
+            }
+        }
+
+        async function openAiCreate() {
+            const promptText = window.prompt('Descreva a tarefa para a IA criar no Kanban:');
+            if (!promptText || !promptText.trim()) return;
+            try {
+                showToast('Gerando tarefa com IA...', 'info');
+                const task = await callKanbanAi('/api/kanban/ai/create-from-text', { prompt: promptText.trim() });
+                openTaskModal();
+                fillTaskModal(task);
+                showToast('Sugestão da IA pronta. Revise e salve.', 'success');
+            } catch (e) {
+                showToast(e.message || 'Erro ao usar IA no Kanban', 'error');
+            }
+        }
+
+        async function improveCurrentTaskWithAi() {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId);
+            if (!task) return;
+            const promptText = window.prompt('Diga para a IA como melhorar esta tarefa:', 'Melhore a clareza, prioridade e descrição desta tarefa.');
+            if (promptText === null) return;
+            try {
+                showToast('Melhorando tarefa com IA...', 'info');
+                const improved = await callKanbanAi('/api/kanban/ai/improve-task', { task, prompt: promptText.trim() });
+                fillTaskModal(improved);
+                showToast('Sugestão aplicada no formulário. Revise e salve.', 'success');
+            } catch (e) {
+                showToast(e.message || 'Erro ao melhorar tarefa com IA', 'error');
+            }
+        }
+
+        async function breakdownTaskWithAi(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            const promptText = window.prompt('Como a IA deve quebrar esta tarefa em subtarefas?', 'Quebre em passos menores e práticos.');
+            if (promptText === null) return;
+            try {
+                showToast('Gerando subtarefas com IA...', 'info');
+                const result = await callKanbanAi('/api/kanban/ai/breakdown-task', { task, prompt: promptText.trim() });
+                await confirmAndCreateSubtasks(result.tasks);
+            } catch (e) {
+                showToast(e.message || 'Erro ao quebrar tarefa com IA', 'error');
+            }
+        }
+
+        async function breakdownCurrentTaskWithAi() {
+            if (!editingId) return;
+            await breakdownTaskWithAi(editingId);
+        }
+
+        async function confirmAndCreateSubtasks(items) {
+            const tasksToCreate = Array.isArray(items) ? items.filter(t => t && t.title) : [];
+            if (!tasksToCreate.length) throw new Error('Nenhuma subtarefa válida foi gerada pela IA');
+            const preview = tasksToCreate.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
+            const ok = window.confirm(`A IA sugeriu ${tasksToCreate.length} subtarefa(s):\n\n${preview}\n\nDeseja criar agora?`);
+            if (!ok) return;
+            for (const task of tasksToCreate) {
+                const payload = { id: uid(), title: task.title, description: task.description || '', status: task.status || 'todo', priority: task.priority || 'medium' };
+                const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!res.ok) throw new Error('Erro ao criar subtarefas sugeridas pela IA');
+            }
+            await loadAll();
+            showToast(`${tasksToCreate.length} subtarefa(s) criada(s) com ajuda da IA`, 'success');
+        }
+
+        async function uploadAttachment(taskId, file) {
+            if (!file) return;
+            const form = new FormData();
+            form.append('arquivo', file);
+            const res = await fetch(`/api/kanban/${taskId}/attachments`, { method: 'POST', body: form });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || 'Erro ao enviar anexo');
+            }
+            return res.json();
         }
 
         async function saveTask() {
@@ -790,23 +1018,30 @@
             const desc = document.getElementById('t-desc').value.trim();
             const status = document.getElementById('t-status').value;
             const priority = document.getElementById('t-prio').value;
+            const file = pendingModalFile || document.getElementById('t-file').files[0];
             try {
                 if (editingId) {
                     const task = tasks.find(t => t.id === editingId);
                     const updated = { ...task, title, description: desc, status, priority };
-                    await fetch(`/api/kanban/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                    const res = await fetch(`/api/kanban/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                    if (!res.ok) throw new Error('Erro ao atualizar tarefa');
+                    const updatedFromApi = await res.json();
+                    if (file) await uploadAttachment(editingId, file);
                     const i = tasks.findIndex(t => t.id === editingId);
-                    if (i > -1) tasks[i] = updated;
+                    if (i > -1) tasks[i] = { ...updatedFromApi, attachments: tasks[i].attachments || [] };
                     showToast('Tarefa atualizada!', 'success');
                 } else {
                     const newTask = { id: uid(), title, description: desc, status, priority };
                     const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTask) });
+                    if (!res.ok) throw new Error('Erro ao criar tarefa');
                     const created = await res.json();
+                    if (file) await uploadAttachment(created.id, file);
                     tasks.push(created);
                     showToast('Tarefa criada!', 'success');
                 }
-                renderBoard(); closeTaskModal();
-            } catch (e) { showToast('Erro ao salvar tarefa', 'error'); }
+                await loadAll();
+                renderBoard(); closeTaskModal(); pendingModalFile = null; syncDropzoneLabel();
+            } catch (e) { showToast(e.message || 'Erro ao salvar tarefa', 'error'); }
         }
 
         function confirmDelete(id) { deletingId = id; document.getElementById('confirm-modal').style.display = 'flex'; }
@@ -822,6 +1057,17 @@
             closeConfirm();
         }
 
+        async function deleteAttachment(taskId, attachmentId) {
+            try {
+                const res = await fetch(`/api/kanban/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Erro ao excluir anexo');
+                await loadAll();
+                showToast('Anexo excluído', 'success');
+            } catch (e) {
+                showToast(e.message || 'Erro ao excluir anexo', 'error');
+            }
+        }
+
         // ── KEY SHORTCUT ───────────────────────────────────────────────────────────
         document.addEventListener('keydown', e => {
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openTaskModal(); }
@@ -830,6 +1076,30 @@
                 document.getElementById('confirm-modal').style.display = 'none';
             }
         });
+
+        document.getElementById('t-file').addEventListener('change', () => {
+            pendingModalFile = null;
+            syncDropzoneLabel();
+        });
+        (function initDropzone() {
+            const dz = document.getElementById('t-dropzone');
+            if (!dz) return;
+            dz.addEventListener('dragover', e => {
+                e.preventDefault();
+                dz.classList.add('drag-over');
+            });
+            dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+            dz.addEventListener('drop', e => {
+                e.preventDefault();
+                dz.classList.remove('drag-over');
+                const file = e.dataTransfer?.files?.[0];
+                if (!file) return;
+                pendingModalFile = file;
+                document.getElementById('t-file').value = '';
+                syncDropzoneLabel();
+            });
+            syncDropzoneLabel();
+        })();
 
         // ── UTILS ──────────────────────────────────────────────────────────────────
         function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }

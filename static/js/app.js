@@ -5,7 +5,7 @@
 'use strict';
 
 // ── Constantes ─────────────────────────────────────────────
-const API = `http://${window.location.hostname}:5000/api`;
+const API = `${window.location.origin}/api`;
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -19,10 +19,15 @@ let state = {
   searchTerm: '',
   filterDept: '',
   filterStatus: '',
+  filterTipo: '',
+  filterCadastro: '',
+  filterVencimento: '',
   expandAll: false,
   credores: [],
   empenhados: {},
   sort: { col: 'nome', dir: 'asc' },
+  totalCredores: 0,
+  summary: null,
 };
 
 let _filterCacheKey = '';
@@ -42,6 +47,9 @@ function getFilterCacheKey() {
     search: state.searchTerm,
     dept: state.filterDept,
     status: state.filterStatus,
+    tipo: state.filterTipo,
+    cadastro: state.filterCadastro,
+    vencimento: state.filterVencimento,
     sortCol: state.sort.col,
     sortDir: state.sort.dir,
     credoresLen: state.credores.length,
@@ -92,6 +100,33 @@ async function apiDelete(path) {
     throw new Error(d.error || `DELETE ${path} → ${r.status}`);
   }
   return r.json();
+}
+
+async function loadCredores() {
+  const params = new URLSearchParams({
+    limit: '1000',
+    offset: '0',
+    sort_col: state.sort.col,
+    sort_dir: state.sort.dir,
+  });
+  if (state.searchTerm) params.set('search', state.searchTerm);
+  if (state.filterDept) params.set('departamento', state.filterDept);
+  if (state.filterTipo) params.set('tipo', state.filterTipo);
+  if (state.filterCadastro) params.set('status_cadastro', state.filterCadastro);
+  if (state.filterVencimento === 'vencidos') {
+    params.set('somente_vencidos', '1');
+  } else if (state.filterVencimento === '30') {
+    params.set('vencendo_dias', '30');
+  }
+  const res = await apiGet(`/credores?${params.toString()}`);
+  const items = Array.isArray(res)
+    ? res
+    : (Array.isArray(res?.items) ? res.items : []);
+  state.credores = items;
+  state.totalCredores = Array.isArray(res) ? items.length : (Number(res?.total) || items.length);
+  state.summary = Array.isArray(res) ? null : (res?.summary || null);
+  invalidateFilterCache();
+  return res;
 }
 
 // ── Carregar dados do mês ────────────────────────────────────
@@ -159,34 +194,14 @@ function renderMonthNav() {
 function filteredCredores() {
   const cacheKey = getFilterCacheKey();
   if (_filterCacheKey === cacheKey) return _filterCacheResult;
-  const list = state.credores.filter(c => {
-    const name = (c.nome || '').toLowerCase();
-    const search = state.searchTerm.toLowerCase();
-    if (search &&
-      !name.includes(search) &&
-      !(c.descricao || '').toLowerCase().includes(search) &&
-      !(c.cnpj || '').toLowerCase().includes(search)) return false;
-    if (state.filterDept && (c.departamento || '') !== state.filterDept) return false;
+  const credores = Array.isArray(state.credores) ? state.credores : [];
+  const list = credores.filter(c => {
     if (state.filterStatus) {
       const done = !!state.empenhados[c.id];
       if (state.filterStatus === 'empenhado' && !done) return false;
       if (state.filterStatus === 'pendente' && done) return false;
     }
     return true;
-  });
-
-  const { col, dir } = state.sort;
-  list.sort((a, b) => {
-    let va, vb;
-    if (col === 'nome') { va = (a.nome || '').toLowerCase(); vb = (b.nome || '').toLowerCase(); }
-    else if (col === 'valor') { va = a.valor || 0; vb = b.valor || 0; }
-    else if (col === 'departamento') { va = (a.departamento || '').toLowerCase(); vb = (b.departamento || '').toLowerCase(); }
-    else if (col === 'tipo') { va = (a.tipo_valor || '').toLowerCase(); vb = (b.tipo_valor || '').toLowerCase(); }
-    else if (col === 'status') { va = state.empenhados[a.id] ? 1 : 0; vb = state.empenhados[b.id] ? 1 : 0; }
-    else { return 0; }
-    if (va < vb) return dir === 'asc' ? -1 : 1;
-    if (va > vb) return dir === 'asc' ? 1 : -1;
-    return 0;
   });
   _filterCacheKey = cacheKey;
   _filterCacheResult = list;
@@ -339,7 +354,7 @@ function handleCardExpand(cardEl, credorId) {
 
 // ── Stats ─────────────────────────────────────────────────────
 function renderStats() {
-  const credores = state.credores;
+  const credores = filteredCredores();
   let doneCt = 0, pendCt = 0, valorDone = 0, valorPend = 0;
 
   credores.forEach(c => {
@@ -360,10 +375,19 @@ function renderStats() {
   document.getElementById('stat-restante').textContent = formatBRL(valorPend);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-label').textContent = `${pct}% concluído`;
+  const counterEl = document.getElementById('credores-counter');
+  if (counterEl) {
+    const totalBase = state.summary?.total ?? state.totalCredores ?? total;
+    counterEl.textContent = `${total} exibidos de ${totalBase} cadastrados`;
+  }
+  const summaryEl = document.getElementById('credores-summary');
+  if (summaryEl && state.summary) {
+    summaryEl.textContent = `Fixos: ${state.summary.fixos || 0} | Variáveis: ${state.summary.variaveis || 0} | Sem CNPJ: ${state.summary.sem_cnpj || 0} | Sem e-mail: ${state.summary.sem_email || 0} | Vencidos: ${state.summary.vencidos || 0} | Vencendo 30d: ${state.summary.vencendo_30 || 0}`;
+  }
 
   // Dept breakdown
   const depts = {};
-  state.credores.forEach(c => {
+  credores.forEach(c => {
     const d = c.departamento || 'OUTRO';
     if (!depts[d]) depts[d] = { total: 0, done: 0, valor: 0 };
     depts[d].total++;
@@ -380,13 +404,18 @@ function renderStats() {
       </button>`
     ).join('');
     deptEl.querySelectorAll('.dept-stat-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const d = btn.dataset.dept;
         const sel = document.getElementById('filter-dept');
         if (state.filterDept === d) { sel.value = ''; state.filterDept = ''; btn.classList.remove('active-dept'); }
         else { sel.value = d; state.filterDept = d; deptEl.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept')); btn.classList.add('active-dept'); }
-        invalidateFilterCache();
-        renderCards();
+        setLoading(true);
+        try {
+          await loadCredores();
+          render();
+        } finally {
+          setLoading(false);
+        }
       });
     });
     // Restore active state from current filter
@@ -848,16 +877,13 @@ async function onFormSubmit(e) {
     setLoading(true);
     const idVal = parseInt(document.getElementById('form-id').value);
     if (!isNaN(idVal) && idVal > 0) {
-      const updated = await apiPut(`/credores/${idVal}`, payload);
-      const idx = state.credores.findIndex(c => c.id === idVal);
-      if (idx >= 0) state.credores[idx] = updated;
+      await apiPut(`/credores/${idVal}`, payload);
       showToast('Credor atualizado!', 'success');
     } else {
-      const created = await apiPost('/credores', payload);
-      state.credores.push(created);
+      await apiPost('/credores', payload);
       showToast('Credor adicionado!', 'success');
     }
-    invalidateFilterCache();
+    await loadCredores();
     closeModal();
     render();
   } catch (err) {
@@ -874,7 +900,7 @@ async function onDeleteCredor() {
   try {
     setLoading(true);
     await apiDelete(`/credores/${idVal}`);
-    state.credores = state.credores.filter(c => c.id !== idVal);
+    await loadCredores();
     delete state.empenhados[idVal];
     invalidateFilterCache();
     closeModal();
@@ -952,28 +978,71 @@ function attachEvents() {
   document.getElementById('search-input').addEventListener('input', e => {
     const nextValue = e.target.value;
     clearTimeout(_searchDebounceTimer);
-    _searchDebounceTimer = setTimeout(() => {
+    _searchDebounceTimer = setTimeout(async () => {
       state.searchTerm = nextValue;
-      invalidateFilterCache();
-      renderCards();
+      setLoading(true);
+      try {
+        await loadCredores();
+        render();
+      } finally {
+        setLoading(false);
+      }
     }, 120);
   });
 
-  document.getElementById('filter-dept').addEventListener('change', e => {
+  document.getElementById('filter-dept').addEventListener('change', async e => {
     state.filterDept = e.target.value;
-    invalidateFilterCache();
     document.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept'));
     if (state.filterDept) {
       const btn = document.querySelector(`.dept-stat-btn[data-dept="${state.filterDept}"]`);
       if (btn) btn.classList.add('active-dept');
     }
-    renderCards();
+    setLoading(true);
+    try {
+      await loadCredores();
+      render();
+    } finally {
+      setLoading(false);
+    }
   });
 
   document.getElementById('filter-status').addEventListener('change', e => {
     state.filterStatus = e.target.value;
     invalidateFilterCache();
-    renderCards();
+    render();
+  });
+
+  document.getElementById('filter-tipo').addEventListener('change', async e => {
+    state.filterTipo = e.target.value;
+    setLoading(true);
+    try {
+      await loadCredores();
+      render();
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  document.getElementById('filter-cadastro').addEventListener('change', async e => {
+    state.filterCadastro = e.target.value;
+    setLoading(true);
+    try {
+      await loadCredores();
+      render();
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  document.getElementById('filter-vencimento').addEventListener('change', async e => {
+    state.filterVencimento = e.target.value;
+    setLoading(true);
+    try {
+      await loadCredores();
+      render();
+    } finally {
+      setLoading(false);
+    }
   });
 
   document.getElementById('btn-expand-all').addEventListener('click', () => {
@@ -1135,7 +1204,7 @@ function attachEvents() {
 
   // Sort columns
   document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const col = btn.dataset.col;
       if (state.sort.col === col) {
         state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
@@ -1150,7 +1219,13 @@ function attachEvents() {
       });
       btn.classList.add('active');
       btn.querySelector('.sort-arrow').textContent = state.sort.dir === 'asc' ? '↑' : '↓';
-      renderCards();
+      setLoading(true);
+      try {
+        await loadCredores();
+        render();
+      } finally {
+        setLoading(false);
+      }
     });
   });
 
@@ -1164,11 +1239,13 @@ async function init() {
   setLoading(true);
   try {
     attachEvents();
-    const [credores, monthResult] = await Promise.all([
-      apiGet('/credores'),
+    const [credoresResult, monthResult] = await Promise.all([
+      loadCredores(),
       loadMonth(),
     ]);
-    state.credores = credores;
+    if (credoresResult && credoresResult.summary) {
+      state.summary = credoresResult.summary;
+    }
     render();
     if (monthResult && monthResult.ok === false) {
       showToast(`Aviso: não foi possível carregar os empenhos de ${MESES[state.month]}/${state.year}.`, 'error');

@@ -16,6 +16,8 @@ import hashlib
 import time as _time
 import logging
 import mimetypes
+import sys
+import urllib.error
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 import urllib.error as _urllib_error
@@ -50,6 +52,64 @@ _rate_buckets: dict[str, list[float]] = defaultdict(list)
 _RATE_LOCK = threading.Lock()
 _SERVER_START = _time.time()
 
+_TERM_COLORS = {
+    'reset': '\033[0m',
+    'dim': '\033[2m',
+    'bold': '\033[1m',
+    'cyan': '\033[36m',
+    'green': '\033[32m',
+    'yellow': '\033[33m',
+    'red': '\033[31m',
+    'magenta': '\033[35m',
+}
+
+try:
+    if os.name == 'nt':
+        os.system('')
+except Exception:
+    pass
+
+def _term_enabled() -> bool:
+    return sys.stdout.isatty()
+
+def _color(text: str, name: str) -> str:
+    if not _term_enabled():
+        return text
+    return f"{_TERM_COLORS.get(name, '')}{text}{_TERM_COLORS['reset']}"
+
+def _fmt_bytes(num: int) -> str:
+    if num < 1024:
+        return f'{num} B'
+    if num < 1024 * 1024:
+        return f'{num / 1024:.1f} KB'
+    return f'{num / (1024 * 1024):.1f} MB'
+
+def _terminal_log(kind: str, message: str, color_name: str = 'cyan'):
+    ts = _time.strftime('%H:%M:%S')
+    prefix = _color(f'[{ts}] [{kind}]', color_name)
+    print(f'{prefix} {message}')
+
+def _terminal_request_line(method: str, path: str, status_code: int, elapsed_ms: float, client_ip: str = ''):
+    if status_code >= 500:
+        tone = 'red'
+        icon = 'ERR'
+    elif status_code >= 400:
+        tone = 'yellow'
+        icon = 'WARN'
+    elif elapsed_ms >= 800:
+        tone = 'magenta'
+        icon = 'SLOW'
+    else:
+        tone = 'green'
+        icon = 'OK'
+    ip_label = client_ip or '-'
+    _terminal_log(icon, f'{ip_label:<15} {method:<6} {status_code:<3} {elapsed_ms:>7.1f} ms  {path}', tone)
+
+def _terminal_section(title: str):
+    line = '─' * 72
+    print(_color(line, 'dim'))
+    print(_color(title, 'bold'))
+
 def _rate_limited(key: str, max_hits: int = 5, window: int = 60) -> bool:
     """Retorna True se o key excedeu max_hits em window segundos."""
     now = _time.time()
@@ -80,6 +140,8 @@ _SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer', 'documentos_centro',
 def _preload_static_files():
     """Lê todos os arquivos estáticos para RAM no startup (+ versões gzip)."""
     count, total_kb = 0, 0
+    started_at = _time.perf_counter()
+    _terminal_log('BOOT', 'Pré-carregando arquivos estáticos em RAM...', 'cyan')
     for root, dirs, files in os.walk(BASE_DIR):
         # Não descer em diretórios que não precisamos servir
         dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
@@ -107,8 +169,9 @@ def _preload_static_files():
                 total_kb += len(data) // 1024
             except OSError:
                 pass
-    print(f"Cache estático: {count} arquivos, {total_kb} KB em RAM")
-    print(f"Cache gzip: {len(_gzip_cache)} arquivos comprimidos")
+    elapsed_ms = (_time.perf_counter() - started_at) * 1000
+    _terminal_log('CACHE', f'{count} arquivos carregados em RAM ({_fmt_bytes(total_kb * 1024)})', 'green')
+    _terminal_log('GZIP', f'{len(_gzip_cache)} arquivos com versão comprimida prontos em {elapsed_ms:.1f} ms', 'green')
 
 # ── Banco de Dados ───────────────────────────────────────────
 # Conexão thread-local reutilizada durante todo o ciclo de vida da requisição.
@@ -120,6 +183,7 @@ def get_db():
     PRAGMAs de performance aplicados em TODA nova conexão (incluindo threads do Flask)."""
     db = getattr(_db_local, 'conn', None)
     if db is None:
+        started_at = _time.perf_counter()
         db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
         db.row_factory = sqlite3.Row
         # Aplicar PRAGMAs em cada nova conexão — threads do Flask criam conexões
@@ -131,6 +195,8 @@ def get_db():
         db.execute("PRAGMA temp_store=MEMORY")    # tabelas temporárias em RAM
         db.execute("PRAGMA mmap_size=0")          # desabilita mmap — perigoso no OneDrive
         _db_local.conn = db
+        elapsed_ms = (_time.perf_counter() - started_at) * 1000
+        _terminal_log('DB', f'Conexão SQLite pronta em {elapsed_ms:.1f} ms -> {DB_PATH}', 'green')
     return db
 
 @app.teardown_appcontext
@@ -157,10 +223,14 @@ def ensure_db_indexes(cur):
     cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_linhas_importacao ON despesas_linhas(importacao_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_importacoes_periodo ON empenhos_importacoes(periodo)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_linhas_importacao ON empenhos_linhas(importacao_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_kanban_attach_task ON kanban_attachments(task_id)")
 
 @app.before_request
 def mark_request_start():
     g._request_started_at = _time.perf_counter()
+    g._request_path = request.path
+    g._request_full_path = request.full_path.rstrip('?')
+    g._request_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '-').split(',')[0].strip()
 
 @app.after_request
 def compress_response(response):
@@ -169,6 +239,14 @@ def compress_response(response):
     if started_at is not None:
         elapsed_ms = (_time.perf_counter() - started_at) * 1000
         response.headers['X-Response-Time-ms'] = f'{elapsed_ms:.1f}'
+        if request.path.startswith('/api/'):
+            _terminal_request_line(
+                request.method,
+                getattr(g, '_request_full_path', request.path),
+                response.status_code,
+                elapsed_ms,
+                getattr(g, '_request_ip', '-')
+            )
         if request.path.startswith('/api/') and elapsed_ms >= 250:
             app.logger.warning('Slow request %.1fms %s %s [%s]', elapsed_ms, request.method, request.path, response.status_code)
     # Cache-Control para APIs GET (dados mudam pouco entre requests)
@@ -285,6 +363,18 @@ def migrate_db():
             dados           TEXT    NOT NULL
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS kanban_attachments (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id         TEXT    NOT NULL
+                            REFERENCES kanban_tasks(id) ON DELETE CASCADE,
+            file_name       TEXT    NOT NULL,
+            mime_type       TEXT    DEFAULT 'application/octet-stream',
+            file_size       INTEGER DEFAULT 0,
+            content         BLOB    NOT NULL,
+            criado_em       TEXT    DEFAULT (datetime('now','localtime'))
+        )
+    """)
     ensure_db_indexes(cur)
     conn.commit()
 
@@ -375,6 +465,18 @@ def init_db():
             atualizado_em TEXT  DEFAULT (datetime('now', 'localtime'))
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS kanban_attachments (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id         TEXT    NOT NULL
+                            REFERENCES kanban_tasks(id) ON DELETE CASCADE,
+            file_name       TEXT    NOT NULL,
+            mime_type       TEXT    DEFAULT 'application/octet-stream',
+            file_size       INTEGER DEFAULT 0,
+            content         BLOB    NOT NULL,
+            criado_em       TEXT    DEFAULT (datetime('now','localtime'))
+        )
+    """)
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS fornecimento_dados (
@@ -418,8 +520,6 @@ def init_db():
 
     conn.commit()
 
-    print(f"Banco de dados pronto: {DB_PATH}")
-
 def _seed_from_data_js(cur):
     """Lê o data.js e insere os credores no banco."""
     import re
@@ -453,6 +553,149 @@ def _seed_from_data_js(cur):
 # ── Helpers ──────────────────────────────────────────────────
 def row_to_dict(row):
     return dict(row)
+
+
+def _normalizar_cnpj(cnpj: str) -> str:
+    return re.sub(r'\D', '', (cnpj or '').strip())
+
+
+def _parse_bool(value) -> bool:
+    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on', 'sim'}
+
+
+def _credor_payload(data: dict, *, partial: bool = False) -> tuple[dict, list[str]]:
+    errors: list[str] = []
+    payload: dict = {}
+
+    def has_value(key: str) -> bool:
+        return key in data and data.get(key) is not None
+
+    if not partial or has_value('nome'):
+        nome = (data.get('nome') or '').strip().upper()
+        if not nome:
+            errors.append('Campo "nome" é obrigatório')
+        elif len(nome) < 3:
+            errors.append('Campo "nome" deve ter pelo menos 3 caracteres')
+        else:
+            payload['nome'] = nome
+
+    if not partial or has_value('descricao'):
+        payload['descricao'] = (data.get('descricao') or '').strip().upper()
+
+    if not partial or has_value('departamento'):
+        payload['departamento'] = (data.get('departamento') or '').strip().upper()
+
+    if not partial or has_value('tipo_valor'):
+        tipo_valor = (data.get('tipo_valor') or 'FIXO').strip().upper()
+        if tipo_valor not in {'FIXO', 'VARIÁVEL', 'VARIAVEL'}:
+            errors.append('Campo "tipo_valor" deve ser FIXO ou VARIÁVEL')
+        else:
+            payload['tipo_valor'] = 'VARIÁVEL' if tipo_valor == 'VARIAVEL' else tipo_valor
+
+    if not partial or has_value('valor'):
+        try:
+            valor = float(data.get('valor') or 0)
+            if valor < 0:
+                raise ValueError
+            payload['valor'] = valor
+        except Exception:
+            errors.append('Campo "valor" deve ser numérico e maior ou igual a zero')
+
+    if not partial or has_value('cnpj'):
+        cnpj = _normalizar_cnpj(data.get('cnpj', ''))
+        if cnpj and len(cnpj) != 14:
+            errors.append('Campo "cnpj" deve conter 14 dígitos')
+        payload['cnpj'] = cnpj
+
+    if not partial or has_value('email'):
+        email = (data.get('email') or '').strip().lower()
+        if email and not re.fullmatch(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            errors.append('Campo "email" inválido')
+        payload['email'] = email
+
+    if not partial or has_value('pagamento'):
+        pagamento = (data.get('pagamento') or '').strip()
+        if pagamento and not re.fullmatch(r'\d{1,3}', pagamento):
+            errors.append('Campo "pagamento" deve conter apenas dias em número')
+        payload['pagamento'] = pagamento
+
+    if not partial or has_value('solicitacao'):
+        payload['solicitacao'] = (data.get('solicitacao') or '').strip()
+
+    if not partial or has_value('validade'):
+        validade = (data.get('validade') or '').strip()
+        if validade and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', validade):
+            errors.append('Campo "validade" deve estar no formato AAAA-MM-DD')
+        payload['validade'] = validade
+
+    if not partial or has_value('obs'):
+        payload['obs'] = (data.get('obs') or '').strip().upper()
+
+    return payload, errors
+
+
+def _buscar_credor_duplicado(conn, nome: str, cnpj: str, *, ignore_id: int | None = None):
+    if cnpj:
+        row = conn.execute(
+            "SELECT id, nome FROM credores WHERE ativo=1 AND cnpj=?"
+            + (" AND id<>?" if ignore_id else ""),
+            (cnpj, ignore_id) if ignore_id else (cnpj,)
+        ).fetchone()
+        if row:
+            return row, 'Já existe um credor ativo com este CNPJ'
+    row = conn.execute(
+        "SELECT id, nome FROM credores WHERE ativo=1 AND UPPER(nome)=?"
+        + (" AND id<>?" if ignore_id else ""),
+        (nome, ignore_id) if ignore_id else (nome,)
+    ).fetchone()
+    if row:
+        return row, 'Já existe um credor ativo com este nome'
+    return None, ''
+
+
+def _montar_filtros_credores(args):
+    search = (args.get('search') or '').strip()
+    departamento = (args.get('departamento') or '').strip().upper()
+    tipo = (args.get('tipo') or '').strip().upper()
+    status_cadastro = (args.get('status_cadastro') or '').strip().lower()
+    somente_vencidos = _parse_bool(args.get('somente_vencidos'))
+    vencendo_dias = args.get('vencendo_dias', type=int)
+
+    clauses = ["ativo=1"]
+    params: list = []
+
+    if search:
+        like = f'%{search.lower()}%'
+        clauses.append("""(
+            LOWER(nome) LIKE ?
+            OR LOWER(COALESCE(descricao, '')) LIKE ?
+            OR LOWER(COALESCE(cnpj, '')) LIKE ?
+            OR LOWER(COALESCE(email, '')) LIKE ?
+        )""")
+        params.extend([like, like, like, like])
+
+    if departamento:
+        clauses.append("COALESCE(departamento, '')=?")
+        params.append(departamento)
+
+    if tipo:
+        clauses.append("COALESCE(tipo_valor, 'FIXO')=?")
+        params.append('VARIÁVEL' if tipo == 'VARIAVEL' else tipo)
+
+    if status_cadastro == 'sem_cnpj':
+        clauses.append("COALESCE(cnpj, '')=''")
+    elif status_cadastro == 'sem_email':
+        clauses.append("COALESCE(email, '')=''")
+    elif status_cadastro == 'com_pendencias':
+        clauses.append("(COALESCE(cnpj, '')='' OR COALESCE(email, '')='')")
+
+    if somente_vencidos:
+        clauses.append("COALESCE(validade, '')<>'' AND date(validade) < date('now','localtime')")
+    elif vencendo_dias is not None and vencendo_dias >= 0:
+        clauses.append("COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', ?)")
+        params.append(f'+{vencendo_dias} day')
+
+    return clauses, params
 
 def _slugify(value: str, fallback: str = 'geral') -> str:
     text = (value or '').strip().lower()
@@ -522,11 +765,13 @@ def index():
 @app.route('/static/<path:filename>')
 def static_cached(filename):
     url = '/static/' + filename
-    resp = _serve_cached(url, 'public, max-age=86400')
+    ext = os.path.splitext(filename)[1].lower()
+    cc = 'no-cache, no-store, must-revalidate' if ext in {'.js', '.css', '.html'} else 'public, max-age=86400'
+    resp = _serve_cached(url, cc)
     if resp:
         return resp
     r = send_from_directory(os.path.join(BASE_DIR, 'static'), filename)
-    r.headers['Cache-Control'] = 'public, max-age=86400'
+    r.headers['Cache-Control'] = cc
     return r
 
 
@@ -604,50 +849,174 @@ def health():
 @app.route('/api/credores', methods=['GET'])
 def get_credores():
     try:
-        limit = request.args.get('limit', 1000, type=int)
+        limit = max(1, min(request.args.get('limit', 1000, type=int), 1000))
         offset = request.args.get('offset', 0, type=int)
+        sort_col = (request.args.get('sort_col') or 'departamento').strip().lower()
+        sort_dir = (request.args.get('sort_dir') or 'asc').strip().lower()
+        if sort_dir not in {'asc', 'desc'}:
+            sort_dir = 'asc'
+        sort_map = {
+            'nome': 'nome',
+            'departamento': 'departamento',
+            'valor': 'valor',
+            'tipo': 'tipo_valor',
+            'tipo_valor': 'tipo_valor',
+            'validade': 'validade',
+        }
+        order_by = sort_map.get(sort_col, 'departamento')
+        clauses, params = _montar_filtros_credores(request.args)
+        where_sql = ' AND '.join(clauses)
         conn = get_db()
+        total = conn.execute(
+            f"SELECT COUNT(*) AS total FROM credores WHERE {where_sql}",
+            params
+        ).fetchone()['total']
         rows = conn.execute(
-            "SELECT * FROM credores WHERE ativo=1 ORDER BY departamento, nome LIMIT ? OFFSET ?",
-            (limit, offset)
+            f"SELECT * FROM credores WHERE {where_sql} ORDER BY {order_by} {sort_dir}, nome ASC LIMIT ? OFFSET ?",
+            (*params, limit, offset)
         ).fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
+        itens = [row_to_dict(r) for r in rows]
+        resumo = conn.execute(
+            f"""
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN COALESCE(tipo_valor, 'FIXO') LIKE 'VAR%' THEN 1 ELSE 0 END) AS variaveis,
+                SUM(CASE WHEN COALESCE(tipo_valor, 'FIXO') NOT LIKE 'VAR%' THEN 1 ELSE 0 END) AS fixos,
+                SUM(CASE WHEN COALESCE(cnpj, '')='' THEN 1 ELSE 0 END) AS sem_cnpj,
+                SUM(CASE WHEN COALESCE(email, '')='' THEN 1 ELSE 0 END) AS sem_email,
+                SUM(CASE WHEN COALESCE(validade, '')<>'' AND date(validade) < date('now','localtime') THEN 1 ELSE 0 END) AS vencidos,
+                SUM(CASE WHEN COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', '+30 day') THEN 1 ELSE 0 END) AS vencendo_30
+            FROM credores
+            WHERE ativo=1
+            """
+        ).fetchone()
+        return jsonify({
+            'items': itens,
+            'total': total,
+            'limit': limit,
+            'offset': offset,
+            'summary': row_to_dict(resumo),
+        })
     except Exception as e:
         app.logger.error('GET /api/credores: %s', e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/credores', methods=['POST'])
 def add_credor():
-    data = request.get_json()
-    if not data or not data.get('nome', '').strip():
-        return jsonify({'error': 'Campo "nome" é obrigatório'}), 400
+    data = request.get_json(force=True) or {}
+    payload, errors = _credor_payload(data, partial=False)
+    if errors:
+        return jsonify({'error': errors[0], 'errors': errors}), 400
     try:
         conn = get_db()
+        duplicado, msg = _buscar_credor_duplicado(conn, payload.get('nome', ''), payload.get('cnpj', ''))
+        if duplicado:
+            return jsonify({'error': msg, 'duplicado_id': duplicado['id']}), 409
         cur  = conn.cursor()
         cur.execute("""
             INSERT INTO credores
-              (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, departamento, obs)
-            VALUES (?,?,?,?,?,?,?,?,?,?)
+              (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
         """, (
-            data.get('nome', '').upper(),
-            float(data.get('valor') or 0),
-            (data.get('descricao') or '').upper(),
-            data.get('cnpj', ''),
-            data.get('email', ''),
-            data.get('tipo_valor', 'FIXO'),
-            data.get('solicitacao', ''),
-            data.get('pagamento', ''),
-            data.get('departamento', ''),
-            (data.get('obs') or '').upper(),
+            payload.get('nome', ''),
+            payload.get('valor', 0),
+            payload.get('descricao', ''),
+            payload.get('cnpj', ''),
+            payload.get('email', ''),
+            payload.get('tipo_valor', 'FIXO'),
+            payload.get('solicitacao', ''),
+            payload.get('pagamento', ''),
+            payload.get('validade', ''),
+            payload.get('departamento', ''),
+            payload.get('obs', ''),
         ))
         new_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('CRIAR', new_id, payload.get('nome', ''), payload.get('departamento', '') or 'Cadastro de credor')
+        )
         conn.commit()
-        conn.commit()
-        
         row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
         app.logger.error('POST /api/credores: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/credores/<int:cid>', methods=['PUT'])
+def update_credor(cid):
+    data = request.get_json(force=True) or {}
+    payload, errors = _credor_payload(data, partial=False)
+    if errors:
+        return jsonify({'error': errors[0], 'errors': errors}), 400
+    try:
+        conn = get_db()
+        atual = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
+        if not atual:
+            return jsonify({'error': 'Credor não encontrado'}), 404
+        duplicado, msg = _buscar_credor_duplicado(conn, payload.get('nome', ''), payload.get('cnpj', ''), ignore_id=cid)
+        if duplicado:
+            return jsonify({'error': msg, 'duplicado_id': duplicado['id']}), 409
+        conn.execute("""
+            UPDATE credores
+               SET nome=?, valor=?, descricao=?, cnpj=?, email=?, tipo_valor=?, solicitacao=?, pagamento=?, validade=?, departamento=?, obs=?
+             WHERE id=?
+        """, (
+            payload.get('nome', ''),
+            payload.get('valor', 0),
+            payload.get('descricao', ''),
+            payload.get('cnpj', ''),
+            payload.get('email', ''),
+            payload.get('tipo_valor', 'FIXO'),
+            payload.get('solicitacao', ''),
+            payload.get('pagamento', ''),
+            payload.get('validade', ''),
+            payload.get('departamento', ''),
+            payload.get('obs', ''),
+            cid,
+        ))
+        detalhes = []
+        for key, label in (
+            ('nome', 'Nome'),
+            ('departamento', 'Departamento'),
+            ('valor', 'Valor'),
+            ('tipo_valor', 'Tipo'),
+            ('validade', 'Validade'),
+            ('cnpj', 'CNPJ'),
+            ('email', 'E-mail'),
+        ):
+            anterior = atual[key] if key in atual.keys() else ''
+            novo = payload.get(key, '')
+            if str(anterior or '') != str(novo or ''):
+                detalhes.append(f'{label}: {anterior or "—"} → {novo or "—"}')
+        conn.execute(
+            "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('EDITAR', cid, payload.get('nome', ''), ' | '.join(detalhes) or 'Cadastro atualizado')
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+        return jsonify(row_to_dict(row))
+    except Exception as e:
+        app.logger.error('PUT /api/credores/%s: %s', cid, e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/credores/<int:cid>', methods=['DELETE'])
+def delete_credor(cid):
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Credor não encontrado'}), 404
+        conn.execute("UPDATE credores SET ativo=0 WHERE id=?", (cid,))
+        conn.execute(
+            "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('EXCLUIR', cid, row['nome'], row['departamento'] or 'Exclusão lógica')
+        )
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/credores/%s: %s', cid, e)
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/empenhos/<int:ano>/<int:mes>', methods=['GET'])
@@ -802,6 +1171,155 @@ def admin_summary():
         app.logger.error('GET /api/admin/summary: %s', e)
         return jsonify({'error': str(e)}), 500
 
+def _get_openrouter_config(conn):
+    rows = conn.execute(
+        "SELECT chave, valor FROM configuracoes WHERE chave IN (?, ?)",
+        ('api_openrouter_key', 'api_openrouter_modelo')
+    ).fetchall()
+    cfg = {row['chave']: (row['valor'] or '').strip() for row in rows}
+    api_key = cfg.get('api_openrouter_key', '')
+    model = cfg.get('api_openrouter_modelo', '') or settings.openrouter_default_model
+    return api_key, model
+
+def _normalize_kanban_status(value: str) -> str:
+    value = (value or '').strip().lower()
+    aliases = {
+        'todo': 'todo',
+        'a fazer': 'todo',
+        'afazer': 'todo',
+        'to do': 'todo',
+        'in-progress': 'in-progress',
+        'in progress': 'in-progress',
+        'em progresso': 'in-progress',
+        'progress': 'in-progress',
+        'done': 'done',
+        'concluido': 'done',
+        'concluído': 'done',
+        'finalizado': 'done',
+    }
+    return aliases.get(value, 'todo')
+
+def _normalize_kanban_priority(value: str) -> str:
+    value = (value or '').strip().lower()
+    aliases = {
+        'high': 'high',
+        'alta': 'high',
+        'medium': 'medium',
+        'media': 'medium',
+        'média': 'medium',
+        'low': 'low',
+        'baixa': 'low',
+    }
+    return aliases.get(value, 'medium')
+
+def _extract_openrouter_text(payload: dict) -> str:
+    choices = payload.get('choices') or []
+    if not choices:
+        raise ValueError('A IA não retornou conteúdo')
+    message = choices[0].get('message') or {}
+    content = message.get('content')
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get('type') == 'text':
+                parts.append(item.get('text', ''))
+        content = ''.join(parts)
+    content = (content or '').strip()
+    if not content:
+        raise ValueError('A IA retornou conteúdo vazio')
+    return content
+
+def _extract_json_block(text: str):
+    text = (text or '').strip()
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+    match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
+    if match:
+        return json.loads(match.group(1))
+    start_obj = text.find('{')
+    end_obj = text.rfind('}')
+    if start_obj != -1 and end_obj != -1 and end_obj > start_obj:
+        snippet = text[start_obj:end_obj + 1]
+        try:
+            return json.loads(snippet)
+        except Exception:
+            pass
+    start_arr = text.find('[')
+    end_arr = text.rfind(']')
+    if start_arr != -1 and end_arr != -1 and end_arr > start_arr:
+        snippet = text[start_arr:end_arr + 1]
+        return json.loads(snippet)
+    raise ValueError('A IA retornou um formato inválido')
+
+def _sanitize_kanban_task_payload(task: dict) -> dict:
+    return {
+        'title': (task.get('title') or '').strip(),
+        'description': (task.get('description') or '').strip(),
+        'status': _normalize_kanban_status(task.get('status') or 'todo'),
+        'priority': _normalize_kanban_priority(task.get('priority') or 'medium'),
+    }
+
+def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None):
+    conn = get_db()
+    api_key, model = _get_openrouter_config(conn)
+    if not api_key:
+        return None, ('Configure a chave do OpenRouter em Configurações para usar a IA do Kanban.', 400)
+    system_map = {
+        'create': (
+            'Você é um assistente de Kanban. Responda apenas JSON válido com as chaves '
+            '"title", "description", "status", "priority". '
+            'Status deve ser um de: todo, in-progress, done. '
+            'Priority deve ser um de: low, medium, high. '
+            'Escreva em português do Brasil.'
+        ),
+        'improve': (
+            'Você é um assistente de Kanban. Melhore a tarefa recebida e responda apenas JSON válido '
+            'com as chaves "title", "description", "status", "priority". '
+            'Status deve ser um de: todo, in-progress, done. '
+            'Priority deve ser um de: low, medium, high. '
+            'Escreva em português do Brasil.'
+        ),
+        'breakdown': (
+            'Você é um assistente de Kanban. Quebre a tarefa em subtarefas práticas e responda apenas JSON válido '
+            'no formato {"tasks":[{"title":"","description":"","status":"todo","priority":"medium"}]}. '
+            'Cada item deve ter "title", "description", "status", "priority". '
+            'Status deve ser um de: todo, in-progress, done. '
+            'Priority deve ser um de: low, medium, high. '
+            'Escreva em português do Brasil.'
+        ),
+    }
+    messages = [{'role': 'system', 'content': system_map[action]}]
+    if task:
+        messages.append({
+            'role': 'user',
+            'content': (
+                f'Tarefa atual:\n{json.dumps(task, ensure_ascii=False)}\n\n'
+                f'Pedido do usuário:\n{user_prompt or "Melhore esta tarefa."}'
+            )
+        })
+    else:
+        messages.append({'role': 'user', 'content': user_prompt})
+    try:
+        payload = chat_completion(
+            api_key=api_key,
+            model=model,
+            messages=messages,
+            max_tokens=900,
+            temperature=0.4,
+            referer=settings.openrouter_referer,
+            title=settings.openrouter_title,
+        )
+        text = _extract_openrouter_text(payload)
+        return _extract_json_block(text), None
+    except urllib.error.HTTPError as err:
+        detail = parse_http_error(err)
+        message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao consultar OpenRouter'
+        return None, (message, err.code or 502)
+    except Exception as err:
+        return None, (str(err), 500)
+
 @app.route('/api/kanban', methods=['GET'])
 def kanban_listar():
     try:
@@ -809,7 +1327,17 @@ def kanban_listar():
         rows = conn.execute(
             "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
         ).fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
+        tasks = [row_to_dict(r) for r in rows]
+        attach_rows = conn.execute(
+            "SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments ORDER BY criado_em DESC, id DESC"
+        ).fetchall()
+        attachments_by_task: dict[str, list[dict]] = defaultdict(list)
+        for row in attach_rows:
+            payload = row_to_dict(row)
+            attachments_by_task[payload['task_id']].append(payload)
+        for task in tasks:
+            task['attachments'] = attachments_by_task.get(task['id'], [])
+        return jsonify(tasks)
     except Exception as e:
         app.logger.error('GET /api/kanban: %s', e)
         return jsonify({'error': str(e)}), 500
@@ -890,6 +1418,152 @@ def kanban_excluir(task_id):
         return jsonify({'ok': True})
     except Exception as e:
         app.logger.error('DELETE /api/kanban/%s: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/ai/create-from-text', methods=['POST'])
+def kanban_ai_create_from_text():
+    data = request.get_json(force=True) or {}
+    prompt = (data.get('prompt') or '').strip()
+    if not prompt:
+        return jsonify({'error': 'Informe o texto para a IA gerar a tarefa'}), 400
+    parsed, error = _kanban_ai_completion('create', prompt)
+    if error:
+        return jsonify({'error': error[0]}), error[1]
+    task = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
+    if not task['title']:
+        return jsonify({'error': 'A IA não retornou um título válido para a tarefa'}), 502
+    return jsonify(task)
+
+@app.route('/api/kanban/ai/improve-task', methods=['POST'])
+def kanban_ai_improve_task():
+    data = request.get_json(force=True) or {}
+    task = data.get('task') or {}
+    prompt = (data.get('prompt') or '').strip()
+    if not isinstance(task, dict) or not (task.get('title') or '').strip():
+        return jsonify({'error': 'Envie uma tarefa válida para a IA melhorar'}), 400
+    current_task = _sanitize_kanban_task_payload(task)
+    current_task['title'] = (task.get('title') or '').strip()
+    parsed, error = _kanban_ai_completion('improve', prompt, current_task)
+    if error:
+        return jsonify({'error': error[0]}), error[1]
+    improved = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
+    if not improved['title']:
+        return jsonify({'error': 'A IA não retornou um título válido'}), 502
+    return jsonify(improved)
+
+@app.route('/api/kanban/ai/breakdown-task', methods=['POST'])
+def kanban_ai_breakdown_task():
+    data = request.get_json(force=True) or {}
+    task = data.get('task') or {}
+    prompt = (data.get('prompt') or '').strip()
+    if not isinstance(task, dict) or not (task.get('title') or '').strip():
+        return jsonify({'error': 'Envie uma tarefa válida para a IA quebrar em subtarefas'}), 400
+    current_task = _sanitize_kanban_task_payload(task)
+    current_task['title'] = (task.get('title') or '').strip()
+    parsed, error = _kanban_ai_completion('breakdown', prompt, current_task)
+    if error:
+        return jsonify({'error': error[0]}), error[1]
+    items = parsed.get('tasks') if isinstance(parsed, dict) else parsed
+    if not isinstance(items, list):
+        return jsonify({'error': 'A IA não retornou uma lista válida de subtarefas'}), 502
+    tasks = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        task_payload = _sanitize_kanban_task_payload(item)
+        if task_payload['title']:
+            tasks.append(task_payload)
+    if not tasks:
+        return jsonify({'error': 'A IA não gerou subtarefas válidas'}), 502
+    return jsonify({'tasks': tasks})
+
+
+@app.route('/api/kanban/<task_id>/attachments', methods=['GET'])
+def kanban_anexos_listar(task_id):
+    try:
+        conn = get_db()
+        task = conn.execute("SELECT id FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        if not task:
+            return jsonify({'error': 'Tarefa não encontrada'}), 404
+        rows = conn.execute(
+            "SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments WHERE task_id=? ORDER BY criado_em DESC, id DESC",
+            (task_id,)
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/kanban/%s/attachments: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kanban/<task_id>/attachments', methods=['POST'])
+def kanban_anexos_enviar(task_id):
+    file = request.files.get('arquivo')
+    if not file or not file.filename:
+        return jsonify({'error': 'Arquivo é obrigatório'}), 400
+    try:
+        content = file.read()
+        if not content:
+            return jsonify({'error': 'Arquivo vazio'}), 400
+        if len(content) > 10 * 1024 * 1024:
+            return jsonify({'error': 'Arquivo excede o limite de 10 MB'}), 413
+        conn = get_db()
+        task = conn.execute(
+            "SELECT id, title FROM kanban_tasks WHERE id=?",
+            (task_id,)
+        ).fetchone()
+        if not task:
+            return jsonify({'error': 'Tarefa não encontrada'}), 404
+        cur = conn.execute(
+            "INSERT INTO kanban_attachments (task_id, file_name, mime_type, file_size, content, criado_em) VALUES (?,?,?,?,?,datetime('now','localtime'))",
+            (task_id, file.filename, file.mimetype or 'application/octet-stream', len(content), content)
+        )
+        attachment_id = cur.lastrowid
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments WHERE id=?",
+            (attachment_id,)
+        ).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/kanban/%s/attachments: %s', task_id, e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kanban/<task_id>/attachments/<int:attachment_id>/download', methods=['GET'])
+def kanban_anexo_download(task_id, attachment_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT id, task_id, file_name, mime_type, content FROM kanban_attachments WHERE id=? AND task_id=?",
+            (attachment_id, task_id)
+        ).fetchone()
+        if not row:
+            return jsonify({'error': 'Anexo não encontrado'}), 404
+        return send_file(
+            _io.BytesIO(row['content']),
+            mimetype=row['mime_type'] or 'application/octet-stream',
+            as_attachment=True,
+            download_name=row['file_name']
+        )
+    except Exception as e:
+        app.logger.error('GET /api/kanban/%s/attachments/%s/download: %s', task_id, attachment_id, e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kanban/<task_id>/attachments/<int:attachment_id>', methods=['DELETE'])
+def kanban_anexo_excluir(task_id, attachment_id):
+    try:
+        conn = get_db()
+        cur = conn.execute(
+            "DELETE FROM kanban_attachments WHERE id=? AND task_id=?",
+            (attachment_id, task_id)
+        )
+        conn.commit()
+        if cur.rowcount == 0:
+            return jsonify({'error': 'Anexo não encontrado'}), 404
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/kanban/%s/attachments/%s: %s', task_id, attachment_id, e)
         return jsonify({'error': str(e)}), 500
 
 import urllib.request as _urllib_req
@@ -1454,8 +2128,14 @@ migrate_db()
 
 if __name__ == '__main__':
     import socket
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    boot_started_at = _time.perf_counter()
+    _terminal_section('Sistema de Empenhos – Prefeitura Municipal de Inajá')
+    _terminal_log('BOOT', 'Iniciando servidor Flask...', 'cyan')
     init_db()
+    _terminal_log('BOOT', 'Estrutura principal do banco verificada', 'green')
     migrate_db()
+    _terminal_log('BOOT', 'Migrações do banco aplicadas', 'green')
     _preload_static_files()   # carrega todos os arquivos estáticos em RAM
 
     # ── Fix de performance: Werkzeug faz reverse-DNS lookup em cada requisição
@@ -1476,10 +2156,11 @@ if __name__ == '__main__':
         s.close()
     except OSError:
         local_ip = '127.0.0.1'
-    print('=' * 60)
-    print('  Sistema de Empenhos – Prefeitura Municipal de Inajá')
-    print(f'  Local  : http://localhost:{settings.port}')
-    print(f'  Rede   : http://{local_ip}:{settings.port}   << compartilhe este link')
-    print('  Para encerrar: feche esta janela ou pressione Ctrl+C')
-    print('=' * 60)
+    boot_elapsed_ms = (_time.perf_counter() - boot_started_at) * 1000
+    _terminal_section('Servidor pronto')
+    _terminal_log('LOCAL', f'http://localhost:{settings.port}', 'green')
+    _terminal_log('REDE', f'http://{local_ip}:{settings.port}', 'green')
+    _terminal_log('INFO', f'Modo debug: {"ligado" if settings.debug else "desligado"} | Host: {settings.host}', 'yellow')
+    _terminal_log('TIME', f'Startup concluído em {boot_elapsed_ms:.1f} ms', 'magenta')
+    _terminal_log('INFO', 'Para encerrar: feche esta janela ou pressione Ctrl+C', 'cyan')
     app.run(host=settings.host, port=settings.port, debug=settings.debug, threaded=True)
