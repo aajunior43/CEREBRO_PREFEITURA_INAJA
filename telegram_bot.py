@@ -133,6 +133,231 @@ def db_criar_tarefa(title: str, description: str, status: str, priority: str) ->
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Analisador Financeiro
+# ════════════════════════════════════════════════════════════════════════════
+
+def db_analise_financeira(ano: int, mes: int) -> dict:
+    """
+    Retorna um resumo financeiro completo do mês:
+      - total_credores: quantos credores ativos existem
+      - total_previsto: soma dos valores de todos os credores ativos (fixos)
+      - total_empenhado: soma dos valores dos credores já empenhados no mês
+      - total_pendente: soma dos não empenhados ainda
+      - pct_empenhado: percentual empenhado
+      - empenhados: list de dicts {nome, valor}
+      - pendentes:  list de dicts {nome, valor}
+      - top5_valores: 5 credores de maior valor (empenhados ou não)
+      - rpas_mes: total de RPAs emitidos no mês e soma dos valores brutos
+      - mes_anterior: dict com mesmo resumo do mês anterior (para comparativo)
+    """
+    conn = _db_connect()
+    try:
+        # ── Credores ativos com valor ──────────────────────────────────────
+        credores = conn.execute(
+            "SELECT id, nome, valor, tipo_valor FROM credores WHERE ativo=1 ORDER BY valor DESC"
+        ).fetchall()
+        credores = [dict(c) for c in credores]
+
+        # ── Empenhos do mês ───────────────────────────────────────────────
+        emp_rows = conn.execute(
+            "SELECT credor_id FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
+            (ano, mes)
+        ).fetchall()
+        empenhados_ids = {r['credor_id'] for r in emp_rows}
+
+        # ── Separa e calcula totais ────────────────────────────────────────
+        lista_emp:  list[dict] = []
+        lista_pend: list[dict] = []
+        total_previsto  = 0.0
+        total_empenhado = 0.0
+
+        for c in credores:
+            v = float(c['valor'] or 0)
+            total_previsto += v
+            if c['id'] in empenhados_ids:
+                total_empenhado += v
+                lista_emp.append({'nome': c['nome'], 'valor': v})
+            else:
+                lista_pend.append({'nome': c['nome'], 'valor': v})
+
+        total_pendente = total_previsto - total_empenhado
+        pct = (total_empenhado / total_previsto * 100) if total_previsto > 0 else 0.0
+
+        # ── Top 5 maiores credores ────────────────────────────────────────
+        top5 = sorted(credores, key=lambda x: float(x['valor'] or 0), reverse=True)[:5]
+
+        # ── RPAs do mês ───────────────────────────────────────────────────
+        # periodo_referencia no formato MM/YYYY ou YYYY-MM
+        mes_str_a = f'{mes:02d}/{ano}'
+        mes_str_b = f'{ano}-{mes:02d}'
+        rpas = conn.execute(
+            "SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto), 0) AS total_bruto "
+            "FROM rpas WHERE periodo_referencia LIKE ? OR periodo_referencia LIKE ?",
+            (f'%{mes_str_a}%', f'%{mes_str_b}%')
+        ).fetchone()
+        rpas_qtd   = rpas['qtd'] if rpas else 0
+        rpas_total = float(rpas['total_bruto'] if rpas else 0)
+
+        # ── Mês anterior (comparativo) ────────────────────────────────────
+        mes_ant = mes - 1 if mes > 1 else 12
+        ano_ant = ano if mes > 1 else ano - 1
+        emp_ant = conn.execute(
+            "SELECT COUNT(*) AS qtd FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
+            (ano_ant, mes_ant)
+        ).fetchone()
+        qtd_ant = emp_ant['qtd'] if emp_ant else 0
+        # valor empenhado no mês anterior
+        ids_ant = {r['credor_id'] for r in conn.execute(
+            "SELECT credor_id FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
+            (ano_ant, mes_ant)
+        ).fetchall()}
+        val_ant = sum(float(c['valor'] or 0) for c in credores if c['id'] in ids_ant)
+
+        return {
+            'ano': ano, 'mes': mes,
+            'total_credores': len(credores),
+            'total_previsto': total_previsto,
+            'total_empenhado': total_empenhado,
+            'total_pendente': total_pendente,
+            'pct_empenhado': pct,
+            'qtd_empenhados': len(lista_emp),
+            'qtd_pendentes': len(lista_pend),
+            'empenhados': sorted(lista_emp, key=lambda x: x['valor'], reverse=True),
+            'pendentes':  sorted(lista_pend,  key=lambda x: x['valor'], reverse=True),
+            'top5_valores': [{'nome': c['nome'], 'valor': float(c['valor'] or 0)} for c in top5],
+            'rpas_qtd': rpas_qtd,
+            'rpas_total': rpas_total,
+            'mes_anterior': {
+                'mes': mes_ant, 'ano': ano_ant,
+                'qtd_empenhados': qtd_ant,
+                'total_empenhado': val_ant,
+            },
+        }
+    finally:
+        conn.close()
+
+
+def _moeda(valor: float) -> str:
+    """Formata valor em reais BR."""
+    return f'R$ {valor:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+
+def _barra_progresso(pct: float, largura: int = 10) -> str:
+    """Gera uma barra visual de progresso com blocos."""
+    filled = round(pct / 100 * largura)
+    filled = max(0, min(largura, filled))
+    return '█' * filled + '░' * (largura - filled)
+
+
+MESES_PT_ABREV = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+MESES_PT_FULL  = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+
+def format_analise_financeira(d: dict) -> str:
+    """Formata o relatório financeiro para envio no Telegram."""
+    mes_nome = MESES_PT_FULL[d['mes']]
+    pct      = d['pct_empenhado']
+    barra    = _barra_progresso(pct)
+
+    # Tendência em relação ao mês anterior
+    diff_val = d['total_empenhado'] - d['mes_anterior']['total_empenhado']
+    if diff_val > 0:
+        tendencia = f'📈 +{_moeda(diff_val)} vs {MESES_PT_ABREV[d["mes_anterior"]["mes"]]}'
+    elif diff_val < 0:
+        tendencia = f'📉 {_moeda(diff_val)} vs {MESES_PT_ABREV[d["mes_anterior"]["mes"]]}'
+    else:
+        tendencia = f'➡️ Igual ao mês anterior'
+
+    # Cabeçalho + resumo geral
+    lines = [
+        f'💰 <b>Analisador Financeiro</b>',
+        f'<b>{mes_nome} {d["ano"]}</b>\n',
+
+        f'<b>📊 Visão Geral</b>',
+        f'Previsto total:   <b>{_moeda(d["total_previsto"])}</b>',
+        f'Empenhado:        <b>{_moeda(d["total_empenhado"])}</b>',
+        f'Pendente:         <b>{_moeda(d["total_pendente"])}</b>',
+        f'',
+        f'Progresso: <code>{barra}</code> <b>{pct:.1f}%</b>',
+        f'Credores: {d["qtd_empenhados"]}✅ empenhados / {d["qtd_pendentes"]}⏳ pendentes de {d["total_credores"]}',
+        f'{tendencia}',
+    ]
+
+    # RPAs
+    if d['rpas_qtd'] > 0:
+        lines += [
+            f'',
+            f'<b>📄 RPAs do Mês</b>',
+            f'{d["rpas_qtd"]} RPA(s) — total bruto: <b>{_moeda(d["rpas_total"])}</b>',
+        ]
+
+    # Top 5 maiores credores
+    lines += ['', f'<b>🏆 Top 5 Maiores Credores</b>']
+    for i, c in enumerate(d['top5_valores'], 1):
+        nome = c['nome'][:28] + ('…' if len(c['nome']) > 28 else '')
+        lines.append(f'{i}. {nome}  — <b>{_moeda(c["valor"])}</b>')
+
+    # Pendentes (até 8)
+    if d['pendentes']:
+        lines += ['', f'<b>⏳ Ainda Pendentes ({d["qtd_pendentes"]})</b>']
+        for c in d['pendentes'][:8]:
+            nome = c['nome'][:30] + ('…' if len(c['nome']) > 30 else '')
+            lines.append(f'• {nome}  {_moeda(c["valor"])}')
+        if d['qtd_pendentes'] > 8:
+            lines.append(f'<i>… e mais {d["qtd_pendentes"] - 8} credores</i>')
+
+    return '\n'.join(lines)
+
+
+def keyboard_financeiro(ano: int, mes: int) -> dict:
+    mes_ant = mes - 1 if mes > 1 else 12
+    ano_ant = ano if mes > 1 else ano - 1
+    mes_prox = mes + 1 if mes < 12 else 1
+    ano_prox = ano if mes < 12 else ano + 1
+    return {
+        'inline_keyboard': [
+            [
+                {'text': '⬅ Mês Anterior', 'callback_data': f'fin_{ano_ant}_{mes_ant}'},
+                {'text': '➡ Próximo Mês',  'callback_data': f'fin_{ano_prox}_{mes_prox}'},
+            ],
+            [
+                {'text': '📋 Empenhados',  'callback_data': f'fin_emp_{ano}_{mes}'},
+                {'text': '⏳ Pendentes',   'callback_data': f'fin_pend_{ano}_{mes}'},
+            ],
+            [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}],
+        ]
+    }
+
+
+def format_lista_credores_fin(d: dict, modo: str) -> str:
+    """Formata lista detalhada de empenhados ou pendentes."""
+    mes_nome = MESES_PT_ABREV[d['mes']]
+    if modo == 'emp':
+        lista  = d['empenhados']
+        titulo = f'✅ Empenhados — {mes_nome}/{d["ano"]}  ({d["qtd_empenhados"]})'
+    else:
+        lista  = d['pendentes']
+        titulo = f'⏳ Pendentes — {mes_nome}/{d["ano"]}  ({d["qtd_pendentes"]})'
+
+    if not lista:
+        return f'<b>{titulo}</b>\n\n<i>Nenhum.</i>'
+
+    lines = [f'<b>{titulo}</b>\n']
+    total = 0.0
+    for c in lista[:30]:
+        nome  = c['nome'][:32] + ('…' if len(c['nome']) > 32 else '')
+        val   = c['valor']
+        total += val
+        lines.append(f'• {nome}  <b>{_moeda(val)}</b>')
+    lines.append(f'\n<b>Total: {_moeda(total)}</b>')
+    if len(lista) > 30:
+        lines.append(f'<i>… e mais {len(lista) - 30}</i>')
+    return '\n'.join(lines)
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Calendário — cálculo de eventos automáticos do mês
 # ════════════════════════════════════════════════════════════════════════════
 
@@ -352,7 +577,10 @@ def keyboard_main():
                 {'text': '✅ Concluídas',   'callback_data': 'cmd_ver_concluidas'},
             ],
             [
+                {'text': '💰 Financeiro',   'callback_data': 'cmd_financeiro'},
                 {'text': '📅 Calendário',  'callback_data': 'cmd_calendario'},
+            ],
+            [
                 {'text': '🔄 Atualizar',   'callback_data': 'cmd_menu'},
             ],
         ]
@@ -554,6 +782,18 @@ def handle_message(msg: dict):
         start_new_task_flow(chat_id)
         return
 
+    if text.startswith('/financeiro') or text.lower() in {'financeiro', 'financ', 'financas', 'finanças'}:
+        hoje = date.today()
+        try:
+            dados = db_analise_financeira(hoje.year, hoje.month)
+            send_message(chat_id, format_analise_financeira(dados),
+                         reply_markup=keyboard_financeiro(hoje.year, hoje.month))
+        except Exception as e:
+            log.error('Erro no financeiro: %s', e)
+            send_message(chat_id, f'⚠️ Não foi possível gerar o relatório financeiro.\n<code>{e}</code>',
+                         reply_markup=keyboard_main())
+        return
+
     if text.startswith('/calendario') or text.lower() in {'calendario', 'calendário', 'cal'}:
         hoje = date.today()
         texto = format_calendario(hoje.year, hoje.month)
@@ -689,6 +929,67 @@ def handle_callback(callback_query: dict):
                      reply_markup={'inline_keyboard': [[
                          {'text': '🔙 Menu', 'callback_data': 'cmd_menu'}
                      ]]})
+        return
+
+    if data == 'cmd_financeiro':
+        hoje = date.today()
+        try:
+            dados = db_analise_financeira(hoje.year, hoje.month)
+            edit_message(chat_id, msg_id,
+                         format_analise_financeira(dados),
+                         reply_markup=keyboard_financeiro(hoje.year, hoje.month))
+        except Exception as e:
+            log.error('Erro cmd_financeiro: %s', e)
+            edit_message(chat_id, msg_id, f'⚠️ Erro ao gerar relatório financeiro:\n<code>{e}</code>',
+                         reply_markup=keyboard_main())
+        return
+
+    # Navegação financeira: fin_ANO_MES
+    if data.startswith('fin_') and not data.startswith('fin_emp') and not data.startswith('fin_pend'):
+        parts = data.split('_')
+        try:
+            ano_nav = int(parts[1])
+            mes_nav = int(parts[2])
+            if not (1 <= mes_nav <= 12):
+                raise ValueError
+        except (IndexError, ValueError):
+            ano_nav = date.today().year
+            mes_nav = date.today().month
+        try:
+            dados = db_analise_financeira(ano_nav, mes_nav)
+            edit_message(chat_id, msg_id,
+                         format_analise_financeira(dados),
+                         reply_markup=keyboard_financeiro(ano_nav, mes_nav))
+        except Exception as e:
+            log.error('Erro navegação financeira: %s', e)
+            edit_message(chat_id, msg_id, f'⚠️ Erro: <code>{e}</code>',
+                         reply_markup=keyboard_main())
+        return
+
+    # Drill-down: lista de empenhados ou pendentes
+    if data.startswith('fin_emp_') or data.startswith('fin_pend_'):
+        partes = data.split('_')
+        try:
+            # fin_emp_ANO_MES ou fin_pend_ANO_MES
+            modo  = partes[1]  # 'emp' ou 'pend'
+            ano_d = int(partes[2])
+            mes_d = int(partes[3])
+        except (IndexError, ValueError):
+            ano_d = date.today().year
+            mes_d = date.today().month
+            modo  = 'pend'
+        try:
+            dados = db_analise_financeira(ano_d, mes_d)
+            texto = format_lista_credores_fin(dados, modo)
+            kb_back = {'inline_keyboard': [[
+                {'text': '← Voltar', 'callback_data': f'fin_{ano_d}_{mes_d}'},
+                {'text': '🔙 Menu',   'callback_data': 'cmd_menu'},
+            ]]}
+            edit_message(chat_id, msg_id, texto, reply_markup=kb_back)
+        except Exception as e:
+            log.error('Erro drill-down financeiro: %s', e)
+            edit_message(chat_id, msg_id, f'⚠️ Erro: <code>{e}</code>',
+                         reply_markup=keyboard_main())
         return
 
     # Dentro do fluxo de criação de tarefa
