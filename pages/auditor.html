@@ -1099,7 +1099,69 @@ Schema JSON esperado:
             }
 
             // Attempt 1: full prompt
-            const fullPrompt = `Você é auditor fiscal municipal brasileiro. Analise TODA a nota fiscal abaixo e retorne SOMENTE JSON válido com este schema exato (sem markdown, sem texto extra):
+            const fullPrompt = `Você é um Auditor Fiscal Sênior de uma Prefeitura Municipal Brasileira com 20 anos de experiência detectando fraudes em licitações e contratações públicas. Sua análise deve ser RIGOROSA e DETALHADA.
+
+ANALISE a nota fiscal abaixo verificando OBRIGATORIAMENTE todos os pontos a seguir:
+
+=== CHECKLIST DE AUDITORIA OBRIGATÓRIO ===
+
+1. DADOS BÁSICOS: Extraia fornecedor, CNPJ, data de emissão, valor total, série e número da NF.
+
+2. NÚMERO DA NF SUSPEITO:
+   - Se NF < 1000: ALTO RISCO — empresa com pouco histórico de emissão, possível empresa de fachada criada recentemente só para essa licitação
+   - Se NF < 100: CRÍTICO — quase certeza de empresa nova ou fraude
+
+3. VERIFICAÇÃO MATEMÁTICA:
+   - Quantidade × Preço Unitário deve ser igual ao Total do Item
+   - Soma dos itens deve ser igual ao Total da Nota
+   - Qualquer divergência = anomalia crítica
+
+4. PREÇOS DE MERCADO (estimativa):
+   - Compare os valores com preços razoáveis de mercado
+   - Valores 20% acima do mercado = suspeito
+   - Valores 50%+ acima do mercado = superfaturamento crítico
+
+5. FORNECEDOR SUSPEITO:
+   - Empresa em outro estado para compras locais = risco (frete, logística, ausência de vistoria)
+   - Razão Social genérica ("Comercio e Serviços LTDA") sem especificidade = risco
+   - Endereço em cidade diferente da execução do serviço = questionar
+
+6. DATA SUSPEITA:
+   - Emitida em fim de semana ou feriado nacional = suspeito
+   - Data muito antiga ou futura = erro grave
+   - Hoje é: ${today}
+
+7. DESCRIÇÃO DOS ITENS:
+   - Descrições genéricas ("Serviços diversos", "Material de consumo") = RISCO ALTO
+   - Item sem código/referência técnica para equipamentos = suspeito
+   - Descrição não condiz com o valor = superfaturamento
+
+8. VALOR TOTAL ELEVADO:
+   - Acima de R$ 50.000: exige verificação reforçada
+   - Acima de R$ 150.000: risco alto por enquadramento em licitação
+   - Acima de R$ 500.000: crítico se sem licitação comprovada
+
+9. DESTINATÁRIO:
+   - Confirme se o destinatário é de fato o Município
+   - Dados incompletos do destinatário = risco
+
+10. CNPJ:
+    - CNPJ ausente ou ilegível = anomalia crítica
+    - Formato inválido = fraude
+
+=== CÁLCULO DO RISCO (riskScore 0-100) ===
+- 0-20: Nota aparentemente regular
+- 21-40: Pequenas irregularidades, monitorar
+- 41-60: Irregularidades moderadas, solicitar documentação adicional
+- 61-80: ALTO RISCO — suspender pagamento, iniciar sindicância
+- 81-100: CRÍTICO — possível fraude, encaminhar ao TCE/MP
+
+=== IMPORTANTE ===
+Seu riskScore DEVE refletir rigorosamente os problemas encontrados.
+Se a NF tiver número baixo (< 1000), isso SOZINHO já justifica riskScore mínimo de 50.
+Se o valor for alto E o número da NF for baixo, riskScore mínimo de 65.
+
+Retorne SOMENTE JSON válido com este schema exato (sem markdown, sem texto extra):
 {"supplierName":"string","cnpj":"string","invoiceDate":"string","totalAmount":0,"items":[{"description":"string","quantity":0,"unitPrice":0,"totalPrice":0}],"anomalies":["string"],"riskScore":0,"riskLevel":"BAIXO","auditRecommendation":"string","reasoning":"string"}
 
 Extraia TODOS os itens da nota. Hoje: ${today}
