@@ -21,7 +21,9 @@ import logging
 import sqlite3
 import requests
 import threading
-from datetime import date, timedelta
+import io
+import json
+from datetime import date, timedelta, datetime
 from pathlib import Path
 
 # ── Carrega .env simples sem depender de python-dotenv ──────────────────────
@@ -73,6 +75,45 @@ STEP_DESC        = 'aguardando_descricao'
 STEP_STATUS      = 'aguardando_status'
 STEP_PRIORITY    = 'aguardando_prioridade'
 
+STEP_AQ_SOLICITANTE = 'aq_aguardando_solicitante'
+STEP_AQ_EMPRESA     = 'aq_aguardando_empresa'
+STEP_AQ_ITENS       = 'aq_aguardando_itens'
+STEP_AQ_OBS         = 'aq_aguardando_obs'
+
+STEP_DI_DATA_PARTIDA = 'di_aguardando_data_partida'
+STEP_DI_HORA_PARTIDA = 'di_aguardando_hora_partida'
+STEP_DI_DATA_RETORNO = 'di_aguardando_data_retorno'
+STEP_DI_HORA_RETORNO = 'di_aguardando_hora_retorno'
+
+STEP_CNPJ_NUM        = 'cnpj_aguardando_num'
+
+STEP_PZ_DATA         = 'pz_aguardando_data'
+STEP_PZ_DIAS         = 'pz_aguardando_dias'
+
+STEP_UP_PDF          = 'up_pdf_arquivo'
+STEP_UP_RENOMEAR     = 'up_renomear_arquivo'
+
+STEP_UP_EMPENHO      = 'up_empenho'
+STEP_RPA_NOME        = 'rpa_nome'
+STEP_RPA_VALOR       = 'rpa_valor'
+
+STEP_PROT_BUSCA      = 'prot_busca'
+STEP_DESP_BUSCA      = 'desp_busca'
+
+# ════════════════════════════════════════════════════════════════════════════
+# Helpers Globais
+# ════════════════════════════════════════════════════════════════════════════
+CONFIG_FILE = Path(__file__).resolve().parent / 'config.json'
+
+def get_config(key: str, default=''):
+    try:
+        if CONFIG_FILE.exists():
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                c = json.load(f)
+                return c.get(key, default)
+    except Exception:
+        pass
+    return default
 
 # ════════════════════════════════════════════════════════════════════════════
 # Helpers de DB (leitura direta, sem precisar que o server.py esteja no ar)
@@ -186,6 +227,38 @@ def db_contar_credores() -> dict:
         ativos   = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=1").fetchone()[0]
         inativos = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=0").fetchone()[0]
         return {'ativos': ativos, 'inativos': inativos, 'total': ativos + inativos}
+    finally:
+        conn.close()
+
+
+def db_buscar_protocolos(termo: str) -> list[dict]:
+    """Busca protocolos por número, assunto ou origem/destino."""
+    conn = _db_connect()
+    try:
+        like = f'%{termo.lower()}%'
+        rows = conn.execute(
+            "SELECT id, numero, tipo, direcao, origem_destino, assunto, data_protocolo, status "
+            "FROM protocolos WHERE LOWER(numero) LIKE ? OR LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? "
+            "ORDER BY id DESC LIMIT 20",
+            (like, like, like)
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def db_buscar_despesas(termo: str) -> list[dict]:
+    """Busca despesas (linhas processadas) por credor ou detalhe na string JSON."""
+    conn = _db_connect()
+    try:
+        like = f'%{termo.lower()}%'
+        rows = conn.execute(
+            "SELECT id, importacao_id, dados "
+            "FROM despesas_linhas WHERE LOWER(dados) LIKE ? "
+            "ORDER BY id DESC LIMIT 20",
+            (like,)
+        ).fetchall()
+        return [dict(r) for r in rows]
     finally:
         conn.close()
 
@@ -597,6 +670,19 @@ def send_message(chat_id: int, text: str, reply_markup: dict = None,
     return tg_request('sendMessage', payload)
 
 
+def send_document(chat_id: int, document, caption: str = '', filename: str = 'document.pdf'):
+    url = f'{TELEGRAM_API}/sendDocument'
+    try:
+        if isinstance(document, bytes):
+            files = {'document': (filename, document)}
+            data = {'chat_id': chat_id, 'caption': caption, 'parse_mode': 'HTML'}
+            requests.post(url, data=data, files=files, timeout=40)
+        else:
+            requests.post(url, json={'chat_id': chat_id, 'document': document, 'caption': caption, 'parse_mode': 'HTML'}, timeout=10)
+    except Exception as e:
+        log.error('Erro ao enviar documento: %s', e)
+
+
 def edit_message(chat_id: int, message_id: int, text: str,
                  reply_markup: dict = None, parse_mode: str = 'HTML') -> dict:
     payload = {
@@ -626,21 +712,42 @@ def keyboard_main():
     """Teclado inline do menu principal."""
     return {
         'inline_keyboard': [
+            [{'text': '— 📋 GESTÃO KANBAN —', 'callback_data': 'ignore'}],
             [
                 {'text': '➕ Nova Tarefa', 'callback_data': 'cmd_nova_tarefa'},
-                {'text': '📋 Ver Tarefas', 'callback_data': 'cmd_ver_tarefas'},
+                {'text': '🔍 Ver Tarefas', 'callback_data': 'cmd_ver_tarefas'},
+            ],
+            [{'text': '— 💰 FINANCEIRO & DESPESAS —', 'callback_data': 'ignore'}],
+            [
+                {'text': '📊 Painel Mensal', 'callback_data': 'cmd_financeiro'},
+                {'text': '🔎 Consultar', 'callback_data': 'cmd_buscar_despesas'},
             ],
             [
-                {'text': '⚡ Em Progresso', 'callback_data': 'cmd_ver_progresso'},
-                {'text': '✅ Concluídas',   'callback_data': 'cmd_ver_concluidas'},
+                {'text': '📅 Calendário de Pagamentos', 'callback_data': 'cmd_calendario'},
+            ],
+            [{'text': '— 📝 PROTOCOLOS E PROCESSOS —', 'callback_data': 'ignore'}],
+            [
+                {'text': '🔎 Buscar Protocolo/Ofício', 'callback_data': 'cmd_buscar_protocolos'},
             ],
             [
-                {'text': '💰 Financeiro',   'callback_data': 'cmd_financeiro'},
-                {'text': '📅 Calendário',  'callback_data': 'cmd_calendario'},
+                {'text': '📄 Gerar Empenho', 'callback_data': 'cmd_gerar_empenho'},
+                {'text': '💼 Gerar RPA', 'callback_data': 'cmd_gerar_rpa'},
+            ],
+            [{'text': '— 🛒 SERVIÇOS & CONSULTAS —', 'callback_data': 'ignore'}],
+            [
+                {'text': '🛒 Nova Aquisição', 'callback_data': 'cmd_nova_aquisicao'},
+                {'text': '✈️ Calc. Diárias', 'callback_data': 'cmd_calc_diarias'},
             ],
             [
-                {'text': '🔄 Atualizar',   'callback_data': 'cmd_menu'},
+                {'text': '🏢 Consultar CNPJ', 'callback_data': 'cmd_consulta_cnpj'},
+                {'text': '⏰ Calc. Prazos', 'callback_data': 'cmd_calc_prazos'},
             ],
+            [{'text': '— 🛠️ FERRAMENTAS IA —', 'callback_data': 'ignore'}],
+            [
+                {'text': '📄 Extrair PDF', 'callback_data': 'cmd_extrator_pdf'},
+                {'text': '✨ Renomear Arq.', 'callback_data': 'cmd_renomear_arquivo'},
+            ],
+            [{'text': '🔄 Atualizar Menu', 'callback_data': 'cmd_menu'}],
         ]
     }
 
@@ -818,16 +925,338 @@ def is_authorized(chat_id: int) -> bool:
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Fluxos de Geradores e Formulários (Empenho e RPA)
+# ════════════════════════════════════════════════════════════════════════════
+
+EMP_PROMPT = '''Analise o seguinte texto extraído de um documento (fatura, contrato, ordem de serviço, ou requisição).
+O seu objetivo é gerar o texto da "Descrição" para uma Nota de Empenho (NE) do setor público.
+
+Regras Estritas:
+1. A saída deve estar EXCLUSIVAMENTE em CAIXA ALTA (letras maiúsculas).
+2. O texto deve começar OBRIGATORIAMENTE com a frase exata: "PELA DESPESA EMPENHADA REFERENTE A".
+3. Identifique o objeto da despesa de forma sucinta mas completa.
+4. Se houver número de processo, pregão, contrato ou nota fiscal visível, inclua-os no texto.
+5. Não use markdown, apenas texto puro.
+
+Texto do documento:
+---
+{TEXT}
+---'''
+
+def start_empenho_flow(chat_id: int, edit_msg: tuple | None = None):
+    set_state(chat_id, {'step': STEP_UP_EMPENHO})
+    text = (
+        '📝 <b>Gerador de Nota de Empenho</b>\n\n'
+        'Envie um arquivo PDF (ex: Fatura, Contrato) ou simplesmente <b>digite o texto</b> do documento aqui.\n'
+        'A IA gerará a descrição formal do empenho para você.\n\n'
+        '<i>Envie /cancelar para sair.</i>'
+    )
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+    else:
+        send_message(chat_id, text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+
+def process_empenho_text(chat_id: int, text: str):
+    msg_id = send_message(chat_id, '⏳ Analisando texto com IA...')["result"]["message_id"]
+    try:
+        api_key = get_config('api_openrouter_key')
+        if not api_key:
+            edit_message(chat_id, msg_id, '⚠️ Chave OpenRouter não configurada. Configure no painel web ADM primeiro.')
+            return
+
+        prompt = EMP_PROMPT.replace('{TEXT}', text)
+        url = 'https://openrouter.ai/api/v1/chat/completions'
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'model': get_config('api_openrouter_modelo') or 'meta-llama/llama-3.3-70b-instruct:free',
+            'messages': [{'role': 'user', 'content': prompt}],
+            'temperature': 0.2
+        }
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
+        if r.status_code != 200:
+            edit_message(chat_id, msg_id, f'⚠️ Erro na IA: {r.status_code}\n{r.text}')
+            return
+            
+        ans = dict(r.json() or {})
+        content = (ans.get('choices', [{}])[0].get('message', {}).get('content') or '').strip()
+        
+        if content:
+            content = content.upper().replace('**', '').replace('*', '')
+            if not content.startswith('PELA DESPESA EMPENHADA'):
+                if content.startswith('REFERENTE'):
+                    content = f'PELA DESPESA EMPENHADA {content}'
+                else:
+                    content = f'PELA DESPESA EMPENHADA REFERENTE A {content}'
+            edit_message(chat_id, msg_id, f'✅ <b>Descrição de Empenho Gerada:</b>\n\n<code>{content}</code>\n\n<i>Toque no texto para copiar.</i>')
+        else:
+            edit_message(chat_id, msg_id, '⚠️ Resposta vazia da IA.')
+    except Exception as e:
+        log.error('Erro no /empenho: %s', e)
+        edit_message(chat_id, msg_id, '⚠️ Ocorreu um erro ao processar o empenho usando a IA.')
+    finally:
+        clear_state(chat_id)
+
+def process_empenho_pdf(chat_id: int, file_id: str):
+    msg_id = send_message(chat_id, '⏳ Baixando e extraindo PDF...')["result"]["message_id"]
+    try:
+        f_info = tg_request('getFile', {'file_id': file_id})
+        if not f_info.get('ok'):
+            edit_message(chat_id, msg_id, '⚠️ Erro ao obter as informações do arquivo do Telegram.')
+            clear_state(chat_id)
+            return
+            
+        file_path = f_info['result']['file_path']
+        download_url = f'https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}'
+        r = requests.get(download_url, timeout=30)
+        
+        if r.status_code != 200:
+            edit_message(chat_id, msg_id, '⚠️ Erro ao baixar o arquivo.')
+            clear_state(chat_id)
+            return
+
+        pdf_bytes = io.BytesIO(r.content)
+        try:
+            import PyPDF2
+            reader = PyPDF2.PdfReader(pdf_bytes)
+            text = ''
+            for page in reader.pages:
+                text += (page.extract_text() or '') + '\n'
+            text = text.strip()
+        except Exception as e:
+            edit_message(chat_id, msg_id, f'⚠️ Erro ao ler PDF: {e}')
+            clear_state(chat_id)
+            return
+            
+        if not text:
+            edit_message(chat_id, msg_id, '⚠️ Nenhum texto pôde ser extraído deste PDF (documento escaneado?). Tente enviar o texto diretamente.')
+            clear_state(chat_id)
+            return
+            
+        process_empenho_text(chat_id, text)
+        
+    except Exception as e:
+        log.error(e)
+        edit_message(chat_id, msg_id, '⚠️ Erro não tratado ao processar PDF.')
+        clear_state(chat_id)
+
+def start_rpa_flow(chat_id: int, edit_msg: tuple | None = None):
+    set_state(chat_id, {'step': STEP_RPA_NOME})
+    text = (
+        '💼 <b>Calculadora de RPA</b>\n\n'
+        'Para gerar os cálculos do Recibo de Pagamento a Autônomo, primeiro digite o <b>Nome do Prestador</b>:\n\n'
+        '<i>(Envie /cancelar para sair)</i>'
+    )
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+    else:
+        send_message(chat_id, text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+
+def handle_rpa_nome(chat_id: int, text: str):
+    set_state(chat_id, {'step': STEP_RPA_VALOR, 'rpa_nome': text.strip()})
+    send_message(chat_id,
+        f'👤 <b>Prestador:</b> {text.strip()}\n\n'
+        'Agora digite o <b>Valor Bruto (R$)</b> do serviço (apenas números e vírgula/ponto, ex: 1500,00):'
+    )
+
+def handle_rpa_valor(chat_id: int, text: str):
+    state = get_state(chat_id)
+    nome = state.get('rpa_nome', 'Prestador')
+    try:
+        val = text.strip().replace('R$', '').replace('.', '').replace(',', '.')
+        bruto = float(val)
+    except Exception:
+        send_message(chat_id, '⚠️ Valor inválido. Digite um número (Ex: 1500,00).')
+        return
+
+    # Basic RPA parameters mirroring the frontend defaults
+    aliq_inss = 11.0 
+    teto_inss = 877.24
+    aliq_iss = 5.0
+    
+    inss = min(bruto * (aliq_inss / 100), teto_inss)
+    iss = bruto * (aliq_iss / 100)
+    
+    base_irrf = max(0, bruto - inss)
+    
+    faixas = [
+      {'limInf': 0,       'limSup': 2428.80, 'aliq': 0,    'parcela': 0      },
+      {'limInf': 2428.81, 'limSup': 2800.00, 'aliq': 7.5,  'parcela': 182.16 },
+      {'limInf': 2800.01, 'limSup': 3566.00, 'aliq': 15,   'parcela': 394.16 },
+      {'limInf': 3566.01, 'limSup': 4743.33, 'aliq': 22.5, 'parcela': 661.62 },
+      {'limInf': 4743.34, 'limSup': 9999999, 'aliq': 27.5, 'parcela': 1065.14 }
+    ]
+    
+    aliq_ir = 0
+    parcela_ir = 0
+    for f in faixas:
+        if f['limSup'] is None or base_irrf <= f['limSup']:
+            if base_irrf >= f['limInf']:
+                aliq_ir = f['aliq']
+                parcela_ir = f['parcela']
+                break
+                
+    ir = max(0, (base_irrf * aliq_ir / 100) - parcela_ir)
+    liquido = bruto - inss - ir - iss
+    
+    def fmt(v): return f"R$ {v:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        
+    resumo = (
+        f'💼 <b>Resumo do RPA</b>\n\n'
+        f'👤 <b>Prestador:</b> {nome}\n\n'
+        f'💰 <b>Valor Bruto:</b> {fmt(bruto)}\n'
+        f'📉 <b>(-) INSS ({aliq_inss}%):</b> {fmt(inss)}\n'
+    )
+    if ir > 0:
+        resumo += f'📉 <b>(-) IRRF ({aliq_ir}%):</b> {fmt(ir)}\n'
+    resumo += (
+        f'📉 <b>(-) ISS ({aliq_iss}%):</b> {fmt(iss)}\n'
+        f'➖ <b>Total de Descontos:</b> {fmt(inss + ir + iss)}\n\n'
+        f'💵 <b>Valor Líquido:</b> <b>{fmt(liquido)}</b>\n\n'
+        f'<i>Para gerar e imprimir o PDF formal deste RPA, acesse o painel pelo navegador.</i>'
+    )
+    
+    markup = {
+        'inline_keyboard': [[{'text': '📄 Gerar PDF (Navegador)', 'url': f'{SERVER_URL}/rpa'}]]
+    }
+    
+    send_message(chat_id, resumo, reply_markup=markup)
+    clear_state(chat_id)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Fluxo de Busca de Protocolos e Despesas
+# ════════════════════════════════════════════════════════════════════════════
+
+def start_protocolos_flow(chat_id: int, edit_msg: tuple | None = None):
+    set_state(chat_id, {'step': STEP_PROT_BUSCA})
+    text = (
+        '🔎 <b>Buscar Protocolos</b>\n\n'
+        'Digite um trecho do <b>Número</b>, <b>Assunto</b> ou <b>Origem/Destino</b> para pesquisar:\n\n'
+        '<i>(Envie /cancelar para sair)</i>'
+    )
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+    else:
+        send_message(chat_id, text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+
+def handle_protocolos_busca(chat_id: int, text: str):
+    if len(text.strip()) < 3:
+        send_message(chat_id, '⚠️ Digite pelo menos 3 caracteres para buscar.')
+        return
+        
+    msg_id = send_message(chat_id, '⏳ Buscando protocolos...')["result"]["message_id"]
+    try:
+        resultados = db_buscar_protocolos(text.strip())
+        if not resultados:
+            edit_message(chat_id, msg_id, f'🔍 Nenhum protocolo encontrado para <b>"{text.strip()}"</b>.')
+            clear_state(chat_id)
+            return
+            
+        lines = [f'🔎 <b>Resultados para: "{text.strip()}"</b>\n']
+        for p in resultados:
+            num = p.get('numero', 'SN')
+            assunto = (p.get('assunto') or '')[:40]
+            status = p.get('status', '')
+            lines.append(f'📄 <b>{num}</b> <code>[{status.upper()}]</code>\n   └ <i>{assunto}</i>')
+            
+        lines.append('\n<i>Acesse o sistema web para ver os anexos e detalhes.</i>')
+        texto_final = '\n'.join(lines)
+        if len(texto_final) > 4000:
+            texto_final = texto_final[:4000] + '...\n(Muitos resultados, refine a busca)'
+            
+        edit_message(chat_id, msg_id, texto_final)
+    except Exception as e:
+        log.error('Erro na busca de protocolos: %s', e)
+        edit_message(chat_id, msg_id, '⚠️ Erro ao realizar a busca.')
+    finally:
+        clear_state(chat_id)
+
+def start_despesas_flow(chat_id: int, edit_msg: tuple | None = None):
+    set_state(chat_id, {'step': STEP_DESP_BUSCA})
+    text = (
+        '🔎 <b>Consultar Pagamentos de Despesas</b>\n\n'
+        'Digite o <b>Nome do Credor</b>, <b>Número do Empenho</b>, ou um termo para buscar nas despesas da prefeitura:\n\n'
+        '<i>(Envie /cancelar para sair)</i>'
+    )
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+    else:
+        send_message(chat_id, text, reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+
+def handle_despesas_busca(chat_id: int, text: str):
+    if len(text.strip()) < 3:
+        send_message(chat_id, '⚠️ Digite pelo menos 3 caracteres para buscar.')
+        return
+        
+    msg_id = send_message(chat_id, '⏳ Buscando despesas...')["result"]["message_id"]
+    try:
+        resultados = db_buscar_despesas(text.strip())
+        if not resultados:
+            edit_message(chat_id, msg_id, f'🔍 Nenhuma despesa encontrada para <b>"{text.strip()}"</b>.')
+            clear_state(chat_id)
+            return
+            
+        lines = [f'🔎 <b>Despesas com: "{text.strip()}"</b>\n']
+        for r in resultados:
+            try:
+                import json
+                dados = json.loads(r['dados'])
+                credor = str(dados.get('credor') or dados.get('Favorecido') or dados.get('favorecido', ''))[:30]
+                historico = str(dados.get('histórico') or dados.get('historico') or dados.get('Histórico', ''))[:40]
+                valor = dados.get('valor_pago') or dados.get('Valor Pago') or dados.get('ValorPago') or '0,00'
+                lines.append(f'💰 <b>{credor}</b> - R$ {valor}\n   └ <i>{historico}</i>')
+            except Exception:
+                lines.append(f'🔹 {r["dados"][:60]}...')
+                
+        lines.append('\n<i>Acesse o sistema web (Aba Transparência) para mais detalhes.</i>')
+        texto_final = '\n'.join(lines)
+        if len(texto_final) > 4000:
+            texto_final = texto_final[:4000] + '...\n(Muitos resultados, refine a busca)'
+            
+        edit_message(chat_id, msg_id, texto_final)
+    except Exception as e:
+        log.error('Erro na busca de despesas: %s', e)
+        edit_message(chat_id, msg_id, '⚠️ Erro ao realizar a busca de despesas.')
+    finally:
+        clear_state(chat_id)
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Handlers de mensagens e callbacks
 # ════════════════════════════════════════════════════════════════════════════
 
 def handle_message(msg: dict):
-    """Processa mensagens de texto recebidas."""
+    """Processa mensagens de texto e arquivos recebidos."""
     chat_id = msg['chat']['id']
     text    = (msg.get('text') or '').strip()
+    
+    document = msg.get('document')
+    photo = msg.get('photo')
 
     if not is_authorized(chat_id):
         send_message(chat_id, '⛔ Acesso negado.')
+        return
+
+    # Se a mensagem tiver arquivo e a gente estiver esperando um arquivo
+    state = get_state(chat_id)
+    step = state.get('step')
+    
+    if (document or photo) and step in {STEP_UP_PDF, STEP_UP_RENOMEAR, STEP_UP_EMPENHO}:
+        file_id = document['file_id'] if document else photo[-1]['file_id']
+        file_name = document['file_name'] if document else 'imagem.jpg'
+        
+        if step == STEP_UP_PDF:
+            process_pdf_extraction(chat_id, file_id, file_name)
+        elif step == STEP_UP_RENOMEAR:
+            process_file_rename(chat_id, file_id, file_name)
+        elif step == STEP_UP_EMPENHO:
+            if document and not file_name.lower().endswith('.pdf'):
+                send_message(chat_id, '⚠️ Para geração de empenho por arquivo, envie apenas PDF. (Ou envie imagens via web app).')
+            else:
+                process_empenho_pdf(chat_id, file_id)
         return
 
     # Comandos
@@ -849,6 +1278,22 @@ def handle_message(msg: dict):
             '/tarefas  — Ver todas as tarefas\n'
             '/buscar <i>palavra</i>  — Buscar tarefas por título\n'
             '/cancelar  — Cancela operação em andamento\n\n'
+            '🛒 <b>Aquisições</b>\n'
+            '/aquisicao  — Nova solicitação de aquisição\n\n'
+            '✈️ <b>Diárias (Viagem)</b>\n'
+            '/diarias  — Calculadora de diárias\n\n'
+            '🛠️ <b>Utilitários</b>\n'
+            '/cnpj [numero]  — Consulta dados de CNPJ\n'
+            '/prazos  — Calculadora de prazos úteis\n\n'
+            '📁 <b>Arquivos</b>\n'
+            '/pdf  — Extrai texto de um PDF\n'
+            '/renomear  — Renomeia arquivo usando IA\n\n'
+            '📝 <b>Geradores e Formulários</b>\n'
+            '/empenho  — Gerador inteligente de Nota de Empenho\n'
+            '/rpa  — Calculadora e gerador de RPA\n\n'
+            '🔎 <b>Pesquisa</b>\n'
+            '/protocolos  — Buscar protocolos ou ofícios\n'
+            '/despesas  — Buscar despesas (Transparência)\n\n'
             '💰 <b>Financeiro</b>\n'
             '/financeiro  — Analisador financeiro do mês\n\n'
             '📅 <b>Calendário</b>\n'
@@ -861,6 +1306,51 @@ def handle_message(msg: dict):
 
     if text.startswith('/tarefa') or text.lower() in {'nova tarefa', 'nova', 'criar tarefa'}:
         start_new_task_flow(chat_id)
+        return
+
+    if text.startswith('/aquisicao') or text.lower() in {'nova aquisicao', 'nova aquisição', 'aquisicao', 'aquisição'}:
+        start_new_aquisicao_flow(chat_id)
+        return
+
+    if text.startswith('/diaria') or text.startswith('/viagem') or text.lower() in {'diarias', 'diárias', 'diaria', 'diária', 'calc diaria', 'viagem'}:
+        start_diarias_flow(chat_id)
+        return
+
+    if text.startswith('/cnpj'):
+        parts = text.split()
+        if len(parts) > 1:
+            run_cnpj_query(chat_id, parts[1])
+        else:
+            start_cnpj_flow(chat_id)
+        return
+
+    if text.startswith('/empenho'):
+        start_empenho_flow(chat_id)
+        return
+
+    if text.startswith('/rpa'):
+        start_rpa_flow(chat_id)
+        return
+        return
+
+    if text.startswith('/prazo') or text.lower() in {'prazos', 'prazo'}:
+        start_prazos_flow(chat_id)
+        return
+
+    if text.startswith('/pdf'):
+        start_pdf_flow(chat_id)
+        return
+        
+    if text.startswith('/renomear'):
+        start_renomear_flow(chat_id)
+        return
+
+    if text.startswith('/protocolo'):
+        start_protocolos_flow(chat_id)
+        return
+
+    if text.startswith('/despesa'):
+        start_despesas_flow(chat_id)
         return
 
     if text.startswith('/buscar') or text.lower().startswith('buscar '):
@@ -1005,6 +1495,49 @@ def handle_callback(callback_query: dict):
 
     if data == 'cmd_nova_tarefa':
         start_new_task_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_nova_aquisicao':
+        start_new_aquisicao_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_calc_diarias':
+        start_diarias_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_consulta_cnpj':
+        start_cnpj_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_calc_prazos':
+        start_prazos_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_extrator_pdf':
+        start_pdf_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+        
+    if data == 'cmd_renomear_arquivo':
+        start_renomear_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_gerar_empenho':
+        start_empenho_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_gerar_rpa':
+        start_rpa_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_buscar_protocolos':
+        start_protocolos_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_buscar_despesas':
+        start_despesas_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'ignore':
         return
 
     if data == 'cmd_cancelar':
@@ -1197,11 +1730,17 @@ def handle_callback(callback_query: dict):
                          reply_markup=keyboard_main())
         return
 
-    # Dentro do fluxo de criação de tarefa
+    # Dentro do fluxo de criação de tarefa ou aquisição
     state = get_state(chat_id)
     if not state:
         edit_message(chat_id, msg_id, '⚠️ Sessão expirada. Recomeçando...')
         start_new_task_flow(chat_id)
+        return
+
+    # Pular observação da aquisição
+    if data == 'aq_obs_skip' and state.get('step') == STEP_AQ_OBS:
+        state['obs'] = ''
+        finalize_aquisicao(chat_id, msg_id, state)
         return
 
     # Pular descrição
@@ -1262,7 +1801,7 @@ def handle_callback(callback_query: dict):
         return
 
 
-def start_new_task_flow(chat_id: int, edit_msg: tuple = None):
+def start_new_task_flow(chat_id: int, edit_msg: tuple | None = None):
     """Inicia o fluxo guiado de criação de tarefa."""
     state = {'step': STEP_TITLE, 'title': '', 'description': '', 'status': 'todo', 'priority': 'medium'}
     set_state(chat_id, state)
@@ -1281,8 +1820,44 @@ def start_new_task_flow(chat_id: int, edit_msg: tuple = None):
 
 
 def handle_conversation_step(chat_id: int, text: str, state: dict):
-    """Avança a conversa de criação de tarefa com base na etapa atual."""
+    """Avança a conversa de criação de tarefa ou aquisição com base na etapa atual."""
     step = state.get('step')
+
+    if step and step.startswith('aq_'):
+        handle_aquisicao_step(chat_id, text, state)
+        return
+
+    if step and step.startswith('di_'):
+        handle_diarias_step(chat_id, text, state)
+        return
+
+    if step and step.startswith('cnpj_'):
+        handle_cnpj_step(chat_id, text, state)
+        return
+
+    if step and step.startswith('pz_'):
+        handle_prazos_step(chat_id, text, state)
+        return
+
+    if step == STEP_RPA_NOME:
+        handle_rpa_nome(chat_id, text)
+        return
+
+    if step == STEP_RPA_VALOR:
+        handle_rpa_valor(chat_id, text)
+        return
+
+    if step == STEP_UP_EMPENHO:
+        process_empenho_text(chat_id, text)
+        return
+
+    if step == STEP_PROT_BUSCA:
+        handle_protocolos_busca(chat_id, text)
+        return
+
+    if step == STEP_DESP_BUSCA:
+        handle_despesas_busca(chat_id, text)
+        return
 
     if step == STEP_TITLE:
         if len(text) < 2:
@@ -1318,6 +1893,572 @@ def handle_conversation_step(chat_id: int, text: str, state: dict):
             chat_id,
             '👆 Por favor, use os botões acima para selecionar.'
         )
+
+
+def start_new_aquisicao_flow(chat_id: int, edit_msg: tuple | None = None):
+    """Inicia o fluxo guiado de criação de Solicitação de Aquisição."""
+    state = {'step': STEP_AQ_SOLICITANTE, 'solicitante': '', 'empresa': '', 'itens': '', 'obs': ''}
+    set_state(chat_id, state)
+
+    text = (
+        '🛒 <b>Nova Solicitação de Aquisição</b>\n\n'
+        '1️⃣ <b>Qual é o nome do Solicitante?</b>\n'
+        '<i>Digite o nome abaixo:</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def handle_aquisicao_step(chat_id: int, text: str, state: dict):
+    """Avança a conversa de criação de aquisição."""
+    step = state.get('step')
+
+    if step == STEP_AQ_SOLICITANTE:
+        if len(text) < 2:
+            send_message(chat_id, '⚠️ Nome muito curto. Digite novamente.')
+            return
+        state['solicitante'] = text
+        state['step'] = STEP_AQ_EMPRESA
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Solicitante: <b>{text}</b>\n\n'
+            '2️⃣ <b>Qual é o nome da Empresa/Fornecedor?</b>\n'
+            '<i>Digite abaixo:</i>',
+            reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+        )
+
+    elif step == STEP_AQ_EMPRESA:
+        state['empresa'] = text
+        state['step'] = STEP_AQ_ITENS
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Empresa: <b>{text}</b>\n\n'
+            '3️⃣ <b>Quais são os itens da solicitação?</b>\n'
+            '<i>Descreva os itens (ex: 10x Papel A4 a R$ 20,00 cada). Pode mandar todos em uma única mensagem.</i>',
+            reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+        )
+
+    elif step == STEP_AQ_ITENS:
+        state['itens'] = text
+        state['step'] = STEP_AQ_OBS
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Itens registrados.\n\n'
+            '4️⃣ <b>Observações adicionais</b> (opcional):\n'
+            '<i>Digite algo ou clique em "Pular".</i>',
+            reply_markup={'inline_keyboard': [
+                [
+                    {'text': '⏭ Pular observações', 'callback_data': 'aq_obs_skip'},
+                    {'text': '❌ Cancelar',          'callback_data': 'cmd_cancelar'}
+                ]
+            ]}
+        )
+
+    elif step == STEP_AQ_OBS:
+        state['obs'] = text
+        finalize_aquisicao(chat_id, None, state)
+
+
+def finalize_aquisicao(chat_id: int, msg_id: int | None, state: dict):
+    clear_state(chat_id)
+    
+    lines = [
+        '📄 <b>Solicitação de Aquisição / Fornecimento</b>',
+        '━━━━━━━━━━━━━━━━━━━━',
+        f'👤 <b>Solicitante:</b> {state.get("solicitante", "—")}',
+        f'🏢 <b>Empresa:</b> {state.get("empresa", "—")}',
+        f'📅 <b>Data:</b> {date.today().strftime("%d/%m/%Y")}',
+        '',
+        '📦 <b>Itens:</b>',
+        f'<i>{state.get("itens", "—")}</i>',
+    ]
+    
+    if state.get("obs"):
+        lines.append('')
+        lines.append('📝 <b>Observações:</b>')
+        lines.append(f'<i>{state.get("obs")}</i>')
+
+    lines.append('━━━━━━━━━━━━━━━━━━━━')
+    lines.append('<i>Prefeitura Municipal de Inajá</i>')
+    
+    doc = '\n'.join(lines)
+
+    if msg_id:
+        edit_message(chat_id, msg_id, '✅ <b>Solicitação gerada com sucesso! Você pode copiá-la ou encaminhá-la:</b>\n\n' + doc)
+    else:
+        send_message(chat_id, '✅ <b>Solicitação gerada com sucesso! Você pode copiá-la ou encaminhá-la:</b>\n\n' + doc)
+        
+    # Mostra o menu principal novamente em nova mensagem
+    send_message(chat_id, menu_text(), reply_markup=keyboard_main())
+
+
+def start_diarias_flow(chat_id: int, edit_msg: tuple | None = None):
+    """Inicia o fluxo guiado de cálculo de Diárias."""
+    state = {'step': STEP_DI_DATA_PARTIDA, 'dp': '', 'hp': '', 'dr': '', 'hr': ''}
+    set_state(chat_id, state)
+
+    text = (
+        '✈️ <b>Calculadora de Diárias</b>\n\n'
+        '1️⃣ <b>Qual é a data de Partida?</b>\n'
+        '<i>Digite a data (ex: 15/03/2026):</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def handle_diarias_step(chat_id: int, text: str, state: dict):
+    step = state.get('step')
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+
+    if step == STEP_DI_DATA_PARTIDA:
+        if len(text) < 5 or '/' not in text:
+            send_message(chat_id, '⚠️ Formato inválido. Digite no formato DD/MM/AAAA:')
+            return
+        state['dp'] = text
+        state['step'] = STEP_DI_HORA_PARTIDA
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Data Partida: <b>{text}</b>\n\n'
+            '2️⃣ <b>Qual é a hora da Partida?</b>\n'
+            '<i>Digite o horário (ex: 08:30 ou 8:00):</i>',
+            reply_markup=kb
+        )
+
+    elif step == STEP_DI_HORA_PARTIDA:
+        if not (':' in text or 'h' in text.lower()):
+            send_message(chat_id, '⚠️ Formato inválido. Digite no formato HH:MM (ex: 14:00):')
+            return
+        text = text.lower().replace('h', ':')
+        state['hp'] = text
+        state['step'] = STEP_DI_DATA_RETORNO
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Hora Partida: <b>{text}</b>\n\n'
+            '3️⃣ <b>Qual é a data de Retorno?</b>\n'
+            '<i>Digite a data (ex: 16/03/2026):</i>',
+            reply_markup=kb
+        )
+
+    elif step == STEP_DI_DATA_RETORNO:
+        if len(text) < 5 or '/' not in text:
+            send_message(chat_id, '⚠️ Formato inválido. Digite no formato DD/MM/AAAA:')
+            return
+        state['dr'] = text
+        state['step'] = STEP_DI_HORA_RETORNO
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Data Retorno: <b>{text}</b>\n\n'
+            '4️⃣ <b>Qual é a hora de Retorno?</b>\n'
+            '<i>Digite o horário (ex: 18:00):</i>',
+            reply_markup=kb
+        )
+
+    elif step == STEP_DI_HORA_RETORNO:
+        text = text.lower().replace('h', ':')
+        state['hr'] = text
+        
+        # Realiza validação de datas e calcula
+        _dt_formats = ["%d/%m/%Y %H:%M", "%d/%m/%y %H:%M", "%d/%m/%Y %H:%M:%S"]
+        partida_dt = None
+        retorno_dt = None
+        
+        for fmt in _dt_formats:
+            try:
+                partida_dt = datetime.strptime(f"{state['dp'].strip()} {state['hp'].strip()}", fmt)
+                break
+            except ValueError:
+                pass
+                
+        for fmt in _dt_formats:
+            try:
+                retorno_dt = datetime.strptime(f"{state['dr'].strip()} {state['hr'].strip()}", fmt)
+                break
+            except ValueError:
+                pass
+                
+        if partida_dt is None or retorno_dt is None:
+            send_message(chat_id, '⚠️ Erro nas datas digitadas. Verifique se o formato foi DD/MM/AAAA e HH:MM. Digite novamente a Hora de Retorno.', reply_markup=kb)
+            return
+            
+        if retorno_dt <= partida_dt:
+            send_message(chat_id, '⚠️ A data/hora de retorno deve ser **depois** da partida. Digite corretamente a Hora de Retorno.', reply_markup=kb)
+            return
+
+        finalize_diarias(chat_id, state, partida_dt, retorno_dt)
+
+
+def finalize_diarias(chat_id: int, state: dict, partida_dt: datetime, retorno_dt: datetime):
+    clear_state(chat_id)
+    
+    diff_ms = (retorno_dt - partida_dt).total_seconds() * 1000
+    total_hours = diff_ms / (1000.0 * 60.0 * 60.0)
+    
+    if total_hours < 12:
+        num_diarias = 0
+        explicacao = "Nenhuma diária é devida, pois o afastamento é inferior a 12 horas."
+    else:
+        num_diarias = int(total_hours // 24)
+        horas_restantes = total_hours % 24
+        if horas_restantes >= 12:
+            num_diarias += 1
+        if num_diarias == 0 and total_hours >= 12:
+            num_diarias = 1
+
+        explicacao = "Cálculo baseado na Legislação Municipal Vigente. "
+        pC = int(total_hours // 24)
+        if pC > 0:
+            explicacao += f"{pC} diária(s) por período(s) completo(s) de 24h. "
+        
+        if num_diarias > pC and not (num_diarias == 1 and pC == 0 and total_hours < 24):
+            explicacao += "Uma diária adicional foi concedida devido à fração de horas restante ser igual ou superior a 12 horas."
+        elif num_diarias == 1 and pC == 0 and total_hours >= 12 and total_hours < 24:
+            explicacao += f"Uma diária integral é devida pois o afastamento de {total_hours:.1f}h está entre 12h e 24h."
+        elif num_diarias == pC and pC > 0:
+            if 0 < horas_restantes < 12:
+                explicacao += f"A fração restante de {horas_restantes:.1f}h é inferior a 12 horas e não gera diária adicional."
+
+    lines = [
+        '⚖️ <b>RELATÓRIO DE CÁLCULO DE DIÁRIAS</b>',
+        '━━━━━━━━━━━━━━━━━━━━',
+        f'🛫 <b>Partida:</b> {partida_dt.strftime("%d/%m/%Y")} às {partida_dt.strftime("%H:%M")}',
+        f'🛬 <b>Retorno:</b> {retorno_dt.strftime("%d/%m/%Y")} às {retorno_dt.strftime("%H:%M")}',
+        f'⏳ <b>Duração do afastamento:</b> {total_hours:.1f} horas',
+        '',
+        f'💵 <b>Diárias devidas:</b> {num_diarias}',
+        '',
+        'ℹ️ <b>Observação Legal:</b>',
+        f'<i>{explicacao}</i>',
+        '━━━━━━━━━━━━━━━━━━━━',
+        f'<i>Calculado em: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}</i>'
+    ]
+    
+    doc = '\n'.join(lines)
+    send_message(chat_id, '✅ <b>Cálculo Efetuado:</b>\n\n' + doc)
+    send_message(chat_id, menu_text(), reply_markup=keyboard_main())
+
+
+def start_cnpj_flow(chat_id: int, edit_msg: tuple | None = None):
+    state = {'step': STEP_CNPJ_NUM}
+    set_state(chat_id, state)
+    text = (
+        '🏢 <b>Consulta CNPJ</b>\n\n'
+        '<i>Digite o CNPJ que deseja consultar (apenas números ou formatado):</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def handle_cnpj_step(chat_id: int, text: str, state: dict):
+    run_cnpj_query(chat_id, text)
+
+
+def run_cnpj_query(chat_id: int, cnpj_str: str):
+    clear_state(chat_id)
+    cnpj_clean = ''.join(filter(str.isdigit, cnpj_str))
+    if len(cnpj_clean) != 14:
+        send_message(chat_id, '⚠️ CNPJ inválido. Digite os 14 dígitos corretamente.',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        return
+
+    send_message(chat_id, '⏳ Consultando Receita Federal...')
+    try:
+        resp = requests.get(f'https://brasilapi.com.br/api/cnpj/v1/{cnpj_clean}', timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            razao = data.get('razao_social', '—')
+            fan = data.get('nome_fantasia')
+            sit = data.get('descricao_situacao_cadastral', '—')
+            end = f"{data.get('logradouro', '')}, {data.get('numero', '')} - {data.get('municipio', '')}/{data.get('uf', '')}"
+            cnae = data.get('cnae_fiscal_descricao', '—')
+
+            lines = [
+                '🏢 <b>Consulta de CNPJ Oficial</b>',
+                '━━━━━━━━━━━━━━━━━━━━',
+                f'<b>Razão Social:</b> {razao}',
+            ]
+            if fan: lines.append(f'<b>Fantasia:</b> {fan}')
+            lines.extend([
+                f'<b>CNPJ:</b> {data.get("cnpj", "")}',
+                f'<b>Situação:</b> {sit}',
+                '',
+                f'📍 <b>Endereço:</b> {end}',
+                f'🏭 <b>CNAE Principal:</b> {cnae}',
+                '',
+                f'<b>Porte:</b> {data.get("porte", "—")}',
+                f'<b>Abertura:</b> {data.get("data_inicio_atividade", "—")}',
+            ])
+            doc = '\n'.join(lines)
+            send_message(chat_id, doc, reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        else:
+            send_message(chat_id, f'❌ Erro ao consultar CNPJ: {resp.status_code}',
+                         reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+    except Exception as e:
+        log.error(f"Erro na consulta de CNPJ: {e}")
+        send_message(chat_id, f'❌ Ocorreu um erro: {e}',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+
+
+def start_prazos_flow(chat_id: int, edit_msg: tuple | None = None):
+    state = {'step': STEP_PZ_DATA}
+    set_state(chat_id, state)
+    text = (
+        '⏰ <b>Calculadora de Prazos Úteis</b>\n\n'
+        '1️⃣ <b>Qual a data inicial?</b>\n'
+        '<i>(Formato: DD/MM/AAAA)</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def handle_prazos_step(chat_id: int, text: str, state: dict):
+    step = state.get('step')
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+
+    if step == STEP_PZ_DATA:
+        if len(text) < 5 or '/' not in text:
+            send_message(chat_id, '⚠️ Formato inválido. Digite no formato DD/MM/AAAA:', reply_markup=kb)
+            return
+        state['dt'] = text.strip()
+        state['step'] = STEP_PZ_DIAS
+        set_state(chat_id, state)
+        send_message(
+            chat_id,
+            f'✅ Data Inicial: <b>{state["dt"]}</b>\n\n'
+            '2️⃣ <b>Quantos dias deseja somar?</b>\n'
+            '<i>(Apenas número)</i>',
+            reply_markup=kb
+        )
+
+    elif step == STEP_PZ_DIAS:
+        if not text.isdigit():
+            send_message(chat_id, '⚠️ Por favor, digite apenas um número inteiro (ex: 15):', reply_markup=kb)
+            return
+
+        fmt = "%d/%m/%Y"
+        try:
+            start_date_str = state['dt']
+            if len(start_date_str) == 8 and start_date_str.count('/') == 2:
+                fmt = "%d/%m/%y"
+            start_date = datetime.strptime(start_date_str, fmt)
+        except ValueError:
+            send_message(chat_id, '⚠️ Erro na data inicial. Tente recomeçar com formato correto (ex: 01/05/2026).', reply_markup=kb)
+            start_prazos_flow(chat_id)
+            return
+
+        clear_state(chat_id)
+        dias_soma = int(text)
+        
+        # Simple Business Days Calculation
+        current_date = start_date
+        dias_restantes = dias_soma
+        
+        while dias_restantes > 0:
+            current_date += timedelta(days=1)
+            # 5 = Saturday, 6 = Sunday
+            if current_date.weekday() < 5:
+                dias_restantes -= 1
+
+        doc = (
+            '⏰ <b>Calculadora de Prazos Úteis</b>\n'
+            '━━━━━━━━━━━━━━━━━━━━\n'
+            f'<b>Data Inicial:</b> {start_date.strftime("%d/%m/%Y")}\n'
+            f'<b>Dias a somar (úteis):</b> {dias_soma}\n'
+            f'<b>Data Final Prevista:</b> <b>{current_date.strftime("%d/%m/%Y")}</b>\n'
+            '<i>Obs: Feriados não estão sendo considerados automaticamente. Ajuste manualmente se necessário.</i>/n'
+            '━━━━━━━━━━━━━━━━━━━━\n'
+        )
+        send_message(chat_id, doc, reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+
+
+def download_telegram_file(file_id: str) -> bytes | None:
+    try:
+        resp = requests.post(f'{TELEGRAM_API}/getFile', json={'file_id': file_id}, timeout=15)
+        if not resp.json().get('ok'):
+            return None
+        file_path = resp.json()['result']['file_path']
+        f_resp = requests.get(f'https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}', timeout=60)
+        if f_resp.status_code == 200:
+            return f_resp.content
+    except Exception as e:
+        log.error(f"Erro ao baixar arquivo do telegram: {e}")
+    return None
+
+
+def start_pdf_flow(chat_id: int, edit_msg: tuple | None = None):
+    state = {'step': STEP_UP_PDF}
+    set_state(chat_id, state)
+    text = (
+        '📄 <b>Extrator de PDF</b>\n\n'
+        'Envie o arquivo PDF que você deseja extrair o texto.\n'
+        '<i>Dica: PDFs baseados em imagem ainda não são suportados.</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def process_pdf_extraction(chat_id: int, file_id: str, file_name: str):
+    clear_state(chat_id)
+    if not file_name.lower().endswith('.pdf'):
+        send_message(chat_id, '⚠️ O arquivo enviado não parece ser um PDF.',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        return
+
+    send_message(chat_id, f'📥 Baixando e processando <b>{file_name}</b>, aguarde...')
+    content = download_telegram_file(file_id)
+    if not content:
+        send_message(chat_id, '❌ Falha ao processar o arquivo.',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        return
+
+    try:
+        import PyPDF2
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+        texto = ''
+        for page in pdf_reader.pages[:10]: # Limita as primeiras 10 páginas para evitar travar
+            texto += page.extract_text() + '\n'
+            
+        texto = texto.strip()
+        if not texto:
+            send_message(chat_id, '⚠️ Nenhum texto foi encontrado no arquivo (provavelmente é uma imagem/escaneado).',
+                         reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+            return
+            
+        send_message(chat_id, '✅ <b>Texto Extraído:</b>\n\n')
+        # Telegram tem limite de ~4000 caracteres, quebrar se for longo
+        for i in range(0, len(texto), 3500):
+            send_message(chat_id, f"<code>{texto[i:i+3500]}</code>")
+            
+        send_message(chat_id, "━ Finalizado", reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+    except Exception as e:
+        log.error(f"Erro a extrair PDF: {e}")
+        send_message(chat_id, f'❌ Erro ao ler PDF: {e}',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+
+
+def start_renomear_flow(chat_id: int, edit_msg: tuple | None = None):
+    state = {'step': STEP_UP_RENOMEAR}
+    set_state(chat_id, state)
+    text = (
+        '✨ <b>Renomear com IA</b>\n\n'
+        'Envie o arquivo (PDF ou Documento/Word) que você deseja que a IA leia e gere um nome automático.'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def process_file_rename(chat_id: int, file_id: str, file_name: str):
+    clear_state(chat_id)
+    send_message(chat_id, f'📥 Baixando <b>{file_name}</b> e submetendo à IA...')
+    
+    content = download_telegram_file(file_id)
+    if not content:
+        send_message(chat_id, '❌ Falha ao processar o arquivo.',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        return
+        
+    extracted_text = f"Nome original: {file_name}"
+    
+    if file_name.lower().endswith('.pdf'):
+        try:
+            import PyPDF2
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+            texto = ''
+            for page in pdf_reader.pages[:4]: # Primeiras 4 páginas
+                texto += page.extract_text() + '\n'
+            if len(texto.strip()) > 50:
+                extracted_text = texto.strip()[:4000]
+        except Exception:
+            pass
+            
+    # Chamar IA localmente
+    PROMPT = f"""Gere um nome de arquivo para este documento público brasileiro.
+REGRAS: MAIÚSCULAS + números + underscore apenas. Sem espaços. Máximo 60 chars.
+Formato: TIPO_DESCRICAO_DATA
+Exemplos: SOLICITACAO_SERVICO_LAVAGEM_VEICULOS_2024, NOTA_FISCAL_EMPRESA_ABC_20240315
+Responda SOMENTE com o nome, nada mais.
+
+TEXTO:
+{extracted_text}"""
+
+    import sqlite3
+    try:
+        # Pega a chave da config ou db_config se houver (tentar ler do DB empenhos)
+        conn = _db_connect()
+        cur = conn.cursor()
+        cur.execute("SELECT valor FROM configs WHERE chave = 'api_openrouter_key'")
+        row = cur.fetchone()
+        api_key = row['valor'] if row else ''
+        cur.close()
+        conn.close()
+        
+        if not api_key:
+            send_message(chat_id, '⚠️ Chave da OpenRouter não está configurada no banco de dados. Configure o ADM primeiro.',
+                         reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+            return
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "meta-llama/llama-3.2-3b-instruct:free",
+            "messages": [{"role": "user", "content": PROMPT}],
+            "max_tokens": 100,
+            "temperature": 0.2
+        }
+        
+        resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=30)
+        resp_json = resp.json()
+        if not resp.ok or 'choices' not in resp_json:
+            send_message(chat_id, f"❌ Falha na API IA: {resp_json}")
+            return
+            
+        raw_name = resp_json['choices'][0]['message']['content'].strip()
+        
+        # Limpar regex do nome (tirar acentos, deixar_underscore)
+        import re
+        import unicodedata
+        cleaned = unicodedata.normalize('NFD', raw_name).encode('ascii', 'ignore').decode("utf-8")
+        cleaned = re.sub(r'[^A-Z0-9_\-]', '_', cleaned.upper())
+        cleaned = re.sub(r'_+', '_', cleaned).strip('_')
+        
+        if len(cleaned) < 5: cleaned = file_name.replace('.pdf', '')
+        
+        ext = Path(file_name).suffix
+        final_filename = cleaned[:70] + ext
+        
+        send_document(chat_id, content, f"✅ O arquivo foi renomeado e analisado.\n\n<b>Novo nome proposto:</b>\n<code>{final_filename}</code>", final_filename)
+        
+    except Exception as e:
+        log.error(f"Erro no Rename IA: {e}")
+        send_message(chat_id, f'❌ Erro interno ao renomear: {e}',
+                     reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
 
 
 # ════════════════════════════════════════════════════════════════════════════

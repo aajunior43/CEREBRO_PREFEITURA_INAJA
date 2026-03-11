@@ -1156,8 +1156,12 @@ TEXTO:
         aiCache.set(ck, item.sugName);
         addHistory(item.origName, item.sugName, item.type, item.file.size);
       } catch (e) {
-        item.status = 'error'; item.error = e.message;
-        showToast(e.message, 'error');
+        let errMsg = e.message;
+        if (errMsg.includes('could not be read') || e.name === 'NotReadableError') {
+          errMsg = 'Arquivo bloqueado ou em uso por outro programa (ex: Scanner/Leitor de PDF). Tente novamente.';
+        }
+        item.status = 'error'; item.error = errMsg;
+        showToast(errMsg, 'error');
       }
       renderAll();
     }
