@@ -132,6 +132,64 @@ def db_criar_tarefa(title: str, description: str, status: str, priority: str) ->
         conn.close()
 
 
+def db_buscar_tarefas(termo: str) -> list[dict]:
+    """Busca tarefas por título ou descrição (case-insensitive)."""
+    conn = _db_connect()
+    try:
+        like = f'%{termo}%'
+        rows = conn.execute(
+            "SELECT id, title, description, status, priority, criado_em "
+            "FROM kanban_tasks WHERE title LIKE ? OR description LIKE ? "
+            "ORDER BY criado_em DESC LIMIT 20",
+            (like, like)
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def db_atualizar_status_tarefa(task_id: str, novo_status: str) -> dict | None:
+    """Atualiza o status de uma tarefa. Retorna a tarefa atualizada ou None."""
+    conn = _db_connect()
+    try:
+        conn.execute(
+            "UPDATE kanban_tasks SET status=?, atualizado_em=datetime('now','localtime') WHERE id=?",
+            (novo_status, task_id)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, title, status, priority FROM kanban_tasks WHERE id=?",
+            (task_id,)
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def db_logs_recentes(limite: int = 10) -> list[dict]:
+    """Retorna os últimos logs de ações do sistema."""
+    conn = _db_connect()
+    try:
+        rows = conn.execute(
+            "SELECT acao, credor_nome, detalhes, data FROM logs ORDER BY data DESC LIMIT ?",
+            (limite,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def db_contar_credores() -> dict:
+    """Retorna contagens de credores ativos e inativos."""
+    conn = _db_connect()
+    try:
+        ativos   = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=1").fetchone()[0]
+        inativos = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=0").fetchone()[0]
+        return {'ativos': ativos, 'inativos': inativos, 'total': ativos + inativos}
+    finally:
+        conn.close()
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # Analisador Financeiro
 # ════════════════════════════════════════════════════════════════════════════
@@ -775,11 +833,105 @@ def handle_message(msg: dict):
     # Comandos
     if text.startswith('/start') or text.startswith('/menu'):
         clear_state(chat_id)
-        send_message(chat_id, menu_text(), reply_markup=keyboard_main())
+        nome = msg.get('from', {}).get('first_name', '') or ''
+        saudacao = f'Olá, {nome}! 👋\n\n' if nome else 'Olá! 👋\n\n'
+        send_message(chat_id, saudacao + menu_text(), reply_markup=keyboard_main())
+        return
+
+    if text.startswith('/help') or text.lower() in {'ajuda', 'help', '?'}:
+        send_message(chat_id, (
+            '📖 <b>Comandos disponíveis</b>\n\n'
+            '🏠 <b>Menu e Navegação</b>\n'
+            '/start  ou  /menu  — Abre o painel principal\n'
+            '/help  — Esta ajuda\n\n'
+            '📋 <b>Tarefas (Kanban)</b>\n'
+            '/tarefa  — Criar nova tarefa passo a passo\n'
+            '/tarefas  — Ver todas as tarefas\n'
+            '/buscar <i>palavra</i>  — Buscar tarefas por título\n'
+            '/cancelar  — Cancela operação em andamento\n\n'
+            '💰 <b>Financeiro</b>\n'
+            '/financeiro  — Analisador financeiro do mês\n\n'
+            '📅 <b>Calendário</b>\n'
+            '/calendario  — Calendário de pagamentos\n\n'
+            '📊 <b>Sistema</b>\n'
+            '/logs  — Últimas ações registradas\n'
+            '/status  — Status geral do sistema\n'
+        ), reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
         return
 
     if text.startswith('/tarefa') or text.lower() in {'nova tarefa', 'nova', 'criar tarefa'}:
         start_new_task_flow(chat_id)
+        return
+
+    if text.startswith('/buscar') or text.lower().startswith('buscar '):
+        # Extrai o termo de busca
+        if text.startswith('/buscar'):
+            termo = text[7:].strip()
+        else:
+            termo = text[7:].strip()
+        if not termo:
+            send_message(chat_id,
+                '🔍 <b>Buscar Tarefas</b>\n\nDigite o que quer buscar:\n'
+                '<i>Exemplo: /buscar reunião</i>')
+            return
+        results = db_buscar_tarefas(termo)
+        if not results:
+            send_message(chat_id,
+                f'🔍 Nenhuma tarefa encontrada para <b>"{termo}"</b>.',
+                reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        else:
+            texto  = format_task_list(results, f'🔍 Resultados para "{termo}"', grouped=False)
+            send_message(chat_id, texto,
+                reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        return
+
+    if text.startswith('/logs'):
+        try:
+            logs = db_logs_recentes(12)
+            if not logs:
+                send_message(chat_id, '📊 Nenhum log encontrado.')
+                return
+            ACAO_EMOJI = {'EMPENHAR': '✅', 'DESEMPENHAR': '↩️', 'IMPORTAR': '📥',
+                          'CRIAR': '➕', 'EDITAR': '✏️', 'EXCLUIR': '🗑'}
+            lines = ['📊 <b>Últimas Ações do Sistema</b>\n']
+            for lg in logs:
+                emoji = ACAO_EMOJI.get((lg.get('acao') or '').upper(), '🔹')
+                nome  = (lg.get('credor_nome') or '—')[:25]
+                det   = (lg.get('detalhes') or '')[:20]
+                data  = (lg.get('data') or '')[:16]
+                lines.append(f'{emoji} <b>{lg.get("acao","?")} </b> {nome}  <code>{data}</code>')
+                if det:
+                    lines.append(f'   └ <i>{det}</i>')
+            send_message(chat_id, '\n'.join(lines),
+                reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        except Exception as e:
+            send_message(chat_id, f'⚠️ Erro ao buscar logs: <code>{e}</code>')
+        return
+
+    if text.startswith('/status'):
+        try:
+            credores  = db_contar_credores()
+            tarefas   = {s: len(db_listar_tarefas(s)) for s in ('todo', 'in-progress', 'done')}
+            hoje      = date.today()
+            fin       = db_analise_financeira(hoje.year, hoje.month)
+            proximos  = [ev for ev in calcular_eventos_mes(hoje.year, hoje.month) if ev['data'] >= hoje]
+            prox_ev   = proximos[0] if proximos else None
+            send_message(chat_id, (
+                f'📊 <b>Status do Sistema</b>\n'
+                f'<i>{hoje.strftime("%d/%m/%Y")}</i>\n\n'
+                f'<b>👥 Credores</b>\n'
+                f'Ativos: {credores["ativos"]}  |  Inativos: {credores["inativos"]}\n\n'
+                f'<b>📋 Kanban</b>\n'
+                f'A Fazer: {tarefas["todo"]}  |  Em Progresso: {tarefas["in-progress"]}  |  Concluído: {tarefas["done"]}\n\n'
+                f'<b>💰 Empenhos {MESES_PT_ABREV[hoje.month]}</b>\n'
+                f'Empenhado: {_moeda(fin["total_empenhado"])} ({fin["pct_empenhado"]:.0f}%)\n'
+                f'Pendente:  {_moeda(fin["total_pendente"])}\n\n'
+                f'<b>📅 Próximo Evento</b>\n'
+                + (f'{prox_ev["emoji"]} {prox_ev["texto"]} — {prox_ev["data"].strftime("%d/%m")} '
+                   f'({(prox_ev["data"]-hoje).days}d)' if prox_ev else '<i>Nenhum</i>')
+            ), reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        except Exception as e:
+            send_message(chat_id, f'⚠️ Erro: <code>{e}</code>')
         return
 
     if text.startswith('/financeiro') or text.lower() in {'financeiro', 'financ', 'financas', 'finanças'}:
@@ -826,8 +978,10 @@ def handle_message(msg: dict):
     if state:
         handle_conversation_step(chat_id, text, state)
     else:
-        # Sem contexto — mostrar menu
-        send_message(chat_id, menu_text(), reply_markup=keyboard_main())
+        # Sem contexto — mostrar menu + dica
+        send_message(chat_id,
+            menu_text() + '\n\n<i>💡 Digite /help para ver todos os comandos.</i>',
+            reply_markup=keyboard_main())
 
 
 def handle_callback(callback_query: dict):
@@ -929,6 +1083,57 @@ def handle_callback(callback_query: dict):
                      reply_markup={'inline_keyboard': [[
                          {'text': '🔙 Menu', 'callback_data': 'cmd_menu'}
                      ]]})
+        return
+
+    # Mudar status de tarefa via bot
+    if data.startswith('tsk_status_'):
+        # formato: tsk_status_TASK_ID_NOVO_STATUS
+        partes = data.split('_', 4)  # ['tsk', 'status', TASK_ID, NOVO_STATUS]
+        try:
+            task_id    = partes[2]
+            novo_status = partes[3]
+        except IndexError:
+            answer_callback(query_id, '⚠️ Dados inválidos.', show_alert=True)
+            return
+        tarefa = db_atualizar_status_tarefa(task_id, novo_status)
+        if tarefa:
+            s_label = STATUS_LABEL.get(novo_status, novo_status)
+            s_emoji = STATUS_EMOJI.get(novo_status, '📋')
+            answer_callback(query_id, f'{s_emoji} Status: {s_label}', show_alert=False)
+            # Atualiza a mensagem com as tarefas
+            tasks = db_listar_tarefas()
+            edit_message(chat_id, msg_id,
+                         format_task_list(tasks, '📋 Todas as Tarefas', grouped=True),
+                         reply_markup={'inline_keyboard': [[
+                             {'text': '🔙 Menu', 'callback_data': 'cmd_menu'}
+                         ]]})
+            log.info('Status alterado via Telegram: [%s] %s → %s', task_id, tarefa.get('title'), novo_status)
+        else:
+            answer_callback(query_id, '⚠️ Tarefa não encontrada.', show_alert=True)
+        return
+
+    # Busca rápida via bot (inline)
+    if data == 'cmd_buscar':
+        set_state(chat_id, {'step': 'aguardando_busca'})
+        edit_message(chat_id, msg_id,
+            '🔍 <b>Buscar Tarefas</b>\n\nDigite o termo de busca:',
+            reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]})
+        return
+
+    if data == 'cmd_logs':
+        try:
+            logs = db_logs_recentes(10)
+            ACAO_EMOJI = {'EMPENHAR': '✅', 'DESEMPENHAR': '↩️', 'IMPORTAR': '📥', 'CRIAR': '➕', 'EDITAR': '✏️', 'EXCLUIR': '🗑'}
+            lines = ['📊 <b>Últimas Ações</b>\n']
+            for lg in (logs or []):
+                emoji = ACAO_EMOJI.get((lg.get('acao') or '').upper(), '🔹')
+                nome  = (lg.get('credor_nome') or '—')[:22]
+                data2 = (lg.get('data') or '')[:16]
+                lines.append(f'{emoji} {lg.get("acao","?")}  {nome}  <code>{data2}</code>')
+            edit_message(chat_id, msg_id, '\n'.join(lines) if logs else '📊 Nenhum log registrado.',
+                reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        except Exception as e:
+            edit_message(chat_id, msg_id, f'⚠️ Erro: <code>{e}</code>', reply_markup=keyboard_main())
         return
 
     if data == 'cmd_financeiro':
