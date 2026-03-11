@@ -100,6 +100,9 @@ STEP_RPA_VALOR       = 'rpa_valor'
 STEP_PROT_BUSCA      = 'prot_busca'
 STEP_DESP_BUSCA      = 'desp_busca'
 
+STEP_UP_AUDITOR      = 'up_auditor_arquivo'
+STEP_UP_EXTRATO      = 'up_extrato_arquivo'
+
 # ════════════════════════════════════════════════════════════════════════════
 # Helpers Globais
 # ════════════════════════════════════════════════════════════════════════════
@@ -747,6 +750,10 @@ def keyboard_main():
                 {'text': '📄 Extrair PDF', 'callback_data': 'cmd_extrator_pdf'},
                 {'text': '✨ Renomear Arq.', 'callback_data': 'cmd_renomear_arquivo'},
             ],
+            [
+                {'text': '🔍 Auditor NF', 'callback_data': 'cmd_auditor_nf'},
+                {'text': '🏦 Extrato Bancário', 'callback_data': 'cmd_extrato_bancario'},
+            ],
             [{'text': '🔄 Atualizar Menu', 'callback_data': 'cmd_menu'}],
         ]
     }
@@ -1225,7 +1232,316 @@ def handle_despesas_busca(chat_id: int, text: str):
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# Handlers de mensagens e callbacks
+# Group 5 – Auditor IA de Notas Fiscais
+# ════════════════════════════════════════════════════════════════════════════
+
+def start_auditor_flow(chat_id: int, edit_msg: tuple | None = None):
+    """Inicia o fluxo de auditoria de nota fiscal."""
+    set_state(chat_id, {'step': STEP_UP_AUDITOR})
+    text = (
+        '🔍 <b>Auditor de Notas Fiscais · IA</b>\n\n'
+        'Envie uma <b>Nota Fiscal</b> (PDF, JPG ou PNG) e a IA irá:\n'
+        '• Extrair dados do fornecedor, CNPJ e valores\n'
+        '• Verificar inconsistências matemáticas\n'
+        '• Detectar descrições genéricas e datas suspeitas\n'
+        '• Gerar um <b>Escore de Risco (0–100)</b>\n\n'
+        '📎 <i>Envie o arquivo agora:</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def process_auditor_file(chat_id: int, file_id: str, file_name: str):
+    """Baixa o arquivo, extrai texto e chama a IA para auditoria."""
+    msg_id = send_message(chat_id, '⏳ <i>Baixando arquivo e analisando com IA…</i>')["result"]["message_id"]
+    try:
+        # 1. Download do Telegram
+        f_info = tg_request('getFile', {'file_id': file_id})
+        if not f_info.get('ok'):
+            edit_message(chat_id, msg_id, '⚠️ Erro ao obter informações do arquivo.')
+            return
+        file_path = f_info['result']['file_path']
+        download_url = f'https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}'
+        r = requests.get(download_url, timeout=30)
+        if r.status_code != 200:
+            edit_message(chat_id, msg_id, '⚠️ Erro ao baixar o arquivo.')
+            return
+
+        # 2. Extração de texto
+        is_pdf = file_name.lower().endswith('.pdf')
+        if is_pdf:
+            try:
+                import PyPDF2
+                pdf_bytes = io.BytesIO(r.content)
+                reader = PyPDF2.PdfReader(pdf_bytes)
+                text = ''.join((page.extract_text() or '') + '\n' for page in reader.pages).strip()
+            except Exception as e:
+                edit_message(chat_id, msg_id, f'⚠️ Erro ao ler PDF: {e}')
+                return
+            if not text:
+                edit_message(chat_id, msg_id, '⚠️ Não foi possível extrair texto do PDF (imagem escaneada?). Tente enviar como JPG/PNG.')
+                return
+        else:
+            # Para imagens, enviar como base64 via prompt
+            import base64
+            img_b64 = base64.b64encode(r.content).decode()
+            ext = file_name.rsplit('.', 1)[-1].upper()
+            text = f'[Imagem {ext} da nota fiscal – dados em base64 truncados para análise de texto]'
+
+        # 3. Prompt de auditoria
+        prompt = f"""Você é um Auditor Fiscal Sênior de Prefeitura Municipal Brasileira.
+Analise a Nota Fiscal abaixo e responda APENAS com um objeto JSON válido (sem texto extra):
+{{
+  "supplierName": "string",
+  "cnpj": "string",
+  "invoiceDate": "string",
+  "totalAmount": number,
+  "items": [{{"description": "...", "quantity": number, "unitPrice": number, "totalPrice": number}}],
+  "anomalies": ["string"],
+  "riskScore": number0a100,
+  "riskLevel": "BAIXO|MÉDIO|ALTO|CRÍTICO",
+  "auditRecommendation": "string",
+  "reasoning": "string em português"
+}}
+
+Regras:
+- Verifique: Qtd × Preço Unit = Total Item; soma itens = Total NF.
+- Descrições genéricas ("serviços diversos") são suspeitas → riskScore alto.
+- NFs muito antigas ou emitidas em fins de semana para serviços de escritório são suspeitas.
+- Use ponto decimal; riskScore 0-100.
+
+Texto da Nota Fiscal:
+---
+{text[:8000]}
+---"""
+
+        # 4. Chamada à IA via server.py
+        try:
+            resp = requests.post(
+                f'{SERVER_URL}/api/ia/chat',
+                json={'messages': [{'role': 'user', 'content': prompt}], 'temperature': 0.1, 'max_tokens': 1500},
+                timeout=60
+            )
+            data = resp.json()
+            if not resp.ok:
+                err = data.get('error') or data
+                if isinstance(err, dict):
+                    err = err.get('message', str(err))
+                edit_message(chat_id, msg_id, f'⚠️ Erro da IA: {err}')
+                return
+            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+        except Exception as e:
+            edit_message(chat_id, msg_id, f'⚠️ Erro ao contatar o servidor IA: {e}\n\n<i>Certifique-se de que o servidor local está rodando e que a chave OpenRouter está configurada na aba ADM do sistema web.</i>')
+            return
+
+        # 5. Parse do JSON retornado
+        try:
+            import re as _re
+            json_match = _re.search(r'\{[\s\S]*\}', content)
+            result = json.loads(json_match.group(0)) if json_match else json.loads(content)
+        except Exception:
+            # Resposta não-JSON – exibe como texto
+            edit_message(chat_id, msg_id, f'🤖 <b>Análise da IA:</b>\n\n{content[:3800]}', reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+            return
+
+        # 6. Formatar resultado
+        score = result.get('riskScore', 0)
+        level = result.get('riskLevel', '?')
+        score_emoji = '🟢' if score < 30 else ('🟡' if score < 60 else ('🟠' if score < 80 else '🔴'))
+        anomalies = result.get('anomalies', [])
+        anomaly_text = '\n'.join(f'  ⚠️ {a}' for a in anomalies) if anomalies else '  ✅ Nenhuma anomalia detectada'
+        items = result.get('items', [])
+        items_text = ''
+        for item in items[:5]:
+            items_text += f'  • {item.get("description","?")[:35]} — Qtd: {item.get("quantity",0)} × R$ {item.get("unitPrice",0):.2f}\n'
+        if len(items) > 5:
+            items_text += f'  <i>…e mais {len(items)-5} item(ns)</i>\n'
+
+        msg = (
+            f'{score_emoji} <b>Relatório de Auditoria</b>\n\n'
+            f'🏢 <b>Fornecedor:</b> {result.get("supplierName","—")}\n'
+            f'📋 <b>CNPJ:</b> <code>{result.get("cnpj","—")}</code>\n'
+            f'📅 <b>Data NF:</b> {result.get("invoiceDate","—")}\n'
+            f'💰 <b>Valor Total:</b> R$ {result.get("totalAmount",0):,.2f}\n\n'
+            f'🎯 <b>Escore de Risco: {score}/100</b> — {level}\n\n'
+            f'<b>📦 Itens:</b>\n{items_text}\n'
+            f'<b>⚠️ Anomalias:</b>\n{anomaly_text}\n\n'
+            f'<b>🤖 Recomendação:</b>\n<i>{result.get("auditRecommendation","—")}</i>'
+        )
+        if len(msg) > 4000:
+            msg = msg[:4000] + '…'
+
+        edit_message(chat_id, msg_id, msg, reply_markup={'inline_keyboard': [
+            [{'text': '🔍 Auditar outro arquivo', 'callback_data': 'cmd_auditor_nf'}],
+            [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]
+        ]})
+
+    except Exception as e:
+        log.error('Erro no auditor: %s', e)
+        edit_message(chat_id, msg_id, '⚠️ Erro inesperado na auditoria.')
+    finally:
+        clear_state(chat_id)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Group 5 – Analisador de Extratos Bancários
+# ════════════════════════════════════════════════════════════════════════════
+
+def start_extrato_flow(chat_id: int, edit_msg: tuple | None = None):
+    """Inicia o fluxo de análise de extrato bancário."""
+    set_state(chat_id, {'step': STEP_UP_EXTRATO})
+    text = (
+        '🏦 <b>Analisador de Extratos Bancários · IA</b>\n\n'
+        'Envie um <b>extrato bancário em PDF</b> (BB, Caixa, Bradesco, etc.) e a IA irá:\n'
+        '• Identificar e somar todas as <b>tarifas e encargos</b>\n'
+        '• Listar créditos, débitos e saldo do período\n'
+        '• Alertar sobre cobranças duplicadas ou suspeitas\n\n'
+        '📎 <i>Envie o PDF do extrato agora:</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def process_extrato_file(chat_id: int, file_id: str, file_name: str):
+    """Baixa o PDF do extrato, extrai texto e chama a IA para análise financeira."""
+    msg_id = send_message(chat_id, '⏳ <i>Lendo extrato e analisando tarifas com IA…</i>')["result"]["message_id"]
+    try:
+        # 1. Download
+        f_info = tg_request('getFile', {'file_id': file_id})
+        if not f_info.get('ok'):
+            edit_message(chat_id, msg_id, '⚠️ Erro ao obter informações do arquivo.')
+            return
+        file_path = f_info['result']['file_path']
+        download_url = f'https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}'
+        r = requests.get(download_url, timeout=30)
+        if r.status_code != 200:
+            edit_message(chat_id, msg_id, '⚠️ Erro ao baixar o arquivo.')
+            return
+
+        # 2. Extração de texto do PDF
+        if not file_name.lower().endswith('.pdf'):
+            edit_message(chat_id, msg_id, '⚠️ Envie apenas arquivos PDF para análise de extratos.')
+            return
+        try:
+            import PyPDF2
+            pdf_bytes = io.BytesIO(r.content)
+            reader = PyPDF2.PdfReader(pdf_bytes)
+            text = ''.join((page.extract_text() or '') + '\n' for page in reader.pages).strip()
+        except Exception as e:
+            edit_message(chat_id, msg_id, f'⚠️ Erro ao ler PDF: {e}')
+            return
+        if not text:
+            edit_message(chat_id, msg_id, '⚠️ Não foi possível extrair texto do PDF. O arquivo pode ser uma imagem escaneada.')
+            return
+
+        # 3. Prompt de análise
+        prompt = f"""Você é um especialista em finanças públicas municipais do Brasil.
+Analise o extrato bancário abaixo e responda APENAS com um objeto JSON válido:
+{{
+  "total_tarifas": number,
+  "categorias_tarifas": [{{"nome": "string", "valor": number}}],
+  "total_creditos": number,
+  "total_debitos": number,
+  "saldo_periodo": number,
+  "num_lancamentos": number,
+  "maiores_debitos": [{{"descricao": "string", "valor": number}}],
+  "alertas": ["string"],
+  "resumo": "string"
+}}
+
+Regras:
+- "categorias_tarifas": cada tipo de tarifa (Manutenção, IOF, TED, Pacote, etc.).
+- "maiores_debitos": top 5 maiores débitos excluindo tarifas.
+- Use ponto decimal. Todos os valores como números.
+
+Extrato:
+---
+{text[:12000]}
+---"""
+
+        # 4. Chamada à IA
+        try:
+            resp = requests.post(
+                f'{SERVER_URL}/api/ia/chat',
+                json={'messages': [{'role': 'user', 'content': prompt}], 'temperature': 0.1, 'max_tokens': 1500},
+                timeout=60
+            )
+            data = resp.json()
+            if not resp.ok:
+                err = data.get('error') or data
+                if isinstance(err, dict):
+                    err = err.get('message', str(err))
+                edit_message(chat_id, msg_id, f'⚠️ Erro da IA: {err}')
+                return
+            content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+        except Exception as e:
+            edit_message(chat_id, msg_id, f'⚠️ Erro ao contatar o servidor IA: {e}\n\n<i>Certifique-se de que o servidor local está rodando.</i>')
+            return
+
+        # 5. Parse JSON
+        try:
+            import re as _re
+            json_match = _re.search(r'\{[\s\S]*\}', content)
+            result = json.loads(json_match.group(0)) if json_match else json.loads(content)
+        except Exception:
+            edit_message(chat_id, msg_id, f'🤖 <b>Análise da IA:</b>\n\n{content[:3800]}', reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+            return
+
+        # 6. Formatar resultado
+        def fmt_brl(v):
+            try:
+                return f'R$ {float(v):,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+            except Exception:
+                return 'R$ —'
+
+        tarifas = result.get('categorias_tarifas', [])
+        tarifas_text = ''.join(f'  💳 {t["nome"]}: {fmt_brl(t["valor"])}\n' for t in tarifas[:8])
+        if not tarifas_text:
+            tarifas_text = '  ✅ Nenhuma tarifa identificada\n'
+
+        debitos = result.get('maiores_debitos', [])
+        debitos_text = ''.join(f'  💸 {d["descricao"][:35]}: {fmt_brl(d["valor"])}\n' for d in debitos[:5])
+
+        alertas = result.get('alertas', [])
+        alertas_text = '\n'.join(f'  🔔 {a}' for a in alertas[:4]) if alertas else '  ✅ Sem alertas'
+
+        saldo = result.get('saldo_periodo', 0)
+        saldo_emoji = '📈' if float(saldo or 0) >= 0 else '📉'
+
+        msg = (
+            f'🏦 <b>Análise do Extrato Bancário</b>\n\n'
+            f'⚠️ <b>Total de Tarifas/Encargos: {fmt_brl(result.get("total_tarifas",0))}</b>\n\n'
+            f'📊 <b>Resumo Financeiro</b>\n'
+            f'  📈 Créditos: {fmt_brl(result.get("total_creditos",0))}\n'
+            f'  📉 Débitos: {fmt_brl(result.get("total_debitos",0))}\n'
+            f'  {saldo_emoji} Saldo: {fmt_brl(saldo)}\n'
+            f'  🔢 Lançamentos: {result.get("num_lancamentos","—")}\n\n'
+            f'<b>💳 Detalhamento de Tarifas:</b>\n{tarifas_text}\n'
+            f'<b>💸 Maiores Débitos:</b>\n{debitos_text}\n'
+            f'<b>🔔 Alertas:</b>\n{alertas_text}\n\n'
+            f'<b>🤖 Resumo da IA:</b>\n<i>{result.get("resumo","—")[:500]}</i>'
+        )
+        if len(msg) > 4000:
+            msg = msg[:4000] + '…'
+
+        edit_message(chat_id, msg_id, msg, reply_markup={'inline_keyboard': [
+            [{'text': '🏦 Analisar outro extrato', 'callback_data': 'cmd_extrato_bancario'}],
+            [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]
+        ]})
+
+    except Exception as e:
+        log.error('Erro no extrato: %s', e)
+        edit_message(chat_id, msg_id, '⚠️ Erro inesperado na análise do extrato.')
+    finally:
+        clear_state(chat_id)
+
+
 # ════════════════════════════════════════════════════════════════════════════
 
 def handle_message(msg: dict):
@@ -1242,9 +1558,9 @@ def handle_message(msg: dict):
 
     # Se a mensagem tiver arquivo e a gente estiver esperando um arquivo
     state = get_state(chat_id)
-    step = state.get('step')
+    step = state.get('step') if state else None
     
-    if (document or photo) and step in {STEP_UP_PDF, STEP_UP_RENOMEAR, STEP_UP_EMPENHO}:
+    if (document or photo) and step in {STEP_UP_PDF, STEP_UP_RENOMEAR, STEP_UP_EMPENHO, STEP_UP_AUDITOR, STEP_UP_EXTRATO}:
         file_id = document['file_id'] if document else photo[-1]['file_id']
         file_name = document['file_name'] if document else 'imagem.jpg'
         
@@ -1257,6 +1573,13 @@ def handle_message(msg: dict):
                 send_message(chat_id, '⚠️ Para geração de empenho por arquivo, envie apenas PDF. (Ou envie imagens via web app).')
             else:
                 process_empenho_pdf(chat_id, file_id)
+        elif step == STEP_UP_AUDITOR:
+            threading.Thread(target=process_auditor_file, args=(chat_id, file_id, file_name), daemon=True).start()
+        elif step == STEP_UP_EXTRATO:
+            if not file_name.lower().endswith('.pdf'):
+                send_message(chat_id, '⚠️ Envie apenas um arquivo PDF para análise de extrato.')
+            else:
+                threading.Thread(target=process_extrato_file, args=(chat_id, file_id, file_name), daemon=True).start()
         return
 
     # Comandos
@@ -1301,7 +1624,7 @@ def handle_message(msg: dict):
             '📊 <b>Sistema</b>\n'
             '/logs  — Últimas ações registradas\n'
             '/status  — Status geral do sistema\n'
-        ), reply_markup={'inline_keyboard': [[{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]]})
+        ), reply_markup={'inline_keyboard': [[{'text': '🔙 Voltar ao Menu', 'callback_data': 'cmd_menu'}]]})
         return
 
     if text.startswith('/tarefa') or text.lower() in {'nova tarefa', 'nova', 'criar tarefa'}:
@@ -1535,6 +1858,14 @@ def handle_callback(callback_query: dict):
 
     if data == 'cmd_buscar_despesas':
         start_despesas_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_auditor_nf':
+        start_auditor_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_extrato_bancario':
+        start_extrato_flow(chat_id, edit_msg=(chat_id, msg_id))
         return
 
     if data == 'ignore':
