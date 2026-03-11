@@ -37,3 +37,6 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Secrets / variáveis de ambiente
+.env
