@@ -555,7 +555,7 @@ Texto do documento:
     const extractedText = await extractTextFromFile(file);
     if (!extractedText.trim()) throw new Error('Não foi possível extrair texto do arquivo.');
 
-    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
     const prompt = PROMPT_TEMPLATE.replace('{TEXT}', extractedText);
 
     const resp = await fetch('/api/ia/chat', {
@@ -586,7 +586,7 @@ Texto do documento:
     const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
     if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
 
-    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
     const prompt = PROMPT_TEMPLATE.replace('{TEXT}', inputText);
 
     const resp = await fetch('/api/ia/chat', {

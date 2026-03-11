@@ -80,6 +80,7 @@
     ferramentas: [
       { href: '/pages/cnpj.html',       name: 'Consulta CNPJ',    desc: 'Consultar dados de empresas' },
       { href: '/pages/renomear.html',   name: 'Renomear com IA',  desc: 'Renomear PDFs e extratos' },
+      { href: '/pages/calculadora-diarias.html', name: 'Calc. Diárias', desc: 'Calcular diárias de viagens' },
       { href: '/pages/tarefas.html',    name: 'Tarefas Kanban',   desc: 'Gerenciar atividades' },
       { href: '/pages/calendario.html', name: 'Calendário',       desc: 'Calendário de pagamentos' },
       { href: '/pages/manual.html',     name: '📖 Manual',        desc: 'Guia completo do sistema' },

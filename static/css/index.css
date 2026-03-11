@@ -2247,6 +2247,47 @@ body.home-page .sidebar-scroll {
   padding: 16px 12px 24px;
 }
 
+/* Botão Expandir/Recolher tudo na sidebar */
+body.home-page .sidebar-expand-all-wrap {
+  margin-bottom: 10px;
+}
+
+body.home-page .sidebar-expand-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+body.home-page .sidebar-expand-all-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+body.home-page .sidebar-expand-all-btn:hover {
+  background: rgba(79, 128, 200, 0.08);
+  color: var(--blue);
+  border-color: rgba(79, 128, 200, 0.3);
+}
+
+body.home-page .sidebar-expand-all-btn.expanded svg {
+  transform: rotate(180deg);
+}
+
 body.home-page .sidebar-section {
   display: flex;
   flex-direction: column;

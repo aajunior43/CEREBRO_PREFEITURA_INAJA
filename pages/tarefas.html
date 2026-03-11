@@ -626,6 +626,22 @@
             display: inline-block;
             animation: spin .7s linear infinite
         }
+
+        /* ── BROWSER MODAL (SHARED) ── */
+        .browser-modal { display: none; position: fixed; inset: 0; z-index: 6000; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .browser-modal.open { display: flex; }
+        .browser-box { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); width: 720px; max-width: 95vw; max-height: 80vh; display: flex; flex-direction: column; }
+        .browser-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(184,194,204,0.2); }
+        .browser-header h4 { font-size: 14px; font-weight: 700; color: var(--text); margin: 0; }
+        .browser-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-3); line-height: 1; padding: 0; margin: 0; }
+        .browser-list { flex: 1; overflow-y: auto; padding: 8px; }
+        .browser-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.15s; }
+        .browser-item:hover { background: rgba(79,128,200,0.08); }
+        .browser-footer { padding: 12px 16px; border-top: 1px solid rgba(184,194,204,0.2); display: flex; gap: 10px; justify-content: flex-end; }
+        .empty-ext { text-align: center; padding: 48px 24px; color: var(--text-3); }
+        .empty-ext p { margin: 0; }
+        .path-input { flex: 1; background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 14px; font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: box-shadow 0.2s; }
+        .path-input:focus { box-shadow: var(--neo-in); }
     </style>
   <script defer src="/static/js/shared-header.js"></script>
 </head>
@@ -752,6 +768,28 @@
                 <button class="kb-btn kb-btn-ghost" onclick="closeConfirm()">Cancelar</button>
                 <button class="kb-btn" style="background:#ef4444;color:#fff" onclick="executeDelete()">🗑
                     Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Modelos OpenRouter -->
+    <div class="browser-modal" id="modelos-modal">
+        <div class="browser-box">
+            <div class="browser-header">
+                <h4>📋 Modelos Disponíveis – OpenRouter</h4>
+                <button class="browser-close" onclick="fecharModelos()">✕</button>
+            </div>
+            <div style="padding:10px 16px;border-bottom:1px solid rgba(184,194,204,0.15);display:flex;gap:10px;align-items:center;">
+                <span style="font-size:12px;color:var(--text-3);">🔍</span>
+                <input type="text" id="modelos-filtro" class="path-input" placeholder="Filtrar por nome ou id..." style="flex:1;" oninput="filtrarModelos()" />
+                <span id="modelos-count" style="font-size:11px;color:var(--text-3);white-space:nowrap;"></span>
+            </div>
+            <div class="browser-list" id="modelos-lista" style="max-height:55vh;">
+                <div class="empty-ext"><p>Carregando...</p></div>
+            </div>
+            <div class="browser-footer" style="justify-content:space-between;align-items:center;">
+                <span style="font-size:11px;color:var(--text-3);">Clique para selecionar o modelo</span>
+                <button class="kb-btn kb-btn-ghost" onclick="fecharModelos()">Fechar</button>
             </div>
         </div>
     </div>
@@ -942,13 +980,16 @@
             const promptText = window.prompt('Descreva a tarefa para a IA criar no Kanban:');
             if (!promptText || !promptText.trim()) return;
             try {
-                showToast('Gerando tarefa com IA...', 'info');
+                showToast('⏳ Gerando tarefa com IA... (pode levar alguns segundos)', 'info');
                 const task = await callKanbanAi('/api/kanban/ai/create-from-text', { prompt: promptText.trim() });
                 openTaskModal();
                 fillTaskModal(task);
-                showToast('Sugestão da IA pronta. Revise e salve.', 'success');
+                showToast('✅ Sugestão da IA pronta. Revise e salve.', 'success');
             } catch (e) {
-                showToast(e.message || 'Erro ao usar IA no Kanban', 'error');
+                const msg = e.message || 'Erro ao usar IA no Kanban';
+                const is429 = msg.includes('429') || msg.includes('Limite de requisi');
+                showToast(msg, 'error');
+                if (is429) consultarModelosEExibirModal();
             }
         }
 
@@ -959,12 +1000,15 @@
             const promptText = window.prompt('Diga para a IA como melhorar esta tarefa:', 'Melhore a clareza, prioridade e descrição desta tarefa.');
             if (promptText === null) return;
             try {
-                showToast('Melhorando tarefa com IA...', 'info');
+                showToast('⏳ Melhorando tarefa com IA... (pode levar alguns segundos)', 'info');
                 const improved = await callKanbanAi('/api/kanban/ai/improve-task', { task, prompt: promptText.trim() });
                 fillTaskModal(improved);
-                showToast('Sugestão aplicada no formulário. Revise e salve.', 'success');
+                showToast('✅ Sugestão aplicada no formulário. Revise e salve.', 'success');
             } catch (e) {
-                showToast(e.message || 'Erro ao melhorar tarefa com IA', 'error');
+                const msg = e.message || 'Erro ao melhorar tarefa com IA';
+                const is429 = msg.includes('429') || msg.includes('Limite de requisi');
+                showToast(msg, 'error');
+                if (is429) consultarModelosEExibirModal();
             }
         }
 
@@ -974,11 +1018,14 @@
             const promptText = window.prompt('Como a IA deve quebrar esta tarefa em subtarefas?', 'Quebre em passos menores e práticos.');
             if (promptText === null) return;
             try {
-                showToast('Gerando subtarefas com IA...', 'info');
+                showToast('⏳ Gerando subtarefas com IA... (pode levar alguns segundos)', 'info');
                 const result = await callKanbanAi('/api/kanban/ai/breakdown-task', { task, prompt: promptText.trim() });
                 await confirmAndCreateSubtasks(result.tasks);
             } catch (e) {
-                showToast(e.message || 'Erro ao quebrar tarefa com IA', 'error');
+                const msg = e.message || 'Erro ao quebrar tarefa com IA';
+                const is429 = msg.includes('429') || msg.includes('Limite de requisi');
+                showToast(msg, 'error');
+                if (is429) consultarModelosEExibirModal();
             }
         }
 
@@ -1111,6 +1158,80 @@
             t.style.background = type === 'error' ? '#e11d48' : type === 'success' ? '#16a34a' : '#1e40af';
             t.style.display = 'block'; t.style.opacity = '1';
             clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
+        }
+
+        // ── IA MODELOS (OPENROUTER) ────────────────────────────────────────────────
+        let todosModelos = [];
+        async function consultarModelosEExibirModal() {
+            const apiKey = localStorage.getItem('api_openrouter_key') || '';
+            if (!apiKey) {
+                showToast('🔑 Configure a chave da API do OpenRouter primeiro em Configurações.', 'error');
+                return;
+            }
+            try {
+                showToast('⏳ Buscando modelos gratuitos no OpenRouter...', 'info');
+                const res = await fetch('/api/extratos/modelos-openrouter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: apiKey })
+                });
+                const data = await res.json();
+                if (!res.ok) { showToast(data.error || 'Erro ao buscar modelos.', 'error'); return; }
+                
+                // Filtra para exibir apenas os gratuitos
+                todosModelos = (data.modelos || []).filter(m => {
+                    const prec = m.pricing || {};
+                    return parseFloat(prec.prompt || 0) === 0 && parseFloat(prec.completion || 0) === 0;
+                });
+
+                renderizarModelos(todosModelos);
+                document.getElementById('modelos-filtro').value = '';
+                document.getElementById('modelos-modal').classList.add('open');
+                showToast(`${todosModelos.length} modelos gratuitos encontrados!`, 'success');
+            } catch (e) {
+                showToast('Erro de conexão com o servidor.', 'error');
+            }
+        }
+
+        function renderizarModelos(lista) {
+            document.getElementById('modelos-count').textContent = `${lista.length} modelos`;
+            const el = document.getElementById('modelos-lista');
+            if (!lista.length) {
+                el.innerHTML = '<div class="empty-ext"><p>Nenhum modelo encontrado.</p></div>'; return;
+            }
+            el.innerHTML = lista.map(m => {
+                const ctx = m.context_length ? `${m.context_length.toLocaleString()} ctx` : '';
+                return `<div class="browser-item" onclick="selecionarModelo('${esc(m.id)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;color:var(--blue)"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:12px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(m.id)}</div>
+                    <div style="font-size:11px;color:var(--text-3);">${esc(m.name||'')} ${ctx?' · '+ctx:''} <span style="color:var(--green);font-weight:600;">(Gratuito)</span></div>
+                </div>
+                </div>`;
+            }).join('');
+        }
+
+        function filtrarModelos() {
+            const q = document.getElementById('modelos-filtro').value.toLowerCase();
+            const filtrado = q ? todosModelos.filter(m =>
+                (m.id||'').toLowerCase().includes(q) || (m.name||'').toLowerCase().includes(q)
+            ) : todosModelos;
+            renderizarModelos(filtrado);
+        }
+
+        function selecionarModelo(id) {
+            localStorage.setItem('api_openrouter_modelo', id);
+            localStorage.setItem('ext_ia_modelo', id);
+            // Atualiza globalmente para não precisar dar reload caso use header
+            showToast(`✅ Modelo selecionado: ${id}`, 'success');
+            fecharModelos();
+            setTimeout(() => {
+                showToast('🚀 O modelo foi trocado. Pode tentar sua requisição de novo!', 'info');
+            }, 1000);
+        }
+
+        function fecharModelos() {
+            document.getElementById('modelos-modal').classList.remove('open');
         }
 
     </script>

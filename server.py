@@ -1355,24 +1355,52 @@ def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = Non
         })
     else:
         messages.append({'role': 'user', 'content': user_prompt})
-    try:
-        payload = chat_completion(
-            api_key=api_key,
-            model=model,
-            messages=messages,
-            max_tokens=900,
-            temperature=0.4,
-            referer=settings.openrouter_referer,
-            title=settings.openrouter_title,
-        )
-        text = _extract_openrouter_text(payload)
-        return _extract_json_block(text), None
-    except urllib.error.HTTPError as err:
-        detail = parse_http_error(err)
-        message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao consultar OpenRouter'
-        return None, (message, err.code or 502)
-    except Exception as err:
-        return None, (str(err), 500)
+    for tentativa in range(2):  # até 2 tentativas (0 e 1)
+        try:
+            payload = chat_completion(
+                api_key=api_key,
+                model=model,
+                messages=messages,
+                max_tokens=900,
+                temperature=0.4,
+                referer=settings.openrouter_referer,
+                title=settings.openrouter_title,
+            )
+            text = _extract_openrouter_text(payload)
+            return _extract_json_block(text), None
+        except urllib.error.HTTPError as err:
+            if err.code == 429:
+                detail = parse_http_error(err)
+                if tentativa == 0:
+                    # Lê o Retry-After indicado pelo OpenRouter (máx 30s, fallback 15s)
+                    retry_after_raw = detail.get('_retry_after') or '15'
+                    try:
+                        wait_s = min(int(float(retry_after_raw)), 30)
+                    except (ValueError, TypeError):
+                        wait_s = 15
+                    app.logger.warning(
+                        'OpenRouter 429 (tentativa 1) — aguardando %ds para retry... modelo=%s',
+                        wait_s, model
+                    )
+                    _time.sleep(wait_s)
+                    continue
+                # Segunda tentativa também falhou: retorna mensagem amigável
+                msg_or = (detail.get('error') or {})
+                if isinstance(msg_or, dict):
+                    msg_or = msg_or.get('message', '')
+                return None, (
+                    f'Limite de requisições da IA atingido (429). '
+                    f'O modelo "{model}" está sobrecarregado agora. '
+                    'Tente novamente mais tarde ou troque o modelo em ADM → Configurações → Chaves de API.',
+                    429
+                )
+            detail = parse_http_error(err)
+            message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao consultar OpenRouter'
+            return None, (message, err.code or 502)
+        except Exception as err:
+            return None, (str(err), 500)
+    return None, ('Erro inesperado ao consultar a IA', 500)
+
 
 @app.route('/api/extratos/modelos-openrouter', methods=['GET', 'POST'])
 def extratos_modelos_openrouter():
@@ -1419,6 +1447,79 @@ def extratos_modelos_openrouter():
     except Exception as e:
         app.logger.error('%s /api/extratos/modelos-openrouter: %s', request.method, e)
         return jsonify({'error': str(e), 'modelos': [], 'models': []}), 500
+
+
+@app.route('/api/ia/chat', methods=['POST'])
+def proxy_ia_chat():
+    import urllib.error
+    try:
+        data = request.get_json(force=True) or {}
+        conn = get_db()
+        api_key, model = _get_openrouter_config(
+            conn,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if not api_key:
+            return jsonify({'error': 'Chave API OpenRouter não configurada. Configure na aba ADM.'}), 400
+
+        messages = data.get('messages', [])
+        temperature = data.get('temperature', 0.2)
+        max_tokens = data.get('max_tokens', 2000)
+        
+        # Optionally pass response_format if present in the payload (like from auditor.html)
+        kwargs = {}
+        if 'response_format' in data:
+            kwargs['response_format'] = data['response_format']
+
+        # Build fallback chain: user model -> openrouter/free (auto-router) -> specific backups
+        models_to_try = [model]
+        if model != 'openrouter/free':
+            models_to_try.append('openrouter/free')
+        for backup in ['google/gemma-3-27b-it:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'meta-llama/llama-3.2-3b-instruct:free']:
+            if backup not in models_to_try:
+                models_to_try.append(backup)
+
+        payload = None
+        all_429 = True
+
+        for m in models_to_try:
+            try:
+                # openrouter/free does not support response_format
+                call_kwargs = {} if m == 'openrouter/free' else dict(kwargs)
+                payload = chat_completion(
+                    api_key=api_key,
+                    model=m,
+                    messages=messages,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    referer=settings.openrouter_referer,
+                    title=settings.openrouter_title,
+                    **call_kwargs
+                )
+                if m != model:
+                    app.logger.info('Fallback bem-sucedido para modelo: %s', m)
+                all_429 = False
+                break
+            except urllib.error.HTTPError as err:
+                if err.code == 429:
+                    app.logger.warning('Modelo %s retornou 429. Tentando proximo...', m)
+                    continue
+                all_429 = False
+                raise
+
+        if payload is None:
+            msg = ('Todos os modelos gratuitos estao sobrecarregados agora (erro 429). '
+                   'Aguarde 1-2 minutos e tente novamente.')
+            return jsonify({'error': {'code': 429, 'message': msg}}), 429
+
+        return jsonify(payload)
+    except urllib.error.HTTPError as err:
+        detail = parse_http_error(err)
+        return jsonify({'error': detail}), err.code or 502
+    except Exception as e:
+        app.logger.error('POST /api/ia/chat: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/kanban', methods=['GET'])
 def kanban_listar():

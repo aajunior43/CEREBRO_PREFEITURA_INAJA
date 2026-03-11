@@ -898,9 +898,6 @@
     const saved = localStorage.getItem('theme') || 'light';
     if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
-        // ── PDF.js Setup ─────────────────────────────────────────────
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-
         // ── STATE ────────────────────────────────────────────────
         let fileDataUrl = null;
         let fileMime = null;
@@ -929,11 +926,13 @@
         function onFileSelect(e) { const f = e.target.files[0]; if (f) loadFile(f); }
 
         function loadFile(f) {
-            if (!f.type.startsWith('image/') && f.type !== 'application/pdf') {
+            const isPdf = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+            const isImg = f.type.startsWith('image/') || f.name.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/i);
+            if (!isPdf && !isImg) {
                 toast('Envie apenas PDF ou imagem (JPG, PNG, WebP)', 'error'); return;
             }
             fileName = f.name;
-            fileMime = f.type;
+            fileMime = isPdf ? 'application/pdf' : f.type;
             const reader = new FileReader();
             reader.onloadend = () => {
                 fileDataUrl = reader.result;
@@ -1028,6 +1027,7 @@ Schema JSON esperado:
 
         async function extractTextFromFile(dataUrl, mime) {
             if (mime === 'application/pdf') {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
                 const base64 = dataUrl.split(',')[1];
                 const binary = atob(base64);
                 const bytes = new Uint8Array(binary.length);
@@ -1049,7 +1049,7 @@ Schema JSON esperado:
         }
 
         async function callGemini(dataUrl, mime, apiKey) {
-            const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
+            const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
             const today = new Date().toLocaleDateString('pt-BR');
 
             // Extract text from file (PDF text layer first, then OCR fallback)
@@ -1073,8 +1073,16 @@ Schema JSON esperado:
             async function tryAI(promptText) {
                 const res = await fetch('/api/ia/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: apiKey, model, messages: [{ role: 'user', content: promptText }], max_tokens: 2000, temperature: 0.1 })
+                    headers: { 
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        api_key: apiKey,
+                        model: model, 
+                        messages: [{ role: 'user', content: promptText }], 
+                        temperature: 0.1,
+                        response_format: { type: 'json_object' }
+                    })
                 });
                 if (res.status === 429) return ''; // rate-limit → fall through to next attempt/fallback
                 if (!res.ok) {

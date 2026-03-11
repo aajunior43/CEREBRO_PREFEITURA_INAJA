@@ -18,7 +18,7 @@ class Settings:
     debug: bool = os.environ.get('APP_DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
     admin_password: str = os.environ.get('ADM_PASSWORD', '1999')
     openrouter_default_model: str = os.environ.get('OPENROUTER_DEFAULT_MODEL', 'openai/gpt-4o-mini')
-    openrouter_chat_model: str = os.environ.get('OPENROUTER_CHAT_MODEL', 'meta-llama/llama-3.1-8b-instruct:free')
+    openrouter_chat_model: str = os.environ.get('OPENROUTER_CHAT_MODEL', 'meta-llama/llama-3.3-70b-instruct:free')
     openrouter_referer: str = os.environ.get('OPENROUTER_REFERER', 'https://localhost')
     openrouter_title: str = os.environ.get('OPENROUTER_TITLE', 'CEREBRO_PREFEITURA')
 

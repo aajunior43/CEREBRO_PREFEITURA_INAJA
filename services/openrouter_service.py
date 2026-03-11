@@ -17,13 +17,15 @@ def listar_modelos(api_key: str) -> list[dict[str, Any]]:
     return data.get('data', [])
 
 
-def chat_completion(api_key: str, model: str, messages: list[dict[str, Any]], max_tokens: int, temperature: float, referer: str, title: str) -> dict[str, Any]:
-    payload = json.dumps({
+def chat_completion(api_key: str, model: str, messages: list[dict[str, Any]], max_tokens: int, temperature: float, referer: str, title: str, **kwargs) -> dict[str, Any]:
+    payload_data = {
         'model': model,
         'messages': messages,
         'max_tokens': max_tokens,
         'temperature': temperature,
-    }).encode('utf-8')
+    }
+    payload_data.update(kwargs)
+    payload = json.dumps(payload_data).encode('utf-8')
     req = urllib.request.Request(
         'https://openrouter.ai/api/v1/chat/completions',
         data=payload,
@@ -42,6 +44,11 @@ def chat_completion(api_key: str, model: str, messages: list[dict[str, Any]], ma
 def parse_http_error(error: urllib.error.HTTPError) -> dict[str, Any]:
     body = error.read().decode('utf-8', errors='replace')
     try:
-        return json.loads(body)
+        data = json.loads(body)
     except Exception:
-        return {'message': body}
+        data = {'message': body}
+    # Captura o header Retry-After se presente (usado pelo OpenRouter no 429)
+    retry_after = error.headers.get('Retry-After') or error.headers.get('retry-after')
+    if retry_after:
+        data['_retry_after'] = retry_after
+    return data

@@ -40,9 +40,6 @@
 
         <div class="dropdown">
           <button class="dropdown-toggle" id="dropdown-toggle">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
-            </svg>
           </button>
           <div class="dropdown-menu" id="dropdown-menu">
             <button class="dropdown-item" id="btn-logs" data-tooltip="Ver histórico de alterações">
@@ -69,6 +66,17 @@
 
   <aside class="app-sidebar" id="app-sidebar">
     <div class="sidebar-scroll">
+
+      <!-- Botão de expandir/recolher todos os grupos -->
+      <div class="sidebar-expand-all-wrap">
+        <button class="sidebar-expand-all-btn" id="btn-sidebar-expand-all" title="Expandir ou recolher todos os grupos do menu">
+          <svg id="sidebar-expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <span id="sidebar-expand-label">Expandir tudo</span>
+        </button>
+      </div>
+
       <div class="sidebar-section">
         <div class="sidebar-label">Operação</div>
         <button class="nav-tab active nav-tab-sidebar" data-tab="credores-fixos" data-tooltip="Lista de credores com empenhos mensais">
@@ -155,6 +163,7 @@
           <div class="nav-group-menu nav-group-menu-sidebar">
             <a href="/pages/cnpj.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">CNPJ</span><span class="nav-group-item-desc">Consultar dados de empresas</span></div></a>
             <a href="/pages/renomear.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Renomear com IA</span><span class="nav-group-item-desc">Organizar PDFs e extratos</span></div></a>
+            <a href="/pages/calculadora-diarias.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Calc. Diárias</span><span class="nav-group-item-desc">Cálculo de diárias de viagem</span></div></a>
             <a href="/pages/manual.html" class="nav-group-item"><div class="nav-group-item-icon">📖</div><div class="nav-group-item-text"><span class="nav-group-item-name">Manual</span><span class="nav-group-item-desc">Guia completo do sistema</span></div></a>
           </div>
         </div>
@@ -213,6 +222,7 @@
       <div class="mobile-nav-label">Ferramentas</div>
       <a href="/pages/cnpj.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>CNPJ</a>
       <a href="/pages/renomear.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Renomear com IA</a>
+      <a href="/pages/calculadora-diarias.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg>Calc. Diárias</a>
       <a href="/pages/manual.html" class="mobile-nav-item" style="text-decoration:none;">📖 Manual</a>
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Administração</div>

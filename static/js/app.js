@@ -1388,14 +1388,57 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('click', () => dropdown?.classList.remove('open'));
 
+  // Botão "Expandir tudo / Recolher tudo" da sidebar
+  function syncSidebarExpandBtn() {
+    const btn = document.getElementById('btn-sidebar-expand-all');
+    const label = document.getElementById('sidebar-expand-label');
+    if (!btn || !label) return;
+    const sidebarGroups = document.querySelectorAll('.nav-group-sidebar');
+    const allOpen = [...sidebarGroups].every(g => g.classList.contains('open'));
+    if (allOpen) {
+      label.textContent = 'Recolher tudo';
+      btn.classList.add('expanded');
+    } else {
+      label.textContent = 'Expandir tudo';
+      btn.classList.remove('expanded');
+    }
+  }
+
+  // Sincroniza o estado inicial do botão
+  syncSidebarExpandBtn();
+
+  const btnSidebarExpandAll = document.getElementById('btn-sidebar-expand-all');
+  if (btnSidebarExpandAll) {
+    btnSidebarExpandAll.addEventListener('click', () => {
+      const sidebarGroups = document.querySelectorAll('.nav-group-sidebar');
+      const allOpen = [...sidebarGroups].every(g => g.classList.contains('open'));
+      if (allOpen) {
+        sidebarGroups.forEach(g => g.classList.remove('open'));
+      } else {
+        sidebarGroups.forEach(g => g.classList.add('open'));
+      }
+      syncSidebarExpandBtn();
+    });
+  }
+
   // Nav group dropdowns (Documentos / Financeiro / Ferramentas)
   document.querySelectorAll('.nav-group-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const group = btn.closest('.nav-group');
-      const isOpen = group.classList.contains('open');
-      document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'));
-      if (!isOpen) group.classList.add('open');
+      const isSidebar = group.classList.contains('nav-group-sidebar');
+
+      if (isSidebar) {
+        // Na sidebar: toggle independente (não fecha os outros)
+        group.classList.toggle('open');
+        // Sincroniza o botão expandir tudo
+        syncSidebarExpandBtn();
+      } else {
+        // No header: accordion (fecha os outros)
+        const isOpen = group.classList.contains('open');
+        document.querySelectorAll('.nav-group:not(.nav-group-sidebar)').forEach(g => g.classList.remove('open'));
+        if (!isOpen) group.classList.add('open');
+      }
     });
   });
   
@@ -1408,9 +1451,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outside (somente os do header, não os da sidebar)
   document.addEventListener('click', () =>
-    document.querySelectorAll('.nav-group').forEach(g => g.classList.remove('open'))
+    document.querySelectorAll('.nav-group:not(.nav-group-sidebar)').forEach(g => g.classList.remove('open'))
   );
   
   // Theme toggle in dropdown

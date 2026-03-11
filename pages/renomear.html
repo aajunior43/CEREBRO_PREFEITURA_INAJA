@@ -1040,7 +1040,7 @@ TEXTO:
     async function callAPI(content, attempt) {
       const key = localStorage.getItem('api_openrouter_key') || '';
       if (!key) throw new Error('Chave OpenRouter não configurada (ADM → OpenRouter)');
-      const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.1-8b-instruct:free';
+      const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
       const res = await fetch('/api/ia/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
