@@ -1221,6 +1221,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  contain: layout;
 }
 
 /* ---- Card de empenho ---- */
@@ -1229,21 +1230,9 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  transition: box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  animation: fadeIn 0.25s ease both;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
   overflow: visible;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  contain: layout style;
 }
 
 .empenho-card:hover {

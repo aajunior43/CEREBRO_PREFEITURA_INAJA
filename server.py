@@ -256,11 +256,11 @@ def compress_response(response):
             )
         if request.path.startswith('/api/') and elapsed_ms >= 250:
             app.logger.warning('Slow request %.1fms %s %s [%s]', elapsed_ms, request.method, request.path, response.status_code)
-    # Cache-Control para APIs GET (dados mudam pouco entre requests)
+    # Cache-Control para APIs GET (dados são estáveis entre navegações)
     if (request.method == 'GET' and request.path.startswith('/api/')
             and response.status_code == 200
             and 'Cache-Control' not in response.headers):
-        response.headers['Cache-Control'] = 'public, max-age=5'
+        response.headers['Cache-Control'] = 'public, max-age=20'
 
     if (response.status_code < 200 or response.status_code >= 300
             or response.direct_passthrough
@@ -270,7 +270,7 @@ def compress_response(response):
     if mime in _COMPRESSIBLE and 'gzip' in request.headers.get('Accept-Encoding', ''):
         data = response.get_data()
         if len(data) > 256:
-            response.set_data(_gzip.compress(data, compresslevel=6))
+            response.set_data(_gzip.compress(data, compresslevel=4))
             response.headers['Content-Encoding'] = 'gzip'
             response.headers['Vary'] = 'Accept-Encoding'
             response.headers['Content-Length'] = len(response.get_data())
@@ -375,6 +375,45 @@ def migrate_db():
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             task_id         TEXT    NOT NULL
                             REFERENCES kanban_tasks(id) ON DELETE CASCADE,
+            file_name       TEXT    NOT NULL,
+            mime_type       TEXT    DEFAULT 'application/octet-stream',
+            file_size       INTEGER DEFAULT 0,
+            content         BLOB    NOT NULL,
+            criado_em       TEXT    DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS prazos (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo      TEXT    NOT NULL,
+            descricao   TEXT    DEFAULT '',
+            data_limite TEXT    NOT NULL,
+            categoria   TEXT    DEFAULT 'geral',
+            resolvido   INTEGER DEFAULT 0,
+            criado_em   TEXT    DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS protocolos (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            numero          TEXT    NOT NULL UNIQUE,
+            tipo            TEXT    NOT NULL,
+            direcao         TEXT    DEFAULT 'recebido',
+            origem_destino  TEXT    DEFAULT '',
+            assunto         TEXT    NOT NULL,
+            data_protocolo  TEXT    NOT NULL,
+            prazo_resposta  TEXT    DEFAULT '',
+            status          TEXT    DEFAULT 'recebido',
+            observacoes     TEXT    DEFAULT '',
+            doc_id          INTEGER,
+            criado_em       TEXT    DEFAULT (datetime('now','localtime'))
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS protocolo_anexos (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            protocolo_id    INTEGER NOT NULL
+                            REFERENCES protocolos(id) ON DELETE CASCADE,
             file_name       TEXT    NOT NULL,
             mime_type       TEXT    DEFAULT 'application/octet-stream',
             file_size       INTEGER DEFAULT 0,
@@ -1860,6 +1899,310 @@ def documentos_excluir(doc_id):
         return jsonify({'ok': True, 'file_removed': True})
     except Exception as e:
         app.logger.error('DELETE /api/documentos/%s: %s', doc_id, e)
+        return jsonify({'error': str(e)}), 500
+
+# ────────────────────────────────────────────────────────────
+# PRAZOS – Cadastro e acompanhamento de prazos críticos
+# ────────────────────────────────────────────────────────────
+
+@app.route('/api/prazos', methods=['GET'])
+def prazos_listar():
+    try:
+        conn = get_db()
+        status_f = request.args.get('status', 'ativos')  # 'ativos' | 'resolvidos' | 'todos'
+        categoria = request.args.get('categoria', '')
+        clauses = []
+        params = []
+        if status_f == 'ativos':
+            clauses.append('resolvido=0')
+        elif status_f == 'resolvidos':
+            clauses.append('resolvido=1')
+        if categoria:
+            clauses.append('categoria=?')
+            params.append(categoria)
+        where = ('WHERE ' + ' AND '.join(clauses)) if clauses else ''
+        rows = conn.execute(f'SELECT * FROM prazos {where} ORDER BY data_limite ASC', params).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/prazos/resumo', methods=['GET'])
+def prazos_resumo():
+    try:
+        conn = get_db()
+        hoje = _time.strftime('%Y-%m-%d')
+        em7 = _time.strftime('%Y-%m-%d', _time.localtime(_time.time() + 7*86400))
+        em30 = _time.strftime('%Y-%m-%d', _time.localtime(_time.time() + 30*86400))
+        vencidos = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite < ?", (hoje,)).fetchone()[0]
+        urgentes = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite >= ? AND data_limite <= ?", (hoje, em7)).fetchone()[0]
+        atencao  = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite > ? AND data_limite <= ?", (em7, em30)).fetchone()[0]
+        ok       = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite > ?", (em30,)).fetchone()[0]
+        total    = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0").fetchone()[0]
+        return jsonify({'vencidos': vencidos, 'urgentes': urgentes, 'atencao': atencao, 'ok': ok, 'total': total})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/prazos', methods=['POST'])
+def prazos_criar():
+    try:
+        data = request.get_json(force=True) or {}
+        titulo = (data.get('titulo') or '').strip()
+        data_limite = (data.get('data_limite') or '').strip()
+        if not titulo:
+            return jsonify({'error': 'Campo "titulo" é obrigatório'}), 400
+        if not data_limite:
+            return jsonify({'error': 'Campo "data_limite" é obrigatório'}), 400
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO prazos (titulo, descricao, data_limite, categoria) VALUES (?,?,?,?)",
+            (titulo, (data.get('descricao') or '').strip(), data_limite, (data.get('categoria') or 'geral').strip())
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM prazos WHERE id=?", (cur.lastrowid,)).fetchone()
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/prazos/<int:prazo_id>', methods=['PUT'])
+def prazos_atualizar(prazo_id):
+    try:
+        data = request.get_json(force=True) or {}
+        conn = get_db()
+        row = conn.execute("SELECT * FROM prazos WHERE id=?", (prazo_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Prazo não encontrado'}), 404
+        fields = {}
+        for k in ('titulo', 'descricao', 'data_limite', 'categoria'):
+            if k in data:
+                fields[k] = (data[k] or '').strip()
+        if 'resolvido' in data:
+            fields['resolvido'] = 1 if data['resolvido'] else 0
+        if not fields:
+            return jsonify(dict(row))
+        set_clause = ', '.join(f'{k}=?' for k in fields)
+        conn.execute(f'UPDATE prazos SET {set_clause} WHERE id=?', list(fields.values()) + [prazo_id])
+        conn.commit()
+        row = conn.execute("SELECT * FROM prazos WHERE id=?", (prazo_id,)).fetchone()
+        return jsonify(dict(row))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/prazos/<int:prazo_id>', methods=['DELETE'])
+def prazos_excluir(prazo_id):
+    try:
+        conn = get_db()
+        r = conn.execute("SELECT id FROM prazos WHERE id=?", (prazo_id,)).fetchone()
+        if not r:
+            return jsonify({'error': 'Prazo não encontrado'}), 404
+        conn.execute("DELETE FROM prazos WHERE id=?", (prazo_id,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ────────────────────────────────────────────────────────────
+# PROTOCOLO – Controle de ofícios, memorandos e documentos
+# ────────────────────────────────────────────────────────────
+
+def _proximo_numero_protocolo(conn):
+    ano = _time.strftime('%Y')
+    ultimo = conn.execute(
+        "SELECT numero FROM protocolos WHERE numero LIKE ? ORDER BY id DESC LIMIT 1",
+        (f'PROT-{ano}-%',)
+    ).fetchone()
+    if ultimo:
+        try:
+            seq = int(ultimo['numero'].split('-')[-1]) + 1
+        except Exception:
+            seq = 1
+    else:
+        seq = 1
+    return f'PROT-{ano}-{seq:04d}'
+
+@app.route('/api/protocolos/proximo-numero', methods=['GET'])
+def protocolo_proximo_numero():
+    try:
+        conn = get_db()
+        return jsonify({'numero': _proximo_numero_protocolo(conn)})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos', methods=['GET'])
+def protocolos_listar():
+    try:
+        conn = get_db()
+        tipo = request.args.get('tipo', '')
+        status_f = request.args.get('status', '')
+        direcao = request.args.get('direcao', '')
+        busca = request.args.get('busca', '').strip()
+        clauses, params = [], []
+        if tipo:
+            clauses.append('tipo=?'); params.append(tipo)
+        if status_f:
+            clauses.append('status=?'); params.append(status_f)
+        if direcao:
+            clauses.append('direcao=?'); params.append(direcao)
+        if busca:
+            clauses.append("(LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? OR numero LIKE ?)")
+            like = f'%{busca.lower()}%'
+            params.extend([like, like, like])
+        where = ('WHERE ' + ' AND '.join(clauses)) if clauses else ''
+        rows = conn.execute(
+            f'SELECT * FROM protocolos {where} ORDER BY id DESC', params
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos', methods=['POST'])
+def protocolos_criar():
+    try:
+        data = request.get_json(force=True) or {}
+        conn = get_db()
+        assunto = (data.get('assunto') or '').strip()
+        tipo = (data.get('tipo') or '').strip()
+        data_protocolo = (data.get('data_protocolo') or '').strip()
+        if not assunto:
+            return jsonify({'error': 'Campo "assunto" é obrigatório'}), 400
+        if not tipo:
+            return jsonify({'error': 'Campo "tipo" é obrigatório'}), 400
+        if not data_protocolo:
+            return jsonify({'error': 'Campo "data_protocolo" é obrigatório'}), 400
+        numero = data.get('numero') or _proximo_numero_protocolo(conn)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO protocolos
+              (numero, tipo, direcao, origem_destino, assunto, data_protocolo, prazo_resposta, status, observacoes)
+            VALUES (?,?,?,?,?,?,?,?,?)
+        """, (
+            numero, tipo,
+            (data.get('direcao') or 'recebido').strip(),
+            (data.get('origem_destino') or '').strip(),
+            assunto, data_protocolo,
+            (data.get('prazo_resposta') or '').strip(),
+            (data.get('status') or 'recebido').strip(),
+            (data.get('observacoes') or '').strip(),
+        ))
+        conn.commit()
+        row = conn.execute("SELECT * FROM protocolos WHERE id=?", (cur.lastrowid,)).fetchone()
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos/<int:prot_id>', methods=['PUT'])
+def protocolos_atualizar(prot_id):
+    try:
+        data = request.get_json(force=True) or {}
+        conn = get_db()
+        row = conn.execute("SELECT * FROM protocolos WHERE id=?", (prot_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Protocolo não encontrado'}), 404
+        fields = {}
+        for k in ('tipo', 'direcao', 'origem_destino', 'assunto', 'data_protocolo', 'prazo_resposta', 'status', 'observacoes'):
+            if k in data:
+                fields[k] = (data[k] or '').strip()
+        if not fields:
+            return jsonify(dict(row))
+        set_clause = ', '.join(f'{k}=?' for k in fields)
+        conn.execute(f'UPDATE protocolos SET {set_clause} WHERE id=?', list(fields.values()) + [prot_id])
+        conn.commit()
+        row = conn.execute("SELECT * FROM protocolos WHERE id=?", (prot_id,)).fetchone()
+        return jsonify(dict(row))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos/<int:prot_id>', methods=['DELETE'])
+def protocolos_excluir(prot_id):
+    try:
+        conn = get_db()
+        r = conn.execute("SELECT id FROM protocolos WHERE id=?", (prot_id,)).fetchone()
+        if not r:
+            return jsonify({'error': 'Protocolo não encontrado'}), 404
+        conn.execute("DELETE FROM protocolos WHERE id=?", (prot_id,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ────────────────────────────────────────────────────────────
+# PROTOCOLO – Anexos (BLOB no banco, igual ao Kanban)
+# ────────────────────────────────────────────────────────────
+
+@app.route('/api/protocolos/<int:prot_id>/anexos', methods=['GET'])
+def protocolo_anexos_listar(prot_id):
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT id, protocolo_id, file_name, mime_type, file_size, criado_em FROM protocolo_anexos WHERE protocolo_id=? ORDER BY id",
+            (prot_id,)
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos/<int:prot_id>/anexos', methods=['POST'])
+def protocolo_anexos_upload(prot_id):
+    try:
+        conn = get_db()
+        prot = conn.execute("SELECT id FROM protocolos WHERE id=?", (prot_id,)).fetchone()
+        if not prot:
+            return jsonify({'error': 'Protocolo não encontrado'}), 404
+        if 'arquivo' not in request.files:
+            return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+        file = request.files['arquivo']
+        content = file.read()
+        if not content:
+            return jsonify({'error': 'Arquivo vazio'}), 400
+        if len(content) > 20 * 1024 * 1024:
+            return jsonify({'error': 'Arquivo excede o limite de 20 MB'}), 413
+        cur = conn.execute(
+            "INSERT INTO protocolo_anexos (protocolo_id, file_name, mime_type, file_size, content) VALUES (?,?,?,?,?)",
+            (prot_id, file.filename, file.mimetype or 'application/octet-stream', len(content), content)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id, protocolo_id, file_name, mime_type, file_size, criado_em FROM protocolo_anexos WHERE id=?",
+            (cur.lastrowid,)
+        ).fetchone()
+        return jsonify(dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/protocolos/%s/anexos: %s', prot_id, e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>/download', methods=['GET'])
+def protocolo_anexo_download(prot_id, anexo_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT file_name, mime_type, content FROM protocolo_anexos WHERE id=? AND protocolo_id=?",
+            (anexo_id, prot_id)
+        ).fetchone()
+        if not row:
+            return jsonify({'error': 'Anexo não encontrado'}), 404
+        return send_file(
+            _io.BytesIO(row['content']),
+            mimetype=row['mime_type'] or 'application/octet-stream',
+            as_attachment=True,
+            download_name=row['file_name']
+        )
+    except Exception as e:
+        app.logger.error('GET /api/protocolos/%s/anexos/%s/download: %s', prot_id, anexo_id, e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>', methods=['DELETE'])
+def protocolo_anexo_excluir(prot_id, anexo_id):
+    try:
+        conn = get_db()
+        r = conn.execute(
+            "SELECT id FROM protocolo_anexos WHERE id=? AND protocolo_id=?", (anexo_id, prot_id)
+        ).fetchone()
+        if not r:
+            return jsonify({'error': 'Anexo não encontrado'}), 404
+        conn.execute("DELETE FROM protocolo_anexos WHERE id=?", (anexo_id,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 # ────────────────────────────────────────────────────────────

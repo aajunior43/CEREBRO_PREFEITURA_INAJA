@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Protocolo – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <style>
+    .pr-wrap { max-width: 1180px; margin: 24px auto 80px; padding: 0 20px; }
+    .pr-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:24px; flex-wrap:wrap; }
+    .pr-hero h2 { font-size:24px; font-weight:800; color:var(--text); margin:0; }
+    .pr-hero p { font-size:13px; color:var(--text-3); margin-top:6px; }
+
+    /* ── Summary ── */
+    .pr-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+    .pr-scard { background:var(--surface); border-radius:var(--radius); padding:14px 18px; box-shadow:var(--shadow-sm); text-align:center; }
+    .pr-scard-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-3); margin-bottom:4px; }
+    .pr-scard-value { font-size:26px; font-weight:900; color:var(--c,var(--text)); }
+
+    /* ── Layout ── */
+    .pr-layout { display:grid; grid-template-columns: 360px 1fr; gap:18px; align-items:start; }
+    .pr-panel { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:22px; }
+    .pr-panel h3 { font-size:15px; font-weight:800; color:var(--text); margin:0 0 16px; }
+
+    /* ── Form ── */
+    .pr-form { display:flex; flex-direction:column; gap:12px; }
+    .pr-label { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .pr-input, .pr-select, .pr-textarea {
+      width:100%; background:var(--bg); border:none; border-radius:var(--radius-sm);
+      box-shadow:var(--neo-in-sm); padding:11px 14px; font-family:inherit;
+      font-size:13px; color:var(--text); outline:none;
+    }
+    .pr-textarea { min-height:68px; resize:vertical; }
+    .pr-input-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .pr-numero-box { background:var(--bg); border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm);
+      padding:11px 14px; font-family:monospace; font-size:13px; color:var(--blue); font-weight:700; }
+    .pr-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none;
+      border-radius:var(--radius-sm); padding:11px 18px; font-family:inherit; font-size:13px;
+      font-weight:700; cursor:pointer; transition:opacity .15s; }
+    .pr-btn:hover { opacity:.88; }
+    .pr-btn-primary { background:linear-gradient(135deg, var(--blue), var(--blue-dark)); color:#fff; box-shadow:3px 3px 10px rgba(79,128,200,.3); }
+    .pr-btn-ghost { background:var(--bg); color:var(--text-2); box-shadow:var(--neo-sm); }
+    .pr-btn-sm { padding:7px 12px; font-size:12px; }
+    .pr-status { display:none; margin-top:10px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:10px; }
+    .pr-status.ok { display:block; background:rgba(34,197,94,.12); color:#15803d; }
+    .pr-status.err { display:block; background:rgba(239,68,68,.12); color:#dc2626; }
+
+    /* ── Toolbar ── */
+    .pr-toolbar { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; }
+
+    /* ── Protocol items ── */
+    .pr-list { display:flex; flex-direction:column; gap:10px; }
+    .pr-item { border-radius:var(--radius-sm); background:var(--bg); border-left:4px solid var(--status-color); overflow:hidden; }
+    .pr-item-summary { padding:14px 16px; cursor:pointer; }
+    .pr-item-header { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+    .pr-item-num { font-size:12px; font-weight:700; color:var(--blue); font-family:monospace; }
+    .pr-item-title { font-size:14px; font-weight:700; color:var(--text); margin-top:4px; }
+    .pr-item-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+    .pr-badge { font-size:11px; font-weight:700; background:rgba(184,194,204,.16); border-radius:999px; padding:3px 10px; color:var(--text-2); }
+    .pr-status-badge { font-size:11px; font-weight:700; border-radius:999px; padding:3px 10px; color:#fff; background:var(--status-color); }
+    .pr-item-desc { font-size:12px; color:var(--text-3); margin-top:8px; line-height:1.5; }
+    .pr-item-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; flex-wrap:wrap; }
+    .pr-act-expand { border:none; border-radius:10px; padding:7px 10px; font-size:12px; font-weight:700; cursor:pointer; background:rgba(184,194,204,.15); color:var(--text-2); }
+    .pr-act-status { border:none; border-radius:10px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; background:rgba(79,128,200,.12); color:var(--blue); }
+    .pr-act-delete { border:none; border-radius:10px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; background:rgba(239,68,68,.12); color:#dc2626; }
+    .pr-prazo-warning { background:rgba(239,68,68,.1); border-radius:6px; padding:4px 8px; font-size:11px; color:var(--red); font-weight:600; }
+    .pr-empty { text-align:center; padding:48px 16px; color:var(--text-3); font-size:14px; }
+
+    /* ── Expandable detail / Attachments ── */
+    .pr-item-detail { display:none; padding:0 16px 16px; border-top:1px solid var(--border); }
+    .pr-item.expanded .pr-item-detail { display:block; }
+    .pr-item.expanded .pr-act-expand { background:rgba(79,128,200,.12); color:var(--blue); }
+    .pr-attach-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-3); margin:14px 0 8px; }
+    .pr-attach-list { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .pr-attach-item { display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(184,194,204,.1); border-radius:8px; }
+    .pr-attach-icon { font-size:16px; flex-shrink:0; }
+    .pr-attach-name { font-size:12px; font-weight:600; color:var(--text); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pr-attach-size { font-size:11px; color:var(--text-3); flex-shrink:0; }
+    .pr-attach-dl { border:none; border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer; background:rgba(79,128,200,.12); color:var(--blue); text-decoration:none; }
+    .pr-attach-del { border:none; border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; cursor:pointer; background:rgba(239,68,68,.12); color:#dc2626; }
+    .pr-attach-empty { font-size:12px; color:var(--text-3); padding:6px 0; }
+    .pr-upload-zone { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:4px; }
+    .pr-file-input { font-size:12px; color:var(--text-2); background:var(--bg); border-radius:8px; box-shadow:var(--neo-in-sm); padding:7px 10px; flex:1; min-width:0; }
+
+    /* Status modal */
+    .pr-modal-overlay { position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:200; display:none; align-items:center; justify-content:center; }
+    .pr-modal-overlay.open { display:flex; }
+    .pr-modal { background:var(--surface); border-radius:var(--radius); padding:24px; width:360px; max-width:96vw; box-shadow:var(--shadow-xl); }
+    .pr-modal h4 { font-size:16px; font-weight:800; color:var(--text); margin:0 0 16px; }
+    .pr-modal-actions { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+
+    @media (max-width: 960px) {
+      .pr-layout { grid-template-columns:1fr; }
+      .pr-summary { grid-template-columns:repeat(2,1fr); }
+      .pr-toolbar { grid-template-columns:1fr 1fr; }
+      .pr-input-row { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="pr-wrap">
+    <div class="pr-hero">
+      <div>
+        <h2>📬 Protocolo</h2>
+        <p>Registre e acompanhe ofícios, memorandos, requerimentos e demais documentos protocolados.</p>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="pr-summary">
+      <div class="pr-scard" style="--c:var(--blue)">
+        <div class="pr-scard-label">Total</div>
+        <div class="pr-scard-value" id="cnt-total">—</div>
+      </div>
+      <div class="pr-scard" style="--c:var(--orange)">
+        <div class="pr-scard-label">Em Análise</div>
+        <div class="pr-scard-value" id="cnt-analise">—</div>
+      </div>
+      <div class="pr-scard" style="--c:var(--green)">
+        <div class="pr-scard-label">Respondidos</div>
+        <div class="pr-scard-value" id="cnt-respondidos">—</div>
+      </div>
+      <div class="pr-scard" style="--c:var(--text-3)">
+        <div class="pr-scard-label">Arquivados</div>
+        <div class="pr-scard-value" id="cnt-arquivados">—</div>
+      </div>
+    </div>
+
+    <div class="pr-layout">
+      <!-- Form -->
+      <div class="pr-panel">
+        <h3>📝 Novo Protocolo</h3>
+        <form class="pr-form" id="pr-form">
+          <div>
+            <div class="pr-label">Número do Protocolo</div>
+            <div class="pr-numero-box" id="pr-numero-box">Carregando...</div>
+          </div>
+          <div class="pr-input-row">
+            <div>
+              <div class="pr-label">Tipo *</div>
+              <select id="pr-tipo" class="pr-select" required>
+                <option value="">Selecione...</option>
+                <option value="oficio">Ofício</option>
+                <option value="memorando">Memorando</option>
+                <option value="decreto">Decreto</option>
+                <option value="requerimento">Requerimento</option>
+                <option value="despacho">Despacho</option>
+                <option value="circular">Circular</option>
+                <option value="contrato">Contrato</option>
+                <option value="portaria">Portaria</option>
+                <option value="resolucao">Resolução</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div>
+              <div class="pr-label">Direção</div>
+              <select id="pr-direcao" class="pr-select">
+                <option value="recebido">📥 Recebido</option>
+                <option value="enviado">📤 Enviado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="pr-label">Origem / Destino</div>
+            <input id="pr-origem" class="pr-input" type="text" placeholder="Ex: Tribunal de Contas, SAAE Inajá..." />
+          </div>
+          <div>
+            <div class="pr-label">Assunto *</div>
+            <input id="pr-assunto" class="pr-input" type="text" placeholder="Descrição resumida do documento" required />
+          </div>
+          <div class="pr-input-row">
+            <div>
+              <div class="pr-label">Data do Protocolo *</div>
+              <input id="pr-data" class="pr-input" type="date" required />
+            </div>
+            <div>
+              <div class="pr-label">Prazo de Resposta</div>
+              <input id="pr-prazo" class="pr-input" type="date" />
+            </div>
+          </div>
+          <div>
+            <div class="pr-label">Observações</div>
+            <textarea id="pr-obs" class="pr-textarea" placeholder="Informações adicionais (opcional)"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="submit" class="pr-btn pr-btn-primary" id="pr-submit-btn">Registrar Protocolo</button>
+            <button type="button" class="pr-btn pr-btn-ghost" id="pr-limpar-btn">Limpar</button>
+          </div>
+          <div id="pr-status" class="pr-status"></div>
+        </form>
+      </div>
+
+      <!-- List -->
+      <div class="pr-panel">
+        <h3>📋 Protocolos Registrados</h3>
+        <div class="pr-toolbar">
+          <select id="pr-filtro-tipo" class="pr-select">
+            <option value="">Todos os tipos</option>
+            <option value="oficio">Ofício</option>
+            <option value="memorando">Memorando</option>
+            <option value="decreto">Decreto</option>
+            <option value="requerimento">Requerimento</option>
+            <option value="despacho">Despacho</option>
+            <option value="circular">Circular</option>
+            <option value="contrato">Contrato</option>
+            <option value="portaria">Portaria</option>
+            <option value="resolucao">Resolução</option>
+            <option value="outro">Outro</option>
+          </select>
+          <select id="pr-filtro-status" class="pr-select">
+            <option value="">Todos os status</option>
+            <option value="recebido">Recebido</option>
+            <option value="analise">Em Análise</option>
+            <option value="respondido">Respondido</option>
+            <option value="arquivado">Arquivado</option>
+          </select>
+          <input id="pr-busca" class="pr-input" type="text" placeholder="Buscar assunto / número..." />
+          <button class="pr-btn pr-btn-ghost" id="pr-refresh-btn" type="button">↺</button>
+        </div>
+        <div id="pr-list" class="pr-list"></div>
+        <div id="pr-empty" class="pr-empty" style="display:none">Nenhum protocolo encontrado.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status modal -->
+  <div class="pr-modal-overlay" id="pr-modal">
+    <div class="pr-modal">
+      <h4>Alterar Status</h4>
+      <div>
+        <div class="pr-label">Novo Status</div>
+        <select id="modal-status" class="pr-select">
+          <option value="recebido">Recebido</option>
+          <option value="analise">Em Análise</option>
+          <option value="respondido">Respondido</option>
+          <option value="arquivado">Arquivado</option>
+        </select>
+      </div>
+      <div class="pr-modal-actions">
+        <button class="pr-btn pr-btn-primary" id="modal-salvar">Salvar</button>
+        <button class="pr-btn pr-btn-ghost" id="modal-cancelar">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  'use strict';
+  const API = '/api';
+  let protocolosCache = [];
+  let modalProtId = null;
+
+  const statusEl = document.getElementById('pr-status');
+  function setStatus(msg, ok) { statusEl.textContent = msg; statusEl.className = `pr-status ${ok ? 'ok' : 'err'}`; }
+  function clearStatus() { statusEl.className = 'pr-status'; }
+  function esc(v) { return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtBytes(n) {
+    const v = Number(n)||0;
+    if (v < 1024) return `${v} B`;
+    if (v < 1024*1024) return `${(v/1024).toFixed(1)} KB`;
+    return `${(v/1048576).toFixed(2)} MB`;
+  }
+
+  const STATUS_COLORS = { recebido:'var(--blue)', analise:'var(--orange)', respondido:'var(--green)', arquivado:'var(--text-3)' };
+  const STATUS_LABELS = { recebido:'Recebido', analise:'Em Análise', respondido:'Respondido', arquivado:'Arquivado' };
+  const TIPO_LABELS = {
+    oficio:'Ofício', memorando:'Memorando', decreto:'Decreto', requerimento:'Requerimento',
+    despacho:'Despacho', circular:'Circular', contrato:'Contrato', portaria:'Portaria',
+    resolucao:'Resolução', outro:'Outro',
+  };
+  const TIPO_ICONS = {
+    oficio:'📨', memorando:'📝', decreto:'📜', requerimento:'📋',
+    despacho:'🗒', circular:'📢', contrato:'📄', portaria:'🏛', resolucao:'⚖', outro:'📁',
+  };
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    try { return new Date(s + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return s; }
+  }
+  function prazoStatus(prazo) {
+    if (!prazo) return null;
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const diff = Math.ceil((new Date(prazo + 'T00:00:00') - hoje) / 86400000);
+    if (diff < 0) return { label: `Atrasado ${Math.abs(diff)}d` };
+    if (diff <= 7) return { label: `Prazo: ${diff}d` };
+    return null;
+  }
+
+  // ── Attachments ────────────────────────────────────────────
+  async function carregarAnexos(protId) {
+    const el = document.getElementById(`anexos-${protId}`);
+    if (!el) return;
+    el.innerHTML = '<span class="pr-attach-empty">Carregando...</span>';
+    try {
+      const r = await fetch(`${API}/protocolos/${protId}/anexos`);
+      const list = await r.json();
+      if (!list.length) { el.innerHTML = '<span class="pr-attach-empty">Nenhum anexo ainda.</span>'; return; }
+      el.innerHTML = list.map(a => `
+        <div class="pr-attach-item" data-anexo-id="${a.id}">
+          <span class="pr-attach-icon">${fileIcon(a.file_name)}</span>
+          <span class="pr-attach-name" title="${esc(a.file_name)}">${esc(a.file_name)}</span>
+          <span class="pr-attach-size">${fmtBytes(a.file_size)}</span>
+          <a class="pr-attach-dl" href="${API}/protocolos/${protId}/anexos/${a.id}/download" download="${esc(a.file_name)}">⬇</a>
+          <button class="pr-attach-del" data-del-anexo="${a.id}" data-prot-id="${protId}">✕</button>
+        </div>`).join('');
+    } catch { el.innerHTML = '<span class="pr-attach-empty">Erro ao carregar.</span>'; }
+  }
+
+  function fileIcon(name) {
+    const ext = (name || '').split('.').pop().toLowerCase();
+    if (['pdf'].includes(ext)) return '📄';
+    if (['doc','docx'].includes(ext)) return '📝';
+    if (['xls','xlsx','csv'].includes(ext)) return '📊';
+    if (['jpg','jpeg','png','gif','webp'].includes(ext)) return '🖼';
+    if (['zip','rar','7z'].includes(ext)) return '📦';
+    return '📎';
+  }
+
+  async function uploadAnexo(protId, file) {
+    const fd = new FormData();
+    fd.append('arquivo', file);
+    const r = await fetch(`${API}/protocolos/${protId}/anexos`, { method:'POST', body:fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro ao enviar arquivo');
+    return d;
+  }
+
+  async function excluirAnexo(protId, anexoId) {
+    if (!confirm('Excluir este anexo?')) return;
+    await fetch(`${API}/protocolos/${protId}/anexos/${anexoId}`, { method:'DELETE' });
+    await carregarAnexos(protId);
+  }
+
+  // ── Render ────────────────────────────────────────────────
+  function renderProtocolos() {
+    const listEl = document.getElementById('pr-list');
+    const emptyEl = document.getElementById('pr-empty');
+    const tipo  = document.getElementById('pr-filtro-tipo').value;
+    const stF   = document.getElementById('pr-filtro-status').value;
+    const busca = document.getElementById('pr-busca').value.trim().toLowerCase();
+
+    let items = protocolosCache;
+    if (tipo)  items = items.filter(p => p.tipo === tipo);
+    if (stF)   items = items.filter(p => p.status === stF);
+    if (busca) items = items.filter(p =>
+      (p.assunto||'').toLowerCase().includes(busca) ||
+      (p.numero||'').toLowerCase().includes(busca) ||
+      (p.origem_destino||'').toLowerCase().includes(busca)
+    );
+
+    if (!items.length) { listEl.innerHTML = ''; emptyEl.style.display = ''; return; }
+    emptyEl.style.display = 'none';
+
+    listEl.innerHTML = items.map(p => {
+      const color = STATUS_COLORS[p.status] || 'var(--text-3)';
+      const pw = prazoStatus(p.prazo_resposta);
+      const icon = TIPO_ICONS[p.tipo] || '📁';
+      return `<div class="pr-item" style="--status-color:${color}" data-id="${p.id}">
+        <div class="pr-item-summary" data-expand="${p.id}">
+          <div class="pr-item-header">
+            <div>
+              <div class="pr-item-num">${esc(p.numero)} ${icon}</div>
+              <div class="pr-item-title">${esc(p.assunto)}</div>
+            </div>
+            <div class="pr-item-actions">
+              <button class="pr-act-expand" data-expand="${p.id}">📎 Anexos</button>
+              <button class="pr-act-status" data-change-status="${p.id}">Status</button>
+              <button class="pr-act-delete" data-delete="${p.id}">✕</button>
+            </div>
+          </div>
+          <div class="pr-item-meta">
+            <span class="pr-status-badge">${STATUS_LABELS[p.status]||p.status}</span>
+            <span class="pr-badge">${p.direcao === 'enviado' ? '📤 Enviado' : '📥 Recebido'}</span>
+            <span class="pr-badge">${TIPO_LABELS[p.tipo]||p.tipo}</span>
+            ${p.origem_destino ? `<span class="pr-badge">${esc(p.origem_destino)}</span>` : ''}
+            <span class="pr-badge">📅 ${fmtDate(p.data_protocolo)}</span>
+            ${p.prazo_resposta ? `<span class="pr-badge">Resp. até ${fmtDate(p.prazo_resposta)}</span>` : ''}
+            ${pw ? `<span class="pr-prazo-warning">⚠ ${pw.label}</span>` : ''}
+          </div>
+          ${p.observacoes ? `<div class="pr-item-desc">${esc(p.observacoes)}</div>` : ''}
+        </div>
+        <div class="pr-item-detail">
+          <div class="pr-attach-title">📎 Anexos do Protocolo</div>
+          <div class="pr-attach-list" id="anexos-${p.id}">
+            <span class="pr-attach-empty">Clique em "Anexos" para carregar.</span>
+          </div>
+          <div class="pr-upload-zone">
+            <input type="file" class="pr-file-input" id="file-${p.id}" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.zip,.txt" />
+            <button class="pr-btn pr-btn-primary pr-btn-sm" data-upload="${p.id}">⬆ Enviar</button>
+          </div>
+          <div id="upload-status-${p.id}" style="font-size:11px;margin-top:6px;color:var(--text-3);"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function atualizarSummary() {
+    const todos = protocolosCache;
+    document.getElementById('cnt-total').textContent = todos.length;
+    document.getElementById('cnt-analise').textContent = todos.filter(p => p.status === 'analise').length;
+    document.getElementById('cnt-respondidos').textContent = todos.filter(p => p.status === 'respondido').length;
+    document.getElementById('cnt-arquivados').textContent = todos.filter(p => p.status === 'arquivado').length;
+  }
+
+  async function carregarProxNumero() {
+    try {
+      const r = await fetch(`${API}/protocolos/proximo-numero`);
+      const d = await r.json();
+      document.getElementById('pr-numero-box').textContent = d.numero || '—';
+    } catch { document.getElementById('pr-numero-box').textContent = '—'; }
+  }
+
+  async function carregarProtocolos() {
+    try {
+      const r = await fetch(`${API}/protocolos`);
+      protocolosCache = await r.json();
+      atualizarSummary();
+      renderProtocolos();
+    } catch(e) { setStatus('Erro ao carregar protocolos', false); }
+  }
+
+  // ── Form submit ───────────────────────────────────────────
+  document.getElementById('pr-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearStatus();
+    const btn = document.getElementById('pr-submit-btn');
+    btn.disabled = true; btn.textContent = 'Registrando...';
+    try {
+      const payload = {
+        numero: document.getElementById('pr-numero-box').textContent.trim(),
+        tipo: document.getElementById('pr-tipo').value,
+        direcao: document.getElementById('pr-direcao').value,
+        origem_destino: document.getElementById('pr-origem').value.trim(),
+        assunto: document.getElementById('pr-assunto').value.trim(),
+        data_protocolo: document.getElementById('pr-data').value,
+        prazo_resposta: document.getElementById('pr-prazo').value || '',
+        observacoes: document.getElementById('pr-obs').value.trim(),
+        status: 'recebido',
+      };
+      const r = await fetch(`${API}/protocolos`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro ao registrar');
+      e.target.reset();
+      setStatus(`Protocolo ${d.numero} registrado! Abra-o para adicionar anexos.`, true);
+      await carregarProxNumero();
+      await carregarProtocolos();
+    } catch(err) { setStatus(err.message, false); }
+    finally { btn.disabled = false; btn.textContent = 'Registrar Protocolo'; }
+  });
+
+  // ── List interactions (delegation) ────────────────────────
+  document.getElementById('pr-list').addEventListener('click', async e => {
+    // Expand toggle
+    const expandBtn = e.target.closest('[data-expand]');
+    if (expandBtn) {
+      const id = expandBtn.dataset.expand;
+      const item = document.querySelector(`.pr-item[data-id="${id}"]`);
+      if (item) {
+        item.classList.toggle('expanded');
+        if (item.classList.contains('expanded')) carregarAnexos(id);
+      }
+      return;
+    }
+
+    // Status change
+    const changeBtn = e.target.closest('[data-change-status]');
+    if (changeBtn) {
+      modalProtId = Number(changeBtn.dataset.changeStatus);
+      const prot = protocolosCache.find(p => p.id === modalProtId);
+      if (prot) document.getElementById('modal-status').value = prot.status;
+      document.getElementById('pr-modal').classList.add('open');
+      return;
+    }
+
+    // Delete protocol
+    const deleteBtn = e.target.closest('[data-delete]');
+    if (deleteBtn) {
+      if (!confirm('Excluir este protocolo e todos os seus anexos?')) return;
+      try {
+        await fetch(`${API}/protocolos/${deleteBtn.dataset.delete}`, { method:'DELETE' });
+        await carregarProtocolos();
+      } catch { setStatus('Erro ao excluir', false); }
+      return;
+    }
+
+    // Upload button
+    const uploadBtn = e.target.closest('[data-upload]');
+    if (uploadBtn) {
+      const protId = uploadBtn.dataset.upload;
+      const fileInput = document.getElementById(`file-${protId}`);
+      const files = fileInput.files;
+      if (!files.length) { alert('Selecione ao menos um arquivo.'); return; }
+      const statusDiv = document.getElementById(`upload-status-${protId}`);
+      uploadBtn.disabled = true; uploadBtn.textContent = 'Enviando...';
+      statusDiv.textContent = '';
+      const results = [];
+      for (const file of files) {
+        try {
+          await uploadAnexo(protId, file);
+          results.push(`✓ ${file.name}`);
+        } catch(err) {
+          results.push(`✗ ${file.name}: ${err.message}`);
+        }
+      }
+      uploadBtn.disabled = false; uploadBtn.textContent = '⬆ Enviar';
+      fileInput.value = '';
+      statusDiv.textContent = results.join(' | ');
+      await carregarAnexos(protId);
+      return;
+    }
+
+    // Delete attachment
+    const delAnexo = e.target.closest('[data-del-anexo]');
+    if (delAnexo) {
+      await excluirAnexo(delAnexo.dataset.protId, delAnexo.dataset.delAnexo);
+      return;
+    }
+  });
+
+  // ── Modal ─────────────────────────────────────────────────
+  document.getElementById('modal-salvar').addEventListener('click', async () => {
+    if (!modalProtId) return;
+    const newStatus = document.getElementById('modal-status').value;
+    try {
+      await fetch(`${API}/protocolos/${modalProtId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:newStatus}) });
+      document.getElementById('pr-modal').classList.remove('open');
+      await carregarProtocolos();
+    } catch { setStatus('Erro ao atualizar status', false); }
+  });
+  document.getElementById('modal-cancelar').addEventListener('click', () => document.getElementById('pr-modal').classList.remove('open'));
+  document.getElementById('pr-modal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+  document.getElementById('pr-limpar-btn').addEventListener('click', () => { document.getElementById('pr-form').reset(); clearStatus(); });
+  document.getElementById('pr-refresh-btn').addEventListener('click', carregarProtocolos);
+  ['pr-filtro-tipo','pr-filtro-status'].forEach(id => document.getElementById(id).addEventListener('change', renderProtocolos));
+  document.getElementById('pr-busca').addEventListener('input', renderProtocolos);
+
+  document.getElementById('pr-data').value = new Date().toISOString().split('T')[0];
+  Promise.all([carregarProxNumero(), carregarProtocolos()]);
+  </script>
+</body>
+</html>

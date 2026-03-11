@@ -67,6 +67,8 @@
       { href: '/pages/gerador-empenho.html', name: 'Texto de Empenho',      desc: 'Gerar descrição de empenho com IA' },
       { href: '/pages/visualizador.html',    name: 'Rel. de Empenhos',       desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
+      { href: '/pages/prazos.html',          name: 'Prazos',                 desc: 'Contratos e prazos críticos' },
+      { href: '/pages/protocolo.html',       name: 'Protocolo',              desc: 'Ofícios, memorandos e documentos' },
     ],
     financeiro: [
       { href: '/pages/extratos.html',             name: 'Extratos Bancários',      desc: 'Organizar arquivos de extrato' },

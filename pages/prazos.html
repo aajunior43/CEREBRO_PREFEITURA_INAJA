@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prazos e Notificações – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <style>
+    .pz-wrap { max-width: 1180px; margin: 24px auto 80px; padding: 0 20px; }
+    .pz-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:24px; flex-wrap:wrap; }
+    .pz-hero h2 { font-size:24px; font-weight:800; color:var(--text); margin:0; }
+    .pz-hero p { font-size:13px; color:var(--text-3); margin-top:6px; }
+    .pz-hero-actions { display:flex; gap:10px; align-items:center; }
+
+    /* ── Summary cards ── */
+    .pz-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:28px; }
+    .pz-scard { background:var(--surface); border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow-sm); border-left:4px solid var(--c); }
+    .pz-scard-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-3); margin-bottom:6px; }
+    .pz-scard-value { font-size:28px; font-weight:900; color:var(--c); }
+    .pz-scard-sub { font-size:11px; color:var(--text-3); margin-top:4px; }
+
+    /* ── Layout ── */
+    .pz-layout { display:grid; grid-template-columns: 340px 1fr; gap:18px; align-items:start; }
+    .pz-panel { background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow-sm); padding:22px; }
+    .pz-panel h3 { font-size:15px; font-weight:800; color:var(--text); margin:0 0 16px; }
+
+    /* ── Form ── */
+    .pz-form { display:flex; flex-direction:column; gap:12px; }
+    .pz-label { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .pz-input, .pz-select, .pz-textarea {
+      width:100%; background:var(--bg); border:none; border-radius:var(--radius-sm);
+      box-shadow:var(--neo-in-sm); padding:11px 14px; font-family:inherit;
+      font-size:13px; color:var(--text); outline:none;
+    }
+    .pz-textarea { min-height:72px; resize:vertical; }
+    .pz-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none;
+      border-radius:var(--radius-sm); padding:11px 18px; font-family:inherit; font-size:13px;
+      font-weight:700; cursor:pointer; transition:opacity .15s; }
+    .pz-btn:hover { opacity:.88; }
+    .pz-btn-primary { background:linear-gradient(135deg, var(--blue), var(--blue-dark)); color:#fff; box-shadow:3px 3px 10px rgba(79,128,200,.3); }
+    .pz-btn-ghost { background:var(--bg); color:var(--text-2); box-shadow:var(--neo-sm); }
+    .pz-status { display:none; margin-top:10px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:10px; }
+    .pz-status.ok { display:block; background:rgba(34,197,94,.12); color:#15803d; }
+    .pz-status.err { display:block; background:rgba(239,68,68,.12); color:#dc2626; }
+
+    /* ── Toolbar ── */
+    .pz-toolbar { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; margin-bottom:14px; }
+
+    /* ── Prazo items ── */
+    .pz-list { display:flex; flex-direction:column; gap:10px; }
+    .pz-item { border-radius:var(--radius-sm); padding:14px 16px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; border-left:4px solid var(--urgency-color); background:var(--bg); }
+    .pz-item-title { font-size:14px; font-weight:700; color:var(--text); }
+    .pz-item-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; align-items:center; }
+    .pz-badge { font-size:11px; font-weight:700; background:rgba(184,194,204,.16); border-radius:999px; padding:3px 10px; color:var(--text-2); }
+    .pz-badge-urgency { color:#fff; border-radius:999px; font-size:11px; font-weight:700; padding:3px 10px; background:var(--urgency-color); }
+    .pz-item-desc { font-size:12px; color:var(--text-3); margin-top:8px; line-height:1.5; }
+    .pz-item-actions { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
+    .pz-act-resolve { border:none; border-radius:10px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; background:rgba(34,197,94,.12); color:#15803d; }
+    .pz-act-delete { border:none; border-radius:10px; padding:8px 12px; font-size:12px; font-weight:700; cursor:pointer; background:rgba(239,68,68,.12); color:#dc2626; }
+    .pz-empty { text-align:center; padding:48px 16px; color:var(--text-3); font-size:14px; }
+    .pz-section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--text-3); margin:18px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+
+    /* ── Credores integrados ── */
+    .pz-credor-item { border-radius:var(--radius-sm); padding:12px 14px; background:var(--bg); border-left:4px solid var(--red); display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .pz-credor-name { font-size:13px; font-weight:700; color:var(--text); }
+    .pz-credor-sub { font-size:11px; color:var(--text-3); margin-top:2px; }
+
+    @media (max-width: 900px) {
+      .pz-layout { grid-template-columns:1fr; }
+      .pz-summary { grid-template-columns:repeat(2,1fr); }
+      .pz-toolbar { grid-template-columns:1fr; }
+    }
+    @media (max-width: 500px) {
+      .pz-summary { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="pz-wrap">
+    <div class="pz-hero">
+      <div>
+        <h2>🔔 Prazos e Notificações</h2>
+        <p>Acompanhe todos os prazos críticos: contratos vencendo, licitações, processos e mais.</p>
+      </div>
+      <div class="pz-hero-actions">
+        <button class="pz-btn pz-btn-ghost" id="btn-ver-resolvidos">Ver resolvidos</button>
+      </div>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="pz-summary">
+      <div class="pz-scard" style="--c:var(--red)">
+        <div class="pz-scard-label">Vencidos</div>
+        <div class="pz-scard-value" id="cnt-vencidos">—</div>
+        <div class="pz-scard-sub">Prazo expirado</div>
+      </div>
+      <div class="pz-scard" style="--c:var(--orange)">
+        <div class="pz-scard-label">Urgentes</div>
+        <div class="pz-scard-value" id="cnt-urgentes">—</div>
+        <div class="pz-scard-sub">≤ 7 dias</div>
+      </div>
+      <div class="pz-scard" style="--c:var(--purple)">
+        <div class="pz-scard-label">Atenção</div>
+        <div class="pz-scard-value" id="cnt-atencao">—</div>
+        <div class="pz-scard-sub">≤ 30 dias</div>
+      </div>
+      <div class="pz-scard" style="--c:var(--green)">
+        <div class="pz-scard-label">Em dia</div>
+        <div class="pz-scard-value" id="cnt-ok">—</div>
+        <div class="pz-scard-sub">&gt; 30 dias</div>
+      </div>
+    </div>
+
+    <div class="pz-layout">
+      <!-- New prazo form -->
+      <div class="pz-panel">
+        <h3>➕ Novo Prazo</h3>
+        <form class="pz-form" id="pz-form">
+          <div>
+            <div class="pz-label">Título *</div>
+            <input id="pz-titulo" class="pz-input" type="text" placeholder="Ex: Vencimento contrato SAAE" required />
+          </div>
+          <div>
+            <div class="pz-label">Data Limite *</div>
+            <input id="pz-data" class="pz-input" type="date" required />
+          </div>
+          <div>
+            <div class="pz-label">Categoria</div>
+            <select id="pz-categoria" class="pz-select">
+              <option value="geral">Geral</option>
+              <option value="contrato">Contrato</option>
+              <option value="licitacao">Licitação</option>
+              <option value="processo">Processo Administrativo</option>
+              <option value="oficio">Ofício / Prazo Legal</option>
+              <option value="financeiro">Financeiro</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <div class="pz-label">Descrição</div>
+            <textarea id="pz-descricao" class="pz-textarea" placeholder="Detalhes do prazo (opcional)"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="submit" class="pz-btn pz-btn-primary" id="pz-submit-btn">Salvar prazo</button>
+            <button type="button" class="pz-btn pz-btn-ghost" id="pz-limpar-btn">Limpar</button>
+          </div>
+          <div id="pz-status" class="pz-status"></div>
+        </form>
+      </div>
+
+      <!-- Prazo list -->
+      <div class="pz-panel">
+        <h3 id="pz-list-title">Prazos Ativos</h3>
+        <div class="pz-toolbar">
+          <select id="pz-filtro-categoria" class="pz-select">
+            <option value="">Todas as categorias</option>
+            <option value="contrato">Contratos</option>
+            <option value="licitacao">Licitações</option>
+            <option value="processo">Processos</option>
+            <option value="oficio">Ofícios</option>
+            <option value="financeiro">Financeiro</option>
+            <option value="outro">Outro</option>
+          </select>
+          <select id="pz-filtro-urgencia" class="pz-select">
+            <option value="">Todas as urgências</option>
+            <option value="vencido">Vencidos</option>
+            <option value="urgente">Urgentes (≤7d)</option>
+            <option value="atencao">Atenção (≤30d)</option>
+            <option value="ok">Em dia</option>
+          </select>
+          <button class="pz-btn pz-btn-ghost" id="pz-refresh-btn" type="button">↺</button>
+        </div>
+
+        <!-- Credores vencendo (integração automática) -->
+        <div id="pz-credores-section">
+          <div class="pz-section-title">📄 Contratos de Credores Vencidos / Vencendo</div>
+          <div id="pz-credores-list" class="pz-list"></div>
+        </div>
+
+        <div class="pz-section-title" id="pz-manual-title">📋 Prazos Cadastrados</div>
+        <div id="pz-list" class="pz-list"></div>
+        <div id="pz-empty" class="pz-empty" style="display:none">Nenhum prazo encontrado.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  'use strict';
+  const API = '/api';
+  let modoResolvidos = false;
+  let prazosCache = [];
+  let filtroCategoria = '', filtroUrgencia = '';
+
+  const statusEl = document.getElementById('pz-status');
+  function setStatus(msg, ok) {
+    statusEl.textContent = msg;
+    statusEl.className = `pz-status ${ok ? 'ok' : 'err'}`;
+  }
+  function clearStatus() { statusEl.className = 'pz-status'; }
+
+  function esc(v) {
+    return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function urgenciaInfo(data_limite) {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const d = new Date(data_limite + 'T00:00:00');
+    const diff = Math.ceil((d - hoje) / 86400000);
+    if (diff < 0)  return { label: 'VENCIDO', color: 'var(--red)',    tag: 'vencido',  dias: diff };
+    if (diff <= 7)  return { label: `${diff}d`, color: 'var(--orange)', tag: 'urgente', dias: diff };
+    if (diff <= 30) return { label: `${diff}d`, color: 'var(--purple)', tag: 'atencao', dias: diff };
+    return           { label: `${diff}d`, color: 'var(--green)',  tag: 'ok',      dias: diff };
+  }
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    try { return new Date(s + 'T00:00:00').toLocaleDateString('pt-BR'); }
+    catch { return s; }
+  }
+
+  function renderPrazos() {
+    const list = document.getElementById('pz-list');
+    const empty = document.getElementById('pz-empty');
+    let items = prazosCache;
+    if (filtroCategoria) items = items.filter(p => p.categoria === filtroCategoria);
+    if (filtroUrgencia) items = items.filter(p => p.data_limite && urgenciaInfo(p.data_limite).tag === filtroUrgencia);
+
+    if (!items.length) { list.innerHTML = ''; empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    list.innerHTML = items.map(p => {
+      const u = urgenciaInfo(p.data_limite);
+      return `<div class="pz-item" style="--urgency-color:${u.color}" data-id="${p.id}">
+        <div>
+          <div class="pz-item-title">${esc(p.titulo)}</div>
+          <div class="pz-item-meta">
+            <span class="pz-badge-urgency">${u.label}</span>
+            <span class="pz-badge">${esc(p.categoria||'geral')}</span>
+            <span class="pz-badge">📅 ${fmtDate(p.data_limite)}</span>
+          </div>
+          ${p.descricao ? `<div class="pz-item-desc">${esc(p.descricao)}</div>` : ''}
+        </div>
+        <div class="pz-item-actions">
+          ${!modoResolvidos ? `<button class="pz-act-resolve" data-resolve="${p.id}" title="Marcar como resolvido">✓</button>` : ''}
+          <button class="pz-act-delete" data-delete="${p.id}" title="Excluir">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function carregarResumo() {
+    try {
+      const r = await fetch(`${API}/prazos/resumo`);
+      const d = await r.json();
+      document.getElementById('cnt-vencidos').textContent = d.vencidos ?? '—';
+      document.getElementById('cnt-urgentes').textContent = d.urgentes ?? '—';
+      document.getElementById('cnt-atencao').textContent = d.atencao ?? '—';
+      document.getElementById('cnt-ok').textContent = d.ok ?? '—';
+    } catch {}
+  }
+
+  async function carregarCredores() {
+    try {
+      const r = await fetch(`${API}/credores?somente_vencidos=1`);
+      if (!r.ok) return;
+      const vencidos = await r.json();
+
+      const r30 = await fetch(`${API}/credores?vencendo_dias=30`);
+      const vencendo30 = r30.ok ? await r30.json() : [];
+      const sec = document.getElementById('pz-credores-section');
+      const listEl = document.getElementById('pz-credores-list');
+      const todos = [...vencidos, ...vencendo30.filter(v => !vencidos.find(x => x.id === v.id))];
+      if (!todos.length) { sec.style.display = 'none'; return; }
+      sec.style.display = '';
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      listEl.innerHTML = todos.map(c => {
+        const u = urgenciaInfo(c.validade);
+        return `<div class="pz-credor-item" style="--urgency-color:${u.color}; border-left-color:${u.color}; margin-bottom:8px;">
+          <div>
+            <div class="pz-credor-name">${esc(c.nome)}</div>
+            <div class="pz-credor-sub">${esc(c.departamento||'—')} — Validade: ${fmtDate(c.validade)}</div>
+          </div>
+          <span class="pz-badge-urgency" style="background:${u.color}">${u.label}</span>
+        </div>`;
+      }).join('');
+    } catch {}
+  }
+
+  async function carregarPrazos() {
+    try {
+      const status = modoResolvidos ? 'resolvidos' : 'ativos';
+      const r = await fetch(`${API}/prazos?status=${status}`);
+      prazosCache = await r.json();
+      renderPrazos();
+    } catch(e) { setStatus('Erro ao carregar prazos', false); }
+  }
+
+  async function resolverPrazo(id) {
+    try {
+      await fetch(`${API}/prazos/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({resolvido:true}) });
+      await Promise.all([carregarPrazos(), carregarResumo()]);
+    } catch(e) { setStatus('Erro ao resolver prazo', false); }
+  }
+
+  async function excluirPrazo(id) {
+    if (!confirm('Excluir este prazo?')) return;
+    try {
+      await fetch(`${API}/prazos/${id}`, { method:'DELETE' });
+      await Promise.all([carregarPrazos(), carregarResumo()]);
+    } catch(e) { setStatus('Erro ao excluir prazo', false); }
+  }
+
+  document.getElementById('pz-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearStatus();
+    const btn = document.getElementById('pz-submit-btn');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+    try {
+      const payload = {
+        titulo: document.getElementById('pz-titulo').value.trim(),
+        data_limite: document.getElementById('pz-data').value,
+        categoria: document.getElementById('pz-categoria').value,
+        descricao: document.getElementById('pz-descricao').value.trim(),
+      };
+      const r = await fetch(`${API}/prazos`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro ao salvar');
+      e.target.reset();
+      setStatus('Prazo salvo com sucesso!', true);
+      await Promise.all([carregarPrazos(), carregarResumo()]);
+    } catch(err) { setStatus(err.message, false); }
+    finally { btn.disabled = false; btn.textContent = 'Salvar prazo'; }
+  });
+
+  document.getElementById('pz-limpar-btn').addEventListener('click', () => { document.getElementById('pz-form').reset(); clearStatus(); });
+  document.getElementById('pz-refresh-btn').addEventListener('click', () => Promise.all([carregarPrazos(), carregarResumo()]));
+  document.getElementById('pz-filtro-categoria').addEventListener('change', e => { filtroCategoria = e.target.value; renderPrazos(); });
+  document.getElementById('pz-filtro-urgencia').addEventListener('change', e => { filtroUrgencia = e.target.value; renderPrazos(); });
+  document.getElementById('btn-ver-resolvidos').addEventListener('click', () => {
+    modoResolvidos = !modoResolvidos;
+    document.getElementById('pz-list-title').textContent = modoResolvidos ? 'Prazos Resolvidos' : 'Prazos Ativos';
+    document.getElementById('pz-manual-title').textContent = modoResolvidos ? '✅ Resolvidos' : '📋 Prazos Cadastrados';
+    document.getElementById('btn-ver-resolvidos').textContent = modoResolvidos ? 'Ver ativos' : 'Ver resolvidos';
+    if (modoResolvidos) document.getElementById('pz-credores-section').style.display = 'none';
+    else carregarCredores();
+    carregarPrazos();
+  });
+
+  document.getElementById('pz-list').addEventListener('click', e => {
+    const resolveBtn = e.target.closest('[data-resolve]');
+    const deleteBtn  = e.target.closest('[data-delete]');
+    if (resolveBtn) resolverPrazo(resolveBtn.dataset.resolve);
+    if (deleteBtn)  excluirPrazo(deleteBtn.dataset.delete);
+  });
+
+  // Initialize
+  Promise.all([carregarResumo(), carregarPrazos(), carregarCredores()]);
+  </script>
+</body>
+</html>

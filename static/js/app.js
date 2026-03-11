@@ -182,12 +182,16 @@ function formatBRL(value) {
 }
 
 // ── Render ───────────────────────────────────────────────────
+let _renderPending = false;
 function render() {
-  const t0 = performance.now();
-  renderMonthNav();
-  renderCards();
-  renderStats();
-  console.debug(`render() ${(performance.now() - t0).toFixed(1)}ms`);
+  if (_renderPending) return;
+  _renderPending = true;
+  requestAnimationFrame(() => {
+    _renderPending = false;
+    renderMonthNav();
+    renderCards();
+    renderStats();
+  });
 }
 
 async function autosaveGeneratedText(text, options) {
@@ -260,7 +264,6 @@ function buildCard(c, done, idx) {
   const div = document.createElement('div');
   div.className = `empenho-card${done ? ' done' : ''}${state.expandAll ? ' expanded' : ''}`;
   div.dataset.id = c.id;
-  div.style.animationDelay = `${Math.min(idx, 20) * 25}ms`;
 
   const dept = c.departamento || '';
   const tipo = c.tipo_valor || 'FIXO';
