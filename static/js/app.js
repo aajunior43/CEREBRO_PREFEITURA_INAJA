@@ -455,162 +455,121 @@ function renderStats() {
 // ── Template CSS compartilhado (print) ───────────────────────
 function _printCSS() {
   return `
-    @page { margin: 15mm 12mm; }
+    @page { margin: 12mm 15mm; size: A4 portrait; }
     * { margin:0; padding:0; box-sizing:border-box;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important; }
     body {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 13px;
-      color: #2d3748;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 11pt;
+      color: #000;
       background: #fff;
     }
 
-    /* ── Faixa superior ── */
-    .doc-banner {
-      background: linear-gradient(135deg, #1e3a5f 0%, #2d5986 100%);
-      padding: 18px 28px 14px;
+    /* ── Faixa superior Oficial ── */
+    .doc-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      border-radius: 0;
-    }
-    .doc-banner-left { display:flex; flex-direction:row; align-items:center; gap:12px; }
-    .doc-banner-brasao { height:64px; width:auto; object-fit:contain; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4)); }
-    .doc-banner-text { display:flex; flex-direction:column; gap:2px; }
-    .doc-banner h1 {
-      font-size: 16px; font-weight: 900;
-      color: #fff; letter-spacing: -0.3px;
-    }
-    .doc-banner p {
-      font-size: 11px; color: rgba(255,255,255,0.65);
-      font-weight: 500; margin-top: 2px;
-    }
-    .doc-banner-right { text-align: right; }
-    .doc-ref {
-      font-size: 10px; color: rgba(255,255,255,0.55);
-      text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .doc-ref strong {
-      display: block; font-size: 13px;
-      color: rgba(255,255,255,0.92);
-      font-weight: 700; margin-top: 2px;
-    }
-    .stamp-done {
-      display: inline-block;
-      border: 2px solid #4ade80;
-      color: #4ade80;
-      font-size: 10px; font-weight: 800;
-      padding: 3px 10px; border-radius: 20px;
-      letter-spacing: 0.5px;
-      margin-top: 6px;
-    }
-
-    /* ── Título do documento ── */
-    .doc-title-block {
-      text-align: center;
-      padding: 16px 28px 12px;
-      border-bottom: 3px solid #1e3a5f;
+      border: 2px solid #000;
+      padding: 10px;
       margin-bottom: 20px;
+      border-radius: 4px;
     }
-    .doc-title-block h2 {
-      font-size: 18px; font-weight: 900;
-      color: #1e3a5f;
-      text-transform: uppercase;
-      letter-spacing: 2.5px;
+    .doc-header-brasao { width: 70px; height: auto; object-fit: contain; margin-right: 15px; }
+    .doc-header-text { flex: 1; text-align: center; }
+    .doc-header-text h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+    .doc-header-text h2 { font-size: 11pt; font-weight: normal; margin-bottom: 4px; }
+    .doc-header-text h3 { font-size: 12pt; font-weight: bold; text-transform: uppercase; border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }
+    
+    .doc-header-right {
+       text-align: right; 
+       font-size: 9pt; 
+       padding-left: 15px; 
+       border-left: 1px solid #ccc;
     }
-    .doc-title-block .doc-subtitle {
-      font-size: 10px; color: #718096;
-      margin-top: 4px; font-weight: 500;
-      letter-spacing: 0.3px;
-    }
+    .doc-ref { font-weight: bold; font-size: 11pt; margin-top: 4px; }
 
     /* ── Corpo ── */
-    .doc-body { padding: 0 28px 20px; }
+    .doc-body { margin-bottom: 25px; position: relative; }
 
-    .section-title {
-      font-size: 9px; font-weight: 700;
-      color: #a0aec0; text-transform: uppercase;
-      letter-spacing: 1px; margin-bottom: 8px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid #e2e8f0;
+    /* ── Marca D'Agua ── */
+    .watermark-done {
+      position: absolute;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 80pt;
+      font-weight: bold;
+      color: rgba(58, 170, 110, 0.15);
+      border: 8px solid rgba(58, 170, 110, 0.15);
+      padding: 10px 40px;
+      border-radius: 20px;
+      user-select: none;
+      pointer-events: none;
+      z-index: 0;
     }
 
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    tr { border-bottom: 1px solid #edf2f7; }
-    tr:last-child { border-bottom: none; }
-    td { padding: 8px 10px; vertical-align: top; }
-    td.label {
-      font-weight: 700; color: #4a5568;
-      width: 34%; font-size: 10px;
-      text-transform: uppercase; letter-spacing: 0.5px;
-      background: #f7fafc;
-      border-right: 3px solid #e2e8f0;
+    /* ── Tabela de Dados ── */
+    table.doc-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-bottom: 15px; 
+      position: relative;
+      z-index: 1;
     }
-    td.value { color: #2d3748; font-size: 13px; padding-left: 14px; }
+    table.doc-table th, table.doc-table td { 
+      border: 1px solid #000; 
+      padding: 8px; 
+      vertical-align: middle; 
+    }
+    table.doc-table th { 
+      background: #f0f0f0; 
+      text-transform: uppercase; 
+      font-size: 9pt; 
+      width: 30%; 
+      text-align: left;
+    }
+    table.doc-table td { font-size: 10pt; font-weight: 500; }
 
     /* ── Caixa de valor ── */
     .valor-box {
-      background: linear-gradient(135deg, #ebf8ff, #e6f2fb);
-      border: 1px solid #bee3f8;
-      border-left: 4px solid #3182ce;
-      border-radius: 6px;
-      padding: 12px 18px;
-      margin-bottom: 20px;
+      border: 2px solid #000;
+      background: #fdfdfd;
+      padding: 12px;
       text-align: center;
+      margin-bottom: 30px;
+      border-radius: 4px;
     }
-    .vb-label {
-      font-size: 10px; font-weight: 700;
-      color: #2c5282; text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .vb-value {
-      font-size: 22px; font-weight: 900;
-      color: #2b6cb0;
-    }
+    .vb-label { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+    .vb-value { font-size: 18pt; font-weight: bold; }
 
-    /* ── Data ── */
+    /* ── Data e Assinaturas ── */
     .sign-date {
-      font-size: 11px; color: #718096;
-      text-align: center;
-      margin-bottom: 28px;
-      padding: 8px 0;
-      border-top: 1px dashed #e2e8f0;
-      border-bottom: 1px dashed #e2e8f0;
+      text-align: right; margin-bottom: 40px; font-size: 11pt;
     }
 
-    /* ── Rodapé ── */
-    .doc-footer {
-      background: #f7fafc;
-      border-top: 2px solid #1e3a5f;
-      padding: 8px 28px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 8px;
-      color: #a0aec0;
-      letter-spacing: 0.3px;
-      margin-top: 28px;
-    }
-    .doc-footer strong { color: #718096; }
-
-    /* ── Assinatura ── */
     .sign-section {
       display: flex;
-      gap: 32px;
-      justify-content: center;
+      justify-content: space-around;
+      margin-top: 50px;
     }
-    .sign-block { text-align: center; }
+    .sign-block { text-align: center; width: 40%; }
     .sign-line-top {
-      width: 350px;
-      border-bottom: 1px solid #2d3748;
-      margin: 0 auto 8px;
-      padding-bottom: 4px;
+      border-bottom: 1px solid #000;
+      margin-bottom: 8px;
+      height: 40px; /* Space for signature */
     }
-    .sign-label {
-      font-size: 11px; font-weight: 700;
-      color: #2d3748; letter-spacing: 0.2px;
+    .sign-label { font-size: 10pt; font-weight: bold; text-transform: uppercase; }
+    .sign-sub { font-size: 9pt; margin-top: 2px; }
+
+    /* ── Rodapé de Autenticidade ── */
+    .doc-footer {
+      text-align: center;
+      font-size: 8pt;
+      color: #555;
+      margin-top: 30px;
+      border-top: 1px solid #ccc;
+      padding-top: 5px;
     }
-    .sign-sub { font-size: 9px; color: #718096; margin-top: 2px; }
   `;
 }
 
@@ -619,61 +578,62 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
   const isVar = (c.tipo_valor || '').toUpperCase().includes('VAR');
   const valorStr = (isVar && !c.valor) ? 'Valor variável' : formatBRL(c.valor || 0);
   const pb = isLast ? '' : 'page-break-after:always;';
+  
+  const watermark = done ? '<div class="watermark-done">EMPENHADO</div>' : '';
 
   const campos = [
+    ['Departamento Solicitante', c.departamento],
     ['Credor / Fornecedor', c.nome],
-    ['Descrição do Serviço', c.descricao],
-    ['Departamento', c.departamento],
-    ['CNPJ', c.cnpj],
-    ['E-mail', c.email],
+    ['CNPJ / CPF', c.cnpj],
+    ['Descrição do Objeto / Serviço', c.descricao],
     ['Tipo de Valor', c.tipo_valor],
-    ['N.º Solicitação', c.solicitacao],
     ['Observações', c.obs],
   ].filter(([, v]) => v && String(v).trim());
 
   const tableRows = campos.map(([l, v]) =>
-    `<tr><td class="label">${l}</td><td class="value">${v}</td></tr>`
+    `<tr><th>${l}</th><td>${v}</td></tr>`
   ).join('');
 
   return `
-    <div style="${pb}">
-      <div class="doc-banner">
-        <div class="doc-banner-left">
-          <img class="doc-banner-brasao" src="${typeof BRASAO_B64 !== 'undefined' && BRASAO_B64 ? BRASAO_B64 : '/static/img/brasao.png'}" alt="Bras&#227;o" />
-          <div class="doc-banner-text">
-            <h1>Prefeitura Municipal de Inaj&#225;</h1>
-          </div>
+    <div style="${pb} position: relative;">
+      <div class="doc-header">
+        <img class="doc-header-brasao" src="${typeof BRASAO_B64 !== 'undefined' && BRASAO_B64 ? BRASAO_B64 : '/static/img/brasao.png'}" alt="Brasão" />
+        <div class="doc-header-text">
+          <h1>Estado do Paraná</h1>
+          <h2>Prefeitura Municipal de Inajá</h2>
+          <h3>Solicitação de Empenho de Despesa Fixa / Contínua</h3>
         </div>
-        <div class="doc-banner-right">
-          <div class="doc-ref">Refer&#234;ncia<strong>${mesNome} / ${ano}</strong></div>
+        <div class="doc-header-right">
+          <div>Referência</div>
+          <div class="doc-ref">${mesNome} / ${ano}</div>
         </div>
-      </div>
-
-      <div class="doc-title-block">
-        <h2>Solicita&#231;&#227;o de Fornecimento</h2>
       </div>
 
       <div class="doc-body">
-        <div class="section-title">Dados do Fornecedor / Servi&#231;o</div>
-        <table>${tableRows}</table>
+        ${watermark}
+        <table class="doc-table">${tableRows}</table>
 
         <div class="valor-box">
-          <span class="vb-value">${valorStr}</span>
+          <div class="vb-label">Valor do Empenho</div>
+          <div class="vb-value">${valorStr}</div>
         </div>
 
         <div class="sign-date">
-          Inaj&#225; &mdash; PR, &nbsp; _______ de &nbsp; __________________ de &nbsp; ${ano}
+          Inajá / PR, _____ de ___________________ de ${ano}.
         </div>
 
         <div class="sign-section">
-          <div class="sign-block">
-            <div class="sign-line-top"></div>
-            <div class="sign-label">Ordenador de Despesa</div>
-            <div class="sign-sub">Prefeitura Municipal de Inaj&#225;</div>
+          <div class="sign-block" style="width: 50%;">
+             <div class="sign-line-top"></div>
+             <div class="sign-label">Ordenador de Despesa</div>
+             <div class="sign-sub">Prefeitura Municipal de Inajá</div>
           </div>
         </div>
+        
+        <div class="doc-footer">
+           Documento gerado eletronicamente pelo módulo de Controle de Despesas Fixas.
+        </div>
       </div>
-
     </div>`;
 }
 
@@ -1296,6 +1256,8 @@ function initTheme() {
   const saved = localStorage.getItem('theme');
   if (saved === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
+  } else if (saved === 'vintage') {
+    document.documentElement.setAttribute('data-theme', 'vintage');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -1304,19 +1266,24 @@ function initTheme() {
 function syncThemeLabel() {
   const label = document.querySelector('.theme-label');
   if (!label) return;
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  label.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  if (current === 'light') label.textContent = 'Tema Escuro';
+  else if (current === 'dark') label.textContent = 'Tema Vintage';
+  else label.textContent = 'Tema Claro';
 }
 
 function toggleTheme() {
   const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
-  if (isDark) {
-    html.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
-  } else {
+  const current = html.getAttribute('data-theme') || 'light';
+  if (current === 'light') {
     html.setAttribute('data-theme', 'dark');
     localStorage.setItem('theme', 'dark');
+  } else if (current === 'dark') {
+    html.setAttribute('data-theme', 'vintage');
+    localStorage.setItem('theme', 'vintage');
+  } else {
+    html.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
   }
 }
 
@@ -1324,11 +1291,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   syncThemeLabel();
   const syncExtraThemeLabels = () => {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    let text = 'Tema Escuro';
+    if (current === 'dark') text = 'Tema Vintage';
+    if (current === 'vintage') text = 'Tema Claro';
+    
     const sidebarLabel = document.querySelector('.theme-label-sidebar');
-    if (sidebarLabel) sidebarLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+    if (sidebarLabel) sidebarLabel.textContent = text;
     const mobileLabel = document.querySelector('.theme-label-mobile');
-    if (mobileLabel) mobileLabel.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+    if (mobileLabel) mobileLabel.textContent = text;
   };
   syncExtraThemeLabels();
   
@@ -1356,10 +1327,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   hamburger?.addEventListener('click', () => {
+    if (window.innerWidth > 860) {
+      document.body.classList.toggle('sidebar-collapsed');
+      const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+      localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
+      return;
+    }
     if (!mobileNav) return;
     if (mobileNav.classList.contains('open')) closeMobileNav();
     else openMobileNav();
   });
+  
+  // Load sidebar state on init
+  if (localStorage.getItem('sidebarCollapsed') === 'true' && window.innerWidth > 860) {
+    document.body.classList.add('sidebar-collapsed');
+  }
   
   bnavMenu?.addEventListener('click', () => {
     if (!mobileNav) return;

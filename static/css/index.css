@@ -115,6 +115,54 @@ svg {
   --text-3: #8fa0b4;
 }
 
+[data-theme="vintage"] {
+  /* ── Backgrounds vintage (Papiro/Amarelado) ── */
+  --bg: #f4ebd8;
+  --surface: #fbf5e6;
+  --surface-2: #eedcc0;
+  --border: rgba(139, 115, 85, 0.25);
+  --border-hover: rgba(139, 115, 85, 0.45);
+
+  /* ── Sombras vintage (mais sépia/marrom) ── */
+  --shadow-xs:  0 1px 3px rgba(100,75,50,0.1);
+  --shadow-sm:  0 2px 8px rgba(100,75,50,0.12), 0 1px 2px rgba(100,75,50,0.06);
+  --shadow:     0 4px 16px rgba(100,75,50,0.15), 0 2px 4px rgba(100,75,50,0.08);
+  --shadow-lg:  0 8px 32px rgba(100,75,50,0.18), 0 4px 8px rgba(100,75,50,0.10);
+  --shadow-xl:  0 16px 48px rgba(100,75,50,0.22), 0 6px 12px rgba(100,75,50,0.12);
+
+  --shadow-dark: #ccbea6;
+  --shadow-lite: #ffffff;
+  --neo: var(--shadow);
+  --neo-sm: var(--shadow-sm);
+  --neo-lg: var(--shadow-lg);
+  --neo-in: inset 0 1px 4px rgba(100,75,50,0.15);
+  --neo-in-sm: inset 0 1px 3px rgba(100,75,50,0.12);
+
+  /* ── Cores vintage (tons terrosos) ── */
+  --blue: #405d63;
+  --blue-dark: #2a4047;
+  --blue-light: #d6deda;
+  --green: #526b43;
+  --green-bg: #dbe2d6;
+  --green-dark: #374a2b;
+  --orange: #9c4c28;
+  --orange-bg: #ecd5ca;
+  --red: #8b3737;
+  --red-bg: #ebcfcf;
+  --purple: #614a70;
+  --purple-bg: #dbd3e0;
+
+  --grad-blue:   linear-gradient(135deg, #53757d, #3c545c);
+  --grad-green:  linear-gradient(135deg, #6c8c59, #4a633a);
+  --grad-orange: linear-gradient(135deg, #ad603c, #804325);
+  --grad-red:    linear-gradient(135deg, #a64c4c, #7a3131);
+  --grad-purple: linear-gradient(135deg, #745b85, #513e5e);
+
+  --text: #2f2115;
+  --text-2: #524031;
+  --text-3: #806856;
+}
+
 html,
 body {
   min-height: 100vh;
@@ -519,13 +567,13 @@ body {
   min-width: 160px;
   background: var(--surface);
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
   padding: 6px;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.2s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
   z-index: 100;
 }
 
@@ -636,12 +684,12 @@ body {
   min-width: 230px;
   background: var(--surface);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
   padding: 6px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.2s;
   z-index: 200;
 }
 
@@ -838,12 +886,12 @@ body {
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
   border-left: 3px solid transparent;
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow);
-  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.08);
+  transform: translateY(-4px);
 }
 
 .stat-icon {
@@ -1075,11 +1123,13 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--blue), var(--blue-dark));
   color: white;
-  box-shadow: 4px 4px 10px rgba(79, 128, 200, 0.4), -2px -2px 6px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 14px rgba(79, 128, 200, 0.4);
+  transition: all 0.3s;
 }
 
 .btn-primary:hover {
-  box-shadow: 6px 6px 14px rgba(79, 128, 200, 0.5), -3px -3px 8px rgba(255, 255, 255, 0.7);
+  box-shadow: 0 6px 20px rgba(79, 128, 200, 0.6);
+  transform: translateY(-2px);
 }
 
 .btn-primary:active {
@@ -1091,10 +1141,12 @@ body {
   color: var(--text-2);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
+  transition: all 0.3s;
 }
 
 .btn-secondary:hover {
-  box-shadow: var(--shadow);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
   color: var(--text);
   border-color: var(--border-hover);
 }
@@ -1177,7 +1229,7 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  transition: box-shadow 0.25s, transform 0.2s;
+  transition: box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   animation: fadeIn 0.25s ease both;
   overflow: visible;
 }
@@ -1195,8 +1247,9 @@ body {
 }
 
 .empenho-card:hover {
-  box-shadow: var(--shadow);
-  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  border-color: var(--border-hover);
 }
 
 .empenho-card.done {
@@ -1561,8 +1614,7 @@ body {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(50, 65, 80, 0.35);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.5);
   z-index: 200;
   display: none;
   align-items: center;
@@ -1581,7 +1633,7 @@ body {
   max-width: 560px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border);
   animation: slideUp 0.25s ease;
 }
@@ -2193,6 +2245,11 @@ body.home-page .app-sidebar {
   border-right: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   z-index: 80;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body.home-page.sidebar-collapsed .app-sidebar {
+  transform: translateX(-100%);
 }
 
 body.home-page .sidebar-scroll {
@@ -2348,6 +2405,17 @@ body.home-page .main-content,
 body.home-page .adm-panel,
 body.home-page .footer {
   margin-left: 272px;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+body.home-page.sidebar-collapsed .stats-bar,
+body.home-page.sidebar-collapsed .dept-stats-row,
+body.home-page.sidebar-collapsed .progress-section,
+body.home-page.sidebar-collapsed .toolbar,
+body.home-page.sidebar-collapsed .main-content,
+body.home-page.sidebar-collapsed .adm-panel,
+body.home-page.sidebar-collapsed .footer {
+  margin-left: 0;
 }
 
 body.home-page .stats-bar,
@@ -2360,6 +2428,15 @@ body.home-page .adm-panel {
   max-width: 1280px;
 }
 
+body.home-page.sidebar-collapsed .stats-bar,
+body.home-page.sidebar-collapsed .dept-stats-row,
+body.home-page.sidebar-collapsed .progress-section,
+body.home-page.sidebar-collapsed .toolbar,
+body.home-page.sidebar-collapsed .main-content,
+body.home-page.sidebar-collapsed .adm-panel {
+  width: 100%;
+}
+
 body.home-page .header {
   z-index: 120;
 }
@@ -2368,6 +2445,10 @@ body.home-page .header-inner {
   max-width: none;
   padding-left: 8px;
   padding-right: 8px;
+}
+
+body.home-page .hamburger {
+  display: flex !important;
 }
 
 body.home-page .desktop-nav {

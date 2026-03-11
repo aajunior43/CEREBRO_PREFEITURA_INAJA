@@ -26,26 +26,34 @@
     const saved = isDespesaPage ? 'dark' : localStorage.getItem('theme');
     if (saved === 'dark') {
       document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (saved === 'vintage') {
+      document.documentElement.setAttribute('data-theme', 'vintage');
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
   }
   function toggleTheme() {
     if (isDespesaPage) return; // theme locked on despesa pages
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    if (isDark) {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('theme', 'light');
-    } else {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    if (current === 'light') {
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
+    } else if (current === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'vintage');
+      localStorage.setItem('theme', 'vintage');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
     }
     syncThemeBtn();
   }
   function syncThemeBtn() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    let text = 'Tema Escuro';
+    if (current === 'dark') text = 'Tema Vintage';
+    if (current === 'vintage') text = 'Tema Claro';
     document.querySelectorAll('.shd-theme-label').forEach(el => {
-      el.textContent = isDark ? 'Tema Claro' : 'Tema Escuro';
+      el.textContent = text;
     });
   }
   initTheme();
