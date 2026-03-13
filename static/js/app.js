@@ -315,6 +315,9 @@ function buildCard(c, done, idx) {
         <button class="btn-edit" data-action="edit" title="Editar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
+        <button class="btn-duplicate" data-action="duplicate" title="Duplicar credor">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
         <button class="btn-print" data-action="print" title="Imprimir">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
@@ -823,6 +826,7 @@ function openModal(id = null) {
     document.getElementById('form-email').value = c.email || '';
     document.getElementById('form-pagamento').value = c.pagamento || '';
     document.getElementById('form-validade').value = c.validade || '';
+    document.getElementById('form-solicitacao').value = c.solicitacao || '';
     document.getElementById('form-obs').value = c.obs || '';
   } else {
     document.getElementById('modal-title').textContent = 'Novo Credor';
@@ -861,6 +865,7 @@ async function onFormSubmit(e) {
     email: document.getElementById('form-email').value.trim(),
     pagamento: document.getElementById('form-pagamento').value.trim(),
     validade: document.getElementById('form-validade').value,
+    solicitacao: document.getElementById('form-solicitacao').value.trim(),
     obs: document.getElementById('form-obs').value.trim(),
   };
 
@@ -878,7 +883,14 @@ async function onFormSubmit(e) {
     closeModal();
     render();
   } catch (err) {
-    showToast(err.message || 'Erro ao salvar credor', 'error');
+    // Mensagem mais clara para conflito de duplicata
+    let msg = err.message || 'Erro ao salvar credor';
+    if (msg.includes('Já existe um credor ativo com este nome')) {
+      msg = `⚠️ Já existe outro credor cadastrado com o nome "${nome}". Altere o nome antes de salvar.`;
+    } else if (msg.includes('Já existe um credor ativo com este CNPJ')) {
+      msg = `⚠️ Já existe outro credor cadastrado com este CNPJ. Verifique o CNPJ informado.`;
+    }
+    showToast(msg, 'error');
     console.error(err);
   } finally {
     setLoading(false);
@@ -899,6 +911,26 @@ async function onDeleteCredor() {
     showToast('Credor removido', 'info');
   } catch (err) {
     showToast(err.message || 'Erro ao remover', 'error');
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ── Duplicar Credor ───────────────────────────────────────────
+async function duplicateCredor(c) {
+  if (!confirm(`Duplicar o credor "${c.nome}"?\n\nUma cópia será criada com o nome "CÓPIA – ${c.nome}".
+Você poderá editar a cópia em seguida.`)) return;
+  try {
+    setLoading(true);
+    const novo = await apiPost(`/credores/${c.id}/duplicate`, {});
+    await loadCredores();
+    render();
+    showToast(`✓ Credor duplicado: ${novo.nome}`, 'success');
+    // Abre o modal de edição do novo credor para o usuário ajustar o nome
+    setTimeout(() => openModal(novo.id), 200);
+  } catch (err) {
+    showToast(err.message || 'Erro ao duplicar credor', 'error');
+    console.error(err);
   } finally {
     setLoading(false);
   }
@@ -944,6 +976,7 @@ function attachEvents() {
     else if (action === 'expand') handleCardExpand(cardEl, credor.id);
     else if (action === 'edit') openModal(credor.id);
     else if (action === 'print') printCredor(credor);
+    else if (action === 'duplicate') duplicateCredor(credor);
   });
 
   document.getElementById('btn-prev-month').addEventListener('click', async () => {

@@ -103,6 +103,11 @@ STEP_DESP_BUSCA      = 'desp_busca'
 STEP_UP_AUDITOR      = 'up_auditor_arquivo'
 STEP_UP_EXTRATO      = 'up_extrato_arquivo'
 
+STEP_UP_RESUMIR      = 'up_resumir_arquivo'
+STEP_MINUTA_ASSUNTO  = 'minuta_assunto'
+STEP_MINUTA_DEST     = 'minuta_destinatario'
+STEP_MINUTA_TIPO     = 'minuta_tipo'
+
 # ════════════════════════════════════════════════════════════════════════════
 # Helpers Globais
 # ════════════════════════════════════════════════════════════════════════════
@@ -753,6 +758,14 @@ def keyboard_main():
             [
                 {'text': '🔍 Auditor NF', 'callback_data': 'cmd_auditor_nf'},
                 {'text': '🏦 Extrato Bancário', 'callback_data': 'cmd_extrato_bancario'},
+            ],
+            [
+                {'text': '📝 Resumir Doc.', 'callback_data': 'cmd_resumir'},
+                {'text': '✍️ Minuta', 'callback_data': 'cmd_minuta'},
+            ],
+            [
+                {'text': '📊 Relatório Mensal', 'callback_data': 'cmd_relatorio'},
+                {'text': '🗒 Log Atividades', 'callback_data': 'cmd_log'},
             ],
             [{'text': '🔄 Atualizar Menu', 'callback_data': 'cmd_menu'}],
         ]
@@ -1542,6 +1555,367 @@ Extrato:
         clear_state(chat_id)
 
 
+
+# ════════════════════════════════════════════════════════════════════════════
+# Feature 1 – /resumir: Resumo IA de Documentos
+# ════════════════════════════════════════════════════════════════════════════
+
+def start_resumir_flow(chat_id: int, edit_msg: tuple | None = None):
+    """Inicia o fluxo de resumo de documento."""
+    set_state(chat_id, {'step': STEP_UP_RESUMIR})
+    text = (
+        '📝 <b>Resumidor de Documentos · IA</b>\n\n'
+        'Envie um <b>PDF ou imagem</b> de um documento (ata, decreto, contrato, portaria…) '
+        'e a IA irá gerar um <b>resumo executivo</b> com os pontos principais.\n\n'
+        '📎 <i>Envie o arquivo agora:</i>'
+    )
+    kb = {'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def process_resumir_file(chat_id: int, file_id: str, file_name: str):
+    """Baixa o arquivo, extrai texto e chama a IA para resumo."""
+    msg_id = send_message(chat_id, '⏳ <i>Lendo documento e gerando resumo com IA…</i>')['result']['message_id']
+    try:
+        f_info = tg_request('getFile', {'file_id': file_id})
+        if not f_info.get('ok'):
+            edit_message(chat_id, msg_id, '⚠️ Erro ao obter informações do arquivo.')
+            return
+        file_path = f_info['result']['file_path']
+        r = requests.get(f'https://api.telegram.org/file/bot{TELEGRAM_TOKEN}/{file_path}', timeout=30)
+        if r.status_code != 200:
+            edit_message(chat_id, msg_id, '⚠️ Erro ao baixar o arquivo.')
+            return
+
+        is_pdf = file_name.lower().endswith('.pdf')
+        if is_pdf:
+            try:
+                import PyPDF2
+                reader = PyPDF2.PdfReader(io.BytesIO(r.content))
+                text = ''.join((p.extract_text() or '') + '\n' for p in reader.pages).strip()
+            except Exception as e:
+                edit_message(chat_id, msg_id, f'⚠️ Erro ao ler PDF: {e}')
+                return
+            if not text:
+                edit_message(chat_id, msg_id, '⚠️ Não foi possível extrair texto do PDF (imagem escaneada?).')
+                return
+        else:
+            import base64
+            text = f'[Imagem do documento {file_name} enviada]'
+
+        prompt = f"""Você é um assistente jurídico-administrativo da Prefeitura de Inajá – PE.
+Analise o documento abaixo e gere um RESUMO EXECUTIVO estruturado em português formal.
+
+Seções obrigatórias:
+1. 📌 TIPO DE DOCUMENTO
+2. 🎯 OBJETO / ASSUNTO PRINCIPAL
+3. 👥 PARTES ENVOLVIDAS (se aplicável)
+4. 💰 VALORES E PRAZOS (se aplicável)
+5. ⚖️ OBRIGAÇÕES E CONDIÇÕES PRINCIPAIS
+6. ⚠️ PONTOS DE ATENÇÃO
+
+Seja conciso e objetivo. Máximo 400 palavras no total.
+
+Documento:
+---
+{text[:10000]}
+---"""
+
+        try:
+            resp = requests.post(f'{SERVER_URL}/api/ia/chat',
+                json={'messages': [{'role': 'user', 'content': prompt}], 'temperature': 0.2, 'max_tokens': 1200},
+                timeout=60)
+            data = resp.json()
+            if not resp.ok:
+                err = data.get('error') or {}
+                edit_message(chat_id, msg_id, f'⚠️ Erro da IA: {err.get("message", str(err))}')
+                return
+            resumo = data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+        except Exception as e:
+            edit_message(chat_id, msg_id, f'⚠️ Erro ao contatar servidor IA: {e}')
+            return
+
+        header = f'📝 <b>Resumo: {file_name[:40]}</b>\n\n'
+        full_msg = header + resumo
+        if len(full_msg) > 4000:
+            full_msg = full_msg[:4000] + '…'
+
+        edit_message(chat_id, msg_id, full_msg, reply_markup={'inline_keyboard': [
+            [{'text': '📝 Resumir outro documento', 'callback_data': 'cmd_resumir'}],
+            [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]
+        ]})
+    except Exception as e:
+        log.error('Erro ao resumir: %s', e)
+        edit_message(chat_id, msg_id, '⚠️ Erro inesperado ao gerar resumo.')
+    finally:
+        clear_state(chat_id)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Feature 2 – /minuta: Gerador de Ofícios e Minutas com IA
+# ════════════════════════════════════════════════════════════════════════════
+
+def start_minuta_flow(chat_id: int, edit_msg: tuple | None = None):
+    """Inicia o fluxo de geração de ofício/minuta."""
+    set_state(chat_id, {'step': STEP_MINUTA_TIPO})
+    text = (
+        '✍️ <b>Gerador de Ofícios e Minutas · IA</b>\n\n'
+        'Qual <b>tipo de documento</b> você precisa gerar?\n\n'
+        '1️⃣ Ofício\n'
+        '2️⃣ Memorando\n'
+        '3️⃣ Portaria\n'
+        '4️⃣ Notificação\n'
+        '5️⃣ Declaração\n\n'
+        '<i>Digite o número ou o nome do tipo:</i>'
+    )
+    kb = {'inline_keyboard': [
+        [{'text': '📄 Ofício', 'callback_data': 'minuta_tipo_oficio'},
+         {'text': '📋 Memorando', 'callback_data': 'minuta_tipo_memorando'}],
+        [{'text': '📜 Portaria', 'callback_data': 'minuta_tipo_portaria'},
+         {'text': '📢 Notificação', 'callback_data': 'minuta_tipo_notificacao'}],
+        [{'text': '📃 Declaração', 'callback_data': 'minuta_tipo_declaracao'}],
+        [{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]
+    ]}
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], text, reply_markup=kb)
+    else:
+        send_message(chat_id, text, reply_markup=kb)
+
+
+def handle_minuta_tipo(chat_id: int, tipo: str):
+    """Salva o tipo e pede o assunto."""
+    set_state(chat_id, {'step': STEP_MINUTA_ASSUNTO, 'minuta_tipo': tipo})
+    send_message(chat_id,
+        f'✅ Tipo: <b>{tipo}</b>\n\n'
+        'Agora descreva o <b>assunto / objeto</b> do documento:\n'
+        '<i>(Ex: Solicitação de manutenção de via pública na Rua das Flores)</i>',
+        reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    )
+
+
+def handle_minuta_assunto(chat_id: int, assunto: str):
+    """Salva o assunto e pede o destinatário."""
+    state = get_state(chat_id) or {}
+    state['assunto'] = assunto.strip()
+    state['step'] = STEP_MINUTA_DEST
+    set_state(chat_id, state)
+    send_message(chat_id,
+        f'✅ Assunto registrado.\n\n'
+        'Digite o <b>nome e cargo do destinatário</b>:\n'
+        '<i>(Ex: Secretário Municipal de Infraestrutura, João Silva)</i>',
+        reply_markup={'inline_keyboard': [[{'text': '❌ Cancelar', 'callback_data': 'cmd_cancelar'}]]}
+    )
+
+
+def handle_minuta_dest(chat_id: int, destinatario: str):
+    """Salva o destinatário e gera a minuta com IA."""
+    state = get_state(chat_id) or {}
+    tipo = state.get('minuta_tipo', 'Ofício')
+    assunto = state.get('assunto', '')
+    clear_state(chat_id)
+
+    msg_id = send_message(chat_id, '⏳ <i>Gerando documento com IA…</i>')['result']['message_id']
+    hoje = date.today().strftime('%d de %B de %Y')
+    # Fix month names to Portuguese
+    meses = {'January': 'janeiro', 'February': 'fevereiro', 'March': 'março', 'April': 'abril',
+             'May': 'maio', 'June': 'junho', 'July': 'julho', 'August': 'agosto',
+             'September': 'setembro', 'October': 'outubro', 'November': 'novembro', 'December': 'dezembro'}
+    for en, pt in meses.items():
+        hoje = hoje.replace(en, pt)
+
+    prompt = f"""Você é um redator oficial da Prefeitura Municipal de Inajá – PE.
+Gere um {tipo} formal e completo com as seguintes informações:
+- Data: {hoje}
+- Prefeitura: Prefeitura Municipal de Inajá – PE
+- Destinatário: {destinatario.strip()}
+- Assunto: {assunto}
+
+O documento deve:
+- Usar linguagem formal e técnica da administração pública brasileira
+- Seguir a estrutura padrão brasileira de documentos oficiais
+- Ter número fictício de ofício/memorando se necessário (ex: Ofício Nº 001/2026/PMI)
+- Incluir fecho formal e assinatura genérica (Prefeito Municipal)
+
+Retorne APENAS o texto do documento, formatado, sem explicações adicionais."""
+
+    try:
+        resp = requests.post(f'{SERVER_URL}/api/ia/chat',
+            json={'messages': [{'role': 'user', 'content': prompt}], 'temperature': 0.3, 'max_tokens': 1500},
+            timeout=60)
+        data = resp.json()
+        if not resp.ok:
+            err = data.get('error') or {}
+            edit_message(chat_id, msg_id, f'⚠️ Erro da IA: {err.get("message", str(err))}')
+            return
+        minuta = data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+    except Exception as e:
+        edit_message(chat_id, msg_id, f'⚠️ Erro ao contatar servidor IA: {e}')
+        return
+
+    header = f'✍️ <b>{tipo} Gerado pela IA</b>\n\n'
+    full_msg = header + minuta
+    if len(full_msg) > 4000:
+        full_msg = full_msg[:4000] + '\n…<i>(documento truncado)</i>'
+
+    edit_message(chat_id, msg_id, full_msg, reply_markup={'inline_keyboard': [
+        [{'text': '✍️ Gerar novo documento', 'callback_data': 'cmd_minuta'}],
+        [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]
+    ]})
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Feature 5 – /relatorio: Relatório Financeiro Mensal
+# ════════════════════════════════════════════════════════════════════════════
+
+def cmd_relatorio(chat_id: int, edit_msg: tuple | None = None):
+    """Gera relatório financeiro do mês atual a partir do DB."""
+    msg_id_val = None
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], '⏳ <i>Gerando relatório financeiro…</i>')
+        msg_id_val = edit_msg[1]
+    else:
+        msg_id_val = send_message(chat_id, '⏳ <i>Gerando relatório financeiro…</i>')['result']['message_id']
+
+    try:
+        hoje = date.today()
+        mes_atual = f'{hoje.year}-{hoje.month:02d}'
+        mes_nome_meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                          'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+        mes_nome = f'{mes_nome_meses[hoje.month-1]}/{hoje.year}'
+
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+
+        # Total de empenhos do mês
+        empenhos_rows = conn.execute("""
+            SELECT COUNT(*) as qtd, COALESCE(SUM(CAST(REPLACE(REPLACE(valor,'R$',''),' ','') AS REAL)),0) as total
+            FROM empenhos WHERE strftime('%Y-%m', criado_em) = ?
+        """, (mes_atual,)).fetchone()
+
+        # Total de protocolos do mês
+        prot_rows = conn.execute("""
+            SELECT COUNT(*) as qtd FROM protocolos WHERE strftime('%Y-%m', criado_em) = ?
+        """, (mes_atual,)).fetchone()
+
+        # Total de despesas do mês
+        desp_rows = conn.execute("""
+            SELECT COUNT(*) as qtd, COALESCE(SUM(CAST(valor AS REAL)),0) as total
+            FROM despesas WHERE strftime('%Y-%m', data) = ?
+        """, (mes_atual,)).fetchone()
+
+        # Tarefas kanban por status
+        tasks_todo = conn.execute("SELECT COUNT(*) FROM kanban_tasks WHERE status='todo'").fetchone()[0]
+        tasks_prog = conn.execute("SELECT COUNT(*) FROM kanban_tasks WHERE status='in-progress'").fetchone()[0]
+        tasks_done = conn.execute("SELECT COUNT(*) FROM kanban_tasks WHERE status='done'").fetchone()[0]
+
+        # Credores fixos
+        qtd_credores = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=1").fetchone()[0]
+        total_credores = conn.execute("SELECT COALESCE(SUM(valor),0) FROM credores WHERE ativo=1").fetchone()[0]
+
+        conn.close()
+
+        def fmt(v):
+            try:
+                return f'R$ {float(v):,.2f}'.replace(',','X').replace('.',',').replace('X','.')
+            except Exception:
+                return 'R$ —'
+
+        empenhos_qtd = empenhos_rows['qtd'] if empenhos_rows else 0
+        empenhos_total = empenhos_rows['total'] if empenhos_rows else 0
+        prot_qtd = prot_rows['qtd'] if prot_rows else 0
+        desp_qtd = desp_rows['qtd'] if desp_rows else 0
+        desp_total = desp_rows['total'] if desp_rows else 0
+
+        msg = (
+            f'📊 <b>Relatório Financeiro — {mes_nome}</b>\n'
+            f'<i>Gerado em {hoje.strftime("%d/%m/%Y às %H:%M")}</i>\n'
+            f'{"─" * 30}\n\n'
+            f'📋 <b>Empenhos do Mês</b>\n'
+            f'  • Quantidade: {empenhos_qtd}\n'
+            f'  • Valor Total: {fmt(empenhos_total)}\n\n'
+            f'📂 <b>Protocolos Abertos no Mês</b>\n'
+            f'  • Quantidade: {prot_qtd}\n\n'
+            f'💸 <b>Despesas Registradas no Mês</b>\n'
+            f'  • Quantidade: {desp_qtd}\n'
+            f'  • Valor Total: {fmt(desp_total)}\n\n'
+            f'👥 <b>Credores Fixos Ativos</b>\n'
+            f'  • Quantidade: {qtd_credores}\n'
+            f'  • Folha Mensal: {fmt(total_credores)}\n\n'
+            f'📌 <b>Kanban de Tarefas</b>\n'
+            f'  • A fazer: {tasks_todo}\n'
+            f'  • Em andamento: {tasks_prog}\n'
+            f'  • Concluídas: {tasks_done}\n'
+        )
+
+        edit_message(chat_id, msg_id_val, msg, reply_markup={'inline_keyboard': [
+            [{'text': '🔄 Atualizar', 'callback_data': 'cmd_relatorio'}],
+            [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]
+        ]})
+
+    except Exception as e:
+        log.error('Erro no relatório: %s', e)
+        edit_message(chat_id, msg_id_val, f'⚠️ Erro ao gerar relatório: {e}')
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Feature 10 – /log: Log de Atividades do Sistema
+# ════════════════════════════════════════════════════════════════════════════
+
+def cmd_log(chat_id: int, edit_msg: tuple | None = None):
+    """Exibe as últimas atividades registradas no sistema."""
+    msg_id_val = None
+    if edit_msg:
+        edit_message(edit_msg[0], edit_msg[1], '⏳ <i>Buscando log de atividades…</i>')
+        msg_id_val = edit_msg[1]
+    else:
+        msg_id_val = send_message(chat_id, '⏳ <i>Buscando log de atividades…</i>')['result']['message_id']
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        linhas: list[str] = []
+
+        # Empenhos recentes
+        for r in conn.execute("SELECT numero, credor, criado_em FROM empenhos ORDER BY criado_em DESC LIMIT 4").fetchall():
+            linhas.append(f'📋 Empenho <b>{r["numero"] or "s/n"}</b> — {r["credor"][:25]} <i>({r["criado_em"][:16]})</i>')
+
+        # Protocolos recentes
+        for r in conn.execute("SELECT numero, assunto, criado_em FROM protocolos ORDER BY criado_em DESC LIMIT 4").fetchall():
+            linhas.append(f'📂 Protocolo <b>{r["numero"]}</b> — {(r["assunto"] or "")[:25]} <i>({r["criado_em"][:16]})</i>')
+
+        # Tarefas kanban recentes
+        for r in conn.execute("SELECT title, status, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC LIMIT 4").fetchall():
+            status_map = {'todo': '⬜', 'in-progress': '🔄', 'done': '✅'}
+            emoji = status_map.get(r['status'], '❓')
+            linhas.append(f'{emoji} Tarefa: {r["title"][:30]} <i>({r["atualizado_em"][:16]})</i>')
+
+        # Despesas recentes
+        for r in conn.execute("SELECT descricao, valor, data FROM despesas ORDER BY data DESC LIMIT 4").fetchall():
+            try:
+                v = f'R$ {float(r["valor"]):,.2f}'.replace(',','X').replace('.',',').replace('X','.')
+            except Exception:
+                v = str(r['valor'])
+            linhas.append(f'💸 Despesa: {(r["descricao"] or "")[:25]} — {v} <i>({r["data"][:10]})</i>')
+
+        conn.close()
+
+        if not linhas:
+            body = '<i>Nenhuma atividade registrada ainda.</i>'
+        else:
+            body = '\n'.join(linhas)
+
+        msg = f'🗒 <b>Log de Atividades — Sistema</b>\n<i>Últimas entradas por módulo</i>\n{"─"*30}\n\n{body}'
+        edit_message(chat_id, msg_id_val, msg, reply_markup={'inline_keyboard': [
+            [{'text': '🔄 Atualizar', 'callback_data': 'cmd_log'}],
+            [{'text': '🔙 Menu', 'callback_data': 'cmd_menu'}]
+        ]})
+    except Exception as e:
+        log.error('Erro no log: %s', e)
+        edit_message(chat_id, msg_id_val, f'⚠️ Erro ao buscar log: {e}')
+
+
 # ════════════════════════════════════════════════════════════════════════════
 
 def handle_message(msg: dict):
@@ -1580,6 +1954,8 @@ def handle_message(msg: dict):
                 send_message(chat_id, '⚠️ Envie apenas um arquivo PDF para análise de extrato.')
             else:
                 threading.Thread(target=process_extrato_file, args=(chat_id, file_id, file_name), daemon=True).start()
+        elif step == STEP_UP_RESUMIR:
+            threading.Thread(target=process_resumir_file, args=(chat_id, file_id, file_name), daemon=True).start()
         return
 
     # Comandos
@@ -1674,6 +2050,22 @@ def handle_message(msg: dict):
 
     if text.startswith('/despesa'):
         start_despesas_flow(chat_id)
+        return
+
+    if text.startswith('/resumir') or text.lower() in {'resumir', 'resumo'}:
+        start_resumir_flow(chat_id)
+        return
+
+    if text.startswith('/minuta') or text.lower() in {'minuta', 'oficio', 'ofício', 'memorando'}:
+        start_minuta_flow(chat_id)
+        return
+
+    if text.startswith('/relatorio') or text.lower() in {'relatorio', 'relatório'}:
+        cmd_relatorio(chat_id)
+        return
+
+    if text.startswith('/log') and not text.startswith('/logs'):
+        cmd_log(chat_id)
         return
 
     if text.startswith('/buscar') or text.lower().startswith('buscar '):
@@ -1789,6 +2181,14 @@ def handle_message(msg: dict):
     # Verificar se estamos no meio de um fluxo de criação de tarefa
     state = get_state(chat_id)
     if state:
+        step = state.get('step')
+        # Minuta multi-step
+        if step == STEP_MINUTA_ASSUNTO:
+            handle_minuta_assunto(chat_id, text)
+            return
+        elif step == STEP_MINUTA_DEST:
+            handle_minuta_dest(chat_id, text)
+            return
         handle_conversation_step(chat_id, text, state)
     else:
         # Sem contexto — mostrar menu + dica
@@ -1866,6 +2266,35 @@ def handle_callback(callback_query: dict):
 
     if data == 'cmd_extrato_bancario':
         start_extrato_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_resumir':
+        start_resumir_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_minuta':
+        start_minuta_flow(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_relatorio':
+        cmd_relatorio(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data == 'cmd_log':
+        cmd_log(chat_id, edit_msg=(chat_id, msg_id))
+        return
+
+    if data.startswith('minuta_tipo_'):
+        tipo_map = {
+            'minuta_tipo_oficio': 'Ofício',
+            'minuta_tipo_memorando': 'Memorando',
+            'minuta_tipo_portaria': 'Portaria',
+            'minuta_tipo_notificacao': 'Notificação',
+            'minuta_tipo_declaracao': 'Declaração',
+        }
+        tipo = tipo_map.get(data, 'Ofício')
+        clear_state(chat_id)
+        handle_minuta_tipo(chat_id, tipo)
         return
 
     if data == 'ignore':

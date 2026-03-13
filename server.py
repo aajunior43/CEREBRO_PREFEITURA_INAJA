@@ -132,8 +132,16 @@ def _rate_limited(key: str, max_hits: int = 5, window: int = 60) -> bool:
 # eliminando a latência do interceptor de sincronização em cada leitura.
 import mimetypes as _mimetypes
 
-_file_cache: dict[str, tuple[bytes, str]] = {}   # url_path -> (bytes, mimetype)
-_gzip_cache: dict[str, bytes] = {}               # url_path -> gzip(bytes)
+_file_cache:   dict[str, tuple[bytes, str]] = {}   # url_path -> (bytes, mimetype)
+_gzip_cache:   dict[str, bytes] = {}               # url_path -> gzip(bytes)
+_brotli_cache: dict[str, bytes] = {}               # url_path -> brotli(bytes)
+_etag_cache:   dict[str, str]   = {}               # url_path -> ETag (hex hash)
+
+try:
+    import brotli as _brotli
+    _BROTLI_OK = True
+except ImportError:
+    _BROTLI_OK = False
 
 _COMPRESSIBLE = {'text/html', 'text/css', 'text/javascript', 'application/javascript',
                  'application/json', 'image/svg+xml', 'text/plain', 'text/xml'}
@@ -143,7 +151,7 @@ _SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer', 'documentos_centro',
               'PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL'}
 
 def _preload_static_files():
-    """Lê todos os arquivos estáticos para RAM no startup (+ versões gzip)."""
+    """Lê todos os arquivos estáticos para RAM no startup (+ versões gzip/brotli + ETags)."""
     count, total_kb = 0, 0
     started_at = _time.perf_counter()
     _terminal_log('BOOT', 'Pré-carregando arquivos estáticos em RAM...', 'cyan')
@@ -166,17 +174,23 @@ def _preload_static_files():
                 with open(fpath, 'rb') as f:
                     data = f.read()
                 _file_cache[url] = (data, mime)
-                # Pré-comprime texto para servir gzip sem gastar CPU por request
+                # ETag baseado no conteúdo (permite 304 Not Modified)
+                _etag_cache[url] = hashlib.md5(data).hexdigest()[:16]
+                # Pré-comprime texto — serve sem gastar CPU por request
                 base_mime = (mime or '').split(';')[0].strip()
                 if base_mime in _COMPRESSIBLE and len(data) > 256:
                     _gzip_cache[url] = _gzip.compress(data, compresslevel=6)
+                    if _BROTLI_OK:
+                        _brotli_cache[url] = _brotli.compress(data, quality=4)
                 count += 1
                 total_kb += len(data) // 1024
             except OSError:
                 pass
     elapsed_ms = (_time.perf_counter() - started_at) * 1000
     _terminal_log('CACHE', f'{count} arquivos carregados em RAM ({_fmt_bytes(total_kb * 1024)})', 'green')
-    _terminal_log('GZIP', f'{len(_gzip_cache)} arquivos com versão comprimida prontos em {elapsed_ms:.1f} ms', 'green')
+    enc_count = max(len(_brotli_cache), len(_gzip_cache))
+    enc_name = 'brotli+gzip' if _BROTLI_OK else 'gzip'
+    _terminal_log('GZIP', f'{enc_count} arquivos com versão {enc_name} prontos em {elapsed_ms:.1f} ms', 'green')
 
 # ── Banco de Dados ───────────────────────────────────────────
 # Conexão thread-local reutilizada durante todo o ciclo de vida da requisição.
@@ -199,6 +213,7 @@ def get_db():
         db.execute("PRAGMA cache_size=-8000")     # 8MB de cache em memória
         db.execute("PRAGMA temp_store=MEMORY")    # tabelas temporárias em RAM
         db.execute("PRAGMA mmap_size=0")          # desabilita mmap — perigoso no OneDrive
+        db.execute("PRAGMA auto_vacuum=INCREMENTAL")  # compacta páginas livres incrementalmente
         _db_local.conn = db
         elapsed_ms = (_time.perf_counter() - started_at) * 1000
         _terminal_log('DB', f'Conexão SQLite pronta em {elapsed_ms:.1f} ms -> {DB_PATH}', 'green')
@@ -422,6 +437,21 @@ def migrate_db():
         )
     """)
     ensure_db_indexes(cur)
+    # Migração: adicionar coluna categoria em kanban_tasks (se ainda não existir)
+    try:
+        cur.execute("ALTER TABLE kanban_tasks ADD COLUMN categoria TEXT DEFAULT ''")
+    except Exception:
+        pass  # coluna já existe
+    # Migração: adicionar coluna data_vencimento em kanban_tasks (se ainda não existir)
+    try:
+        cur.execute("ALTER TABLE kanban_tasks ADD COLUMN data_vencimento TEXT DEFAULT ''")
+    except Exception:
+        pass  # coluna já existe
+    # Migração: adicionar coluna responsavel em kanban_tasks (se ainda não existir)
+    try:
+        cur.execute("ALTER TABLE kanban_tasks ADD COLUMN responsavel TEXT DEFAULT ''")
+    except Exception:
+        pass  # coluna já existe
     conn.commit()
 
 
@@ -680,7 +710,8 @@ def _credor_payload(data: dict, *, partial: bool = False) -> tuple[dict, list[st
     return payload, errors
 
 
-def _buscar_credor_duplicado(conn, nome: str, cnpj: str, *, ignore_id: int | None = None):
+def _buscar_credor_duplicado(conn, cnpj: str, *, ignore_id: int | None = None):
+    """Verifica duplicidade apenas por CNPJ (o nome pode repetir para contratos diferentes)."""
     if cnpj:
         row = conn.execute(
             "SELECT id, nome FROM credores WHERE ativo=1 AND cnpj=?"
@@ -689,14 +720,8 @@ def _buscar_credor_duplicado(conn, nome: str, cnpj: str, *, ignore_id: int | Non
         ).fetchone()
         if row:
             return row, 'Já existe um credor ativo com este CNPJ'
-    row = conn.execute(
-        "SELECT id, nome FROM credores WHERE ativo=1 AND UPPER(nome)=?"
-        + (" AND id<>?" if ignore_id else ""),
-        (nome, ignore_id) if ignore_id else (nome,)
-    ).fetchone()
-    if row:
-        return row, 'Já existe um credor ativo com este nome'
     return None, ''
+
 
 
 def _montar_filtros_credores(args):
@@ -779,19 +804,39 @@ def _persist_document_file(original_name: str, content: bytes, categoria: str = 
     return row_to_dict(row)
 
 def _serve_cached(url, cache_control):
-    """Serve arquivo do cache com gzip se o cliente aceitar."""
+    """Serve arquivo do cache com brotli/gzip + ETag (304 quando possível)."""
     entry = _file_cache.get(url)
     if not entry:
         return None
     data, mime = entry
+    etag = _etag_cache.get(url)
+
+    # 304 Not Modified — se cliente já tem a versão correta, poupa banda total
+    if etag and request.headers.get('If-None-Match') == f'"{etag}"':
+        return Response(status=304, headers={
+            'Cache-Control': cache_control,
+            'ETag': f'"{etag}"',
+        })
+
     headers = {'Cache-Control': cache_control}
+    if etag:
+        headers['ETag'] = f'"{etag}"'
+
     accept_enc = request.headers.get('Accept-Encoding', '')
+    # Brotli tem melhor compressão que gzip (~20-30% menor)
+    br = _brotli_cache.get(url)
     gz = _gzip_cache.get(url)
+    if br and 'br' in accept_enc:
+        headers['Content-Encoding'] = 'br'
+        headers['Vary'] = 'Accept-Encoding'
+        headers['Content-Length'] = len(br)
+        return Response(br, mimetype=mime, headers=headers)
     if gz and 'gzip' in accept_enc:
         headers['Content-Encoding'] = 'gzip'
         headers['Vary'] = 'Accept-Encoding'
         headers['Content-Length'] = len(gz)
         return Response(gz, mimetype=mime, headers=headers)
+    headers['Content-Length'] = len(data)
     return Response(data, mimetype=mime, headers=headers)
 
 # ────────────────────────────────────────────────────────────
@@ -812,7 +857,12 @@ def index():
 def static_cached(filename):
     url = '/static/' + filename
     ext = os.path.splitext(filename)[1].lower()
-    cc = 'no-cache, must-revalidate' if ext in {'.js', '.css', '.html'} else 'public, max-age=86400'
+    if ext in {'.js', '.css', '.html'}:
+        cc = 'no-cache, must-revalidate'
+    elif ext in {'.woff2', '.woff', '.ttf', '.otf', '.eot'}:
+        cc = 'public, max-age=31536000, immutable'  # fontes: 1 ano
+    else:
+        cc = 'public, max-age=86400'
     resp = _serve_cached(url, cc)
     if resp:
         return resp
@@ -961,7 +1011,7 @@ def add_credor():
         return jsonify({'error': errors[0], 'errors': errors}), 400
     try:
         conn = get_db()
-        duplicado, msg = _buscar_credor_duplicado(conn, payload.get('nome', ''), payload.get('cnpj', ''))
+        duplicado, msg = _buscar_credor_duplicado(conn, payload.get('cnpj', ''))
         if duplicado:
             return jsonify({'error': msg, 'duplicado_id': duplicado['id']}), 409
         cur  = conn.cursor()
@@ -1006,7 +1056,14 @@ def update_credor(cid):
         atual = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
         if not atual:
             return jsonify({'error': 'Credor não encontrado'}), 404
-        duplicado, msg = _buscar_credor_duplicado(conn, payload.get('nome', ''), payload.get('cnpj', ''), ignore_id=cid)
+        # Apenas checamos duplicidade para nome/CNPJ se o usuário os alterou de fato.
+        # Normaliza o CNPJ do banco também antes de comparar, pois o payload já vem
+        # normalizado (só dígitos) mas o banco pode ter dados em formato diferente.
+        cnpj_atual_normalizado = _normalizar_cnpj(atual['cnpj'] or '')
+        cnpj_alterado = (payload.get('cnpj', '') != cnpj_atual_normalizado)
+        cnpj_para_verificar = payload.get('cnpj', '') if cnpj_alterado else ''
+
+        duplicado, msg = _buscar_credor_duplicado(conn, cnpj_para_verificar, ignore_id=cid)
         if duplicado:
             return jsonify({'error': msg, 'duplicado_id': duplicado['id']}), 409
         conn.execute("""
@@ -1070,6 +1127,54 @@ def delete_credor(cid):
     except Exception as e:
         app.logger.error('DELETE /api/credores/%s: %s', cid, e)
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/credores/<int:cid>/duplicate', methods=['POST'])
+def duplicate_credor(cid):
+    """Duplica um credor existente com o nome 'CÓPIA – <nome original>'."""
+    try:
+        conn = get_db()
+        orig = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
+        if not orig:
+            return jsonify({'error': 'Credor original não encontrado'}), 404
+        novo_nome_base = f"CÓPIA – {orig['nome']}"
+        # Garante unicidade no nome da cópia
+        novo_nome = novo_nome_base
+        sufixo = 2
+        while conn.execute(
+            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=?", (novo_nome.upper(),)
+        ).fetchone():
+            novo_nome = f"{novo_nome_base} ({sufixo})"
+            sufixo += 1
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO credores
+              (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            novo_nome,
+            orig['valor'],
+            orig['descricao'] or '',
+            '',  # CNPJ em branco para evitar conflito de duplicata
+            orig['email'] or '',
+            orig['tipo_valor'] or 'FIXO',
+            orig['solicitacao'] or '',
+            orig['pagamento'] or '',
+            orig['validade'] or '',
+            orig['departamento'] or '',
+            orig['obs'] or '',
+        ))
+        new_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('CRIAR', new_id, novo_nome, f'Duplicado a partir do credor #{cid} ({orig["nome"]})')
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/credores/%s/duplicate: %s', cid, e)
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/empenhos/<int:ano>/<int:mes>', methods=['GET'])
 def get_empenhos(ano, mes):
@@ -1315,33 +1420,59 @@ def _sanitize_kanban_task_payload(task: dict) -> dict:
         'priority': _normalize_kanban_priority(task.get('priority') or 'medium'),
     }
 
-def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None, api_key_override: str = '', model_override: str = ''):
+def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None, api_key_override: str = '', model_override: str = '', status_hint: str = '', priority_hint: str = ''):
     conn = get_db()
     api_key, model = _get_openrouter_config(conn, api_key_override=api_key_override, model_override=model_override)
     if not api_key:
         return None, ('A IA do Kanban não encontrou a chave do OpenRouter. Salve a mesma chave usada nas outras abas em Configurações.', 400)
+
+    today = __import__('datetime').date.today().strftime('%d/%m/%Y')
+
+    hints_create = ''
+    if status_hint:
+        hints_create += f' O status deve ser "{status_hint}".'
+    if priority_hint:
+        hints_create += f' A prioridade deve ser "{priority_hint}".'
+
     system_map = {
         'create': (
-            'Você é um assistente de Kanban. Responda apenas JSON válido com as chaves '
-            '"title", "description", "status", "priority". '
-            'Status deve ser um de: todo, in-progress, done. '
-            'Priority deve ser um de: low, medium, high. '
-            'Escreva em português do Brasil.'
+            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
+            f'Hoje é {today}. '
+            'Com base na descrição do usuário, crie uma tarefa bem estruturada. '
+            'Responda APENAS com JSON válido contendo as chaves: '
+            '"title" (título objetivo e claro, máx 80 chars), '
+            '"description" (descrição detalhada com contexto, passos ou informações relevantes), '
+            '"status" (um de: todo, in-progress, done), '
+            '"priority" (um de: low, medium, high). '
+            'O título deve ser conciso e direto. A descrição deve ser útil e informativa. '
+            f'{hints_create} '
+            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
         ),
         'improve': (
-            'Você é um assistente de Kanban. Melhore a tarefa recebida e responda apenas JSON válido '
-            'com as chaves "title", "description", "status", "priority". '
-            'Status deve ser um de: todo, in-progress, done. '
-            'Priority deve ser um de: low, medium, high. '
-            'Escreva em português do Brasil.'
+            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
+            f'Hoje é {today}. '
+            'Melhore a tarefa recebida conforme o pedido do usuário. '
+            'Responda APENAS com JSON válido contendo as chaves: '
+            '"title" (título melhorado, objetivo e claro, máx 80 chars), '
+            '"description" (descrição aprimorada, detalhada e útil), '
+            '"status" (um de: todo, in-progress, done), '
+            '"priority" (um de: low, medium, high). '
+            'Preserve o status atual a menos que o usuário peça para mudar. '
+            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
         ),
         'breakdown': (
-            'Você é um assistente de Kanban. Quebre a tarefa em subtarefas práticas e responda apenas JSON válido '
-            'no formato {"tasks":[{"title":"","description":"","status":"todo","priority":"medium"}]}. '
-            'Cada item deve ter "title", "description", "status", "priority". '
-            'Status deve ser um de: todo, in-progress, done. '
-            'Priority deve ser um de: low, medium, high. '
-            'Escreva em português do Brasil.'
+            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
+            f'Hoje é {today}. '
+            'Quebre a tarefa recebida em subtarefas práticas e acionáveis. '
+            'Responda APENAS com JSON válido no formato: '
+            '{"tasks":[{"title":"","description":"","status":"todo","priority":"medium"},...]}. '
+            'Gere entre 3 e 7 subtarefas. Cada subtarefa deve ter: '
+            '"title" (objetivo e claro, máx 80 chars), '
+            '"description" (passos ou detalhes práticos), '
+            '"status" (sempre "todo" para novas subtarefas), '
+            '"priority" (um de: low, medium, high — atribua conforme urgência). '
+            'As subtarefas devem ser ordenadas logicamente (do primeiro ao último passo). '
+            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
         ),
     }
     messages = [{'role': 'system', 'content': system_map[action]}]
@@ -1398,6 +1529,7 @@ def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = Non
             message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao consultar OpenRouter'
             return None, (message, err.code or 502)
         except Exception as err:
+            app.logger.error('_kanban_ai_completion error (action=%s, tentativa=%d): %s', action, tentativa, err)
             return None, (str(err), 500)
     return None, ('Erro inesperado ao consultar a IA', 500)
 
@@ -1526,7 +1658,7 @@ def kanban_listar():
     try:
         conn = get_db()
         rows = conn.execute(
-            "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
         ).fetchall()
         tasks = [row_to_dict(r) for r in rows]
         attach_rows = conn.execute(
@@ -1552,6 +1684,9 @@ def kanban_criar():
         description = (data.get('description') or '').strip()
         status = (data.get('status') or 'todo').strip()
         priority = (data.get('priority') or 'medium').strip()
+        categoria = (data.get('categoria') or '').strip().upper()
+        data_vencimento = (data.get('data_vencimento') or '').strip()
+        responsavel = (data.get('responsavel') or '').strip()
         if not task_id:
             return jsonify({'error': 'id é obrigatório'}), 400
         if not title:
@@ -1562,12 +1697,12 @@ def kanban_criar():
             priority = 'medium'
         conn = get_db()
         conn.execute(
-            "INSERT INTO kanban_tasks (id, title, description, status, priority, criado_em, atualizado_em) VALUES (?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
-            (task_id, title, description, status, priority)
+            "INSERT INTO kanban_tasks (id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em) VALUES (?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
+            (task_id, title, description, status, priority, categoria, data_vencimento, responsavel)
         )
         conn.commit()
         row = conn.execute(
-            "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
             (task_id,)
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
@@ -1585,6 +1720,9 @@ def kanban_atualizar(task_id):
         description = (data.get('description') or '').strip()
         status = (data.get('status') or 'todo').strip()
         priority = (data.get('priority') or 'medium').strip()
+        categoria = (data.get('categoria') or '').strip().upper()
+        data_vencimento = (data.get('data_vencimento') or '').strip()
+        responsavel = (data.get('responsavel') or '').strip()
         if not title:
             return jsonify({'error': 'title é obrigatório'}), 400
         if status not in {'todo', 'in-progress', 'done'}:
@@ -1593,14 +1731,14 @@ def kanban_atualizar(task_id):
             priority = 'medium'
         conn = get_db()
         cur = conn.execute(
-            "UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?, atualizado_em=datetime('now','localtime') WHERE id=?",
-            (title, description, status, priority, task_id)
+            "UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?, categoria=?, data_vencimento=?, responsavel=?, atualizado_em=datetime('now','localtime') WHERE id=?",
+            (title, description, status, priority, categoria, data_vencimento, responsavel, task_id)
         )
         if cur.rowcount == 0:
             return jsonify({'error': 'Tarefa não encontrada'}), 404
         conn.commit()
         row = conn.execute(
-            "SELECT id, title, description, status, priority, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
             (task_id,)
         ).fetchone()
         return jsonify(row_to_dict(row))
@@ -1623,77 +1761,91 @@ def kanban_excluir(task_id):
 
 @app.route('/api/kanban/ai/create-from-text', methods=['POST'])
 def kanban_ai_create_from_text():
-    data = request.get_json(force=True) or {}
-    prompt = (data.get('prompt') or '').strip()
-    if not prompt:
-        return jsonify({'error': 'Informe o texto para a IA gerar a tarefa'}), 400
-    parsed, error = _kanban_ai_completion(
-        'create',
-        prompt,
-        api_key_override=(data.get('api_key') or '').strip(),
-        model_override=(data.get('model') or '').strip()
-    )
-    if error:
-        return jsonify({'error': error[0]}), error[1]
-    task = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
-    if not task['title']:
-        return jsonify({'error': 'A IA não retornou um título válido para a tarefa'}), 502
-    return jsonify(task)
+    try:
+        data = request.get_json(force=True) or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not prompt:
+            return jsonify({'error': 'Informe o texto para a IA gerar a tarefa'}), 400
+        parsed, error = _kanban_ai_completion(
+            'create',
+            prompt,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip(),
+            status_hint=(data.get('status_hint') or '').strip(),
+            priority_hint=(data.get('priority_hint') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        task = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
+        if not task['title']:
+            return jsonify({'error': 'A IA não retornou um título válido para a tarefa'}), 502
+        return jsonify(task)
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/create-from-text: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/kanban/ai/improve-task', methods=['POST'])
 def kanban_ai_improve_task():
-    data = request.get_json(force=True) or {}
-    task = data.get('task') or {}
-    prompt = (data.get('prompt') or '').strip()
-    if not isinstance(task, dict) or not (task.get('title') or '').strip():
-        return jsonify({'error': 'Envie uma tarefa válida para a IA melhorar'}), 400
-    current_task = _sanitize_kanban_task_payload(task)
-    current_task['title'] = (task.get('title') or '').strip()
-    parsed, error = _kanban_ai_completion(
-        'improve',
-        prompt,
-        current_task,
-        api_key_override=(data.get('api_key') or '').strip(),
-        model_override=(data.get('model') or '').strip()
-    )
-    if error:
-        return jsonify({'error': error[0]}), error[1]
-    improved = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
-    if not improved['title']:
-        return jsonify({'error': 'A IA não retornou um título válido'}), 502
-    return jsonify(improved)
+    try:
+        data = request.get_json(force=True) or {}
+        task = data.get('task') or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not isinstance(task, dict) or not (task.get('title') or '').strip():
+            return jsonify({'error': 'Envie uma tarefa válida para a IA melhorar'}), 400
+        current_task = _sanitize_kanban_task_payload(task)
+        current_task['title'] = (task.get('title') or '').strip()
+        parsed, error = _kanban_ai_completion(
+            'improve',
+            prompt,
+            current_task,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        improved = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
+        if not improved['title']:
+            return jsonify({'error': 'A IA não retornou um título válido'}), 502
+        return jsonify(improved)
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/improve-task: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/kanban/ai/breakdown-task', methods=['POST'])
 def kanban_ai_breakdown_task():
-    data = request.get_json(force=True) or {}
-    task = data.get('task') or {}
-    prompt = (data.get('prompt') or '').strip()
-    if not isinstance(task, dict) or not (task.get('title') or '').strip():
-        return jsonify({'error': 'Envie uma tarefa válida para a IA quebrar em subtarefas'}), 400
-    current_task = _sanitize_kanban_task_payload(task)
-    current_task['title'] = (task.get('title') or '').strip()
-    parsed, error = _kanban_ai_completion(
-        'breakdown',
-        prompt,
-        current_task,
-        api_key_override=(data.get('api_key') or '').strip(),
-        model_override=(data.get('model') or '').strip()
-    )
-    if error:
-        return jsonify({'error': error[0]}), error[1]
-    items = parsed.get('tasks') if isinstance(parsed, dict) else parsed
-    if not isinstance(items, list):
-        return jsonify({'error': 'A IA não retornou uma lista válida de subtarefas'}), 502
-    tasks = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-        task_payload = _sanitize_kanban_task_payload(item)
-        if task_payload['title']:
-            tasks.append(task_payload)
-    if not tasks:
-        return jsonify({'error': 'A IA não gerou subtarefas válidas'}), 502
-    return jsonify({'tasks': tasks})
+    try:
+        data = request.get_json(force=True) or {}
+        task = data.get('task') or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not isinstance(task, dict) or not (task.get('title') or '').strip():
+            return jsonify({'error': 'Envie uma tarefa válida para a IA quebrar em subtarefas'}), 400
+        current_task = _sanitize_kanban_task_payload(task)
+        current_task['title'] = (task.get('title') or '').strip()
+        parsed, error = _kanban_ai_completion(
+            'breakdown',
+            prompt,
+            current_task,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        items = parsed.get('tasks') if isinstance(parsed, dict) else parsed
+        if not isinstance(items, list):
+            return jsonify({'error': 'A IA não retornou uma lista válida de subtarefas'}), 502
+        tasks = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            task_payload = _sanitize_kanban_task_payload(item)
+            if task_payload['title']:
+                tasks.append(task_payload)
+        if not tasks:
+            return jsonify({'error': 'A IA não gerou subtarefas válidas'}), 502
+        return jsonify({'tasks': tasks})
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/breakdown-task: %s', e)
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/kanban/<task_id>/attachments', methods=['GET'])
@@ -2640,6 +2792,181 @@ def empenhos_csv_excluir(imp_id):
     conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
     conn.commit()
     return jsonify({'ok': True})
+
+# ── Logs ─────────────────────────────────────────────────────
+
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    try:
+        conn = get_db()
+        limit  = min(int(request.args.get('limit',  50)), 200)
+        offset = int(request.args.get('offset', 0))
+        acao   = (request.args.get('acao') or '').strip()
+        if acao:
+            total = conn.execute("SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)).fetchone()[0]
+            rows  = conn.execute(
+                "SELECT id,acao,credor_id,credor_nome,detalhes,data FROM logs "
+                "WHERE acao=? ORDER BY data DESC LIMIT ? OFFSET ?",
+                (acao, limit, offset)
+            ).fetchall()
+        else:
+            total = conn.execute("SELECT COUNT(*) FROM logs").fetchone()[0]
+            rows  = conn.execute(
+                "SELECT id,acao,credor_id,credor_nome,detalhes,data FROM logs "
+                "ORDER BY data DESC LIMIT ? OFFSET ?",
+                (limit, offset)
+            ).fetchall()
+        return jsonify({'logs': [row_to_dict(r) for r in rows], 'total': total})
+    except Exception as e:
+        app.logger.error('GET /api/logs: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+# ── RPAs ──────────────────────────────────────────────────────
+
+@app.route('/api/rpas', methods=['GET'])
+def get_rpas():
+    try:
+        conn = get_db()
+        rows = conn.execute("SELECT * FROM rpas ORDER BY criado_em DESC").fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/rpas: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rpas', methods=['POST'])
+def create_rpa():
+    try:
+        data = request.get_json() or {}
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO rpas (
+                numero_rpa, nome_prestador, cpf_prestador, endereco_prestador,
+                descricao_servico, periodo_referencia, carga_horaria, local_execucao,
+                valor_bruto, num_dependentes, pensao_alimenticia, inss, iss,
+                deducao_dependentes, base_calculo_irrf, aliquota_irrf,
+                parcela_deduzir_irrf, ir, valor_liquido, observacoes, data_emissao
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            data.get('numeroRPA'), data.get('nomePrestador', ''), data.get('cpfPrestador'),
+            data.get('enderecoPrestador'), data.get('descricaoServico'), data.get('periodoReferencia'),
+            data.get('cargaHoraria'), data.get('localExecucao'),
+            data.get('valorBruto', 0), data.get('numDependentes', 0),
+            data.get('pensaoAlimenticia', 0), data.get('inss', 0), data.get('iss', 0),
+            data.get('deducaoDependentes', 0), data.get('baseCalculoIRRF', 0),
+            data.get('aliquotaIRRF', 0), data.get('parcelaDeduzirIRRF', 0),
+            data.get('ir', 0), data.get('valorLiquido', 0),
+            data.get('observacoes'), data.get('dataEmissao')
+        ))
+        conn.commit()
+        row = conn.execute("SELECT * FROM rpas WHERE id=?", (cur.lastrowid,)).fetchone()
+        return jsonify(row_to_dict(row)), 201
+    except Exception as e:
+        app.logger.error('POST /api/rpas: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rpas/<int:rpa_id>', methods=['PUT'])
+def update_rpa(rpa_id):
+    try:
+        data = request.get_json() or {}
+        conn = get_db()
+        conn.execute("""
+            UPDATE rpas SET
+                numero_rpa=?, nome_prestador=?, cpf_prestador=?, endereco_prestador=?,
+                descricao_servico=?, periodo_referencia=?, carga_horaria=?, local_execucao=?,
+                valor_bruto=?, num_dependentes=?, pensao_alimenticia=?, inss=?, iss=?,
+                deducao_dependentes=?, base_calculo_irrf=?, aliquota_irrf=?,
+                parcela_deduzir_irrf=?, ir=?, valor_liquido=?, observacoes=?, data_emissao=?
+            WHERE id=?
+        """, (
+            data.get('numeroRPA'), data.get('nomePrestador', ''), data.get('cpfPrestador'),
+            data.get('enderecoPrestador'), data.get('descricaoServico'), data.get('periodoReferencia'),
+            data.get('cargaHoraria'), data.get('localExecucao'),
+            data.get('valorBruto', 0), data.get('numDependentes', 0),
+            data.get('pensaoAlimenticia', 0), data.get('inss', 0), data.get('iss', 0),
+            data.get('deducaoDependentes', 0), data.get('baseCalculoIRRF', 0),
+            data.get('aliquotaIRRF', 0), data.get('parcelaDeduzirIRRF', 0),
+            data.get('ir', 0), data.get('valorLiquido', 0),
+            data.get('observacoes'), data.get('dataEmissao'),
+            rpa_id
+        ))
+        conn.commit()
+        row = conn.execute("SELECT * FROM rpas WHERE id=?", (rpa_id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'RPA não encontrado'}), 404
+        return jsonify(row_to_dict(row))
+    except Exception as e:
+        app.logger.error('PUT /api/rpas/%s: %s', rpa_id, e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rpas/<int:rpa_id>', methods=['DELETE'])
+def delete_rpa(rpa_id):
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM rpas WHERE id=?", (rpa_id,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/rpas/%s: %s', rpa_id, e)
+        return jsonify({'error': str(e)}), 500
+
+# ── Fornecimento / Dados ──────────────────────────────────────
+
+@app.route('/api/fornecimento/dados', methods=['GET'])
+def get_fornecimento_dados():
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT tipo, valor FROM fornecimento_dados ORDER BY valor ASC"
+        ).fetchall()
+        result: dict = {'solicitantes': [], 'empresas': [], 'observacoes': []}
+        for row in rows:
+            if row['tipo'] in result:
+                result[row['tipo']].append(row['valor'])
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error('GET /api/fornecimento/dados: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/fornecimento/dados', methods=['POST'])
+def add_fornecimento_dado():
+    try:
+        data  = request.get_json() or {}
+        tipo  = (data.get('tipo')  or '').strip()
+        valor = (data.get('valor') or '').strip()
+        if not tipo or not valor:
+            return jsonify({'error': 'tipo e valor são obrigatórios'}), 400
+        conn = get_db()
+        conn.execute(
+            "INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)",
+            (tipo, valor)
+        )
+        conn.commit()
+        return jsonify({'ok': True}), 201
+    except Exception as e:
+        app.logger.error('POST /api/fornecimento/dados: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/fornecimento/dados', methods=['DELETE'])
+def del_fornecimento_dado():
+    try:
+        data  = request.get_json() or {}
+        tipo  = (data.get('tipo')  or '').strip()
+        valor = (data.get('valor') or '').strip()
+        if not tipo or not valor:
+            return jsonify({'error': 'tipo e valor são obrigatórios'}), 400
+        conn = get_db()
+        conn.execute(
+            "DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?",
+            (tipo, valor)
+        )
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/fornecimento/dados: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+# ─────────────────────────────────────────────────────────────
 
 init_db()
 migrate_db()

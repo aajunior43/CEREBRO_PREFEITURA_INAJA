@@ -356,7 +356,271 @@
             color: #059669
         }
 
-        .kb-card-actions {
+        /* ── Categoria badges ─────────────────────────────────────────────── */
+        .kb-cat {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+            letter-spacing: .4px;
+            text-transform: uppercase
+        }
+        .kb-cat-empenhar { background: rgba(6,182,212,.14); color:#0891b2 }
+        .kb-cat-liquidar  { background: rgba(245,158,11,.14); color:#d97706 }
+        .kb-cat-pagar     { background: rgba(16,185,129,.14); color:#059669 }
+        .kb-cat-obs       { background: rgba(107,114,128,.14); color:#6b7280 }
+        .kb-cat-resolver  { background: rgba(239,68,68,.14); color:#dc2626 }
+        .kb-cat-outros    { background: rgba(124,58,237,.14); color:#7c3aed }
+
+        /* ── Filtro de categoria na toolbar ───────────────────────────────── */
+        .kb-cat-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .kb-cat-filter-label { font-size: 11px; color: var(--text-3); font-weight: 600; white-space: nowrap; }
+        .kb-cat-filter-btn {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1.5px solid transparent;
+            cursor: pointer;
+            background: var(--bg-2);
+            color: var(--text-2);
+            transition: all .15s;
+            letter-spacing: .3px;
+        }
+        .kb-cat-filter-btn:hover { opacity: .85 }
+        .kb-cat-filter-btn.active { border-color: currentColor; box-shadow: 0 0 0 2px rgba(0,0,0,.07) }
+        .kb-cat-filter-all.active { background: var(--text-1); color: var(--bg-1) }
+        .kb-cat-f-empenhar { color:#0891b2 }
+        .kb-cat-f-empenhar.active { background: rgba(6,182,212,.12) }
+        .kb-cat-f-liquidar  { color:#d97706 }
+        .kb-cat-f-liquidar.active  { background: rgba(245,158,11,.12) }
+        .kb-cat-f-pagar     { color:#059669 }
+        .kb-cat-f-pagar.active     { background: rgba(16,185,129,.12) }
+        .kb-cat-f-obs       { color:#6b7280 }
+        .kb-cat-f-obs.active       { background: rgba(107,114,128,.12) }
+        .kb-cat-f-resolver  { color:#dc2626 }
+        .kb-cat-f-resolver.active  { background: rgba(239,68,68,.12) }
+        .kb-cat-f-outros    { color:#7c3aed }
+        .kb-cat-f-outros.active    { background: rgba(124,58,237,.12) }
+
+        /* ── Banner de alertas ───────────────────────────────────────────────── */
+        .kb-alert-banner {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(90deg, rgba(220,38,38,.1), rgba(239,68,68,.07));
+            border: 1.5px solid rgba(220,38,38,.3);
+            border-radius: 10px;
+            padding: 9px 14px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #dc2626;
+            cursor: pointer;
+            transition: background .15s;
+            flex-wrap: wrap;
+        }
+        .kb-alert-banner:hover { background: rgba(220,38,38,.15); }
+        .kb-alert-banner.visible { display: flex; }
+        .kb-alert-icon { font-size: 18px; flex-shrink: 0; }
+        .kb-alert-text { flex: 1; }
+        .kb-alert-close { background: none; border: none; color: #dc2626; font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px; opacity:.7; }
+        .kb-alert-close:hover { opacity: 1; }
+
+        /* ── Barra de progresso ──────────────────────────────────────────────── */
+        .kb-progress-wrap {
+            margin: 6px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .kb-progress-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--bg-2);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--neo-in-sm);
+            max-width: 320px;
+        }
+        .kb-progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #06b6d4, #10b981);
+            transition: width .5s ease;
+        }
+        .kb-progress-label {
+            font-size: 11px;
+            color: var(--text-3);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* ── Visão lista / kanban toggle ─────────────────────────────────────── */
+        .kb-view-toggle {
+            display: flex;
+            background: var(--bg-2);
+            border-radius: 8px;
+            box-shadow: var(--neo-in-sm);
+            overflow: hidden;
+        }
+        .kb-view-btn {
+            background: none;
+            border: none;
+            padding: 5px 11px;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--text-3);
+            font-weight: 600;
+            transition: all .15s;
+            font-family: inherit;
+        }
+        .kb-view-btn.active { background: var(--accent); color: #fff; border-radius: 7px; }
+
+        /* ── Visão lista ─────────────────────────────────────────────────────── */
+        #kb-list-view { display: none; margin-top: 12px; }
+        .kb-list-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .kb-list-table th {
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-3);
+            border-bottom: 2px solid rgba(0,0,0,.07);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        .kb-list-table th:hover { color: var(--accent); }
+        .kb-list-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid rgba(0,0,0,.05);
+            vertical-align: middle;
+            color: var(--text);
+        }
+        .kb-list-table tr:hover td { background: rgba(79,128,200,.04); }
+        .kb-list-check { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+        .kb-list-title { font-weight: 600; cursor: pointer; }
+        .kb-list-title:hover { color: var(--accent); text-decoration: underline; }
+        .kb-list-desc { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+        .kb-status-pill {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        .kb-status-todo     { background: rgba(6,182,212,.12); color:#0891b2 }
+        .kb-status-progress { background: rgba(245,158,11,.12); color:#d97706 }
+        .kb-status-done     { background: rgba(16,185,129,.12); color:#059669 }
+
+        /* ── Responsável avatar ──────────────────────────────────────────────── */
+        .kb-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+
+        /* ── Botão mover rápido ──────────────────────────────────────────────── */
+        .kb-quick-move {
+            background: none;
+            border: 1.5px solid rgba(0,0,0,.12);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            color: var(--text-3);
+            transition: all .15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .kb-quick-move:hover { border-color: var(--accent); color: var(--accent); background: rgba(79,128,200,.07); }
+        .kb-quick-move-done { border-color: rgba(16,185,129,.4); color: #059669; }
+        .kb-quick-move-done:hover { background: rgba(16,185,129,.1); }
+
+
+        .kb-toolbar2 {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .kb-search-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-2);
+            border-radius: 20px;
+            box-shadow: var(--neo-in-sm);
+            padding: 4px 12px;
+            flex: 1;
+            min-width: 160px;
+        }
+        .kb-search-wrap span { color: var(--text-3); font-size: 13px; }
+        .kb-search-input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--text);
+            width: 100%;
+        }
+        .kb-search-input::placeholder { color: var(--text-3); }
+        .kb-sort-select {
+            background: var(--bg-2);
+            border: none;
+            border-radius: 20px;
+            box-shadow: var(--neo-sm);
+            padding: 5px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* ── Badge de vencimento ─────────────────────────────────────────────── */
+        .kb-due {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 20px;
+        }
+        .kb-due-ok       { background: rgba(16,185,129,.13); color:#059669 }
+        .kb-due-today    { background: rgba(245,158,11,.13);  color:#d97706 }
+        .kb-due-overdue  { background: rgba(239,68,68,.13);   color:#dc2626 }
+        .kb-due-none     { background: rgba(0,0,0,.06);       color:var(--text-3) }
+
+
             display: flex;
             gap: 4px
         }
@@ -642,6 +906,262 @@
         .empty-ext p { margin: 0; }
         .path-input { flex: 1; background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 14px; font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: box-shadow 0.2s; }
         .path-input:focus { box-shadow: var(--neo-in); }
+        /* ── AI MODALS ── */
+        .ai-modal-overlay { position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:6000;padding:16px }
+        .ai-modal { background:var(--bg);border-radius:var(--radius);box-shadow:0 12px 50px rgba(0,0,0,.28);width:100%;max-width:520px;overflow:hidden;position:relative }
+        .ai-modal-wide { max-width:620px }
+        .ai-modal-head { padding:18px 20px 14px;border-bottom:1px solid rgba(0,0,0,.07);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(6,182,212,.06)) }
+        .ai-modal-head h3 { font-size:16px;font-weight:800;margin:0;color:var(--text);display:flex;align-items:center;gap:8px }
+        .ai-modal-body { padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow-y:auto }
+        .ai-modal-foot { padding:12px 20px;border-top:1px solid rgba(0,0,0,.07);display:flex;gap:8px;align-items:center }
+        .ai-chips { display:flex;flex-wrap:wrap;gap:6px;margin-top:6px }
+        .ai-chip { padding:5px 11px;border-radius:20px;border:1.5px solid rgba(124,58,237,.3);background:rgba(124,58,237,.07);color:var(--text-2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit }
+        .ai-chip:hover { border-color:#7c3aed;background:rgba(124,58,237,.14);color:var(--text) }
+        .ai-spinner { width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:ai-spin .8s linear infinite;margin:0 auto }
+        @keyframes ai-spin { to { transform:rotate(360deg) } }
+        .ai-loading-box { text-align:center;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px }
+        .ai-loading-box p { color:var(--text-3);font-size:13px;margin:0 }
+        .ai-model-badge { font-size:11px;color:var(--text-3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
+        .ai-char-counter { text-align:right;font-size:11px;color:var(--text-3);margin-top:3px }
+        .ai-char-over { color:#ef4444 }
+        .ai-task-context { background:rgba(6,182,212,.07);border:1.5px solid rgba(6,182,212,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-2) }
+        .ai-task-context strong { color:var(--text);display:block;margin-bottom:3px;font-size:12px }
+        /* Subtask preview cards */
+        .ai-subtask-list { display:flex;flex-direction:column;gap:8px }
+        .ai-subtask-card { display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid rgba(0,0,0,.08);background:var(--bg);cursor:pointer;transition:border-color .15s }
+        .ai-subtask-card:hover { border-color:rgba(124,58,237,.4) }
+        .ai-subtask-card.selected { border-color:#7c3aed;background:rgba(124,58,237,.05) }
+        .ai-subtask-check { width:18px;height:18px;flex-shrink:0;accent-color:#7c3aed;margin-top:2px;cursor:pointer }
+        .ai-subtask-info { flex:1;min-width:0 }
+        .ai-subtask-title { font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px }
+        .ai-subtask-desc { font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+        .ai-prio-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;margin-top:2px }
+        .ai-prio-high { background:rgba(239,68,68,.12);color:#dc2626 }
+        .ai-prio-medium { background:rgba(245,158,11,.12);color:#d97706 }
+        .ai-prio-low { background:rgba(16,185,129,.12);color:#059669 }
+        .ai-select-all-bar { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);margin-bottom:4px }
+        .ai-select-all-bar a { cursor:pointer;color:#7c3aed;font-weight:600;text-decoration:none }
+        .ai-select-all-bar a:hover { text-decoration:underline }
+
+        /* ── PRINT STYLES ─────────────────────────────────────────────────────── */
+        @media print {
+            @page { size: A4 portrait; margin: 14mm 12mm 14mm 12mm; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            body > *:not(#print-area) { display: none !important; }
+            #print-area { display: block !important; }
+
+            #print-area {
+                font-family: 'Inter', Arial, sans-serif;
+                font-size: 10pt;
+                color: #111;
+                background: #fff;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+            }
+
+            /* ── CABEÇALHO OFICIAL ── */
+            .pr-letterhead {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                border-bottom: 3px solid #0e2d4f;
+                padding-bottom: 10px;
+                margin-bottom: 4px;
+            }
+            .pr-lh-center { text-align: center; flex: 1; }
+            .pr-lh-center .pr-lh-gov  { font-size: 7.5pt; color: #555; letter-spacing: .5px; text-transform: uppercase; margin: 0; }
+            .pr-lh-center .pr-lh-name { font-size: 14pt; font-weight: 900; color: #0e2d4f; margin: 1px 0; letter-spacing: .3px; }
+            .pr-lh-center .pr-lh-sec  { font-size: 9pt; font-weight: 600; color: #0891b2; margin: 0; }
+            .pr-lh-right  { text-align: right; font-size: 8pt; color: #555; min-width: 90px; }
+            .pr-lh-right strong { color: #0e2d4f; font-size: 9pt; }
+            .pr-lh-seal {
+                width: 52px; height: 52px; border-radius: 50%;
+                background: #0e2d4f; display: flex; align-items: center; justify-content: center;
+                font-size: 22px; flex-shrink: 0;
+            }
+
+            /* ── SUBTÍTULO DO DOCUMENTO ── */
+            .pr-doc-title {
+                text-align: center;
+                margin: 8px 0 10px;
+                border: 1.5px solid #0e2d4f;
+                padding: 5px 0;
+                border-radius: 4px;
+                background: #f0f4f8;
+            }
+            .pr-doc-title h2 {
+                font-size: 11pt; font-weight: 800; color: #0e2d4f;
+                text-transform: uppercase; letter-spacing: 1px; margin: 0 0 1px;
+            }
+            .pr-doc-title p { font-size: 8pt; color: #555; margin: 0; }
+
+            /* ── RESUMO ── */
+            .pr-summary {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0;
+                margin-bottom: 12px;
+                border: 1.5px solid #cbd5e1;
+                border-radius: 5px;
+                overflow: hidden;
+            }
+            .pr-summary-item {
+                text-align: center;
+                padding: 7px 4px;
+                border-right: 1px solid #cbd5e1;
+            }
+            .pr-summary-item:last-child { border-right: none; }
+            .pr-summary-num  { font-size: 17pt; font-weight: 900; line-height: 1; }
+            .pr-summary-lbl  { font-size: 7.5pt; color: #555; margin-top: 1px; text-transform: uppercase; letter-spacing: .3px; }
+            .pr-summary-todo     { color: #0891b2; }
+            .pr-summary-progress { color: #d97706; }
+            .pr-summary-done     { color: #059669; }
+            .pr-summary-total    { color: #0e2d4f; }
+
+            /* ── SEÇÃO ── */
+            .pr-section { margin-bottom: 14px; }
+            .pr-section-title {
+                font-size: 10pt; font-weight: 800; letter-spacing: .6px;
+                text-transform: uppercase; color: #fff;
+                padding: 5px 10px; margin-bottom: 0;
+                display: flex; align-items: center; gap: 6px;
+                border-radius: 4px 4px 0 0;
+            }
+            .pr-sect-todo { background: #0e2d4f; }
+            .pr-sect-done { background: #059669; }
+
+            /* ── TABELA DE TAREFAS ── */
+            .pr-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 9pt;
+                border: 1.5px solid #cbd5e1;
+                border-top: none;
+                border-radius: 0 0 4px 4px;
+                overflow: hidden;
+                page-break-inside: auto;
+            }
+            .pr-table thead tr {
+                background: #e8eef6;
+            }
+            .pr-table thead th {
+                padding: 5px 7px;
+                font-size: 7.5pt;
+                font-weight: 700;
+                color: #374151;
+                text-transform: uppercase;
+                letter-spacing: .4px;
+                border-bottom: 1px solid #cbd5e1;
+                border-right: 1px solid #e2e8f0;
+                text-align: left;
+                white-space: nowrap;
+            }
+            .pr-table thead th:last-child { border-right: none; }
+            .pr-table tbody tr { border-bottom: 1px solid #e9eef5; page-break-inside: avoid; }
+            .pr-table tbody tr:nth-child(even) { background: #f8fafc; }
+            .pr-table tbody tr:last-child { border-bottom: none; }
+            .pr-table td {
+                padding: 6px 7px;
+                vertical-align: top;
+                border-right: 1px solid #e9eef5;
+            }
+            .pr-table td:last-child { border-right: none; }
+
+            /* checkbox column */
+            .pr-td-check { width: 20px; text-align: center; vertical-align: middle !important; }
+            .pr-checkbox {
+                width: 13px; height: 13px;
+                border: 1.5px solid #6b7280;
+                border-radius: 3px;
+                display: inline-block;
+                background: #fff;
+                position: relative;
+            }
+            .pr-checkbox-done {
+                background: #059669 !important;
+                border-color: #059669 !important;
+            }
+            .pr-checkbox-done::after {
+                content: '✓';
+                position: absolute;
+                color: #fff;
+                font-size: 9px;
+                font-weight: 900;
+                top: -2px; left: 1px;
+            }
+
+            /* task title */
+            .pr-td-title { min-width: 130px; }
+            .pr-task-title { font-weight: 700; color: #111; line-height: 1.3; margin: 0 0 2px; }
+            .pr-task-done-title { text-decoration: line-through; color: #888 !important; }
+            .pr-task-desc { font-size: 8pt; color: #555; line-height: 1.4; margin: 0; white-space: pre-wrap; }
+
+            /* priority stripe */
+            .pr-td-prio { width: 16px; padding: 0 !important; }
+            .pr-prio-stripe { width: 5px; height: 100%; display: block; border-radius: 0; }
+            .pr-stripe-high   { background: #dc2626; }
+            .pr-stripe-medium { background: #d97706; }
+            .pr-stripe-low    { background: #059669; }
+
+            /* badges */
+            .pr-badge {
+                font-size: 7.5pt; font-weight: 700;
+                padding: 1px 5px; border-radius: 10px;
+                letter-spacing: .2px; white-space: nowrap;
+                display: inline-block;
+            }
+            .pr-prio-high   { background: #fee2e2; color: #dc2626; }
+            .pr-prio-medium { background: #fef3c7; color: #d97706; }
+            .pr-prio-low    { background: #d1fae5; color: #059669; }
+            .pr-cat-empenhar { background: #cffafe; color: #0891b2; }
+            .pr-cat-liquidar { background: #fef3c7; color: #d97706; }
+            .pr-cat-pagar    { background: #d1fae5; color: #059669; }
+            .pr-cat-obs      { background: #f1f5f9; color: #64748b; }
+            .pr-cat-resolver { background: #fee2e2; color: #dc2626; }
+            .pr-cat-outros   { background: #ede9fe; color: #7c3aed; }
+
+            .pr-due-over  { background: #fee2e2; color: #dc2626; }
+            .pr-due-today { background: #fef3c7; color: #d97706; }
+            .pr-due-ok    { background: #d1fae5; color: #059669; }
+            .pr-due-none  { font-size: 8pt; color: #aaa; }
+
+            .pr-resp { font-size: 8.5pt; color: #374151; }
+            .pr-no-val { font-size: 8pt; color: #bbb; }
+
+            .pr-td-seq { width: 24px; text-align: center; font-size: 8pt; color: #888; font-weight: 600; }
+
+            /* ── ASSINATURAS ── */
+            .pr-signatures {
+                margin-top: 28px;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                page-break-inside: avoid;
+            }
+            .pr-sig-box { text-align: center; }
+            .pr-sig-line {
+                border-bottom: 1.5px solid #555;
+                margin-bottom: 5px;
+                height: 36px;
+            }
+            .pr-sig-label { font-size: 8pt; color: #444; font-weight: 600; }
+            .pr-sig-role  { font-size: 7.5pt; color: #888; }
+
+            /* ── RODAPÉ ── */
+            .pr-footer {
+                margin-top: 16px;
+                padding-top: 8px;
+                border-top: 1px solid #e2e8f0;
+                font-size: 7.5pt;
+                color: #aaa;
+                display: flex;
+                justify-content: space-between;
+            }
+        }
+
+        /* Hide print area on screen */
+        #print-area { display: none; }
     </style>
   <script defer src="/static/js/shared-header.js"></script>
 </head>
@@ -661,27 +1181,84 @@
             <div>
                 <h2>Tarefas • Kanban</h2>
                 <p>Organize seu dia com arrastar e soltar · Prioridades · Dados salvos no servidor</p>
+                <div class="kb-progress-wrap">
+                    <div class="kb-progress-bar"><div class="kb-progress-fill" id="kb-progress-fill" style="width:0%"></div></div>
+                    <span class="kb-progress-label" id="kb-progress-label">0 / 0 concluídas</span>
+                </div>
+                <p style="font-size:11px;color:var(--text-3);margin-top:4px">⌨️ <kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">N</kbd> nova &nbsp;<kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">/</kbd> buscar &nbsp;<kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">P</kbd> imprimir &nbsp;<kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">Esc</kbd> fechar</p>
             </div>
+        </div>
+
+        <!-- Banner de alertas -->
+        <div class="kb-alert-banner" id="kb-alert-banner" onclick="setCatFilterAndAlert()">
+            <span class="kb-alert-icon">⚠️</span>
+            <span class="kb-alert-text" id="kb-alert-text">Você tem tarefas vencidas!</span>
+            <span style="font-size:11px;opacity:.8">Clique para ver</span>
+            <button class="kb-alert-close" onclick="event.stopPropagation();dismissAlert()" title="Fechar">✕</button>
         </div>
 
         <!-- Toolbar -->
         <div class="kb-toolbar">
             <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
             <button class="kb-btn kb-btn-violet" onclick="openAiCreate()">✨ Criar com IA</button>
+            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="printKanban()">🖨️ Imprimir PDF</button>
+            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="exportCSV()">📥 Exportar CSV</button>
             <div class="kb-stats">
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
                     <div class="kb-stat-l">A Fazer</div>
                 </div>
-                <div class="kb-stat">
-                    <div class="kb-stat-v" id="st-prog" style="color:#f59e0b">0</div>
-                    <div class="kb-stat-l">Em Progresso</div>
-                </div>
+
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-done" style="color:#10b981">0</div>
                     <div class="kb-stat-l">Concluídas</div>
                 </div>
             </div>
+        </div>
+        <div class="kb-cat-filter">
+            <span class="kb-cat-filter-label">🔖 Filtrar:</span>
+            <button class="kb-cat-filter-btn kb-cat-filter-all active" onclick="setCatFilter('')">Todas <span id="cnt-cat-all"></span></button>
+            <button class="kb-cat-filter-btn kb-cat-f-empenhar" onclick="setCatFilter('EMPENHAR')">EMPENHAR <span id="cnt-cat-empenhar"></span></button>
+            <button class="kb-cat-filter-btn kb-cat-f-liquidar"  onclick="setCatFilter('LIQUIDAR')">LIQUIDAR <span id="cnt-cat-liquidar"></span></button>
+            <button class="kb-cat-filter-btn kb-cat-f-pagar"     onclick="setCatFilter('PAGAR')">PAGAR <span id="cnt-cat-pagar"></span></button>
+            <button class="kb-cat-filter-btn kb-cat-f-obs"       onclick="setCatFilter('OBS')">OBS <span id="cnt-cat-obs"></span></button>
+            <button class="kb-cat-filter-btn kb-cat-f-resolver"  onclick="setCatFilter('RESOLVER')">RESOLVER <span id="cnt-cat-resolver"></span></button>
+            <button class="kb-cat-filter-btn kb-cat-f-outros"    onclick="setCatFilter('OUTROS')">OUTROS <span id="cnt-cat-outros"></span></button>
+        </div>
+        <div class="kb-toolbar2">
+            <div class="kb-search-wrap">
+                <span>🔍</span>
+                <input class="kb-search-input" id="kb-search" type="text" placeholder="Buscar tarefas…" oninput="onSearch()" />
+            </div>
+            <select class="kb-sort-select" id="kb-sort" onchange="renderBoard()">
+                <option value="priority">↑ Prioridade</option>
+                <option value="due">📅 Vencimento</option>
+                <option value="created">🕐 Criação</option>
+                <option value="title">🔤 Título</option>
+            </select>
+            <div class="kb-view-toggle">
+                <button class="kb-view-btn active" id="btn-view-kanban" onclick="setView('kanban')" title="Visão Kanban">⬛⬛</button>
+                <button class="kb-view-btn" id="btn-view-list" onclick="setView('list')" title="Visão Lista">☰</button>
+            </div>
+        </div>
+
+        <!-- Visão Lista -->
+        <div id="kb-list-view">
+            <table class="kb-list-table" id="kb-list-table">
+                <thead>
+                    <tr>
+                        <th style="width:24px"></th>
+                        <th onclick="setSortAndList('title')">Tarefa ↕</th>
+                        <th onclick="setSortAndList('priority')">Prioridade ↕</th>
+                        <th>Categoria</th>
+                        <th onclick="setSortAndList('due')">Vencimento ↕</th>
+                        <th>Responsável</th>
+                        <th>Status</th>
+                        <th style="width:80px">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="kb-list-body"></tbody>
+            </table>
         </div>
 
         <!-- Board -->
@@ -692,12 +1269,7 @@
                 <div class="kb-col-body" id="body-todo" ondragover="onColDragOver(event,'todo')"
                     ondragleave="onColDragLeave(event,'todo')" ondrop="onColDrop(event,'todo')"></div>
             </div>
-            <div class="kb-col kb-col-progress" id="col-in-progress">
-                <div class="kb-col-head"><span class="kb-col-title">⚡ Em Progresso</span><span class="kb-col-badge"
-                        id="badge-in-progress">0</span></div>
-                <div class="kb-col-body" id="body-in-progress" ondragover="onColDragOver(event,'in-progress')"
-                    ondragleave="onColDragLeave(event,'in-progress')" ondrop="onColDrop(event,'in-progress')"></div>
-            </div>
+
             <div class="kb-col kb-col-done" id="col-done">
                 <div class="kb-col-head"><span class="kb-col-title">✅ Concluído</span><span class="kb-col-badge"
                         id="badge-done">0</span></div>
@@ -723,7 +1295,6 @@
                     <div style="flex:1"><label class="kb-label">Status</label>
                         <select class="kb-select" id="t-status">
                             <option value="todo">A Fazer</option>
-                            <option value="in-progress">Em Progresso</option>
                             <option value="done">Concluído</option>
                         </select>
                     </div>
@@ -734,6 +1305,23 @@
                             <option value="low">🟢 Baixa</option>
                         </select>
                     </div>
+                </div>
+                <div><label class="kb-label">Categoria</label>
+                    <select class="kb-select" id="t-cat">
+                        <option value="">— Sem categoria —</option>
+                        <option value="EMPENHAR">💼 EMPENHAR</option>
+                        <option value="LIQUIDAR">📋 LIQUIDAR</option>
+                        <option value="PAGAR">💰 PAGAR</option>
+                        <option value="OBS">📝 OBS</option>
+                        <option value="RESOLVER">🔧 RESOLVER</option>
+                        <option value="OUTROS">📌 OUTROS</option>
+                    </select>
+                </div>
+                <div><label class="kb-label">📅 Data de Vencimento</label>
+                    <input class="kb-input" id="t-due" type="date" style="cursor:pointer" />
+                </div>
+                <div><label class="kb-label">👤 Responsável</label>
+                    <input class="kb-input" id="t-resp" type="text" placeholder="Nome de quem vai executar" maxlength="60" />
                 </div>
                 <div>
                     <label class="kb-label">Anexar arquivo</label>
@@ -772,6 +1360,160 @@
         </div>
     </div>
 
+    <!-- ✨ AI Create Task Modal -->
+    <div class="ai-modal-overlay" id="ai-create-modal" style="display:none" onclick="if(event.target===this)closeAiCreateModal()">
+        <div class="ai-modal">
+            <div class="ai-modal-head">
+                <h3>✨ Criar Tarefa com IA</h3>
+                <button class="kb-close" onclick="closeAiCreateModal()">✕</button>
+            </div>
+            <div class="ai-modal-body" id="ai-create-body">
+                <div>
+                    <label class="kb-label">Sugestões rápidas</label>
+                    <div class="ai-chips">
+                        <button class="ai-chip" onclick="setAiChip('Reunião de alinhamento com a equipe')">📅 Reunião</button>
+                        <button class="ai-chip" onclick="setAiChip('Elaborar relatório mensal de empenhos')">📄 Relatório</button>
+                        <button class="ai-chip" onclick="setAiChip('Revisar documentos e contratos pendentes')">🔍 Revisão</button>
+                        <button class="ai-chip" onclick="setAiChip('Enviar ofício para fornecedor sobre pagamento')">📮 Ofício</button>
+                        <button class="ai-chip" onclick="setAiChip('Atualizar cadastro de credores fixos')">⚙️ Cadastro</button>
+                        <button class="ai-chip" onclick="setAiChip('Verificar empenhos vencidos e providenciar pagamento')">💰 Pagamento</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="kb-label">Descreva a tarefa *</label>
+                    <textarea class="kb-textarea" id="ai-create-prompt" rows="4" maxlength="600"
+                        placeholder="Ex: Preciso organizar os empenhos do mês de março com os credores, verificar pendências e agendar reunião de alinhamento..."
+                        oninput="updateAiCharCount()"></textarea>
+                    <div class="ai-char-counter"><span id="ai-char-count">0</span> / 600</div>
+                </div>
+                <div style="display:flex;gap:12px">
+                    <div style="flex:1">
+                        <label class="kb-label">Coluna inicial</label>
+                        <select class="kb-select" id="ai-create-status">
+                            <option value="">IA decide</option>
+                            <option value="todo">A Fazer</option>
+                            <option value="done">Concluído</option>
+                        </select>
+                    </div>
+                    <div style="flex:1">
+                        <label class="kb-label">Prioridade</label>
+                        <select class="kb-select" id="ai-create-priority">
+                            <option value="">IA decide</option>
+                            <option value="high">🔴 Alta</option>
+                            <option value="medium">🟡 Média</option>
+                            <option value="low">🟢 Baixa</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-modal-body" id="ai-create-loading" style="display:none">
+                <div class="ai-loading-box">
+                    <div class="ai-spinner"></div>
+                    <p>A IA está criando sua tarefa…<br><small>Pode levar alguns segundos</small></p>
+                </div>
+            </div>
+            <div class="ai-modal-foot">
+                <span class="ai-model-badge" id="ai-create-model-label"></span>
+                <button class="kb-btn kb-btn-ghost" onclick="closeAiCreateModal()">Cancelar</button>
+                <button class="kb-btn kb-btn-violet" id="ai-create-submit-btn" onclick="submitAiCreate()">✨ Gerar com IA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✨ AI Improve Task Modal -->
+    <div class="ai-modal-overlay" id="ai-improve-modal" style="display:none" onclick="if(event.target===this)closeAiImproveModal()">
+        <div class="ai-modal">
+            <div class="ai-modal-head">
+                <h3>✨ Melhorar Tarefa com IA</h3>
+                <button class="kb-close" onclick="closeAiImproveModal()">✕</button>
+            </div>
+            <div class="ai-modal-body" id="ai-improve-body">
+                <div class="ai-task-context">
+                    <strong>🗂 Tarefa atual</strong>
+                    <span id="ai-improve-task-title">—</span>
+                </div>
+                <div>
+                    <label class="kb-label">O que você quer melhorar?</label>
+                    <textarea class="kb-textarea" id="ai-improve-prompt" rows="3"
+                        placeholder="Ex: Deixe a descrição mais clara e ajuste a prioridade..."></textarea>
+                </div>
+                <div>
+                    <label class="kb-label">Ações rápidas</label>
+                    <div class="ai-chips">
+                        <button class="ai-chip" onclick="setAiImproveChip('Melhore a clareza do título e da descrição')">✏️ Clareza</button>
+                        <button class="ai-chip" onclick="setAiImproveChip('Aumente a prioridade e justifique')">🔴 Prioridade</button>
+                        <button class="ai-chip" onclick="setAiImproveChip('Adicione mais detalhes e passos práticos na descrição')">📝 Mais detalhes</button>
+                        <button class="ai-chip" onclick="setAiImproveChip('Simplifique o título e torne a tarefa mais objetiva')">⚡ Simplificar</button>
+                        <button class="ai-chip" onclick="setAiImproveChip('Reescreva de forma profissional para uso administrativo')">🏛️ Profissional</button>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-modal-body" id="ai-improve-loading" style="display:none">
+                <div class="ai-loading-box">
+                    <div class="ai-spinner"></div>
+                    <p>A IA está melhorando sua tarefa…</p>
+                </div>
+            </div>
+            <div class="ai-modal-foot">
+                <span class="ai-model-badge" id="ai-improve-model-label"></span>
+                <button class="kb-btn kb-btn-ghost" onclick="closeAiImproveModal()">Cancelar</button>
+                <button class="kb-btn kb-btn-violet" id="ai-improve-submit-btn" onclick="submitAiImprove()">✨ Melhorar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🧩 AI Breakdown Preview Modal -->
+    <div class="ai-modal-overlay" id="ai-breakdown-modal" style="display:none" onclick="if(event.target===this)closeAiBreakdownModal()">
+        <div class="ai-modal ai-modal-wide">
+            <div class="ai-modal-head">
+                <h3>🧩 Subtarefas Sugeridas pela IA</h3>
+                <button class="kb-close" onclick="closeAiBreakdownModal()">✕</button>
+            </div>
+            <div class="ai-modal-body" id="ai-breakdown-input-body">
+                <div class="ai-task-context">
+                    <strong>🗂 Tarefa a dividir</strong>
+                    <span id="ai-breakdown-task-title">—</span>
+                </div>
+                <div>
+                    <label class="kb-label">Como a IA deve dividir?</label>
+                    <textarea class="kb-textarea" id="ai-breakdown-prompt" rows="2"
+                        placeholder="Ex: Quebre em passos práticos e sequenciais..."></textarea>
+                </div>
+                <div>
+                    <label class="kb-label">Sugestões rápidas</label>
+                    <div class="ai-chips">
+                        <button class="ai-chip" onclick="setAiBreakdownChip('Quebre em passos menores e práticos')">🔢 Passos práticos</button>
+                        <button class="ai-chip" onclick="setAiBreakdownChip('Divida em fases: planejamento, execução e revisão')">📋 Fases</button>
+                        <button class="ai-chip" onclick="setAiBreakdownChip('Crie subtarefas para cada responsável diferente')">👥 Por responsável</button>
+                        <button class="ai-chip" onclick="setAiBreakdownChip('Gere checklist detalhado com prioridades')">✅ Checklist</button>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-modal-body" id="ai-breakdown-loading" style="display:none">
+                <div class="ai-loading-box">
+                    <div class="ai-spinner"></div>
+                    <p>A IA está gerando as subtarefas…</p>
+                </div>
+            </div>
+            <div class="ai-modal-body" id="ai-breakdown-preview-body" style="display:none">
+                <div class="ai-select-all-bar">
+                    <span id="ai-breakdown-count-label">0 subtarefas geradas</span>
+                    <a onclick="aiBreakdownSelectAll(true)">Selecionar todas</a>
+                    <span>·</span>
+                    <a onclick="aiBreakdownSelectAll(false)">Limpar</a>
+                </div>
+                <div class="ai-subtask-list" id="ai-breakdown-list"></div>
+            </div>
+            <div class="ai-modal-foot">
+                <span class="ai-model-badge" id="ai-breakdown-model-label"></span>
+                <button class="kb-btn kb-btn-ghost" id="ai-breakdown-back-btn" onclick="aiBreakdownBack()" style="display:none">← Voltar</button>
+                <button class="kb-btn kb-btn-ghost" onclick="closeAiBreakdownModal()">Cancelar</button>
+                <button class="kb-btn kb-btn-violet" id="ai-breakdown-submit-btn" onclick="submitAiBreakdown()">🧩 Gerar subtarefas</button>
+                <button class="kb-btn kb-btn-emerald" id="ai-breakdown-confirm-btn" onclick="confirmAiBreakdown()" style="display:none">✅ Criar selecionadas (<span id="ai-breakdown-selected-count">0</span>)</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Modelos OpenRouter -->
     <div class="browser-modal" id="modelos-modal">
         <div class="browser-box">
@@ -795,6 +1537,7 @@
     </div>
 
     <div id="kb-toast"></div>
+    <div id="print-area"></div>
 
     <script>
   // Theme
@@ -809,6 +1552,8 @@
         let dragTaskId = null;
         let pendingModalFile = null;
         let aiBusy = false;
+        let activeCatFilter = '';
+        let activeSearch = '';
 
         // ── INIT ───────────────────────────────────────────────────────────────────
         async function loadAll() {
@@ -822,23 +1567,111 @@
         loadAll();
 
         // ── RENDER ─────────────────────────────────────────────────────────────────
-        function renderBoard() {
-            const cols = ['todo', 'in-progress', 'done'];
+        function _getVisibleTasks() {
+            let list = activeCatFilter ? tasks.filter(t => (t.categoria||'').toUpperCase() === activeCatFilter) : tasks;
+            if (activeSearch) {
+                const q = activeSearch.toLowerCase();
+                list = list.filter(t => (t.title||'').toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q));
+            }
+            return list;
+        }
+
+        function _sortTasks(list) {
+            const sortBy = (document.getElementById('kb-sort') || {}).value || 'priority';
             const prioOrder = { high: 3, medium: 2, low: 1 };
+            return [...list].sort((a, b) => {
+                if (sortBy === 'priority') return (prioOrder[b.priority]||0) - (prioOrder[a.priority]||0);
+                if (sortBy === 'due') {
+                    const ad = a.data_vencimento || '9999-12-31';
+                    const bd = b.data_vencimento || '9999-12-31';
+                    return ad < bd ? -1 : ad > bd ? 1 : 0;
+                }
+                if (sortBy === 'created') return (b.criado_em||'') < (a.criado_em||'') ? -1 : 1;
+                if (sortBy === 'title') return (a.title||'').localeCompare(b.title||'', 'pt-BR');
+                return 0;
+            });
+        }
+
+        function renderBoard() {
+            const cols = ['todo', 'done'];
+            const visible = _getVisibleTasks();
             cols.forEach(col => {
                 const body = document.getElementById(`body-${col}`);
-                const colTasks = tasks.filter(t => t.status === col).sort((a, b) => prioOrder[b.priority] - prioOrder[a.priority]);
+                const colTasks = _sortTasks(visible.filter(t => t.status === col));
                 document.getElementById(`badge-${col}`).textContent = colTasks.length;
                 body.innerHTML = '';
                 if (!colTasks.length) {
                     body.innerHTML = '<div class="kb-empty">Nenhuma tarefa aqui.<br>Arraste uma card ou crie uma nova.</div>';
                 }
-                colTasks.forEach(task => {
-                    const card = createCard(task);
-                    body.appendChild(card);
-                });
+                colTasks.forEach(task => body.appendChild(createCard(task)));
             });
             updateStats();
+            updateCatCounts();
+            if (currentView === 'list') renderListView();
+        }
+
+        function _dueBadge(dateStr) {
+            if (!dateStr) return '';
+            const today = new Date(); today.setHours(0,0,0,0);
+            const due = new Date(dateStr + 'T00:00:00');
+            const diff = Math.round((due - today) / 86400000);
+            let cls, label;
+            if (diff < 0)       { cls = 'kb-due-overdue'; label = `⚠️ Vencido (${Math.abs(diff)}d)`; }
+            else if (diff === 0){ cls = 'kb-due-today';   label = '⏰ Hoje'; }
+            else if (diff <= 3) { cls = 'kb-due-today';   label = `📅 ${diff}d`; }
+            else                { cls = 'kb-due-ok';      label = `📅 ${due.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`; }
+            return `<span class="kb-due ${cls}">${label}</span>`;
+        }
+
+        function _catBadge(cat) {
+            if (!cat) return '';
+            const map = {
+                EMPENHAR: 'kb-cat-empenhar', LIQUIDAR: 'kb-cat-liquidar',
+                PAGAR: 'kb-cat-pagar', OBS: 'kb-cat-obs',
+                RESOLVER: 'kb-cat-resolver', OUTROS: 'kb-cat-outros'
+            };
+            const cls = map[cat.toUpperCase()] || 'kb-cat-outros';
+            return `<span class="kb-cat ${cls}">${cat.toUpperCase()}</span>`;
+        }
+
+        function updateCatCounts() {
+            const cats = ['all','empenhar','liquidar','pagar','obs','resolver','outros'];
+            cats.forEach(c => {
+                const el = document.getElementById(`cnt-cat-${c}`);
+                if (!el) return;
+                const count = c === 'all' ? tasks.length : tasks.filter(t => (t.categoria||'').toUpperCase() === c.toUpperCase()).length;
+                el.textContent = count > 0 ? `(${count})` : '';
+            });
+        }
+
+        function setCatFilter(cat) {
+            activeCatFilter = cat;
+            document.querySelectorAll('.kb-cat-filter-btn').forEach(btn => btn.classList.remove('active'));
+            const btns = document.querySelectorAll('.kb-cat-filter-btn');
+            btns.forEach(btn => {
+                const txt = btn.textContent.trim().split('(')[0].trim();
+                if (cat === '' && btn.classList.contains('kb-cat-filter-all')) btn.classList.add('active');
+                else if (cat && txt === cat) btn.classList.add('active');
+            });
+            renderBoard();
+        }
+
+        function onSearch() {
+            activeSearch = (document.getElementById('kb-search').value || '').trim();
+            renderBoard();
+        }
+
+        function _avatarBadge(name) {
+            if (!name) return '';
+            const initials = name.trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+            const colors = ['#0891b2','#d97706','#059669','#dc2626','#7c3aed','#db2777'];
+            const color = colors[name.charCodeAt(0) % colors.length];
+            return `<span class="kb-avatar" style="background:${color}" title="${esc(name)}">${initials}</span>`;
+        }
+
+        function _quickMoveLabel(status) {
+            if (status === 'todo') return { label: '→ Concluído', next: 'done', cls: 'kb-quick-move-done' };
+            return null;
         }
 
         function createCard(task) {
@@ -849,10 +1682,13 @@
             const prioLabel = { high: '🔴 Alta', medium: '🟡 Média', low: '🟢 Baixa' };
             const prioClass = { high: 'kb-prio-high', medium: 'kb-prio-medium', low: 'kb-prio-low' };
             const attachments = Array.isArray(task.attachments) ? task.attachments : [];
+            const qm = _quickMoveLabel(task.status);
+            const quickMoveBtn = qm ? `<button class="kb-quick-move ${qm.cls}" onclick="quickMove('${task.id}','${qm.next}')" title="Mover para próxima etapa">${qm.label}</button>` : '';
             card.innerHTML = `
       <div class="kb-card-top">
         <div class="kb-card-title">${esc(task.title)}</div>
         <div class="kb-card-actions">
+          ${_avatarBadge(task.responsavel)}
           <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar">✏️</button>
           <button class="kb-icon-btn" onclick="breakdownTaskWithAi('${task.id}')" title="Quebrar em subtarefas com IA">✨</button>
           <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${task.id}')" title="Excluir">🗑</button>
@@ -866,6 +1702,9 @@
         </span>`).join('')}</div>` : ''}
       <div class="kb-card-foot">
         <span class="kb-priority ${prioClass[task.priority]}">${prioLabel[task.priority]}</span>
+        ${_catBadge(task.categoria)}
+        ${_dueBadge(task.data_vencimento)}
+        ${quickMoveBtn}
       </div>`;
             card.addEventListener('dragstart', e => { dragTaskId = task.id; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
             card.addEventListener('dragend', () => { dragTaskId = null; card.classList.remove('dragging'); document.querySelectorAll('.kb-col-body').forEach(b => b.classList.remove('drag-over')); });
@@ -894,10 +1733,125 @@
         }
 
         function updateStats() {
-            ['todo', 'in-progress', 'done'].forEach(col => {
-                const ids = { todo: 'st-todo', 'in-progress': 'st-prog', done: 'st-done' };
-                document.getElementById(ids[col]).textContent = tasks.filter(t => t.status === col).length;
+            ['todo', 'done'].forEach(col => {
+                const ids = { todo: 'st-todo', done: 'st-done' };
+                document.getElementById(ids[col]).textContent = tasks.filter(t => t.status === col || (col === 'todo' && t.status === 'in-progress')).length;
             });
+            updateProgressBar();
+            updateAlertBanner();
+        }
+
+        // ── PROGRESS BAR ───────────────────────────────────────────────────────────
+        function updateProgressBar() {
+            const total = tasks.length;
+            const done = tasks.filter(t => t.status === 'done').length;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const fill = document.getElementById('kb-progress-fill');
+            const label = document.getElementById('kb-progress-label');
+            if (fill) fill.style.width = pct + '%';
+            if (label) label.textContent = `${done} / ${total} concluídas (${pct}%)`;
+        }
+
+        // ── ALERT BANNER ───────────────────────────────────────────────────────────
+        let alertDismissed = false;
+        function updateAlertBanner() {
+            if (alertDismissed) return;
+            const today = new Date(); today.setHours(0,0,0,0);
+            const overdue = tasks.filter(t => t.status !== 'done' && t.data_vencimento && new Date(t.data_vencimento + 'T00:00:00') < today);
+            const banner = document.getElementById('kb-alert-banner');
+            const text = document.getElementById('kb-alert-text');
+            if (!banner) return;
+            if (overdue.length > 0) {
+                text.textContent = `⚠️ ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} vencida${overdue.length > 1 ? 's' : ''}! Clique para ver.`;
+                banner.classList.add('visible');
+            } else {
+                banner.classList.remove('visible');
+            }
+        }
+        function dismissAlert() { alertDismissed = true; document.getElementById('kb-alert-banner').classList.remove('visible'); }
+        function setCatFilterAndAlert() {
+            // Sort by due so overdue appear first
+            document.getElementById('kb-sort').value = 'due';
+            renderBoard();
+        }
+
+        // ── QUICK MOVE ─────────────────────────────────────────────────────────────
+        async function quickMove(taskId, newStatus) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            const updated = { ...task, status: newStatus };
+            try {
+                await fetch(`/api/kanban/${taskId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                task.status = newStatus;
+                const statusNames = { todo: 'A Fazer', done: 'Concluído' };
+                showToast(`✅ Movido para "${statusNames[newStatus]}"`, 'success');
+                renderBoard();
+                if (currentView === 'list') renderListView();
+            } catch (e) { showToast('Erro ao mover tarefa', 'error'); }
+        }
+
+        // ── VIEW TOGGLE ────────────────────────────────────────────────────────────
+        let currentView = 'kanban';
+        function setView(v) {
+            currentView = v;
+            document.getElementById('kb-grid').style.display = v === 'kanban' ? '' : 'none';
+            document.getElementById('kb-list-view').style.display = v === 'list' ? 'block' : 'none';
+            document.getElementById('btn-view-kanban').classList.toggle('active', v === 'kanban');
+            document.getElementById('btn-view-list').classList.toggle('active', v === 'list');
+            if (v === 'list') renderListView();
+        }
+
+        function setSortAndList(field) {
+            document.getElementById('kb-sort').value = field;
+            renderListView();
+        }
+
+        function renderListView() {
+            const tbody = document.getElementById('kb-list-body');
+            if (!tbody) return;
+            const visible = _sortTasks(_getVisibleTasks());
+            const statusLabel = { todo: '<span class="kb-status-pill kb-status-todo">📋 A Fazer</span>', 'in-progress': '<span class="kb-status-pill kb-status-todo">📋 A Fazer</span>', done: '<span class="kb-status-pill kb-status-done">✅ Concluído</span>' };
+            const prioLabel = { high: '<span class="kb-priority kb-prio-high">🔴 Alta</span>', medium: '<span class="kb-priority kb-prio-medium">🟡 Média</span>', low: '<span class="kb-priority kb-prio-low">🟢 Baixa</span>' };
+            tbody.innerHTML = visible.map(t => {
+                const dueHtml = t.data_vencimento ? _dueBadge(t.data_vencimento) : '<span style="color:var(--text-3);font-size:11px">—</span>';
+                const qm = _quickMoveLabel(t.status);
+                const qmBtn = qm ? `<button class="kb-quick-move ${qm.cls}" style="font-size:10px;padding:1px 6px" onclick="quickMove('${t.id}','${qm.next}')">${qm.label}</button>` : '';
+                return `<tr>
+                    <td><input type="checkbox" class="kb-list-check" ${t.status==='done'?'checked':''} onchange="quickMove('${t.id}', this.checked ? 'done' : 'todo')" /></td>
+                    <td><div class="kb-list-title" onclick="openEdit('${t.id}')">${esc(t.title)}</div>${t.description ? `<div class="kb-list-desc">${esc(t.description.slice(0,80))}${t.description.length>80?'…':''}</div>` : ''}</td>
+                    <td>${prioLabel[t.priority]||''}</td>
+                    <td>${_catBadge(t.categoria)}</td>
+                    <td>${dueHtml}</td>
+                    <td>${t.responsavel ? `${_avatarBadge(t.responsavel)} <span style="font-size:12px;margin-left:4px">${esc(t.responsavel)}</span>` : '<span style="color:var(--text-3);font-size:11px">—</span>'}</td>
+                    <td>${statusLabel[t.status]||''} ${qmBtn}</td>
+                    <td style="white-space:nowrap">
+                        <button class="kb-icon-btn" onclick="openEdit('${t.id}')" title="Editar">✏️</button>
+                        <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${t.id}')" title="Excluir">🗑</button>
+                    </td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-3)">Nenhuma tarefa encontrada.</td></tr>`;
+        }
+
+        // ── EXPORT CSV ─────────────────────────────────────────────────────────────
+        function exportCSV() {
+            const cols = ['id','title','description','status','priority','categoria','data_vencimento','responsavel','criado_em','atualizado_em'];
+            const headers = ['ID','Título','Descrição','Status','Prioridade','Categoria','Vencimento','Responsável','Criado em','Atualizado em'];
+            const statusPt = { todo: 'A Fazer', 'in-progress': 'A Fazer', done: 'Concluído' };
+            const prioPt = { high: 'Alta', medium: 'Média', low: 'Baixa' };
+            const rows = _sortTasks(_getVisibleTasks()).map(t => cols.map(c => {
+                let v = t[c] || '';
+                if (c === 'status') v = statusPt[v] || v;
+                if (c === 'priority') v = prioPt[v] || v;
+                return `"${String(v).replace(/"/g, '""')}"`;
+            }).join(','));
+            const csv = '\uFEFF' + [headers.map(h => `"${h}"`).join(','), ...rows].join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+            a.href = url; a.download = `tarefas_kanban_${now}.csv`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast(`📥 CSV exportado (${rows.length} tarefas)`, 'success');
         }
 
         // ── DRAG & DROP ────────────────────────────────────────────────────────────
@@ -920,7 +1874,7 @@
                 renderBoard();
             }
         }
-        function colName(c) { return { todo: 'A Fazer', 'in-progress': 'Em Progresso', done: 'Concluído' }[c] || c; }
+        function colName(c) { return { todo: 'A Fazer', 'in-progress': 'A Fazer', done: 'Concluído' }[c] || c; }
 
         // ── CRUD ───────────────────────────────────────────────────────────────────
         function syncDropzoneLabel() {
@@ -939,9 +1893,12 @@
             document.getElementById('t-desc').value = task.description || '';
             document.getElementById('t-status').value = task.status || 'todo';
             document.getElementById('t-prio').value = task.priority || 'medium';
+            document.getElementById('t-cat').value = (task.categoria || '').toUpperCase();
+            document.getElementById('t-due').value = task.data_vencimento || '';
+            document.getElementById('t-resp').value = task.responsavel || '';
         }
 
-        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); updateTaskModalAiButtons(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
+        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); updateTaskModalAiButtons(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
         function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; }
 
         function openEdit(id) {
@@ -976,70 +1933,278 @@
             }
         }
 
-        async function openAiCreate() {
-            const promptText = window.prompt('Descreva a tarefa para a IA criar no Kanban:');
-            if (!promptText || !promptText.trim()) return;
+        // ── AI MODAL HELPERS ──────────────────────────────────────────────────────
+        function _getAiModelLabel() {
+            const m = (localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim();
+            return m ? `🤖 ${m}` : '🤖 modelo padrão';
+        }
+
+        // ── AI CREATE MODAL ───────────────────────────────────────────────────────
+        function openAiCreate() {
+            document.getElementById('ai-create-prompt').value = '';
+            document.getElementById('ai-create-status').value = '';
+            document.getElementById('ai-create-priority').value = '';
+            document.getElementById('ai-char-count').textContent = '0';
+            document.getElementById('ai-create-model-label').textContent = _getAiModelLabel();
+            document.getElementById('ai-create-body').style.display = 'flex';
+            document.getElementById('ai-create-loading').style.display = 'none';
+            document.getElementById('ai-create-submit-btn').disabled = false;
+            document.getElementById('ai-create-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('ai-create-prompt').focus(), 80);
+        }
+
+        function closeAiCreateModal() {
+            if (aiBusy) return;
+            document.getElementById('ai-create-modal').style.display = 'none';
+        }
+
+        function setAiChip(text) {
+            const ta = document.getElementById('ai-create-prompt');
+            ta.value = text;
+            ta.focus();
+            updateAiCharCount();
+        }
+
+        function updateAiCharCount() {
+            const len = document.getElementById('ai-create-prompt').value.length;
+            const el = document.getElementById('ai-char-count');
+            el.textContent = len;
+            el.classList.toggle('ai-char-over', len > 600);
+        }
+
+        async function submitAiCreate() {
+            const promptText = document.getElementById('ai-create-prompt').value.trim();
+            if (!promptText) { showToast('Descreva a tarefa antes de gerar', 'error'); return; }
+            const statusHint = document.getElementById('ai-create-status').value;
+            const priorityHint = document.getElementById('ai-create-priority').value;
+            document.getElementById('ai-create-body').style.display = 'none';
+            document.getElementById('ai-create-loading').style.display = 'flex';
+            document.getElementById('ai-create-submit-btn').disabled = true;
             try {
-                showToast('⏳ Gerando tarefa com IA... (pode levar alguns segundos)', 'info');
-                const task = await callKanbanAi('/api/kanban/ai/create-from-text', { prompt: promptText.trim() });
+                const task = await callKanbanAi('/api/kanban/ai/create-from-text', {
+                    prompt: promptText,
+                    status_hint: statusHint || null,
+                    priority_hint: priorityHint || null
+                });
+                document.getElementById('ai-create-modal').style.display = 'none';
                 openTaskModal();
                 fillTaskModal(task);
                 showToast('✅ Sugestão da IA pronta. Revise e salve.', 'success');
             } catch (e) {
+                document.getElementById('ai-create-body').style.display = 'flex';
+                document.getElementById('ai-create-loading').style.display = 'none';
+                document.getElementById('ai-create-submit-btn').disabled = false;
                 const msg = e.message || 'Erro ao usar IA no Kanban';
-                const is429 = msg.includes('429') || msg.includes('Limite de requisi');
                 showToast(msg, 'error');
-                if (is429) consultarModelosEExibirModal();
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
             }
         }
 
-        async function improveCurrentTaskWithAi() {
+        // ── AI IMPROVE MODAL ──────────────────────────────────────────────────────
+        function openAiImproveModal() {
             if (!editingId) return;
             const task = tasks.find(t => t.id === editingId);
             if (!task) return;
-            const promptText = window.prompt('Diga para a IA como melhorar esta tarefa:', 'Melhore a clareza, prioridade e descrição desta tarefa.');
-            if (promptText === null) return;
+            document.getElementById('ai-improve-task-title').textContent = task.title || '—';
+            document.getElementById('ai-improve-prompt').value = '';
+            document.getElementById('ai-improve-model-label').textContent = _getAiModelLabel();
+            document.getElementById('ai-improve-body').style.display = 'flex';
+            document.getElementById('ai-improve-loading').style.display = 'none';
+            document.getElementById('ai-improve-submit-btn').disabled = false;
+            document.getElementById('ai-improve-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('ai-improve-prompt').focus(), 80);
+        }
+
+        function closeAiImproveModal() {
+            if (aiBusy) return;
+            document.getElementById('ai-improve-modal').style.display = 'none';
+        }
+
+        function setAiImproveChip(text) {
+            document.getElementById('ai-improve-prompt').value = text;
+            document.getElementById('ai-improve-prompt').focus();
+        }
+
+        async function improveCurrentTaskWithAi() {
+            openAiImproveModal();
+        }
+
+        async function submitAiImprove() {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId);
+            if (!task) return;
+            const promptText = document.getElementById('ai-improve-prompt').value.trim() || 'Melhore a clareza, prioridade e descrição desta tarefa.';
+            document.getElementById('ai-improve-body').style.display = 'none';
+            document.getElementById('ai-improve-loading').style.display = 'flex';
+            document.getElementById('ai-improve-submit-btn').disabled = true;
             try {
-                showToast('⏳ Melhorando tarefa com IA... (pode levar alguns segundos)', 'info');
-                const improved = await callKanbanAi('/api/kanban/ai/improve-task', { task, prompt: promptText.trim() });
+                const improved = await callKanbanAi('/api/kanban/ai/improve-task', { task, prompt: promptText });
+                document.getElementById('ai-improve-modal').style.display = 'none';
                 fillTaskModal(improved);
-                showToast('✅ Sugestão aplicada no formulário. Revise e salve.', 'success');
+                showToast('✅ Sugestão aplicada. Revise e salve.', 'success');
             } catch (e) {
+                document.getElementById('ai-improve-body').style.display = 'flex';
+                document.getElementById('ai-improve-loading').style.display = 'none';
+                document.getElementById('ai-improve-submit-btn').disabled = false;
                 const msg = e.message || 'Erro ao melhorar tarefa com IA';
-                const is429 = msg.includes('429') || msg.includes('Limite de requisi');
                 showToast(msg, 'error');
-                if (is429) consultarModelosEExibirModal();
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
+            }
+        }
+
+        // ── AI BREAKDOWN MODAL ────────────────────────────────────────────────────
+        let _breakdownItems = [];
+
+        function _resetBreakdownModal() {
+            _breakdownItems = [];
+            document.getElementById('ai-breakdown-input-body').style.display = 'flex';
+            document.getElementById('ai-breakdown-loading').style.display = 'none';
+            document.getElementById('ai-breakdown-preview-body').style.display = 'none';
+            document.getElementById('ai-breakdown-submit-btn').style.display = 'inline-flex';
+            document.getElementById('ai-breakdown-confirm-btn').style.display = 'none';
+            document.getElementById('ai-breakdown-back-btn').style.display = 'none';
+            document.getElementById('ai-breakdown-submit-btn').disabled = false;
+        }
+
+        function openAiBreakdownModal(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+            _resetBreakdownModal();
+            document.getElementById('ai-breakdown-task-title').textContent = task.title || '—';
+            document.getElementById('ai-breakdown-prompt').value = '';
+            document.getElementById('ai-breakdown-model-label').textContent = _getAiModelLabel();
+            document.getElementById('ai-breakdown-modal').style.display = 'flex';
+            setTimeout(() => document.getElementById('ai-breakdown-prompt').focus(), 80);
+        }
+
+        function closeAiBreakdownModal() {
+            if (aiBusy) return;
+            document.getElementById('ai-breakdown-modal').style.display = 'none';
+        }
+
+        function setAiBreakdownChip(text) {
+            document.getElementById('ai-breakdown-prompt').value = text;
+            document.getElementById('ai-breakdown-prompt').focus();
+        }
+
+        function aiBreakdownBack() {
+            _resetBreakdownModal();
+        }
+
+        function _renderBreakdownPreview(items) {
+            _breakdownItems = items;
+            const list = document.getElementById('ai-breakdown-list');
+            list.innerHTML = '';
+            items.forEach((item, i) => {
+                const prioCls = item.priority === 'high' ? 'ai-prio-high' : item.priority === 'low' ? 'ai-prio-low' : 'ai-prio-medium';
+                const prioLabel = item.priority === 'high' ? '🔴 Alta' : item.priority === 'low' ? '🟢 Baixa' : '🟡 Média';
+                const card = document.createElement('div');
+                card.className = 'ai-subtask-card selected';
+                card.dataset.idx = i;
+                card.innerHTML = `
+                    <input type="checkbox" class="ai-subtask-check" id="ai-st-${i}" checked onchange="aiBreakdownUpdateCount()">
+                    <div class="ai-subtask-info">
+                        <div class="ai-subtask-title">${item.title || '(sem título)'}</div>
+                        ${item.description ? `<div class="ai-subtask-desc">${item.description}</div>` : ''}
+                    </div>
+                    <span class="ai-prio-badge ${prioCls}">${prioLabel}</span>`;
+                card.addEventListener('click', function(e) {
+                    if (e.target.tagName === 'INPUT') return;
+                    const cb = card.querySelector('input[type=checkbox]');
+                    cb.checked = !cb.checked;
+                    card.classList.toggle('selected', cb.checked);
+                    aiBreakdownUpdateCount();
+                });
+                list.appendChild(card);
+            });
+            document.getElementById('ai-breakdown-count-label').textContent = `${items.length} subtarefa(s) gerada(s)`;
+            aiBreakdownUpdateCount();
+        }
+
+        function aiBreakdownSelectAll(state) {
+            document.querySelectorAll('.ai-subtask-check').forEach(cb => {
+                cb.checked = state;
+                cb.closest('.ai-subtask-card').classList.toggle('selected', state);
+            });
+            aiBreakdownUpdateCount();
+        }
+
+        function aiBreakdownUpdateCount() {
+            const n = document.querySelectorAll('.ai-subtask-check:checked').length;
+            document.getElementById('ai-breakdown-selected-count').textContent = n;
+            document.getElementById('ai-breakdown-confirm-btn').disabled = n === 0;
+        }
+
+        async function submitAiBreakdown() {
+            const taskTitleEl = document.getElementById('ai-breakdown-task-title');
+            const taskTitle = taskTitleEl.textContent;
+            const task = tasks.find(t => t.title === taskTitle) ||
+                         (editingId ? tasks.find(t => t.id === editingId) : null);
+            if (!task) { showToast('Tarefa não encontrada', 'error'); return; }
+            const promptText = document.getElementById('ai-breakdown-prompt').value.trim() || 'Quebre em passos menores e práticos.';
+            document.getElementById('ai-breakdown-input-body').style.display = 'none';
+            document.getElementById('ai-breakdown-loading').style.display = 'flex';
+            document.getElementById('ai-breakdown-submit-btn').disabled = true;
+            try {
+                const result = await callKanbanAi('/api/kanban/ai/breakdown-task', { task, prompt: promptText });
+                const items = Array.isArray(result.tasks) ? result.tasks.filter(t => t && t.title) : [];
+                if (!items.length) throw new Error('Nenhuma subtarefa válida foi gerada pela IA');
+                document.getElementById('ai-breakdown-loading').style.display = 'none';
+                document.getElementById('ai-breakdown-preview-body').style.display = 'flex';
+                document.getElementById('ai-breakdown-submit-btn').style.display = 'none';
+                document.getElementById('ai-breakdown-confirm-btn').style.display = 'inline-flex';
+                document.getElementById('ai-breakdown-back-btn').style.display = 'inline-flex';
+                _renderBreakdownPreview(items);
+            } catch (e) {
+                document.getElementById('ai-breakdown-input-body').style.display = 'flex';
+                document.getElementById('ai-breakdown-loading').style.display = 'none';
+                document.getElementById('ai-breakdown-submit-btn').disabled = false;
+                const msg = e.message || 'Erro ao quebrar tarefa com IA';
+                showToast(msg, 'error');
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
+            }
+        }
+
+        async function confirmAiBreakdown() {
+            const selected = [];
+            document.querySelectorAll('.ai-subtask-check:checked').forEach(cb => {
+                const idx = parseInt(cb.closest('.ai-subtask-card').dataset.idx);
+                if (_breakdownItems[idx]) selected.push(_breakdownItems[idx]);
+            });
+            if (!selected.length) { showToast('Selecione pelo menos uma subtarefa', 'error'); return; }
+            document.getElementById('ai-breakdown-preview-body').style.display = 'none';
+            document.getElementById('ai-breakdown-loading').style.display = 'flex';
+            document.getElementById('ai-breakdown-confirm-btn').disabled = true;
+            try {
+                for (const task of selected) {
+                    const payload = { id: uid(), title: task.title, description: task.description || '', status: task.status || 'todo', priority: task.priority || 'medium' };
+                    const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!res.ok) throw new Error('Erro ao criar subtarefa');
+                }
+                await loadAll();
+                document.getElementById('ai-breakdown-modal').style.display = 'none';
+                showToast(`${selected.length} subtarefa(s) criada(s) com ajuda da IA ✅`, 'success');
+            } catch (e) {
+                document.getElementById('ai-breakdown-preview-body').style.display = 'flex';
+                document.getElementById('ai-breakdown-loading').style.display = 'none';
+                document.getElementById('ai-breakdown-confirm-btn').disabled = false;
+                showToast(e.message || 'Erro ao criar subtarefas', 'error');
             }
         }
 
         async function breakdownTaskWithAi(taskId) {
-            const task = tasks.find(t => t.id === taskId);
-            if (!task) return;
-            const promptText = window.prompt('Como a IA deve quebrar esta tarefa em subtarefas?', 'Quebre em passos menores e práticos.');
-            if (promptText === null) return;
-            try {
-                showToast('⏳ Gerando subtarefas com IA... (pode levar alguns segundos)', 'info');
-                const result = await callKanbanAi('/api/kanban/ai/breakdown-task', { task, prompt: promptText.trim() });
-                await confirmAndCreateSubtasks(result.tasks);
-            } catch (e) {
-                const msg = e.message || 'Erro ao quebrar tarefa com IA';
-                const is429 = msg.includes('429') || msg.includes('Limite de requisi');
-                showToast(msg, 'error');
-                if (is429) consultarModelosEExibirModal();
-            }
+            openAiBreakdownModal(taskId);
         }
 
         async function breakdownCurrentTaskWithAi() {
             if (!editingId) return;
-            await breakdownTaskWithAi(editingId);
+            openAiBreakdownModal(editingId);
         }
 
         async function confirmAndCreateSubtasks(items) {
+            // Legacy fallback — now handled by the modal preview
             const tasksToCreate = Array.isArray(items) ? items.filter(t => t && t.title) : [];
             if (!tasksToCreate.length) throw new Error('Nenhuma subtarefa válida foi gerada pela IA');
-            const preview = tasksToCreate.map((t, i) => `${i + 1}. ${t.title}`).join('\n');
-            const ok = window.confirm(`A IA sugeriu ${tasksToCreate.length} subtarefa(s):\n\n${preview}\n\nDeseja criar agora?`);
-            if (!ok) return;
             for (const task of tasksToCreate) {
                 const payload = { id: uid(), title: task.title, description: task.description || '', status: task.status || 'todo', priority: task.priority || 'medium' };
                 const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -1067,11 +2232,14 @@
             const desc = document.getElementById('t-desc').value.trim();
             const status = document.getElementById('t-status').value;
             const priority = document.getElementById('t-prio').value;
+            const categoria = document.getElementById('t-cat').value;
+            const data_vencimento = document.getElementById('t-due').value;
+            const responsavel = document.getElementById('t-resp').value.trim();
             const file = pendingModalFile || document.getElementById('t-file').files[0];
             try {
                 if (editingId) {
                     const task = tasks.find(t => t.id === editingId);
-                    const updated = { ...task, title, description: desc, status, priority };
+                    const updated = { ...task, title, description: desc, status, priority, categoria, data_vencimento, responsavel };
                     const res = await fetch(`/api/kanban/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
                     if (!res.ok) throw new Error('Erro ao atualizar tarefa');
                     const updatedFromApi = await res.json();
@@ -1080,7 +2248,7 @@
                     if (i > -1) tasks[i] = { ...updatedFromApi, attachments: tasks[i].attachments || [] };
                     showToast('Tarefa atualizada!', 'success');
                 } else {
-                    const newTask = { id: uid(), title, description: desc, status, priority };
+                    const newTask = { id: uid(), title, description: desc, status, priority, categoria, data_vencimento, responsavel };
                     const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTask) });
                     if (!res.ok) throw new Error('Erro ao criar tarefa');
                     const created = await res.json();
@@ -1118,13 +2286,7 @@
         }
 
         // ── KEY SHORTCUT ───────────────────────────────────────────────────────────
-        document.addEventListener('keydown', e => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openTaskModal(); }
-            if (e.key === 'Escape') {
-                document.getElementById('task-modal').style.display = 'none';
-                document.getElementById('confirm-modal').style.display = 'none';
-            }
-        });
+        // (Atalhos completos adicionados acima via addEventListener global)
 
         document.getElementById('t-file').addEventListener('change', () => {
             pendingModalFile = null;
@@ -1230,8 +2392,231 @@
             }, 1000);
         }
 
+        // ── KEYBOARD SHORTCUTS ─────────────────────────────────────────────────────
+        document.addEventListener('keydown', function(e) {
+            // Ignore when typing in an input/textarea/select
+            const tag = document.activeElement ? document.activeElement.tagName : '';
+            if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+
+            // Esc — fechar modais abertos
+            if (e.key === 'Escape') {
+                ['task-modal','confirm-modal','ai-create-modal','ai-improve-modal','ai-breakdown-modal'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el.style.display !== 'none') el.style.display = 'none';
+                });
+                document.getElementById('modelos-modal').classList.remove('open');
+                return;
+            }
+
+            // N — nova tarefa
+            if (e.key === 'n' || e.key === 'N') {
+                e.preventDefault();
+                openTaskModal();
+                return;
+            }
+
+            // / — focar busca
+            if (e.key === '/') {
+                e.preventDefault();
+                const s = document.getElementById('kb-search');
+                if (s) { s.focus(); s.select(); }
+                return;
+            }
+
+            // P — imprimir PDF
+            if (e.key === 'p' || e.key === 'P') {
+                if (e.ctrlKey || e.metaKey) return; // deixar Ctrl+P padrão do browser
+                e.preventDefault();
+                printKanban();
+            }
+        });
+
+        // Fechar modais com Esc quando foco está no modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            closeTaskModal();
+            closeConfirm();
+        });
+
         function fecharModelos() {
             document.getElementById('modelos-modal').classList.remove('open');
+        }
+
+        // ── PRINT ──────────────────────────────────────────────────────────────────
+        function printKanban() {
+            const area = document.getElementById('print-area');
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+            const dateShort = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+            const weekday = now.toLocaleDateString('pt-BR', { weekday: 'long' });
+
+            const filterLabel = activeCatFilter ? ` — Categoria: ${activeCatFilter}` : '';
+            const visibleTasks = activeCatFilter
+                ? tasks.filter(t => (t.categoria||'').toUpperCase() === activeCatFilter)
+                : tasks;
+
+            const prioOrder = { high: 3, medium: 2, low: 1 };
+
+            // ── row builder ──────────────────────────────────────────────────────
+            function taskRow(task, idx) {
+                const isD = task.status === 'done';
+                // priority stripe
+                const stripeMap = { high: 'pr-stripe-high', medium: 'pr-stripe-medium', low: 'pr-stripe-low' };
+                const stripeClass = stripeMap[task.priority] || 'pr-stripe-low';
+                // checkbox
+                const chkClass = isD ? 'pr-checkbox pr-checkbox-done' : 'pr-checkbox';
+                // title + desc
+                const descHtml = task.description
+                    ? `<p class="pr-task-desc">${esc(task.description)}</p>`
+                    : '';
+                // category
+                const cat = (task.categoria || '').toUpperCase();
+                const catHtml = cat
+                    ? `<span class="pr-badge pr-cat-${cat.toLowerCase()}">${cat}</span>`
+                    : `<span class="pr-no-val">—</span>`;
+                // priority
+                const prioMap = { high: ['pr-prio-high','Alta'], medium: ['pr-prio-medium','Média'], low: ['pr-prio-low','Baixa'] };
+                const [prioCls, prioTxt] = prioMap[task.priority] || ['',''];
+                const prioHtml = prioTxt ? `<span class="pr-badge ${prioCls}">${prioTxt}</span>` : '—';
+                // due date
+                let dueHtml = `<span class="pr-due-none">—</span>`;
+                if (task.data_vencimento) {
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const due = new Date(task.data_vencimento + 'T00:00:00');
+                    const diff = Math.round((due - today) / 86400000);
+                    const dueFmt = due.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'2-digit'});
+                    const dueCls = diff < 0 ? 'pr-due-over' : diff === 0 ? 'pr-due-today' : 'pr-due-ok';
+                    const duePrefix = diff < 0 ? '⚠ ' : diff === 0 ? '⏰ ' : '';
+                    dueHtml = `<span class="pr-badge ${dueCls}">${duePrefix}${dueFmt}</span>`;
+                }
+                // responsavel
+                const respHtml = task.responsavel
+                    ? `<span class="pr-resp">${esc(task.responsavel)}</span>`
+                    : `<span class="pr-no-val">—</span>`;
+
+                return `<tr>
+                    <td class="pr-td-prio"><span class="pr-prio-stripe ${stripeClass}">&nbsp;</span></td>
+                    <td class="pr-td-seq">${idx + 1}</td>
+                    <td class="pr-td-check"><span class="${chkClass}"></span></td>
+                    <td class="pr-td-title">
+                        <p class="pr-task-title${isD ? ' pr-task-done-title' : ''}">${esc(task.title)}</p>
+                        ${descHtml}
+                    </td>
+                    <td style="white-space:nowrap">${catHtml}</td>
+                    <td style="white-space:nowrap">${prioHtml}</td>
+                    <td style="white-space:nowrap">${dueHtml}</td>
+                    <td>${respHtml}</td>
+                </tr>`;
+            }
+
+            // ── section builder ──────────────────────────────────────────────────
+            const groups = [
+                { key: 'todo',  label: '📋 A FAZER',   cls: 'pr-sect-todo' },
+                { key: 'done',  label: '✅ CONCLUÍDO', cls: 'pr-sect-done' }
+            ];
+            let sectionsHtml = '';
+            groups.forEach(g => {
+                const grouped = visibleTasks
+                    .filter(t => t.status === g.key || (g.key === 'todo' && t.status === 'in-progress'))
+                    .sort((a, b) => prioOrder[b.priority] - prioOrder[a.priority]);
+                if (!grouped.length) return;
+                sectionsHtml += `
+                <div class="pr-section">
+                    <div class="pr-section-title ${g.cls}">${g.label}
+                        <span style="font-weight:400;font-size:8pt;opacity:.85">(${grouped.length} tarefa${grouped.length > 1 ? 's' : ''})</span>
+                    </div>
+                    <table class="pr-table">
+                        <thead><tr>
+                            <th class="pr-td-prio" style="width:5px"></th>
+                            <th class="pr-td-seq">#</th>
+                            <th class="pr-td-check"></th>
+                            <th>Tarefa</th>
+                            <th>Categoria</th>
+                            <th>Prioridade</th>
+                            <th>Vencimento</th>
+                            <th>Responsável</th>
+                        </tr></thead>
+                        <tbody>${grouped.map((t, i) => taskRow(t, i)).join('')}</tbody>
+                    </table>
+                </div>`;
+            });
+
+            const todo = visibleTasks.filter(t => t.status !== 'done').length;
+            const done = visibleTasks.filter(t => t.status === 'done').length;
+            const total = visibleTasks.length;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+            area.innerHTML = `
+            <!-- CABEÇALHO OFICIAL -->
+            <div class="pr-letterhead">
+                <div class="pr-lh-seal">🏛</div>
+                <div class="pr-lh-center">
+                    <p class="pr-lh-gov">Estado de Pernambuco — Agreste Meridional</p>
+                    <p class="pr-lh-name">Prefeitura Municipal de Inajá</p>
+                    <p class="pr-lh-sec">Sistema de Empenhos Mensais</p>
+                </div>
+                <div class="pr-lh-right">
+                    <strong>${dateShort}</strong><br>
+                    ${weekday}<br>
+                    às ${timeStr}
+                </div>
+            </div>
+
+            <!-- TÍTULO DO DOCUMENTO -->
+            <div class="pr-doc-title">
+                <h2>📋 Relatório de Tarefas — Kanban${filterLabel}</h2>
+                <p>Emitido em ${dateStr} às ${timeStr} &nbsp;·&nbsp; Conclusão: ${pct}% (${done}/${total})</p>
+            </div>
+
+            <!-- RESUMO -->
+            <div class="pr-summary">
+                <div class="pr-summary-item">
+                    <div class="pr-summary-num pr-summary-total">${total}</div>
+                    <div class="pr-summary-lbl">Total</div>
+                </div>
+                <div class="pr-summary-item">
+                    <div class="pr-summary-num pr-summary-todo">${todo}</div>
+                    <div class="pr-summary-lbl">A Fazer</div>
+                </div>
+                <div class="pr-summary-item">
+                    <div class="pr-summary-num pr-summary-done">${done}</div>
+                    <div class="pr-summary-lbl">Concluídas</div>
+                </div>
+                <div class="pr-summary-item">
+                    <div class="pr-summary-num" style="color:#7c3aed">${pct}%</div>
+                    <div class="pr-summary-lbl">Progresso</div>
+                </div>
+            </div>
+
+            ${sectionsHtml || '<p style="color:#888;font-size:9pt;text-align:center;padding:20px 0">Nenhuma tarefa encontrada.</p>'}
+
+            <!-- ASSINATURAS -->
+            <div class="pr-signatures">
+                <div class="pr-sig-box">
+                    <div class="pr-sig-line"></div>
+                    <div class="pr-sig-label">Elaborado por</div>
+                    <div class="pr-sig-role">Servidor Responsável</div>
+                </div>
+                <div class="pr-sig-box">
+                    <div class="pr-sig-line"></div>
+                    <div class="pr-sig-label">Conferido por</div>
+                    <div class="pr-sig-role">Chefe de Setor</div>
+                </div>
+                <div class="pr-sig-box">
+                    <div class="pr-sig-line"></div>
+                    <div class="pr-sig-label">Autorizado por</div>
+                    <div class="pr-sig-role">Secretário / Gestor</div>
+                </div>
+            </div>
+
+            <!-- RODAPÉ -->
+            <div class="pr-footer">
+                <span>Sistema de Empenhos Mensais – Prefeitura de Inajá/PE</span>
+                <span>Documento gerado automaticamente em ${dateStr} às ${timeStr}</span>
+            </div>`;
+
+            window.print();
         }
 
     </script>

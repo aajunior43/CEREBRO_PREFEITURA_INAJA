@@ -1468,6 +1468,7 @@ body {
 /* Botões de ação pequenos */
 .btn-expand,
 .btn-edit,
+.btn-duplicate,
 .btn-print {
   width: 36px;
   height: 36px;
@@ -1489,12 +1490,14 @@ body {
 
 .btn-expand > *,
 .btn-edit > *,
+.btn-duplicate > *,
 .btn-print > * {
   pointer-events: none;
 }
 
 .btn-expand:focus,
 .btn-edit:focus,
+.btn-duplicate:focus,
 .btn-print:focus {
   outline: 2px solid var(--blue);
   outline-offset: 2px;
@@ -1505,7 +1508,8 @@ body {
   color: var(--text-2);
 }
 
-.btn-edit:hover {
+.btn-edit:hover,
+.btn-duplicate:hover {
   border-color: var(--blue);
   color: var(--blue);
 }
