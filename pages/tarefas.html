@@ -2512,8 +2512,7 @@
 
             // ── section builder ──────────────────────────────────────────────────
             const groups = [
-                { key: 'todo',  label: '📋 A FAZER',   cls: 'pr-sect-todo' },
-                { key: 'done',  label: '✅ CONCLUÍDO', cls: 'pr-sect-done' }
+                { key: 'todo',  label: '📋 A FAZER',   cls: 'pr-sect-todo' }
             ];
             let sectionsHtml = '';
             groups.forEach(g => {
@@ -2565,23 +2564,23 @@
 
             <!-- TÍTULO DO DOCUMENTO -->
             <div class="pr-doc-title">
-                <h2>📋 Relatório de Tarefas — Kanban${filterLabel}</h2>
-                <p>Emitido em ${dateStr} às ${timeStr} &nbsp;·&nbsp; Conclusão: ${pct}% (${done}/${total})</p>
+                <h2>📋 Tarefas a Fazer${filterLabel}</h2>
+                <p>Emitido em ${dateStr} às ${timeStr} &nbsp;·&nbsp; ${todo} tarefa${todo !== 1 ? 's' : ''} pendente${todo !== 1 ? 's' : ''}</p>
             </div>
 
             <!-- RESUMO -->
             <div class="pr-summary">
-                <div class="pr-summary-item">
-                    <div class="pr-summary-num pr-summary-total">${total}</div>
-                    <div class="pr-summary-lbl">Total</div>
-                </div>
                 <div class="pr-summary-item">
                     <div class="pr-summary-num pr-summary-todo">${todo}</div>
                     <div class="pr-summary-lbl">A Fazer</div>
                 </div>
                 <div class="pr-summary-item">
                     <div class="pr-summary-num pr-summary-done">${done}</div>
-                    <div class="pr-summary-lbl">Concluídas</div>
+                    <div class="pr-summary-lbl">Já Concluídas</div>
+                </div>
+                <div class="pr-summary-item">
+                    <div class="pr-summary-num pr-summary-total">${total}</div>
+                    <div class="pr-summary-lbl">Total Geral</div>
                 </div>
                 <div class="pr-summary-item">
                     <div class="pr-summary-num" style="color:#7c3aed">${pct}%</div>
@@ -2589,26 +2588,7 @@
                 </div>
             </div>
 
-            ${sectionsHtml || '<p style="color:#888;font-size:9pt;text-align:center;padding:20px 0">Nenhuma tarefa encontrada.</p>'}
-
-            <!-- ASSINATURAS -->
-            <div class="pr-signatures">
-                <div class="pr-sig-box">
-                    <div class="pr-sig-line"></div>
-                    <div class="pr-sig-label">Elaborado por</div>
-                    <div class="pr-sig-role">Servidor Responsável</div>
-                </div>
-                <div class="pr-sig-box">
-                    <div class="pr-sig-line"></div>
-                    <div class="pr-sig-label">Conferido por</div>
-                    <div class="pr-sig-role">Chefe de Setor</div>
-                </div>
-                <div class="pr-sig-box">
-                    <div class="pr-sig-line"></div>
-                    <div class="pr-sig-label">Autorizado por</div>
-                    <div class="pr-sig-role">Secretário / Gestor</div>
-                </div>
-            </div>
+            ${sectionsHtml || '<p style="color:#888;font-size:9pt;text-align:center;padding:20px 0">Nenhuma tarefa a fazer encontrada.</p>'}
 
             <!-- RODAPÉ -->
             <div class="pr-footer">
