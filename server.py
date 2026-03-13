@@ -2722,6 +2722,161 @@ def despesas_resumo(imp_id):
     })
 
 # ────────────────────────────────────────────────────────────
+# API – Dotações Orçamentárias · IA (OpenRouter)
+# ────────────────────────────────────────────────────────────
+
+@app.route('/api/despesas/ia', methods=['POST'])
+def despesas_ia():
+    """Assistente de IA para análise de dotações orçamentárias."""
+    data = request.get_json(silent=True) or {}
+    action   = (data.get('action') or '').strip()
+    contexto = data.get('contexto') or {}
+    pergunta = (data.get('pergunta') or '').strip()
+
+    conn = get_db()
+    api_key, model = _get_openrouter_config(conn)
+    if not api_key:
+        return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM → Configurações → Chaves de API.'}), 400
+
+    today = __import__('datetime').date.today().strftime('%d/%m/%Y')
+
+    def _fmt_brl(v):
+        try:
+            return f"R$ {float(v):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        except Exception:
+            return str(v)
+
+    def _build_ctx_text(ctx):
+        lines = [
+            '=== DADOS DE DOTAÇÕES ORÇAMENTÁRIAS ===',
+            f'Prefeitura Municipal de Inajá – PE',
+            f'Período: {ctx.get("periodo", "?")} | Total de dotações: {ctx.get("total_rows", "?")}',
+        ]
+        totais = ctx.get('totais') or {}
+        if totais:
+            lines.append('\nTotais Financeiros:')
+            for k, v in totais.items():
+                lines.append(f'  {k}: {_fmt_brl(v)}')
+        sec = ctx.get('por_secretaria') or {}
+        if sec:
+            lines.append('\nSaldo por Secretaria/Órgão (top 12):')
+            for k, v in list(sec.items())[:12]:
+                lines.append(f'  {k}: {_fmt_brl(v)}')
+        nat = ctx.get('por_natureza') or {}
+        if nat:
+            lines.append('\nDistribuição por Natureza de Despesa (top 10):')
+            for k, v in list(nat.items())[:10]:
+                lines.append(f'  {k}: {v} dotações')
+        func = ctx.get('por_funcao') or {}
+        if func:
+            lines.append('\nDistribuição por Função (top 8):')
+            for k, v in list(func.items())[:8]:
+                lines.append(f'  {k}: {v} dotações')
+        criticos = ctx.get('criticos') or []
+        if criticos:
+            limite = ctx.get('limite_critico', 1000)
+            lines.append(f'\nDotações com saldo crítico (abaixo de {_fmt_brl(limite)}): {len(criticos)}')
+            for it in criticos[:8]:
+                lines.append(f'  Nº {it.get("num","?")} – {it.get("desc","?")} → Saldo: {it.get("saldo","?")}')
+        return '\n'.join(lines)
+
+    system_prompts = {
+        'analisar': (
+            f'Você é um analista financeiro especializado em orçamento público municipal. Hoje é {today}. '
+            'Com base nos dados de dotações orçamentárias da Prefeitura Municipal de Inajá/PE, '
+            'faça uma análise completa e objetiva. Estruture sua resposta com: '
+            '1) **Resumo Executivo** (2-3 frases objetivas), '
+            '2) **Pontos de Atenção** (dotações críticas, riscos, alertas), '
+            '3) **Destaques por Secretaria** (maiores e menores saldos), '
+            '4) **Recomendações Práticas** (3-5 ações concretas e viáveis). '
+            'Use linguagem formal adequada à gestão pública. Escreva em português do Brasil.'
+        ),
+        'chat': (
+            f'Você é um assistente especializado em orçamento público da Prefeitura Municipal de Inajá/PE. Hoje é {today}. '
+            'Responda perguntas sobre os dados de dotações orçamentárias fornecidos de forma objetiva e precisa. '
+            'Use os dados concretos disponíveis. Se a informação não estiver nos dados, diga claramente. '
+            'Escreva em português do Brasil.'
+        ),
+        'anomalias': (
+            f'Você é um auditor de contas públicas municipais. Hoje é {today}. '
+            'Analise os dados de dotações orçamentárias e identifique anomalias, inconsistências ou situações que merecem investigação. '
+            'Para cada anomalia identificada, informe: **o que é**, **por que é suspeito** e **o que verificar**. '
+            'Seja específico com nomes de secretarias e valores quando possível. '
+            'Numere cada anomalia. Se não houver anomalias evidentes, diga que os dados parecem regulares. '
+            'Escreva em português do Brasil.'
+        ),
+        'relatorio': (
+            f'Você é um assessor técnico de finanças públicas. Hoje é {today}. '
+            'Gere um relatório formal de execução orçamentária para a Prefeitura Municipal de Inajá/PE. '
+            'Estruture o relatório com: '
+            '1) Identificação (período, município, secretaria responsável), '
+            '2) Síntese da Execução Orçamentária (totais, percentuais), '
+            '3) Análise por Secretaria/Órgão, '
+            '4) Dotações em Situação Crítica, '
+            '5) Considerações Finais e Recomendações. '
+            'Use linguagem formal de prestação de contas. Escreva em português do Brasil.'
+        ),
+        'remanejamento': (
+            f'Você é um especialista em gestão orçamentária municipal. Hoje é {today}. '
+            'Com base nos saldos disponíveis, sugira remanejamentos orçamentários estratégicos. '
+            'Para cada sugestão indique: '
+            '**Dotação de origem** (com saldo excedente), '
+            '**Dotação de destino** (com saldo insuficiente ou necessidade identificada), '
+            '**Valor sugerido para remanejamento** (estimado), '
+            '**Justificativa técnica**. '
+            'Priorize pessoal, saúde e serviços essenciais. '
+            'Apresente como lista numerada com no máximo 6 sugestões. '
+            'Escreva em português do Brasil.'
+        ),
+    }
+
+    if action not in system_prompts:
+        return jsonify({'error': f'Ação "{action}" não reconhecida. Use: analisar, chat, anomalias, relatorio, remanejamento.'}), 400
+
+    ctx_text = _build_ctx_text(contexto)
+    user_content = ctx_text
+    if pergunta:
+        user_content += f'\n\nPergunta: {pergunta}'
+
+    messages = [
+        {'role': 'system', 'content': system_prompts[action]},
+        {'role': 'user',   'content': user_content},
+    ]
+
+    for tentativa in range(2):
+        try:
+            payload = chat_completion(
+                api_key=api_key,
+                model=model,
+                messages=messages,
+                max_tokens=1800,
+                temperature=0.5,
+                referer=settings.openrouter_referer,
+                title=settings.openrouter_title,
+            )
+            text = _extract_openrouter_text(payload)
+            return jsonify({'resultado': text, 'action': action})
+        except urllib.error.HTTPError as err:
+            if err.code == 429 and tentativa == 0:
+                detail = parse_http_error(err)
+                try:
+                    wait_s = min(int(float(detail.get('_retry_after') or '15')), 30)
+                except (ValueError, TypeError):
+                    wait_s = 15
+                _time.sleep(wait_s)
+                continue
+            detail = parse_http_error(err)
+            msg = (detail.get('error') or {})
+            if isinstance(msg, dict):
+                msg = msg.get('message', '')
+            return jsonify({'error': msg or f'Erro HTTP {err.code}'}), err.code or 502
+        except Exception as err:
+            app.logger.error('despesas_ia error (action=%s, tentativa=%d): %s', action, tentativa, err)
+            return jsonify({'error': str(err)}), 500
+    return jsonify({'error': 'Erro inesperado ao consultar a IA'}), 500
+
+
+# ────────────────────────────────────────────────────────────
 # API – Empenhos CSV (Visualizador de Empenhos → BD)
 # ────────────────────────────────────────────────────────────
 

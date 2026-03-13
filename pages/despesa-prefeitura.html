@@ -61,6 +61,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Comparar Períodos
       </button>
+      <button id="btn-ia-dotacoes" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.5);color:#a78bfa;" data-tooltip="Assistente de IA para análise de dotações orçamentárias">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        ✨ IA
+      </button>
     </div>
   </header>
 
@@ -101,6 +105,36 @@
         </button>
       </div>
       <div id="comp-resultado" style="overflow-x:auto;"></div>
+    </div>
+  </div>
+
+  <!-- ✨ PAINEL DE IA ─────────────────────────────────────── -->
+  <div id="ia-painel" style="display:none;border-bottom:1px solid rgba(124,58,237,0.3);background:rgba(13,10,25,0.97);padding:20px 28px 24px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;color:#a78bfa;margin-right:4px;">✨ IA Orçamentária</span>
+      <button class="ia-tab active" data-action="analisar">📊 Analisar</button>
+      <button class="ia-tab" data-action="chat">💬 Chat</button>
+      <button class="ia-tab" data-action="anomalias">🔍 Anomalias</button>
+      <button class="ia-tab" data-action="relatorio">📄 Relatório</button>
+      <button class="ia-tab" data-action="remanejamento">🔀 Remanejamento</button>
+      <button id="ia-fechar" style="margin-left:auto;background:transparent;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;" title="Fechar">×</button>
+    </div>
+    <div id="ia-desc" style="font-size:11px;color:var(--muted);margin-bottom:12px;min-height:16px;"></div>
+    <div id="ia-chat-input-wrap" style="display:none;margin-bottom:12px;gap:8px;">
+      <input id="ia-chat-pergunta" type="text" placeholder="Ex: Qual secretaria tem maior saldo?" style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(124,58,237,0.4);border-radius:8px;color:var(--ink);font-size:13px;outline:none;" />
+      <button id="ia-chat-send" class="ghost" style="background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.5);color:#a78bfa;white-space:nowrap;">Enviar →</button>
+    </div>
+    <div id="ia-exec-wrap" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+      <button id="ia-exec-btn" class="ghost" style="background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.5);color:#a78bfa;font-size:13px;font-weight:700;">▶ Executar</button>
+      <span id="ia-sem-dados" style="display:none;font-size:12px;color:#f87171;">⚠ Carregue um período antes de usar a IA.</span>
+    </div>
+    <div id="ia-resultado-wrap" style="display:none;">
+      <div id="ia-loading" style="display:none;padding:20px 0;color:#a78bfa;font-size:13px;">⟳ Consultando IA, aguarde…</div>
+      <div id="ia-resultado" style="background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.25);border-radius:10px;padding:18px 20px;font-size:13px;line-height:1.75;color:var(--ink);white-space:pre-wrap;max-height:440px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button id="ia-copy-btn" class="ghost" style="font-size:11px;padding:4px 10px;">📋 Copiar</button>
+        <button id="ia-nova-btn" class="ghost" style="font-size:11px;padding:4px 10px;color:#a78bfa;border-color:rgba(124,58,237,0.4);">✨ Nova consulta</button>
+      </div>
     </div>
   </div>
 
@@ -737,7 +771,202 @@
     tr.saldo-critico td { background: rgba(251,146,60,0.10) !important; }
     tr.saldo-critico:hover td { background: rgba(251,146,60,0.18) !important; }
     tr.saldo-critico td:last-child { color: #f97316 !important; font-weight: 700; }
+
+    /* ── IA Painel ── */
+    .ia-tab {
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(124,58,237,0.25);
+      color: #c4b5fd;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .ia-tab:hover { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.6); }
+    .ia-tab.active { background: rgba(124,58,237,0.35); border-color: #a78bfa; color: #fff; }
+    #ia-chat-input-wrap { display: flex !important; }
+    #ia-resultado strong, #ia-resultado b { color: #c4b5fd; }
+    #ia-resultado h1, #ia-resultado h2, #ia-resultado h3 { color: #a78bfa; margin: 8px 0 4px; font-size: 13px; }
+    @keyframes ia-spin { to { transform: rotate(360deg); } }
+    #ia-loading { animation: ia-fade 1s ease infinite alternate; }
+    @keyframes ia-fade { from { opacity:.5 } to { opacity:1 } }
   </style>
+
+  <script>
+  // ── IA Dotações Orçamentárias ─────────────────────────────
+  (function () {
+    const btnAbrir  = document.getElementById('btn-ia-dotacoes');
+    const painel    = document.getElementById('ia-painel');
+    const btnFechar = document.getElementById('ia-fechar');
+    const tabs      = document.querySelectorAll('.ia-tab');
+    const descEl    = document.getElementById('ia-desc');
+    const chatWrap  = document.getElementById('ia-chat-input-wrap');
+    const execWrap  = document.getElementById('ia-exec-wrap');
+    const execBtn   = document.getElementById('ia-exec-btn');
+    const semDados  = document.getElementById('ia-sem-dados');
+    const resWrap   = document.getElementById('ia-resultado-wrap');
+    const loading   = document.getElementById('ia-loading');
+    const resEl     = document.getElementById('ia-resultado');
+    const copyBtn   = document.getElementById('ia-copy-btn');
+    const novaBtn   = document.getElementById('ia-nova-btn');
+    const chatInput = document.getElementById('ia-chat-pergunta');
+    const chatSend  = document.getElementById('ia-chat-send');
+
+    let activeAction = 'analisar';
+
+    const descs = {
+      analisar:     'Análise completa do período: pontos de atenção, destaques por secretaria e recomendações práticas.',
+      chat:         'Faça perguntas em linguagem natural sobre os dados carregados.',
+      anomalias:    'A IA identifica inconsistências, valores suspeitos e situações que merecem investigação.',
+      relatorio:    'Gera um relatório formal de execução orçamentária pronto para arquivamento ou prestação de contas.',
+      remanejamento:'Sugestões de remanejamento orçamentário baseadas nos saldos disponíveis.',
+    };
+
+    function hasData() {
+      return window.App && window.App.state && window.App.state.rows && window.App.state.rows.length > 0;
+    }
+
+    function buildContext() {
+      const st = window.App.state;
+      const rows = st.rows || [];
+      const cols = st.columns || (rows.length ? Object.keys(rows[0]) : []);
+
+      const saldoCol  = cols.find(c => c.toLowerCase().includes('saldo'));
+      const secCol    = cols.find(c => c.toLowerCase().includes('organograma'));
+      const natCol    = cols.find(c => c.toLowerCase().includes('natureza') && !c.toLowerCase().includes('descri'));
+      const funcCol   = cols.find(c => /fun[çc][ãa]o/.test(c.toLowerCase()));
+      const numCol    = cols.find(c => /n[úu]mero/.test(c.toLowerCase()) && /despesa/.test(c.toLowerCase()));
+      const descNatCol= cols.find(c => c.toLowerCase().includes('natureza') && c.toLowerCase().includes('descri'));
+
+      function pv(v) {
+        if (!v) return 0;
+        return parseFloat(String(v).replace(/\./g,'').replace(',','.')) || 0;
+      }
+
+      const valCols = cols.filter(c => ['saldo','valor','empenhado','liquidado','pago'].some(k => c.toLowerCase().includes(k)));
+      const totais = {};
+      valCols.forEach(c => { totais[c] = rows.reduce((s, r) => s + pv(r[c]), 0); });
+
+      const porSec = {};
+      if (secCol && saldoCol) {
+        rows.forEach(r => {
+          const k = r[secCol] || '(Sem secretaria)';
+          porSec[k] = (porSec[k] || 0) + pv(r[saldoCol]);
+        });
+      }
+      const porSecTop = Object.fromEntries(Object.entries(porSec).sort((a,b) => b[1]-a[1]).slice(0,12));
+
+      const porNat = {};
+      if (natCol) rows.forEach(r => { const k = r[natCol]||'?'; porNat[k] = (porNat[k]||0)+1; });
+      const porNatTop = Object.fromEntries(Object.entries(porNat).sort((a,b)=>b[1]-a[1]).slice(0,10));
+
+      const porFunc = {};
+      if (funcCol) rows.forEach(r => { const k = r[funcCol]||'?'; porFunc[k] = (porFunc[k]||0)+1; });
+      const porFuncTop = Object.fromEntries(Object.entries(porFunc).sort((a,b)=>b[1]-a[1]).slice(0,8));
+
+      const limite = st.saldoCriticoThreshold || 1000;
+      const criticos = saldoCol ? rows
+        .filter(r => pv(r[saldoCol]) < limite && pv(r[saldoCol]) >= 0)
+        .sort((a,b) => pv(a[saldoCol]) - pv(b[saldoCol]))
+        .slice(0,10)
+        .map(r => ({
+          num:   r[numCol] || '?',
+          desc:  r[descNatCol] || r[natCol] || '?',
+          saldo: r[saldoCol] || '0',
+        })) : [];
+
+      const periodoLabel = (document.getElementById('periodo-ativo') || {}).textContent || 'Período atual';
+
+      return {
+        periodo:       periodoLabel.replace('📂','').trim(),
+        total_rows:    rows.length,
+        totais,
+        por_secretaria: porSecTop,
+        por_natureza:   porNatTop,
+        por_funcao:     porFuncTop,
+        criticos,
+        limite_critico: limite,
+      };
+    }
+
+    function setTab(action) {
+      activeAction = action;
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.action === action));
+      descEl.textContent = descs[action] || '';
+      const isChat = action === 'chat';
+      chatWrap.style.display = isChat ? 'flex' : 'none';
+      execWrap.style.display = isChat ? 'none' : 'flex';
+      resWrap.style.display  = 'none';
+    }
+
+    async function callIA(pergunta) {
+      if (!hasData()) { semDados.style.display = 'inline'; return; }
+      semDados.style.display = 'none';
+      resWrap.style.display  = 'block';
+      loading.style.display  = 'block';
+      resEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/despesas/ia', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action:   activeAction,
+            contexto: buildContext(),
+            pergunta: pergunta || '',
+          }),
+        });
+        const json = await res.json();
+        loading.style.display = 'none';
+        if (json.error) {
+          resEl.textContent = '❌ ' + json.error;
+        } else {
+          // Render markdown-like bold
+          resEl.innerHTML = (json.resultado || '')
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+            .replace(/^### (.+)$/gm,'<strong style="color:#a78bfa;font-size:13px">$1</strong>')
+            .replace(/^## (.+)$/gm,'<strong style="color:#c4b5fd;font-size:14px">$1</strong>')
+            .replace(/^# (.+)$/gm,'<strong style="color:#e9d5ff;font-size:15px">$1</strong>');
+        }
+      } catch (e) {
+        loading.style.display = 'none';
+        resEl.textContent = '❌ Erro de comunicação: ' + e.message;
+      }
+    }
+
+    // ── Events ──────────────────────────────────────────────
+    btnAbrir.addEventListener('click', () => {
+      const open = painel.style.display === 'block';
+      painel.style.display = open ? 'none' : 'block';
+      if (!open) setTab(activeAction);
+    });
+    btnFechar.addEventListener('click', () => { painel.style.display = 'none'; });
+
+    tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.action)));
+
+    execBtn.addEventListener('click', () => callIA(''));
+    chatSend.addEventListener('click', () => {
+      const q = chatInput.value.trim();
+      if (!q) return;
+      callIA(q);
+      chatInput.value = '';
+    });
+    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') chatSend.click(); });
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(resEl.innerText || resEl.textContent || '');
+      copyBtn.textContent = '✓ Copiado!';
+      setTimeout(() => { copyBtn.textContent = '📋 Copiar'; }, 2000);
+    });
+    novaBtn.addEventListener('click', () => { resWrap.style.display = 'none'; });
+
+    // Inicial
+    setTab('analisar');
+  })();
+  </script>
 </body>
 
 </html>
