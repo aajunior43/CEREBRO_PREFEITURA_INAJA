@@ -8,19 +8,16 @@ __pycache__/
 dist/
 build/
 
-# Banco de dados (dados locais — não versionados)
-empenhos.db
+# Banco de dados auxiliares temporários
 empenhos.db-shm
 empenhos.db-wal
 
-# Logs
+# Logs temporários
 *.log
-logs/
 
-# Excel / dados importados
+# Excel temporário
 *.xlsx
 *.xls
-DADOS/
 
 # Pastas de trabalho / staging
 PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL/
@@ -38,5 +35,3 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Secrets / variáveis de ambiente
-.env

@@ -2680,15 +2680,20 @@ a:focus:not(:focus-visible) {
    HOME SCREEN — Tela Inicial de Módulos
    ============================================================ */
 #home-screen {
-  display: none;
+  display: block;
   padding: 26px 28px 48px;
   max-width: 1240px;
   margin: 0 auto;
-  animation: hs-fadein .3s ease;
 }
-@keyframes hs-fadein {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+
+body.home-page .stats-bar,
+body.home-page .dept-stats-row,
+body.home-page .progress-section,
+body.home-page .toolbar,
+body.home-page .main-content,
+body.home-page .adm-panel,
+body.home-page .footer {
+  display: none;
 }
 
 /* Hero */

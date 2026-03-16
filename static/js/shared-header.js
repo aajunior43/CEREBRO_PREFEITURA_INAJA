@@ -64,11 +64,12 @@
       { href: '/pages/documentos.html',      name: 'Centro de Documentos',   desc: 'Salvar e organizar arquivos' },
       { href: '/pages/rpa.html',             name: 'RPA',                    desc: 'Recibo de Pagamento Autônomo' },
       { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
-      { href: '/pages/gerador-empenho.html', name: 'Texto de Empenho',      desc: 'Gerar descrição de empenho com IA' },
+      { href: '/pages/assistente-empenho.html', name: 'Assistente de Empenho', desc: 'Gerar descrição de empenho com IA' },
       { href: '/pages/visualizador.html',    name: 'Rel. de Empenhos',       desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
       { href: '/pages/prazos.html',          name: 'Prazos',                 desc: 'Contratos e prazos críticos' },
       { href: '/pages/protocolo.html',       name: 'Protocolo',              desc: 'Ofícios, memorandos e documentos' },
+      { href: '/pages/autentique-assinatura.html', name: 'Assinatura Digital', desc: 'Enviar documento para assinatura' },
     ],
     financeiro: [
       { href: '/pages/extratos.html',             name: 'Extratos Bancários',      desc: 'Organizar arquivos de extrato' },

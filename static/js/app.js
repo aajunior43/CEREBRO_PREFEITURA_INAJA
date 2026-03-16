@@ -34,6 +34,8 @@ let _filterCacheKey = '';
 let _filterCacheResult = [];
 let _searchDebounceTimer = null;
 let _brasaoB64Promise = null;
+let _mainAppLoaded = false;
+let _mainAppLoadingPromise = null;
 
 function invalidateFilterCache() {
   _filterCacheKey = '';
@@ -201,6 +203,32 @@ async function autosaveGeneratedText(text, options) {
   } catch (err) {
     console.warn('Falha ao salvar documento gerado automaticamente:', err);
   }
+}
+
+async function ensureMainAppLoaded() {
+  if (_mainAppLoaded) return;
+  if (_mainAppLoadingPromise) return _mainAppLoadingPromise;
+  _mainAppLoadingPromise = (async () => {
+    setLoading(true);
+    try {
+      const [credoresResult, monthResult] = await Promise.all([
+        loadCredores(),
+        loadMonth(),
+      ]);
+      if (credoresResult && credoresResult.summary) {
+        state.summary = credoresResult.summary;
+      }
+      render();
+      if (monthResult && monthResult.ok === false) {
+        showToast(`Aviso: não foi possível carregar os empenhos de ${MESES[state.month]}/${state.year}.`, 'error');
+      }
+      _mainAppLoaded = true;
+    } finally {
+      setLoading(false);
+      _mainAppLoadingPromise = null;
+    }
+  })();
+  return _mainAppLoadingPromise;
 }
 
 function downloadGeneratedBlob(blob, fileName) {
@@ -1260,19 +1288,11 @@ function attachEvents() {
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
-  setLoading(true);
   try {
     attachEvents();
-    const [credoresResult, monthResult] = await Promise.all([
-      loadCredores(),
-      loadMonth(),
-    ]);
-    if (credoresResult && credoresResult.summary) {
-      state.summary = credoresResult.summary;
-    }
-    render();
-    if (monthResult && monthResult.ok === false) {
-      showToast(`Aviso: não foi possível carregar os empenhos de ${MESES[state.month]}/${state.year}.`, 'error');
+    const startsOnHome = document.body.classList.contains('home-page');
+    if (!startsOnHome) {
+      await ensureMainAppLoaded();
     }
   } catch (err) {
     console.error('Falha ao conectar com o servidor:', err);
@@ -1282,9 +1302,7 @@ async function init() {
             <p style="color:#94a3b8;">Inicie o servidor clicando duas vezes em <strong>iniciar.bat</strong></p>
           </div>`;
     document.getElementById('empty-state').style.display = 'none';
-  } finally {
-    setLoading(false);
-  }
+  } finally {}
 }
 
 // ── Theme Toggle ───────────────────────────────────────────────
@@ -1571,10 +1589,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelector(`.bottom-nav-item[data-tab="${tabName}"]`)?.classList.add('active');
   }
 
-  function handleTabClick(tabName, requiresAuth) {
+  async function handleTabClick(tabName, requiresAuth) {
     if (requiresAuth && !isAdmAuthenticated) {
       showPasswordModal();
       return;
+    }
+    if (tabName !== 'adm') {
+      await ensureMainAppLoaded();
     }
     setActiveTab(tabName);
     if (tabName === 'adm') {

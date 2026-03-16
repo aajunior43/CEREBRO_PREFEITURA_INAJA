@@ -114,7 +114,7 @@ def main():
     print("\n━━━ LEITURAS SEQUENCIAIS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     results.append(run_sequential("GET /api/credores",           30, lambda: do_request("GET", "/api/credores")))
     results.append(run_sequential("GET /api/empenhos/ano/mes",   30, lambda: do_request("GET", f"/api/empenhos/{year}/{month}")))
-    results.append(run_sequential("GET /api/logs",               30, lambda: do_request("GET", "/api/logs")))
+    results.append(run_sequential("GET /api/logs",               30, lambda: do_request("GET", "/api/logs?limit=50")))
     results.append(run_sequential("GET /api/rpas",               20, lambda: do_request("GET", "/api/rpas")))
     results.append(run_sequential("GET /api/kanban",             20, lambda: do_request("GET", "/api/kanban")))
     results.append(run_sequential("GET /api/fornecimento/dados", 20, lambda: do_request("GET", "/api/fornecimento/dados")))
