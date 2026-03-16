@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
 </head>
 
-<body class="home-page">
+<body class="home-page home-active">
 
   <header class="header">
     <div class="header-inner">
@@ -891,15 +891,15 @@
           </div>
 
           <p style="font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.5;">
-            A integração cria o documento na Autentique e monta o envio por WhatsApp com o link de assinatura.
+            A integração cria o documento na Autentique e envia por WhatsApp. Você pode cadastrar várias chaves, uma por linha, e o sistema revezará automaticamente entre elas.
           </p>
 
-          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chave API Autentique</label>
+          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chaves API Autentique</label>
           <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <input type="password" id="adm-autentique-key" placeholder="Bearer token da API v2"
-              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+            <textarea id="adm-autentique-key" placeholder="Uma chave por linha" data-hidden="true"
+              style="flex:1;min-height:110px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:vertical;-webkit-text-security:disc;"></textarea>
             <button onclick="admToggleAutentiqueKey()" title="Mostrar/ocultar"
-              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
+              style="align-self:flex-start;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:10px 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
               onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
           </div>
 
@@ -1247,7 +1247,9 @@
 
     function admToggleAutentiqueKey() {
       const inp = document.getElementById('adm-autentique-key');
-      inp.type = inp.type === 'password' ? 'text' : 'password';
+      const hidden = inp.dataset.hidden !== 'false';
+      inp.dataset.hidden = hidden ? 'false' : 'true';
+      inp.style.webkitTextSecurity = hidden ? 'none' : 'disc';
     }
     
     async function admSalvarCnpja() {
@@ -1291,6 +1293,7 @@
 
     async function admSalvarAutentique() {
       const k = document.getElementById('adm-autentique-key').value.trim();
+      const total = k ? k.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean).length : 0;
       try {
         await fetch('/api/config', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1298,13 +1301,14 @@
         });
       } catch (e) { console.warn('Falha ao salvar no banco:', e); }
       localStorage.setItem('api_autentique_key', k);
-      showToast('✅ Chave Autentique salva no banco!', 'success');
-      admAutentiqueStatus('✅ Salvo com sucesso', 'success');
+      showToast('✅ Chaves da Autentique salvas no banco!', 'success');
+      admAutentiqueStatus(`✅ ${total} chave(s) salvas. O sistema vai revezar automaticamente.`, 'success');
       admCarregarResumo();
     }
 
     async function admTestarAutentique() {
-      const k = document.getElementById('adm-autentique-key').value.trim();
+      const raw = document.getElementById('adm-autentique-key').value.trim();
+      const k = (raw.split(/\r?\n|,/).map(v => v.trim()).find(Boolean) || '');
       if (!k) { showToast('Preencha a chave da Autentique primeiro', 'error'); return; }
       const btn = document.getElementById('adm-btn-testar-autentique');
       btn.textContent = '⏳ Testando...';
@@ -1318,7 +1322,7 @@
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro');
-        admAutentiqueStatus(`✅ OK — ${data.usuario?.name || 'Conta autenticada'}`, 'success');
+        admAutentiqueStatus(`✅ OK — ${data.usuario?.name || 'Conta autenticada'} (teste na primeira chave)`, 'success');
         showToast('Autentique: conexão OK', 'success');
       } catch (e) {
         admAutentiqueStatus('❌ ' + e.message, 'error');
@@ -1467,6 +1471,7 @@
     function showHomeScreen() {
       const hs = document.getElementById('home-screen');
       if (!hs) return;
+      document.body.classList.add('home-active');
       hs.style.display = 'block';
       CONTENT_SELS.forEach(s => { const el = document.querySelector(s); if (el) el.style.display = 'none'; });
       const adm = document.getElementById('adm-panel');
@@ -1480,6 +1485,7 @@
     function hideHomeScreen() {
       const hs = document.getElementById('home-screen');
       if (!hs || hs.style.display === 'none') return;
+      document.body.classList.remove('home-active');
       hs.style.display = 'none';
       CONTENT_SELS.forEach(s => { const el = document.querySelector(s); if (el) el.style.display = ''; });
       document.querySelectorAll('.nav-home-btn').forEach(b => b.classList.remove('active'));

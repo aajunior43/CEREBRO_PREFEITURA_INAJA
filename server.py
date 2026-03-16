@@ -1413,7 +1413,8 @@ def admin_summary():
                 'openrouter_updated_at': cfg.get('api_openrouter_key', {}).get('atualizado_em') or cfg.get('api_openrouter_modelo', {}).get('atualizado_em'),
                 'cnpja_key_configured': bool(cfg.get('api_cnpja_key', {}).get('valor', '').strip()),
                 'cnpja_updated_at': cfg.get('api_cnpja_key', {}).get('atualizado_em'),
-                'autentique_key_configured': bool(cfg.get('api_autentique_key', {}).get('valor', '').strip()),
+                'autentique_key_configured': bool(_parse_autentique_keys(cfg.get('api_autentique_key', {}).get('valor', ''))),
+                'autentique_key_count': len(_parse_autentique_keys(cfg.get('api_autentique_key', {}).get('valor', ''))),
                 'autentique_updated_at': cfg.get('api_autentique_key', {}).get('atualizado_em'),
             },
             'recent_logs': [row_to_dict(row) for row in recent_logs],
@@ -1442,15 +1443,56 @@ def _get_openrouter_config(conn, api_key_override: str = '', model_override: str
     model = (model_override or '').strip() or cfg.get('api_openrouter_modelo', '') or env_model or settings.openrouter_default_model
     return api_key, model
 
+def _parse_autentique_keys(value: str) -> list[str]:
+    text = (value or '').replace('\r', '\n')
+    raw_items = []
+    for chunk in text.split('\n'):
+        raw_items.extend(part.strip() for part in chunk.split(','))
+    keys = [item for item in raw_items if item]
+    seen = set()
+    unique = []
+    for item in keys:
+        if item in seen:
+            continue
+        seen.add(item)
+        unique.append(item)
+    return unique
+
 def _get_autentique_config(conn, api_key_override: str = ''):
     rows = conn.execute(
-        "SELECT chave, valor FROM configuracoes WHERE chave IN (?)",
-        ('api_autentique_key',)
+        "SELECT chave, valor FROM configuracoes WHERE chave IN (?, ?)",
+        ('api_autentique_key', 'api_autentique_key_cursor')
     ).fetchall()
     cfg = {row['chave']: (row['valor'] or '').strip() for row in rows}
-    env_api_key = (os.environ.get('AUTENTIQUE_API_KEY') or '').strip()
-    api_key = (api_key_override or '').strip() or cfg.get('api_autentique_key', '') or env_api_key
-    return api_key
+    override_keys = _parse_autentique_keys(api_key_override)
+    if override_keys:
+        return override_keys[0]
+
+    configured_keys = _parse_autentique_keys(cfg.get('api_autentique_key', ''))
+    env_keys = _parse_autentique_keys(os.environ.get('AUTENTIQUE_API_KEY') or '')
+    keys = configured_keys or env_keys
+    if not keys:
+        return ''
+
+    if len(keys) == 1:
+        return keys[0]
+
+    try:
+        cursor = int(cfg.get('api_autentique_key_cursor', '0') or '0')
+    except ValueError:
+        cursor = 0
+    index = cursor % len(keys)
+    selected = keys[index]
+    try:
+        conn.execute(
+            "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?,?,datetime('now','localtime')) "
+            "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor, atualizado_em=excluded.atualizado_em",
+            ('api_autentique_key_cursor', str((index + 1) % len(keys)))
+        )
+        conn.commit()
+    except Exception:
+        pass
+    return selected
 
 def _normalize_phone_br(value: str) -> str:
     digits = re.sub(r'\D+', '', value or '')
@@ -2527,7 +2569,7 @@ def autentique_testar():
 def autentique_saldo():
     try:
         conn = get_db()
-        api_key = _get_autentique_config(conn)
+        api_key = _get_autentique_config(conn, api_key_override=(request.args.get('api_key') or '').strip())
         if not api_key:
             return jsonify({'error': 'Chave da Autentique não configurada. Acesse ADM -> Chaves de API.'}), 400
 
@@ -2568,6 +2610,30 @@ def autentique_saldo():
         app.logger.error('GET /api/autentique/saldo: %s', err)
         return jsonify({'error': str(err)}), 500
 
+@app.route('/api/autentique/chaves', methods=['GET'])
+def autentique_listar_chaves():
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT valor FROM configuracoes WHERE chave=?",
+            ('api_autentique_key',)
+        ).fetchall()
+        raw = rows[0]['valor'] if rows else ''
+        keys = _parse_autentique_keys(raw)
+        items = []
+        for idx, key in enumerate(keys):
+            masked = f'{key[:8]}...{key[-6:]}' if len(key) > 18 else key
+            items.append({
+                'id': idx + 1,
+                'label': f'Chave {idx + 1}',
+                'masked': masked,
+                'value': key,
+            })
+        return jsonify(items)
+    except Exception as err:
+        app.logger.error('GET /api/autentique/chaves: %s', err)
+        return jsonify({'error': str(err)}), 500
+
 @app.route('/api/autentique/enviar-whatsapp', methods=['POST'])
 def autentique_enviar_whatsapp():
     data = request.get_json(silent=True) or {}
@@ -2588,7 +2654,7 @@ def autentique_enviar_whatsapp():
 
     try:
         conn = get_db()
-        api_key = _get_autentique_config(conn)
+        api_key = _get_autentique_config(conn, api_key_override=(data.get('api_key') or '').strip())
         if not api_key:
             return jsonify({'error': 'Chave da Autentique não configurada. Acesse ADM -> Chaves de API.'}), 400
 

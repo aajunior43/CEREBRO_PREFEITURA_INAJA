@@ -2686,13 +2686,13 @@ a:focus:not(:focus-visible) {
   margin: 0 auto;
 }
 
-body.home-page .stats-bar,
-body.home-page .dept-stats-row,
-body.home-page .progress-section,
-body.home-page .toolbar,
-body.home-page .main-content,
-body.home-page .adm-panel,
-body.home-page .footer {
+body.home-page.home-active .stats-bar,
+body.home-page.home-active .dept-stats-row,
+body.home-page.home-active .progress-section,
+body.home-page.home-active .toolbar,
+body.home-page.home-active .main-content,
+body.home-page.home-active .adm-panel,
+body.home-page.home-active .footer {
   display: none;
 }
 

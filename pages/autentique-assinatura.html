@@ -26,6 +26,7 @@
     .aut-balance-k { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.08em; }
     .aut-balance-v { margin-top:6px; font-size:22px; font-weight:800; color:var(--text); }
     .aut-balance-user { margin-top:10px; font-size:12px; color:var(--text-3); line-height:1.6; }
+    .aut-key-select { margin-top:10px; }
     .aut-grid { display:grid; grid-template-columns:minmax(340px,.9fr) minmax(0,1.1fr); gap:18px; align-items:start; }
     .aut-panel-stack { display:grid; gap:18px; }
     .aut-card { padding:22px; }
@@ -125,6 +126,12 @@
       </div>
       <div class="aut-balance">
         <div class="aut-side-label">Saldo Autentique</div>
+        <div class="aut-key-select">
+          <label class="aut-label">Chave ativa nesta tela</label>
+          <select id="aut-key-select" class="aut-select">
+            <option value="">Automático</option>
+          </select>
+        </div>
         <div class="aut-balance-grid">
           <div class="aut-balance-card">
             <div class="aut-balance-k">Documents</div>
@@ -275,12 +282,14 @@
     const balanceDocsEl = document.getElementById('aut-balance-docs');
     const balanceCreditsEl = document.getElementById('aut-balance-credits');
     const balanceUserEl = document.getElementById('aut-balance-user');
+    const keySelectEl = document.getElementById('aut-key-select');
 
     let docsCache = [];
     let selectedDoc = null;
     let pendingFile = null;
     let searchTimer = null;
     let enviosTimer = null;
+    let autentiqueKeys = [];
 
     function esc(v) {
       return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -425,9 +434,33 @@
       return esc(v).replace(/'/g, '&#39;');
     }
 
+    function getSelectedAutentiqueKey() {
+      return keySelectEl.value || '';
+    }
+
+    function renderAutentiqueKeys(items) {
+      autentiqueKeys = Array.isArray(items) ? items : [];
+      keySelectEl.innerHTML = ['<option value="">Automático</option>'].concat(
+        autentiqueKeys.map(item => `<option value="${escAttr(item.value)}">${esc(item.label)} • ${esc(item.masked)}</option>`)
+      ).join('');
+    }
+
+    async function loadAutentiqueKeys(showErrors = false) {
+      try {
+        const res = await fetch('/api/autentique/chaves');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao carregar chaves da Autentique');
+        renderAutentiqueKeys(data);
+      } catch (err) {
+        renderAutentiqueKeys([]);
+        if (showErrors) setStatus(err.message || 'Erro ao carregar chaves da Autentique.', false);
+      }
+    }
+
     async function loadBalance(showErrors = false) {
       try {
-        const res = await fetch('/api/autentique/saldo');
+        const query = getSelectedAutentiqueKey() ? `?api_key=${encodeURIComponent(getSelectedAutentiqueKey())}` : '';
+        const res = await fetch(`/api/autentique/saldo${query}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro ao carregar saldo da Autentique');
         balanceDocsEl.textContent = data.subscription?.documents ?? '-';
@@ -587,6 +620,7 @@
         documento_id: selectedDoc.id,
         signer_name: signerNameEl.value.trim(),
         signer_phone: phoneInput.value.trim(),
+        api_key: getSelectedAutentiqueKey(),
       };
 
       const btn = document.getElementById('aut-send-btn');
@@ -627,7 +661,7 @@
         const res = await fetch('/api/autentique/testar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
+          body: JSON.stringify({ api_key: getSelectedAutentiqueKey() })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro ao testar Autentique');
@@ -658,6 +692,7 @@
     document.getElementById('aut-test-btn').addEventListener('click', testAutentique);
     document.getElementById('aut-refresh-envios').addEventListener('click', () => loadEnvios(true));
     document.getElementById('aut-refresh-balance').addEventListener('click', () => loadBalance(true));
+    keySelectEl.addEventListener('change', () => loadBalance(true));
     signerPhoneEl.addEventListener('input', e => {
       const formatted = formatPhoneBR(e.target.value);
       if (formatted) e.target.value = formatted;
@@ -719,6 +754,7 @@
     });
 
     webhookUrlEl.textContent = `${window.location.origin}/api/autentique/webhook`;
+    loadAutentiqueKeys();
     loadBalance();
     loadContacts();
     loadDocs().catch(err => setStatus(err.message || 'Erro ao carregar documentos.', false));
