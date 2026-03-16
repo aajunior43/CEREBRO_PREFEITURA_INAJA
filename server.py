@@ -150,8 +150,14 @@ _SKIP_EXTS = {'.db', '.db-shm', '.db-wal', '.pyc', '.pyo', '.log', '.bat'}
 _SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer', 'documentos_centro',
               'PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL'}
 
+def _static_cache_enabled() -> bool:
+    return not settings.debug
+
 def _preload_static_files():
     """Lê todos os arquivos estáticos para RAM no startup (+ versões gzip/brotli + ETags)."""
+    if not _static_cache_enabled():
+        _terminal_log('CACHE', 'Modo debug ativo: cache de arquivos estaticos em RAM desabilitado.', 'yellow')
+        return
     count, total_kb = 0, 0
     started_at = _time.perf_counter()
     _terminal_log('BOOT', 'Pré-carregando arquivos estáticos em RAM...', 'cyan')
@@ -805,6 +811,8 @@ def _persist_document_file(original_name: str, content: bytes, categoria: str = 
 
 def _serve_cached(url, cache_control):
     """Serve arquivo do cache com brotli/gzip + ETag (304 quando possível)."""
+    if not _static_cache_enabled():
+        return None
     entry = _file_cache.get(url)
     if not entry:
         return None
@@ -1652,6 +1660,150 @@ def proxy_ia_chat():
     except Exception as e:
         app.logger.error('POST /api/ia/chat: %s', e)
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/empenho-assistente', methods=['POST'])
+def empenho_assistente():
+    import urllib.error
+
+    data = request.get_json(silent=True) or {}
+    action = (data.get('action') or '').strip()
+    payload = data.get('payload') or {}
+
+    conn = get_db()
+    api_key, model = _get_openrouter_config(conn)
+    if not api_key:
+        return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API.'}), 400
+
+    today = __import__('datetime').date.today().strftime('%d/%m/%Y')
+
+    def _clean(value):
+        return (value or '').strip()
+
+    def _ctx_lines(info: dict) -> list[str]:
+        lines = [
+            '=== CONTEXTO DO EMPENHO ===',
+            f"Secretaria/Setor: {_clean(info.get('secretaria')) or 'Nao informado'}",
+            f"Fornecedor/Credor: {_clean(info.get('fornecedor')) or 'Nao informado'}",
+            f"Tipo da despesa: {_clean(info.get('tipo_despesa')) or 'Nao informado'}",
+            f"Finalidade/necessidade: {_clean(info.get('finalidade')) or 'Nao informado'}",
+            f"Valor: {_clean(info.get('valor')) or 'Nao informado'}",
+            f"Competencia/periodo: {_clean(info.get('competencia')) or 'Nao informado'}",
+            f"Processo: {_clean(info.get('processo')) or 'Nao informado'}",
+            f"Pregao/lictacao: {_clean(info.get('pregao')) or 'Nao informado'}",
+            f"Contrato: {_clean(info.get('contrato')) or 'Nao informado'}",
+            f"Nota fiscal/OS/referencia: {_clean(info.get('nota_fiscal')) or 'Nao informado'}",
+        ]
+        if _clean(info.get('texto_base')):
+            lines.append('\n=== TEXTO BASE / DOCUMENTO COLADO ===')
+            lines.append(_clean(info.get('texto_base')))
+        if _clean(info.get('descricao_atual')):
+            lines.append('\n=== DESCRICAO ATUAL ===')
+            lines.append(_clean(info.get('descricao_atual')))
+        return lines
+
+    system_prompts = {
+        'extract_fields': (
+            f'Voce e um assistente de empenho da Prefeitura Municipal de Inaja/PE. Hoje e {today}. '
+            'Leia o contexto e extraia os campos mais provaveis do documento. '
+            'Responda APENAS com JSON valido contendo as chaves: '
+            '"secretaria", "fornecedor", "tipo_despesa", "finalidade", "valor", "competencia", '
+            '"processo", "pregao", "contrato", "nota_fiscal", "observacoes", "pendencias". '
+            '"pendencias" deve ser um array de strings objetivas. '
+            'Se algum dado nao existir, retorne string vazia. Nao inclua texto fora do JSON.'
+        ),
+        'generate_description': (
+            f'Voce e um redator tecnico especializado em notas de empenho municipais. Hoje e {today}. '
+            'Com base no contexto, escreva a DESCRICAO de uma nota de empenho. '
+            'Regras obrigatorias: '
+            '1. Responda somente com texto puro. '
+            '2. Use EXCLUSIVAMENTE CAIXA ALTA. '
+            '3. O texto deve comecar exatamente com "PELA DESPESA EMPENHADA REFERENTE A". '
+            '4. Seja formal, objetivo e completo. '
+            '5. Inclua secretaria, objeto, finalidade, periodo e referencias como processo, pregao, contrato ou nota fiscal quando existirem. '
+            '6. Nao invente numeros. '
+            '7. Nao use markdown, aspas ou listas.'
+        ),
+        'checklist': (
+            f'Voce e um conferente de empenhos publicos municipais. Hoje e {today}. '
+            'Analise o contexto e gere um checklist objetivo de conferencias antes da emissao do empenho. '
+            'Responda em portugues do Brasil, com no maximo 8 itens curtos. '
+            'Aponte campos ausentes, riscos documentais e dados que precisam ser confirmados. '
+            'Se estiver tudo consistente, diga isso claramente e ainda liste as verificacoes finais.'
+        ),
+        'improve_description': (
+            f'Voce e um revisor tecnico de notas de empenho municipais. Hoje e {today}. '
+            'Recebera uma descricao atual e o contexto do empenho. '
+            'Reescreva a descricao para ficar mais clara, formal e completa, mantendo fidelidade aos dados informados. '
+            'Regras obrigatorias: texto puro, somente em CAIXA ALTA, iniciando exatamente com '
+            '"PELA DESPESA EMPENHADA REFERENTE A". Nao use markdown nem aspas.'
+        ),
+    }
+
+    if action not in system_prompts:
+        return jsonify({'error': 'Acao invalida. Use: extract_fields, generate_description, checklist, improve_description.'}), 400
+
+    messages = [
+        {'role': 'system', 'content': system_prompts[action]},
+        {'role': 'user', 'content': '\n'.join(_ctx_lines(payload))},
+    ]
+
+    models_to_try = [model]
+    if model != 'openrouter/free':
+        models_to_try.append('openrouter/free')
+    for backup in ['google/gemma-3-27b-it:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'meta-llama/llama-3.2-3b-instruct:free']:
+        if backup not in models_to_try:
+            models_to_try.append(backup)
+
+    try:
+        raw_text = ''
+        for m in models_to_try:
+            try:
+                response = chat_completion(
+                    api_key=api_key,
+                    model=m,
+                    messages=messages,
+                    max_tokens=1400,
+                    temperature=0.3 if action in ('generate_description', 'improve_description') else 0.2,
+                    referer=settings.openrouter_referer,
+                    title=settings.openrouter_title,
+                )
+                raw_text = _extract_openrouter_text(response)
+                break
+            except urllib.error.HTTPError as err:
+                if err.code == 429:
+                    app.logger.warning('Assistente de empenho: modelo %s retornou 429; tentando proximo.', m)
+                    continue
+                detail = parse_http_error(err)
+                message = detail.get('error', {}).get('message') or detail.get('message') or f'Erro HTTP {err.code}'
+                return jsonify({'error': message}), err.code or 502
+
+        if not raw_text:
+            return jsonify({'error': 'Todos os modelos gratuitos estao sobrecarregados agora. Aguarde e tente novamente.'}), 429
+
+        if action == 'extract_fields':
+            parsed = _extract_json_block(raw_text)
+            if not isinstance(parsed, dict):
+                raise ValueError('A IA retornou um formato inesperado para extracao de campos.')
+            parsed['pendencias'] = parsed.get('pendencias') if isinstance(parsed.get('pendencias'), list) else []
+            return jsonify({'action': action, 'resultado': parsed})
+
+        text = raw_text.strip().replace('**', '').replace('*', '')
+        if action in ('generate_description', 'improve_description'):
+            text = text.upper()
+            prefix = 'PELA DESPESA EMPENHADA REFERENTE A'
+            if not text.startswith(prefix):
+                text = text.lstrip()
+                if text.startswith('REFERENTE A'):
+                    text = f'PELA DESPESA EMPENHADA {text}'
+                else:
+                    text = f'{prefix} {text}'
+        return jsonify({'action': action, 'resultado': text})
+    except ValueError as err:
+        return jsonify({'error': str(err)}), 400
+    except Exception as err:
+        app.logger.error('POST /api/empenho-assistente: %s', err)
+        return jsonify({'error': str(err)}), 500
 
 @app.route('/api/kanban', methods=['GET'])
 def kanban_listar():
