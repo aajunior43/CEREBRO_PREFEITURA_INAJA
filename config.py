@@ -21,6 +21,10 @@ class Settings:
     openrouter_chat_model: str = os.environ.get('OPENROUTER_CHAT_MODEL', 'meta-llama/llama-3.3-70b-instruct:free')
     openrouter_referer: str = os.environ.get('OPENROUTER_REFERER', 'https://localhost')
     openrouter_title: str = os.environ.get('OPENROUTER_TITLE', 'CEREBRO_PREFEITURA')
+    openrouter_timeout_seconds: int = int(os.environ.get('OPENROUTER_TIMEOUT_SECONDS', '60'))
+    openrouter_max_retries: int = int(os.environ.get('OPENROUTER_MAX_RETRIES', '3'))
+    openrouter_backoff_base: float = float(os.environ.get('OPENROUTER_BACKOFF_BASE', '1.5'))
+    openrouter_cache_ttl_seconds: int = int(os.environ.get('OPENROUTER_CACHE_TTL_SECONDS', '900'))
 
 
 settings = Settings()

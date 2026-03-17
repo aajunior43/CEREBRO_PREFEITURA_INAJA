@@ -7,11 +7,10 @@ Incorpora lógica do RENOMEADOR-DE-EXTRATO-PRO.
 """
 
 import re
-import json
 import shutil
-import urllib.request
-import urllib.error
 from pathlib import Path
+
+from services.openrouter_service import AIServiceError, build_openrouter_service, extract_json_block
 
 from .organizador_local_avancado import OrganizadorLocalAvancado
 from .file_processor import extrair_texto
@@ -24,49 +23,43 @@ class OrganizadorIA(OrganizadorLocalAvancado):
         super().__init__(diretorio_origem, diretorio_destino)
         self.api_key = api_key
         self.modelo = modelo
-        self._cache: dict = {}
+        self.ai_service = build_openrouter_service(
+            api_key=api_key,
+            default_model=modelo,
+            referer='http://localhost:5000',
+            title='Organizador Extratos Inaja',
+            logger=self.logger,
+            timeout_seconds=20,
+            max_retries=3,
+            backoff_base=1.5,
+            cache_ttl_seconds=900,
+        )
 
     def _analisar_ia(self, arquivo: Path) -> dict:
         """
         Extrai texto do arquivo (se possível) e chama OpenRouter.
         Retorna dict com mes, ano, conta, banco, tipo_conta, confianca.
         """
-        cache_key = arquivo.name
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        # Tenta extrair texto do arquivo para análise de conteúdo
         texto_conteudo = extrair_texto(arquivo)
         prompt = montar_prompt(arquivo.name, texto_conteudo)
 
         result = {"mes": None, "ano": None, "conta": None,
                   "banco": None, "tipo_conta": None, "confianca": 0.0}
         try:
-            payload = json.dumps({
-                "model": self.modelo,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0,
-                "max_tokens": 150
-            }).encode()
-            req = urllib.request.Request(
-                "https://openrouter.ai/api/v1/chat/completions",
-                data=payload,
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "http://localhost:5000",
-                    "X-Title": "Organizador Extratos Inaja"
-                }
+            response = self.ai_service.chat_by_task(
+                task_type='extrato',
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0,
+                max_tokens=150,
+                use_cache=True,
+                metadata={'feature': 'organizador_extratos', 'arquivo': arquivo.name},
             )
-            with urllib.request.urlopen(req, timeout=20) as r:
-                resp = json.loads(r.read().decode())
-            content = resp["choices"][0]["message"]["content"].strip()
-            content = re.sub(r'```(?:json)?\s*|\s*```', '', content).strip()
-            parsed = json.loads(content)
-            # Mescla os campos retornados
+            parsed = extract_json_block(response.text)
             for k in result:
                 if k in parsed and parsed[k] is not None:
                     result[k] = parsed[k]
+        except AIServiceError as e:
+            self.logger.warning(f"[IA] Erro controlado para '{arquivo.name}': {e.user_message}")
         except Exception as e:
             self.logger.warning(f"[IA] Erro para '{arquivo.name}': {e}")
 
@@ -74,7 +67,6 @@ class OrganizadorIA(OrganizadorLocalAvancado):
         if not result.get("banco") and texto_conteudo:
             result["banco"] = detectar_banco_no_texto(texto_conteudo)
 
-        self._cache[cache_key] = result
         return result
 
     def processar_arquivo(self, arquivo: Path, modo_teste: bool = True) -> dict:

@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
   <script defer src="/static/js/shared-header.js"></script>
   <style>
     :root {
@@ -213,6 +215,99 @@
     .ea-card-body {
       padding: 24px;
     }
+    .ea-upload-box {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px dashed rgba(40,95,147,.24);
+      background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(244,248,252,.88));
+    }
+    .ea-upload-dropzone {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 170px;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      background: rgba(255,255,255,.82);
+      border: 1px dashed rgba(40,95,147,.18);
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+      cursor: pointer;
+    }
+    .ea-upload-dropzone.drag-over {
+      border-color: rgba(40,95,147,.42);
+      box-shadow: 0 0 0 4px rgba(40,95,147,.08);
+      transform: translateY(-1px);
+    }
+    .ea-upload-dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .ea-upload-icon {
+      width: 54px;
+      height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: rgba(40,95,147,.08);
+      color: var(--ea-accent);
+    }
+    .ea-upload-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+    .ea-upload-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ea-ink);
+    }
+    .ea-upload-subtitle {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-3);
+      max-width: 540px;
+    }
+    .ea-upload-meta {
+      font-size: 11px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }
+    .ea-file-row {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(40,95,147,.1);
+    }
+    .ea-file-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ea-file-info strong {
+      font-size: 14px;
+      color: var(--ea-ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ea-file-info span {
+      font-size: 12px;
+      color: var(--text-3);
+    }
     .ea-form-sections {
       display: grid;
       gap: 18px;
@@ -300,6 +395,12 @@
       flex-wrap: wrap;
       gap: 12px;
       margin-top: 20px;
+    }
+    .ea-scanner-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-3);
+      line-height: 1.55;
     }
     .ea-btn {
       display: inline-flex;
@@ -579,37 +680,33 @@
       <div>
         <span class="ea-hero-badge">Assistente com IA</span>
         <h1>Assistente de Empenho</h1>
-        <p>Monte uma descricao de empenho com contexto suficiente, recupere dados de documentos colados e revise as pendencias antes de seguir para a emissao. A tela agora prioriza sequencia operacional, clareza e leitura.</p>
+        <p>Texto ou arquivo. Descricao pronta.</p>
         <div class="ea-hero-meta">
           <div class="ea-meta-card">
             <strong>1</strong>
-            <span>cole o texto bruto ou preencha os campos conhecidos</span>
+            <span>enviar ou colar</span>
           </div>
           <div class="ea-meta-card">
             <strong>2</strong>
-            <span>extraia e ajuste referencias como processo, contrato e nota</span>
+            <span>extrair</span>
           </div>
           <div class="ea-meta-card">
             <strong>3</strong>
-            <span>gere a descricao final e confira o checklist antes de usar</span>
+            <span>gerar</span>
           </div>
         </div>
         <div class="ea-hero-actions">
-          <a class="ea-chip-link" href="/pages/gerador-empenho.html">Abrir gerador antigo</a>
           <a class="ea-chip-link" href="/pages/documentos.html">Centro de documentos</a>
-          <a class="ea-chip-link" href="/pages/protocolo.html">Protocolo e oficios</a>
         </div>
       </div>
       <div class="ea-hero-side">
         <article class="ea-side-card">
-          <span class="ea-side-label">Fluxo sugerido</span>
-          <strong>Contexto forte primeiro, texto final por ultimo.</strong>
-          <p>Quando o contexto entra ruim, a descricao sai genérica. O assistente foi reorganizado para forcar esse encadeamento.</p>
+          <span class="ea-side-label">Entrada</span>
+          <strong>Texto, imagem ou PDF.</strong>
         </article>
         <article class="ea-side-card">
-          <span class="ea-side-label">Saida esperada</span>
-          <strong>Descricao formal em caixa alta, pronta para revisao final.</strong>
-          <p>O modulo nao substitui conferencia humana. Ele organiza o raciocinio, expõe faltas e melhora a consistencia do texto.</p>
+          <span class="ea-side-label">Saida</span>
+          <strong>Descricao em caixa alta.</strong>
         </article>
       </div>
     </section>
@@ -618,95 +715,60 @@
       <section class="ea-stack">
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Contexto do Empenho</h2>
-            <p>Preencha os dados que ja conhece e cole abaixo o texto bruto de contrato, nota, requisicao, e-mail ou despacho.</p>
+            <h2>Entrada do Documento</h2>
+            <p>Cole ou envie.</p>
           </div>
           <div class="ea-card-body">
             <div class="ea-form-sections">
               <section class="ea-block">
                 <div class="ea-block-title">
-                  <strong>Dados operacionais</strong>
-                  <span>base da despesa</span>
+                  <strong>Arquivo ou scanner</strong>
+                  <span>opcional</span>
                 </div>
-                <div class="ea-grid">
-                  <label class="ea-field">
-                    <span class="ea-label">Secretaria / Setor</span>
-                    <input class="ea-input" id="secretaria" placeholder="Ex.: Secretaria Municipal de Saude" />
+                <div class="ea-upload-box">
+                  <label class="ea-upload-dropzone" id="ea-upload-dropzone">
+                    <input type="file" id="arquivo_documento" accept=".pdf,image/*,application/pdf" />
+                    <div class="ea-upload-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                    </div>
+                    <div class="ea-upload-title" id="ea-upload-title">Clique ou arraste um arquivo</div>
+                    <div class="ea-upload-subtitle">Imagem ou PDF.</div>
+                    <div class="ea-upload-meta">aceita pdf, jpg, jpeg, png, webp e scanner</div>
                   </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Fornecedor / Credor</span>
-                    <input class="ea-input" id="fornecedor" placeholder="Ex.: Empresa XPTO LTDA" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Tipo da Despesa</span>
-                    <input class="ea-input" id="tipo_despesa" placeholder="Ex.: servico de manutencao, material de consumo" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Finalidade</span>
-                    <input class="ea-input" id="finalidade" placeholder="Ex.: atender as unidades de saude" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Valor</span>
-                    <input class="ea-input" id="valor" placeholder="Ex.: R$ 12.480,00" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Competencia / Periodo</span>
-                    <input class="ea-input" id="competencia" placeholder="Ex.: marco/2026 ou 1o trimestre" />
-                  </label>
+                  <div class="ea-file-row" id="ea-file-row">
+                    <div class="ea-file-info">
+                      <strong id="ea-file-name"></strong>
+                      <span id="ea-file-meta"></span>
+                    </div>
+                    <button class="ea-btn ea-btn-danger" id="btn-clear-file" type="button">Remover arquivo</button>
+                  </div>
+                  <div class="ea-scanner-note">Scanner aceito.</div>
                 </div>
               </section>
 
               <section class="ea-block">
                 <div class="ea-block-title">
-                  <strong>Referencias documentais</strong>
-                  <span>rastreabilidade</span>
-                </div>
-                <div class="ea-grid">
-                  <label class="ea-field">
-                    <span class="ea-label">Processo</span>
-                    <input class="ea-input" id="processo" placeholder="Ex.: Processo Adm. 021/2026" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Pregao / Licitacao</span>
-                    <input class="ea-input" id="pregao" placeholder="Ex.: Pregao Eletronico 05/2026" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Contrato</span>
-                    <input class="ea-input" id="contrato" placeholder="Ex.: Contrato 18/2026" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Nota Fiscal / OS / Referencia</span>
-                    <input class="ea-input" id="nota_fiscal" placeholder="Ex.: NF 1029 ou OS 14/2026" />
-                  </label>
-                </div>
-              </section>
-
-              <section class="ea-block">
-                <div class="ea-block-title">
-                  <strong>Contexto bruto</strong>
-                  <span>entrada livre</span>
+                  <strong>Texto base</strong>
+                  <span>obrigatório se não houver arquivo</span>
                 </div>
                 <label class="ea-field ea-field-full">
-                  <span class="ea-label">Texto Base / Documento Colado</span>
-                  <textarea class="ea-textarea ea-contextarea" id="texto_base" placeholder="Cole aqui o texto do contrato, pedido, nota fiscal, despacho ou qualquer contexto que ajude a IA a montar o empenho."></textarea>
-                  <span class="ea-help">Se o documento estiver desorganizado, cole mesmo assim. A extracao de campos serve para separar o que presta do que ainda precisa de ajuste.</span>
+                  <span class="ea-label">Texto colado ou conteúdo extraído</span>
+                  <textarea class="ea-textarea ea-contextarea" id="texto_base" placeholder="Cole o texto aqui."></textarea>
                 </label>
               </section>
             </div>
 
             <div class="ea-actions">
-              <button class="ea-btn" id="btn-extract">Extrair campos do texto</button>
-              <button class="ea-btn ea-btn-primary" id="btn-generate">Gerar descricao</button>
-              <button class="ea-btn" id="btn-checklist">Gerar checklist</button>
-              <button class="ea-btn" id="btn-improve">Melhorar descricao atual</button>
-              <button class="ea-btn ea-btn-danger" id="btn-clear">Limpar tudo</button>
+              <button class="ea-btn" id="btn-read-file" type="button">Ler arquivo</button>
+              <button class="ea-btn ea-btn-primary" id="btn-generate" type="button">Gerar descricao</button>
+              <button class="ea-btn ea-btn-danger" id="btn-clear" type="button">Limpar tudo</button>
             </div>
 
-            <div class="ea-inline-note">
-              O assistente usa a configuracao do OpenRouter ja salva no sistema. Antes de usar o texto gerado, confirme processo, contrato, nota fiscal, periodo e valor.
-            </div>
-
-            <div class="ea-loader" id="ea-loader">Consultando a IA e organizando a resposta...</div>
+            <div class="ea-loader" id="ea-loader">Processando arquivo e consultando a IA...</div>
             <div class="ea-error" id="ea-error"></div>
             <div class="ea-status" id="ea-status"></div>
           </div>
@@ -715,14 +777,13 @@
         <article class="ea-card">
           <div class="ea-card-head">
             <h2>Descricao da Nota de Empenho</h2>
-            <p>Edite livremente antes de copiar. O botao "Melhorar descricao atual" usa este campo como base.</p>
+            <p>Resultado.</p>
           </div>
           <div class="ea-card-body">
             <div class="ea-result-header">
               <div class="ea-result-badge">saida editavel</div>
-              <div class="ea-help">A descricao permanece em caixa alta para facilitar uso operacional.</div>
             </div>
-            <textarea class="ea-textarea ea-result-box" id="descricao_resultado" placeholder="A descricao gerada pela IA aparecera aqui em CAIXA ALTA."></textarea>
+            <textarea class="ea-textarea ea-result-box" id="descricao_resultado" placeholder="A descricao aparecera aqui."></textarea>
             <div class="ea-result-tools">
               <button class="ea-btn ea-btn-primary" id="btn-copy">Copiar descricao</button>
               <button class="ea-btn" id="btn-download">Baixar .txt</button>
@@ -734,51 +795,19 @@
       <aside class="ea-stack">
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Campos Extraidos</h2>
-            <p>Use a extracao para preencher rapidamente o formulario quando voce so tiver o texto bruto.</p>
+            <h2>Como usar</h2>
+            <p>3 passos.</p>
           </div>
           <div class="ea-card-body">
-            <div class="ea-output ea-empty" id="extract-output">Nenhuma extracao feita ainda.</div>
-            <div class="ea-pendencias" id="pendencias-output"></div>
-          </div>
-        </article>
-
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Checklist de Conferencia</h2>
-            <p>Checklist rapido para revisar pendencias antes da emissao do empenho.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-output ea-empty" id="checklist-output">O checklist aparecera aqui depois da analise.</div>
-          </div>
-        </article>
-
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Atalhos de Contexto</h2>
-            <p>Modelos rapidos para preencher o tipo da despesa e acelerar a geracao.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-template-buttons">
-              <button class="ea-template-btn" data-template="AQUISICAO DE MATERIAL DE CONSUMO">Material de consumo</button>
-              <button class="ea-template-btn" data-template="PRESTACAO DE SERVICOS CONTINUADOS">Servicos continuados</button>
-              <button class="ea-template-btn" data-template="LOCACAO DE SOFTWARE E SUPORTE TECNICO">Software e suporte</button>
-              <button class="ea-template-btn" data-template="AQUISICAO DE GENEROS ALIMENTICIOS">Generos alimenticios</button>
-              <button class="ea-template-btn" data-template="MANUTENCAO PREVENTIVA E CORRETIVA">Manutencao</button>
-              <button class="ea-template-btn" data-template="FORNECIMENTO DE COMBUSTIVEL">Combustivel</button>
-            </div>
             <div class="ea-mini-list">
               <div class="ea-mini-item">
-                <strong>Bom contexto</strong>
-                <p>Inclui objeto, periodo, finalidade e numero de referencia documental.</p>
+                <strong>1. Envie ou cole</strong>
               </div>
               <div class="ea-mini-item">
-                <strong>Evite descricao vaga</strong>
-                <p>Frases como "referente a servicos prestados" perdem qualidade sem local, periodo e justificativa.</p>
+                <strong>2. Ler arquivo</strong>
               </div>
               <div class="ea-mini-item">
-                <strong>Melhor fluxo</strong>
-                <p>Cole o texto, extraia campos, ajuste o que faltar e so depois gere a descricao final.</p>
+                <strong>3. Gerar descricao</strong>
               </div>
             </div>
           </div>
@@ -790,42 +819,30 @@
   <script>
     'use strict';
 
+    const pdfLib = window.pdfjsLib;
+    if (pdfLib?.GlobalWorkerOptions) {
+      pdfLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
+
     const fields = {
-      secretaria: document.getElementById('secretaria'),
-      fornecedor: document.getElementById('fornecedor'),
-      tipo_despesa: document.getElementById('tipo_despesa'),
-      finalidade: document.getElementById('finalidade'),
-      valor: document.getElementById('valor'),
-      competencia: document.getElementById('competencia'),
-      processo: document.getElementById('processo'),
-      pregao: document.getElementById('pregao'),
-      contrato: document.getElementById('contrato'),
-      nota_fiscal: document.getElementById('nota_fiscal'),
       texto_base: document.getElementById('texto_base'),
       descricao_resultado: document.getElementById('descricao_resultado'),
     };
 
+    const fileInput = document.getElementById('arquivo_documento');
+    const uploadDropzone = document.getElementById('ea-upload-dropzone');
+    const uploadTitle = document.getElementById('ea-upload-title');
+    const fileRow = document.getElementById('ea-file-row');
+    const fileName = document.getElementById('ea-file-name');
+    const fileMeta = document.getElementById('ea-file-meta');
     const loader = document.getElementById('ea-loader');
     const errorBox = document.getElementById('ea-error');
     const statusBox = document.getElementById('ea-status');
-    const extractOutput = document.getElementById('extract-output');
-    const pendenciasOutput = document.getElementById('pendencias-output');
-    const checklistOutput = document.getElementById('checklist-output');
+    let currentFile = null;
 
     function payloadFromForm() {
       return {
-        secretaria: fields.secretaria.value.trim(),
-        fornecedor: fields.fornecedor.value.trim(),
-        tipo_despesa: fields.tipo_despesa.value.trim(),
-        finalidade: fields.finalidade.value.trim(),
-        valor: fields.valor.value.trim(),
-        competencia: fields.competencia.value.trim(),
-        processo: fields.processo.value.trim(),
-        pregao: fields.pregao.value.trim(),
-        contrato: fields.contrato.value.trim(),
-        nota_fiscal: fields.nota_fiscal.value.trim(),
         texto_base: fields.texto_base.value.trim(),
-        descricao_atual: fields.descricao_resultado.value.trim(),
       };
     }
 
@@ -855,7 +872,7 @@
       statusBox.textContent = '';
     }
 
-    async function runAction(action) {
+    async function runAction() {
       hideError();
       hideStatus();
       setBusy(true);
@@ -863,7 +880,7 @@
         const response = await fetch('/api/empenho-assistente', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, payload: payloadFromForm() })
+          body: JSON.stringify({ action: 'generate_description', payload: payloadFromForm() })
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
@@ -875,110 +892,146 @@
       }
     }
 
-    function renderExtraction(result) {
-      const pretty = [
-        ['Secretaria', result.secretaria],
-        ['Fornecedor', result.fornecedor],
-        ['Tipo da despesa', result.tipo_despesa],
-        ['Finalidade', result.finalidade],
-        ['Valor', result.valor],
-        ['Competencia', result.competencia],
-        ['Processo', result.processo],
-        ['Pregao', result.pregao],
-        ['Contrato', result.contrato],
-        ['Nota fiscal / referencia', result.nota_fiscal],
-        ['Observacoes', result.observacoes],
-      ].filter(item => item[1]);
-
-      extractOutput.classList.remove('ea-empty');
-      if (pretty.length) {
-        extractOutput.innerHTML = `<div class="ea-keyval">${pretty.map(item => `
-          <div class="ea-kv-row">
-            <div class="ea-kv-key">${item[0]}</div>
-            <div class="ea-kv-value">${item[1]}</div>
-          </div>
-        `).join('')}</div>`;
-      } else {
-        extractOutput.textContent = 'A IA nao encontrou campos confiaveis suficientes no texto informado.';
-      }
-
-      pendenciasOutput.innerHTML = '';
-      const pendencias = Array.isArray(result.pendencias) ? result.pendencias.filter(Boolean) : [];
-      if (pendencias.length) {
-        pendencias.forEach(text => {
-          const div = document.createElement('div');
-          div.className = 'ea-pendencia';
-          div.textContent = text;
-          pendenciasOutput.appendChild(div);
-        });
-      } else {
-        const ok = document.createElement('div');
-        ok.className = 'ea-success';
-        ok.textContent = 'Nenhuma pendencia evidente foi apontada na extracao inicial.';
-        pendenciasOutput.appendChild(ok);
-      }
-
-      for (const key of ['secretaria','fornecedor','tipo_despesa','finalidade','valor','competencia','processo','pregao','contrato','nota_fiscal']) {
-        if (!fields[key].value.trim() && result[key]) {
-          fields[key].value = result[key];
-        }
-      }
-      showStatus('Campos extraidos. Revise o formulario e ajuste o que a IA inferiu antes de gerar a descricao.');
+    function formatFileSize(size) {
+      if (!Number.isFinite(size)) return '';
+      if (size < 1024) return `${size} B`;
+      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+      return `${(size / (1024 * 1024)).toFixed(2)} MB`;
     }
 
-    document.getElementById('btn-extract').addEventListener('click', async () => {
+    function setFile(file) {
+      currentFile = file || null;
+      if (!currentFile) {
+        fileInput.value = '';
+        fileRow.style.display = 'none';
+        uploadTitle.textContent = 'Clique ou arraste um arquivo';
+        return;
+      }
+      fileName.textContent = currentFile.name;
+      fileMeta.textContent = `${currentFile.type || 'arquivo'} • ${formatFileSize(currentFile.size)}`;
+      fileRow.style.display = 'flex';
+      uploadTitle.textContent = 'Arquivo selecionado';
+    }
+
+    function clearFile() {
+      setFile(null);
+    }
+
+    async function extractTextFromFile(file) {
+      if (file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        if (!pdfLib?.getDocument) {
+          throw new Error('Leitor de PDF indisponível no momento.');
+        }
+        const pdf = await pdfLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        const totalPages = Math.min(pdf.numPages, 30);
+        for (let i = 1; i <= totalPages; i++) {
+          showStatus(`Lendo arquivo: página ${i}/${totalPages}...`);
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          if (pageText.trim().length >= 40) {
+            fullText += pageText + '\n';
+            continue;
+          }
+          const viewport = page.getViewport({ scale: 2 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: context, viewport }).promise;
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+          const result = await Tesseract.recognize(blob, 'por');
+          fullText += (result?.data?.text || '') + '\n';
+        }
+        return fullText;
+      }
+      if (file.type.startsWith('image/')) {
+        showStatus('Executando OCR da imagem...');
+        const result = await Tesseract.recognize(file, 'por');
+        return result?.data?.text || '';
+      }
+      throw new Error('Tipo de arquivo não suportado. Envie PDF ou imagem.');
+    }
+
+    async function readCurrentFile() {
+      if (!currentFile) {
+        throw new Error('Selecione um arquivo antes de usar a leitura.');
+      }
+      hideError();
+      setBusy(true);
       try {
-        const result = await runAction('extract_fields');
-        renderExtraction(result);
+        const extracted = (await extractTextFromFile(currentFile)).trim();
+        if (!extracted) {
+          throw new Error('Não foi possível extrair texto do arquivo enviado.');
+        }
+        fields.texto_base.value = extracted;
+        showStatus('Conteúdo do arquivo extraído com sucesso. Agora gere a descrição.');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    fileInput.addEventListener('change', event => {
+      if (event.target.files?.[0]) {
+        setFile(event.target.files[0]);
+      }
+    });
+
+    uploadDropzone.addEventListener('dragover', event => {
+      event.preventDefault();
+      uploadDropzone.classList.add('drag-over');
+    });
+
+    uploadDropzone.addEventListener('dragleave', () => {
+      uploadDropzone.classList.remove('drag-over');
+    });
+
+    uploadDropzone.addEventListener('drop', event => {
+      event.preventDefault();
+      uploadDropzone.classList.remove('drag-over');
+      if (event.dataTransfer.files?.[0]) {
+        setFile(event.dataTransfer.files[0]);
+      }
+    });
+
+    document.getElementById('btn-clear-file').addEventListener('click', clearFile);
+    document.getElementById('btn-read-file').addEventListener('click', async () => {
+      try {
+        await readCurrentFile();
       } catch (err) {
-        showError(err instanceof Error ? err.message : 'Erro ao extrair campos.');
+        showError(err instanceof Error ? err.message : 'Erro ao ler arquivo.');
       }
     });
 
     document.getElementById('btn-generate').addEventListener('click', async () => {
+      const hasText = fields.texto_base.value.trim();
+      if (!hasText && currentFile) {
+        try {
+          await readCurrentFile();
+        } catch (err) {
+          showError(err instanceof Error ? err.message : 'Erro ao ler arquivo.');
+          return;
+        }
+      }
+      if (!fields.texto_base.value.trim()) {
+        showError('Cole um texto ou envie um arquivo antes de gerar a descrição.');
+        return;
+      }
       try {
-        const result = await runAction('generate_description');
+        const result = await runAction();
         fields.descricao_resultado.value = (result || '').toUpperCase();
         fields.descricao_resultado.focus();
-        showStatus('Descricao gerada. Agora confira o checklist e ajuste o texto final, se necessario.');
+        showStatus('Descricao gerada com sucesso. Revise o texto final antes de usar.');
       } catch (err) {
         showError(err instanceof Error ? err.message : 'Erro ao gerar descricao.');
       }
     });
 
-    document.getElementById('btn-checklist').addEventListener('click', async () => {
-      try {
-        const result = await runAction('checklist');
-        checklistOutput.classList.remove('ea-empty');
-        checklistOutput.textContent = result || 'Nenhum checklist retornado.';
-        showStatus('Checklist atualizado com base no contexto atual do empenho.');
-      } catch (err) {
-        showError(err instanceof Error ? err.message : 'Erro ao gerar checklist.');
-      }
-    });
-
-    document.getElementById('btn-improve').addEventListener('click', async () => {
-      if (!fields.descricao_resultado.value.trim()) {
-        showError('Preencha ou gere uma descricao antes de usar a melhoria de texto.');
-        return;
-      }
-      try {
-        const result = await runAction('improve_description');
-        fields.descricao_resultado.value = (result || '').toUpperCase();
-        fields.descricao_resultado.focus();
-        showStatus('Descricao revisada pela IA. Verifique se a versao melhorada manteve fidelidade aos dados.');
-      } catch (err) {
-        showError(err instanceof Error ? err.message : 'Erro ao melhorar descricao.');
-      }
-    });
-
     document.getElementById('btn-clear').addEventListener('click', () => {
       Object.values(fields).forEach(el => { el.value = ''; });
-      extractOutput.className = 'ea-output ea-empty';
-      extractOutput.textContent = 'Nenhuma extracao feita ainda.';
-      checklistOutput.className = 'ea-output ea-empty';
-      checklistOutput.textContent = 'O checklist aparecera aqui depois da analise.';
-      pendenciasOutput.innerHTML = '';
+      clearFile();
       hideError();
       hideStatus();
     });
@@ -1021,12 +1074,6 @@
       fields.descricao_resultado.setSelectionRange(pos, pos);
     });
 
-    document.querySelectorAll('.ea-template-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        fields.tipo_despesa.value = btn.dataset.template || '';
-        fields.tipo_despesa.focus();
-      });
-    });
   </script>
 </body>
 </html>

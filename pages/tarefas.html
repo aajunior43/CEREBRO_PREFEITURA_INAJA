@@ -621,6 +621,7 @@
         .kb-due-none     { background: rgba(0,0,0,.06);       color:var(--text-3) }
 
 
+        .kb-card-actions {
             display: flex;
             gap: 4px
         }
@@ -660,20 +661,27 @@
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, .45);
-            z-index: 5000;
+            background: rgba(15, 23, 42, .36);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 5000;
             padding: 16px;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .kb-modal {
             background: var(--bg);
             border-radius: var(--radius);
             box-shadow: 0 8px 40px rgba(0, 0, 0, .22);
-            width: 100%;
-            max-width: 480px;
+            width: min(760px, 100%);
+            max-width: min(760px, calc(100vw - 24px));
+            max-height: calc(100vh - 32px);
+            margin: auto;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
@@ -705,15 +713,53 @@
             padding: 16px 20px;
             display: flex;
             flex-direction: column;
-            gap: 14px
+            gap: 14px;
+            overflow-y: auto;
+            min-height: 0;
+            flex: 1 1 auto;
         }
 
         .kb-modal-foot {
             padding: 12px 20px;
             border-top: 1px solid rgba(0, 0, 0, .07);
             display: flex;
-            gap: 8px;
-            justify-content: flex-end
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+            overflow-y: auto;
+            flex-shrink: 0;
+            max-height: 30vh;
+        }
+
+        @media(max-width:700px) {
+            .kb-overlay {
+                align-items: flex-start;
+                padding: 10px;
+            }
+
+            .kb-modal {
+                width: 100%;
+                max-width: 100%;
+                max-height: calc(100vh - 20px);
+            }
+
+            .kb-modal-head,
+            .kb-modal-body,
+            .kb-modal-foot {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            .kb-modal-foot {
+                justify-content: stretch;
+            }
+
+            .kb-modal-foot .kb-btn {
+                flex: 1 1 100%;
+                justify-content: center;
+                white-space: normal;
+            }
         }
 
         .kb-label {
@@ -1292,6 +1338,24 @@
                         placeholder="Ex: Revisar relatório mensal" /></div>
                 <div><label class="kb-label">Descrição</label><textarea class="kb-textarea" id="t-desc"
                         placeholder="Detalhes opcionais…"></textarea></div>
+                <div class="ai-plan-panel" id="task-ai-plan-panel" style="display:none">
+                    <div class="ai-plan-head">
+                        <strong>✨ Planejamento com IA</strong>
+                        <span class="ai-plan-model" id="task-ai-plan-model"></span>
+                    </div>
+                    <div class="ai-plan-summary" id="task-ai-plan-summary"></div>
+                    <div class="ai-plan-next" id="task-ai-plan-next"></div>
+                    <div class="ai-plan-classification" id="task-ai-plan-classification" style="display:none"></div>
+                    <div class="ai-plan-stale" id="task-ai-plan-stale" style="display:none"></div>
+                    <div class="ai-plan-checklist">
+                        <div class="ai-plan-block-title">Checklist sugerido</div>
+                        <ul id="task-ai-plan-checklist"></ul>
+                    </div>
+                    <div class="ai-plan-subtasks">
+                        <div class="ai-plan-block-title">Subtarefas sugeridas</div>
+                        <div id="task-ai-plan-subtasks"></div>
+                    </div>
+                </div>
                 <div style="display:flex;gap:12px">
                     <div style="flex:1"><label class="kb-label">Status</label>
                         <select class="kb-select" id="t-status">
@@ -1335,7 +1399,11 @@
                 </div>
             </div>
             <div class="kb-modal-foot">
+                <button class="kb-btn kb-btn-violet" id="modal-ai-plan-btn" onclick="planCurrentTaskWithAi()" style="display:none">🧠 Planejar com IA</button>
                 <button class="kb-btn kb-btn-violet" id="modal-ai-improve-btn" onclick="improveCurrentTaskWithAi()" style="display:none">✨ Melhorar com IA</button>
+                <button class="kb-btn kb-btn-violet" id="modal-ai-professional-btn" onclick="professionalRewriteCurrentTask()" style="display:none">🏛️ Reescrita profissional</button>
+                <button class="kb-btn kb-btn-violet" id="modal-ai-classify-btn" onclick="classifyCurrentTaskWithAi()" style="display:none">🏷️ Classificar tipo</button>
+                <button class="kb-btn kb-btn-violet" id="modal-ai-stale-btn" onclick="analyzeCurrentTaskStale()" style="display:none">⏳ Detectar parada</button>
                 <button class="kb-btn kb-btn-violet" id="modal-ai-breakdown-btn" onclick="breakdownCurrentTaskWithAi()" style="display:none">🧩 Quebrar em subtarefas</button>
                 <button class="kb-btn kb-btn-ghost" onclick="closeTaskModal()">Cancelar</button>
                 <button class="kb-btn kb-btn-cyan" id="modal-save-btn" onclick="saveTask()">Salvar</button>
@@ -1553,6 +1621,8 @@
         let dragTaskId = null;
         let pendingModalFile = null;
         let aiBusy = false;
+        let aiCooldownUntil = 0;
+        let aiModelsFetchedAt = 0;
         let activeCatFilter = '';
         let activeSearch = '';
 
@@ -1884,8 +1954,27 @@
             if (label) label.textContent = file ? file.name : 'Nenhum arquivo selecionado';
         }
 
+        function resetTaskAiPlanPanel() {
+            const panel = document.getElementById('task-ai-plan-panel');
+            if (!panel) return;
+            panel.style.display = 'none';
+            document.getElementById('task-ai-plan-model').textContent = '';
+            document.getElementById('task-ai-plan-summary').textContent = '';
+            document.getElementById('task-ai-plan-next').textContent = '';
+            document.getElementById('task-ai-plan-classification').textContent = '';
+            document.getElementById('task-ai-plan-classification').style.display = 'none';
+            document.getElementById('task-ai-plan-stale').textContent = '';
+            document.getElementById('task-ai-plan-stale').style.display = 'none';
+            document.getElementById('task-ai-plan-checklist').innerHTML = '';
+            document.getElementById('task-ai-plan-subtasks').innerHTML = '';
+        }
+
         function updateTaskModalAiButtons() {
+            document.getElementById('modal-ai-plan-btn').style.display = editingId ? 'inline-flex' : 'none';
             document.getElementById('modal-ai-improve-btn').style.display = editingId ? 'inline-flex' : 'none';
+            document.getElementById('modal-ai-professional-btn').style.display = editingId ? 'inline-flex' : 'none';
+            document.getElementById('modal-ai-classify-btn').style.display = editingId ? 'inline-flex' : 'none';
+            document.getElementById('modal-ai-stale-btn').style.display = editingId ? 'inline-flex' : 'none';
             document.getElementById('modal-ai-breakdown-btn').style.display = editingId ? 'inline-flex' : 'none';
         }
 
@@ -1899,8 +1988,8 @@
             document.getElementById('t-resp').value = task.responsavel || '';
         }
 
-        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); updateTaskModalAiButtons(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
-        function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; }
+        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); resetTaskAiPlanPanel(); updateTaskModalAiButtons(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
+        function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; resetTaskAiPlanPanel(); }
 
         function openEdit(id) {
             const task = tasks.find(t => t.id === id); if (!task) return;
@@ -1910,6 +1999,7 @@
             document.getElementById('t-file').value = '';
             pendingModalFile = null;
             syncDropzoneLabel();
+            resetTaskAiPlanPanel();
             updateTaskModalAiButtons();
             document.getElementById('task-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('t-title').focus(), 100);
@@ -1917,18 +2007,36 @@
 
         async function callKanbanAi(url, payload) {
             if (aiBusy) throw new Error('A IA do Kanban já está processando outra solicitação');
+            _assertAiCooldown(url);
             aiBusy = true;
             try {
-                const apiKey = (localStorage.getItem('api_openrouter_key') || localStorage.getItem('ext_ia_key') || '').trim();
-                const model = (localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim();
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...payload, api_key: apiKey, model })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.error || 'Erro ao consultar IA do Kanban');
-                return data;
+                const candidates = await _getPreferredFreeModels();
+                let lastError = null;
+                let sawRateLimit = false;
+                for (const model of candidates) {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...payload, model })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok) {
+                        _persistWorkingAiModel(model);
+                        return data;
+                    }
+                    const message = data.error || 'Erro ao consultar IA do Kanban';
+                    lastError = new Error(message);
+                    if (_isRetryableAiModelError(res.status, message)) {
+                        if (res.status === 429) sawRateLimit = true;
+                        continue;
+                    }
+                    throw lastError;
+                }
+                if (sawRateLimit && lastError) {
+                    _activateAiCooldown(url, lastError.message || 'A IA está temporariamente sobrecarregada.');
+                }
+                _maybePromptFreeModelSelection((lastError && lastError.message) || 'Erro ao consultar IA do Kanban');
+                throw lastError || new Error('Erro ao consultar IA do Kanban');
             } finally {
                 aiBusy = false;
             }
@@ -1936,8 +2044,280 @@
 
         // ── AI MODAL HELPERS ──────────────────────────────────────────────────────
         function _getAiModelLabel() {
-            const m = (localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim();
+            const m = _normalizeFreeModelId((localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim());
             return m ? `🤖 ${m}` : '🤖 modelo padrão';
+        }
+
+        function _normalizeFreeModelId(model) {
+            const value = String(model || '').trim();
+            if (!value) return 'openrouter/free';
+            if (value === 'openrouter/free' || value.endsWith(':free')) return value;
+            return 'openrouter/free';
+        }
+
+        function _persistWorkingAiModel(model) {
+            const freeId = _normalizeFreeModelId(model);
+            localStorage.setItem('api_openrouter_modelo', freeId);
+            localStorage.setItem('ext_ia_modelo', freeId);
+        }
+
+        function _isRetryableAiModelError(status, message) {
+            const text = String(message || '').toLowerCase();
+            if ([408, 409, 425, 429, 500, 502, 503, 504].includes(Number(status))) return true;
+            if (text.includes('rate limit') || text.includes('limite') || text.includes('sobrecarreg') || text.includes('cooldown') || text.includes('temporariamente')) return true;
+            if (text.includes('conteúdo vazio') || text.includes('resposta inválida') || text.includes('resposta vazia')) return true;
+            return false;
+        }
+
+        async function _ensureFreeModelsLoaded(forceReload = false) {
+            const cacheAgeMs = Date.now() - aiModelsFetchedAt;
+            if (!forceReload && Array.isArray(todosModelos) && todosModelos.length && cacheAgeMs < 5 * 60 * 1000) {
+                return todosModelos;
+            }
+            try {
+                const res = await fetch('/api/extratos/modelos-openrouter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) return todosModelos || [];
+                todosModelos = (data.modelos || []).filter(m => {
+                    const prec = m.pricing || {};
+                    return parseFloat(prec.prompt || 0) === 0 && parseFloat(prec.completion || 0) === 0;
+                });
+                aiModelsFetchedAt = Date.now();
+                return todosModelos;
+            } catch (_) {
+                return todosModelos || [];
+            }
+        }
+
+        async function _getPreferredFreeModels() {
+            const current = _normalizeFreeModelId((localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim());
+            const freeModels = await _ensureFreeModelsLoaded();
+            const ordered = [];
+            const seen = new Set();
+            [current, 'openrouter/free', ...(freeModels || []).map(m => _normalizeFreeModelId(m.id))].forEach(model => {
+                const id = _normalizeFreeModelId(model);
+                if (!id || seen.has(id)) return;
+                seen.add(id);
+                ordered.push(id);
+            });
+            return ordered.length ? ordered : ['openrouter/free'];
+        }
+
+        function _getAiCooldownStorageKey(url) {
+            return `kanban_ai_cooldown:${url || 'global'}`;
+        }
+
+        function _getActiveAiCooldownUntil(url) {
+            const localValue = Number(localStorage.getItem(_getAiCooldownStorageKey(url)) || '0');
+            const activeUntil = Math.max(aiCooldownUntil || 0, localValue || 0);
+            if (activeUntil <= Date.now()) {
+                aiCooldownUntil = 0;
+                localStorage.removeItem(_getAiCooldownStorageKey(url));
+                return 0;
+            }
+            return activeUntil;
+        }
+
+        function _extractRetryAfterSeconds(message) {
+            const text = String(message || '').toLowerCase();
+            const match = text.match(/(\d+)\s*(s|sec|secs|seg|segundos|min|mins|minutos)/i);
+            if (match) {
+                const amount = parseInt(match[1], 10) || 0;
+                const unit = (match[2] || '').toLowerCase();
+                if (unit.startsWith('m')) return Math.min(Math.max(amount * 60, 15), 900);
+                return Math.min(Math.max(amount, 15), 900);
+            }
+            if (text.includes('per-day') || text.includes('por dia')) return 600;
+            if (text.includes('per-min') || text.includes('por minuto')) return 90;
+            return 60;
+        }
+
+        function _activateAiCooldown(url, message) {
+            const cooldownSeconds = _extractRetryAfterSeconds(message);
+            const until = Date.now() + (cooldownSeconds * 1000);
+            aiCooldownUntil = until;
+            localStorage.setItem(_getAiCooldownStorageKey(url), String(until));
+        }
+
+        function _assertAiCooldown(url) {
+            const until = _getActiveAiCooldownUntil(url);
+            if (!until) return;
+            const seconds = Math.max(1, Math.ceil((until - Date.now()) / 1000));
+            throw new Error(`A IA está em cooldown para evitar bloqueio. Aguarde ${seconds}s e tente novamente.`);
+        }
+
+        function _maybePromptFreeModelSelection(errorMessage) {
+            const msg = String(errorMessage || '').toLowerCase();
+            const shouldPrompt = !msg.includes('já está processando');
+            if (!shouldPrompt) return;
+            setTimeout(() => {
+                consultarModelosEExibirModal();
+            }, 50);
+        }
+
+        function _collectTaskModalPayload() {
+            return {
+                title: document.getElementById('t-title').value.trim(),
+                description: document.getElementById('t-desc').value.trim(),
+                status: document.getElementById('t-status').value,
+                priority: document.getElementById('t-prio').value,
+                categoria: document.getElementById('t-cat').value,
+                data_vencimento: document.getElementById('t-due').value,
+                responsavel: document.getElementById('t-resp').value.trim()
+            };
+        }
+
+        function _renderTaskPlan(plan) {
+            const panel = document.getElementById('task-ai-plan-panel');
+            if (!panel) return;
+            document.getElementById('task-ai-plan-model').textContent = _getAiModelLabel();
+            document.getElementById('task-ai-plan-summary').textContent = plan.summary ? `Resumo: ${plan.summary}` : 'Resumo não informado.';
+            document.getElementById('task-ai-plan-next').textContent = plan.next_action ? `Próxima ação: ${plan.next_action}` : 'Próxima ação não informada.';
+            document.getElementById('task-ai-plan-checklist').innerHTML = (plan.checklist || []).map(item => `<li>${esc(item)}</li>`).join('');
+            document.getElementById('task-ai-plan-subtasks').innerHTML = `<div class="ai-plan-subtasks-list">${(plan.subtarefas || []).map(item => `
+                <div class="ai-plan-subtask">
+                    <div class="ai-plan-subtask-title">${esc(item.title || '')}</div>
+                    ${item.description ? `<div class="ai-plan-subtask-desc">${esc(item.description)}</div>` : ''}
+                </div>
+            `).join('')}</div>`;
+            panel.style.display = 'grid';
+        }
+
+        function _renderTaskClassification(result) {
+            const panel = document.getElementById('task-ai-plan-panel');
+            const box = document.getElementById('task-ai-plan-classification');
+            if (!panel || !box) return;
+            const confidence = typeof result.confianca === 'number' ? Math.round(result.confianca * 100) : 0;
+            box.textContent = `Tipo sugerido: ${(result.categoria_ia || 'documento').toUpperCase()}${result.justificativa ? ` · ${result.justificativa}` : ''}${confidence ? ` · confiança ${confidence}%` : ''}`;
+            box.style.display = 'block';
+            panel.style.display = 'grid';
+        }
+
+        function _renderTaskStale(result) {
+            const panel = document.getElementById('task-ai-plan-panel');
+            const box = document.getElementById('task-ai-plan-stale');
+            if (!panel || !box) return;
+            const suggestions = Array.isArray(result.sugestoes) && result.sugestoes.length ? ` · sugestões: ${result.sugestoes.join(', ')}` : '';
+            box.textContent = `Situação: ${(result.status || 'normal').toUpperCase()} · ${result.resumo || 'Sem observações.'}${suggestions}`;
+            box.style.display = 'block';
+            panel.style.display = 'grid';
+        }
+
+        async function planCurrentTaskWithAi() {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
+            if (!task || !(task.title || '').trim()) {
+                showToast('Informe pelo menos o título da tarefa para planejar com IA', 'error');
+                return;
+            }
+            const planBtn = document.getElementById('modal-ai-plan-btn');
+            const originalText = planBtn.textContent;
+            planBtn.disabled = true;
+            planBtn.textContent = '⏳ Planejando...';
+            try {
+                const plan = await callKanbanAi('/api/kanban/ai/plan-task', {
+                    task: {
+                        ...task,
+                        ..._collectTaskModalPayload(),
+                    },
+                    prompt: 'Gere checklist, prioridade sugerida, próxima ação e subtarefas práticas para esta tarefa.'
+                });
+                fillTaskModal(plan.task || task);
+                _renderTaskPlan(plan);
+                showToast('✅ Planejamento com IA pronto. Revise e salve.', 'success');
+            } catch (e) {
+                const msg = e.message || 'Erro ao planejar tarefa com IA';
+                showToast(msg, 'error');
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
+            } finally {
+                planBtn.disabled = false;
+                planBtn.textContent = originalText;
+            }
+        }
+
+        async function professionalRewriteCurrentTask() {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
+            const btn = document.getElementById('modal-ai-professional-btn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Reescrevendo...';
+            try {
+                const rewritten = await callKanbanAi('/api/kanban/ai/professional-rewrite', {
+                    task: {
+                        ...task,
+                        ..._collectTaskModalPayload(),
+                    },
+                    prompt: 'Reescreva em tom profissional, administrativo e objetivo.'
+                });
+                fillTaskModal({ ...task, ...rewritten });
+                showToast('✅ Reescrita profissional aplicada. Revise e salve.', 'success');
+            } catch (e) {
+                const msg = e.message || 'Erro ao reescrever tarefa com IA';
+                showToast(msg, 'error');
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function classifyCurrentTaskWithAi() {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
+            const btn = document.getElementById('modal-ai-classify-btn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Classificando...';
+            try {
+                const result = await callKanbanAi('/api/kanban/ai/classify-task', {
+                    task: {
+                        ...task,
+                        ..._collectTaskModalPayload(),
+                    },
+                    prompt: 'Classifique o tipo principal desta tarefa.'
+                });
+                _renderTaskClassification(result);
+                showToast('✅ Classificação sugerida pela IA.', 'success');
+            } catch (e) {
+                const msg = e.message || 'Erro ao classificar tarefa com IA';
+                showToast(msg, 'error');
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function analyzeCurrentTaskStale() {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
+            const btn = document.getElementById('modal-ai-stale-btn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = '⏳ Analisando...';
+            try {
+                const result = await callKanbanAi('/api/kanban/ai/stale-task', {
+                    task: {
+                        ...task,
+                        ..._collectTaskModalPayload(),
+                    },
+                    prompt: 'Analise se a tarefa está parada e sugira cobrar responsável, arquivar, redefinir prazo ou mover de coluna.'
+                });
+                _renderTaskStale(result);
+                showToast('✅ Análise de tarefa parada concluída.', 'success');
+            } catch (e) {
+                const msg = e.message || 'Erro ao analisar tarefa parada com IA';
+                showToast(msg, 'error');
+                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         }
 
         // ── AI CREATE MODAL ───────────────────────────────────────────────────────
@@ -2326,27 +2706,11 @@
         // ── IA MODELOS (OPENROUTER) ────────────────────────────────────────────────
         let todosModelos = [];
         async function consultarModelosEExibirModal() {
-            const apiKey = localStorage.getItem('api_openrouter_key') || '';
-            if (!apiKey) {
-                showToast('🔑 Configure a chave da API do OpenRouter primeiro em Configurações.', 'error');
-                return;
-            }
             try {
                 showToast('⏳ Buscando modelos gratuitos no OpenRouter...', 'info');
-                const res = await fetch('/api/extratos/modelos-openrouter', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: apiKey })
-                });
-                const data = await res.json();
-                if (!res.ok) { showToast(data.error || 'Erro ao buscar modelos.', 'error'); return; }
-                
-                // Filtra para exibir apenas os gratuitos
-                todosModelos = (data.modelos || []).filter(m => {
-                    const prec = m.pricing || {};
-                    return parseFloat(prec.prompt || 0) === 0 && parseFloat(prec.completion || 0) === 0;
-                });
-
+                const dataModelos = await _ensureFreeModelsLoaded(true);
+                todosModelos = Array.isArray(dataModelos) ? dataModelos : [];
+                if (!todosModelos.length) { showToast('Nenhum modelo gratuito foi encontrado no momento.', 'error'); return; }
                 renderizarModelos(todosModelos);
                 document.getElementById('modelos-filtro').value = '';
                 document.getElementById('modelos-modal').classList.add('open');
@@ -2383,10 +2747,9 @@
         }
 
         function selecionarModelo(id) {
-            localStorage.setItem('api_openrouter_modelo', id);
-            localStorage.setItem('ext_ia_modelo', id);
-            // Atualiza globalmente para não precisar dar reload caso use header
-            showToast(`✅ Modelo selecionado: ${id}`, 'success');
+            const freeId = _normalizeFreeModelId(id);
+            _persistWorkingAiModel(freeId);
+            showToast(`✅ Modelo selecionado: ${freeId}`, 'success');
             fecharModelos();
             setTimeout(() => {
                 showToast('🚀 O modelo foi trocado. Pode tentar sua requisição de novo!', 'info');

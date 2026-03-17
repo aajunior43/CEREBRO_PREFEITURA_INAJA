@@ -236,11 +236,14 @@
         <span class="shd-bc-cat">${currentPage.cat}</span>
         <span class="shd-bc-sep">›</span>
         <span class="shd-bc-current">${currentPage.name.replace('📖 ', '')}</span>`;
-      const firstMainEl = document.body.querySelector('main, .page-wrap, section, .content') || document.body.children[1];
-      if (firstMainEl) {
+      const headerEl = document.body.querySelector('#shd-header');
+      const firstMainEl = document.body.querySelector('main, .page-wrap, section, .content');
+      if (headerEl) {
+        headerEl.insertAdjacentElement('afterend', crumb);
+      } else if (firstMainEl && firstMainEl.parentNode === document.body) {
         document.body.insertBefore(crumb, firstMainEl);
       } else {
-        document.body.querySelector('#shd-header')?.insertAdjacentElement('afterend', crumb);
+        document.body.appendChild(crumb);
       }
     }
 

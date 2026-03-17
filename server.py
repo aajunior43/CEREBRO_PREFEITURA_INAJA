@@ -27,7 +27,8 @@ from flask import Flask, request, jsonify, send_from_directory, send_file, Respo
 from config import settings
 from services.empenhos_service import listar_empenhos_mes, listar_historico_credor, persistir_empenho
 from services.extratos_service import listar_subpastas, processar_extratos, validar_origem_destino
-from services.openrouter_service import chat_completion, listar_modelos, parse_http_error
+from services.ai_tasks import AITaskFacade
+from services.openrouter_service import AIServiceError, build_openrouter_service, chat_completion, listar_modelos, parse_http_error
 
 # ── Configurações ───────────────────────────────────────────
 BASE_DIR = str(settings.base_dir)
@@ -1440,8 +1441,36 @@ def _get_openrouter_config(conn, api_key_override: str = '', model_override: str
     env_api_key = (os.environ.get('OPENROUTER_API_KEY') or '').strip()
     env_model = (os.environ.get('OPENROUTER_MODEL') or '').strip()
     api_key = (api_key_override or '').strip() or cfg.get('api_openrouter_key', '') or env_api_key
-    model = (model_override or '').strip() or cfg.get('api_openrouter_modelo', '') or env_model or settings.openrouter_default_model
+    raw_model = (model_override or '').strip() or cfg.get('api_openrouter_modelo', '') or env_model or settings.openrouter_default_model
+    model = _normalize_openrouter_free_model(raw_model)
     return api_key, model
+
+
+def _normalize_openrouter_free_model(model: str) -> str:
+    normalized = (model or '').strip()
+    if not normalized:
+        return 'openrouter/free'
+    if normalized == 'openrouter/free' or normalized.endswith(':free'):
+        return normalized
+    return 'openrouter/free'
+
+
+def _build_ai_service(api_key: str, model: str):
+    return build_openrouter_service(
+        api_key=api_key,
+        default_model=model or settings.openrouter_default_model,
+        referer=settings.openrouter_referer,
+        title=settings.openrouter_title,
+        logger=app.logger,
+        timeout_seconds=settings.openrouter_timeout_seconds,
+        max_retries=settings.openrouter_max_retries,
+        backoff_base=settings.openrouter_backoff_base,
+        cache_ttl_seconds=settings.openrouter_cache_ttl_seconds,
+    )
+
+
+def _build_ai_facade(api_key: str, model: str):
+    return AITaskFacade(_build_ai_service(api_key, model))
 
 def _parse_autentique_keys(value: str) -> list[str]:
     text = (value or '').replace('\r', '\n')
@@ -1675,6 +1704,80 @@ def _sanitize_kanban_task_payload(task: dict) -> dict:
         'priority': _normalize_kanban_priority(task.get('priority') or 'medium'),
     }
 
+def _sanitize_kanban_plan_payload(payload: dict) -> dict:
+    if not isinstance(payload, dict):
+        payload = {}
+    base_task = _sanitize_kanban_task_payload(payload.get('task') or {})
+    base_task['categoria'] = ((payload.get('task') or {}).get('categoria') or '').strip().upper()
+    base_task['data_vencimento'] = ((payload.get('task') or {}).get('data_vencimento') or '').strip()
+    base_task['responsavel'] = ((payload.get('task') or {}).get('responsavel') or '').strip()
+
+    subtarefas = []
+    for item in payload.get('subtarefas') or []:
+        if not isinstance(item, dict):
+            continue
+        task_item = _sanitize_kanban_task_payload(item)
+        if task_item['title']:
+            subtarefas.append(task_item)
+
+    checklist = []
+    for item in payload.get('checklist') or []:
+        text = str(item or '').strip()
+        if text:
+            checklist.append(text)
+
+    next_action = str(payload.get('next_action') or '').strip()
+    resumo = str(payload.get('summary') or '').strip()
+
+    return {
+        'task': base_task,
+        'summary': resumo,
+        'next_action': next_action,
+        'checklist': checklist[:8],
+        'subtarefas': subtarefas[:6],
+    }
+
+def _sanitize_kanban_task_classification_payload(payload: dict) -> dict:
+    if not isinstance(payload, dict):
+        payload = {}
+    categoria = str(payload.get('categoria_ia') or payload.get('categoria') or '').strip().lower()
+    if categoria not in {'financeiro', 'documento', 'prazo', 'auditoria', 'protocolo'}:
+        categoria = 'documento'
+    justificativa = str(payload.get('justificativa') or '').strip()
+    confianca_raw = payload.get('confianca', 0)
+    try:
+        confianca = float(confianca_raw)
+    except Exception:
+        confianca = 0.0
+    return {
+        'categoria_ia': categoria,
+        'justificativa': justificativa,
+        'confianca': max(0.0, min(1.0, confianca)),
+    }
+
+def _sanitize_kanban_stale_payload(payload: dict) -> dict:
+    if not isinstance(payload, dict):
+        payload = {}
+    status = str(payload.get('status') or 'normal').strip().lower()
+    if status not in {'normal', 'atencao', 'parada'}:
+        status = 'normal'
+    dias = payload.get('dias_sem_atualizacao', 0)
+    try:
+        dias = int(dias)
+    except Exception:
+        dias = 0
+    sugestoes = []
+    for item in payload.get('sugestoes') or []:
+        text = str(item or '').strip()
+        if text:
+            sugestoes.append(text)
+    return {
+        'status': status,
+        'dias_sem_atualizacao': max(0, dias),
+        'resumo': str(payload.get('resumo') or '').strip(),
+        'sugestoes': sugestoes[:4],
+    }
+
 def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None, api_key_override: str = '', model_override: str = '', status_hint: str = '', priority_hint: str = ''):
     conn = get_db()
     api_key, model = _get_openrouter_config(conn, api_key_override=api_key_override, model_override=model_override)
@@ -1729,6 +1832,54 @@ def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = Non
             'As subtarefas devem ser ordenadas logicamente (do primeiro ao último passo). '
             'Escreva em português do Brasil. Não inclua texto fora do JSON.'
         ),
+        'plan': (
+            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
+            f'Hoje é {today}. '
+            'Analise a tarefa recebida e gere um plano de ação prático para execução administrativa. '
+            'Responda APENAS com JSON válido no formato: '
+            '{"task":{"title":"","description":"","status":"todo","priority":"medium"},'
+            '"summary":"","next_action":"","checklist":[""],'
+            '"subtarefas":[{"title":"","description":"","status":"todo","priority":"medium"}]}. '
+            'Reescreva a tarefa principal de forma mais clara, profissional e objetiva. '
+            'Em "summary", traga um resumo executivo curto com no máximo 220 caracteres. '
+            'Em "next_action", informe a próxima ação mais recomendada em uma frase curta. '
+            'Em "checklist", gere de 3 a 8 itens curtos e verificáveis. '
+            'Em "subtarefas", gere de 2 a 6 passos práticos e ordenados logicamente. '
+            'Ajuste a prioridade para low, medium ou high conforme urgência e impacto. '
+            'Preserve o status atual, a menos que haja motivo claro para mudar para "done". '
+            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
+        ),
+        'classify': (
+            f'Você é um assistente especializado em classificação de tarefas administrativas da Prefeitura Municipal de Inajá. '
+            f'Hoje é {today}. '
+            'Analise a tarefa recebida e classifique seu tipo principal. '
+            'Responda APENAS com JSON válido no formato: '
+            '{"categoria_ia":"financeiro|documento|prazo|auditoria|protocolo","confianca":0.0,"justificativa":""}. '
+            'Escolha apenas uma categoria principal. '
+            'A justificativa deve ser curta, objetiva e administrativa. '
+            'Não inclua texto fora do JSON.'
+        ),
+        'stale': (
+            f'Você é um assistente especializado em gestão de tarefas administrativas da Prefeitura Municipal de Inajá. '
+            f'Hoje é {today}. '
+            'Analise se a tarefa está parada ou sem atualização há tempo demais e sugira ações administrativas. '
+            'Responda APENAS com JSON válido no formato: '
+            '{"status":"normal|atencao|parada","dias_sem_atualizacao":0,"resumo":"","sugestoes":[""]}. '
+            'Em "status", use "normal", "atencao" ou "parada". '
+            'Em "resumo", descreva a situação em uma frase curta. '
+            'Em "sugestoes", inclua até 4 ações curtas dentre ideias como cobrar responsável, arquivar, redefinir prazo ou mover de coluna. '
+            'Não inclua texto fora do JSON.'
+        ),
+        'professional_rewrite': (
+            f'Você é um redator técnico da administração pública municipal. '
+            f'Hoje é {today}. '
+            'Reescreva a tarefa para ficar mais objetiva, clara e profissional, mantendo fidelidade ao conteúdo. '
+            'Responda APENAS com JSON válido contendo as chaves: '
+            '"title", "description", "status", "priority". '
+            'O texto deve soar administrativo, direto e bem organizado. '
+            'Preserve o status atual. Ajuste a prioridade apenas se houver motivo claro. '
+            'Não inclua texto fora do JSON.'
+        ),
     }
     messages = [{'role': 'system', 'content': system_map[action]}]
     if task:
@@ -1741,52 +1892,21 @@ def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = Non
         })
     else:
         messages.append({'role': 'user', 'content': user_prompt})
-    for tentativa in range(2):  # até 2 tentativas (0 e 1)
-        try:
-            payload = chat_completion(
-                api_key=api_key,
-                model=model,
-                messages=messages,
-                max_tokens=900,
-                temperature=0.4,
-                referer=settings.openrouter_referer,
-                title=settings.openrouter_title,
-            )
-            text = _extract_openrouter_text(payload)
-            return _extract_json_block(text), None
-        except urllib.error.HTTPError as err:
-            if err.code == 429:
-                detail = parse_http_error(err)
-                if tentativa == 0:
-                    # Lê o Retry-After indicado pelo OpenRouter (máx 30s, fallback 15s)
-                    retry_after_raw = detail.get('_retry_after') or '15'
-                    try:
-                        wait_s = min(int(float(retry_after_raw)), 30)
-                    except (ValueError, TypeError):
-                        wait_s = 15
-                    app.logger.warning(
-                        'OpenRouter 429 (tentativa 1) — aguardando %ds para retry... modelo=%s',
-                        wait_s, model
-                    )
-                    _time.sleep(wait_s)
-                    continue
-                # Segunda tentativa também falhou: retorna mensagem amigável
-                msg_or = (detail.get('error') or {})
-                if isinstance(msg_or, dict):
-                    msg_or = msg_or.get('message', '')
-                return None, (
-                    f'Limite de requisições da IA atingido (429). '
-                    f'O modelo "{model}" está sobrecarregado agora. '
-                    'Tente novamente mais tarde ou troque o modelo em ADM → Configurações → Chaves de API.',
-                    429
-                )
-            detail = parse_http_error(err)
-            message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao consultar OpenRouter'
-            return None, (message, err.code or 502)
-        except Exception as err:
-            app.logger.error('_kanban_ai_completion error (action=%s, tentativa=%d): %s', action, tentativa, err)
-            return None, (str(err), 500)
-    return None, ('Erro inesperado ao consultar a IA', 500)
+    try:
+        response = _build_ai_service(api_key, model).chat_by_task(
+            task_type='chat',
+            messages=messages,
+            temperature=0.4,
+            max_tokens=900,
+            use_cache=False,
+            metadata={'feature': 'kanban_ai', 'action': action},
+        )
+        return _extract_json_block(response.text), None
+    except AIServiceError as err:
+        return None, (err.user_message, err.status_code)
+    except Exception as err:
+        app.logger.error('_kanban_ai_completion error (action=%s): %s', action, err)
+        return None, (str(err), 500)
 
 
 @app.route('/api/extratos/modelos-openrouter', methods=['GET', 'POST'])
@@ -1806,7 +1926,12 @@ def extratos_modelos_openrouter():
                 'models': [],
                 'selected_model': selected_model,
             }), 400
-        models = listar_modelos(api_key)
+        models = listar_modelos(
+            api_key,
+            timeout_seconds=settings.openrouter_timeout_seconds,
+            referer=settings.openrouter_referer,
+            title=settings.openrouter_title,
+        )
         normalized = []
         for model in models:
             if not isinstance(model, dict):
@@ -1827,10 +1952,8 @@ def extratos_modelos_openrouter():
             'models': normalized,
             'selected_model': selected_model,
         })
-    except urllib.error.HTTPError as err:
-        detail = parse_http_error(err)
-        message = detail.get('error', {}).get('message') or detail.get('message') or 'Erro ao listar modelos do OpenRouter'
-        return jsonify({'error': message, 'modelos': [], 'models': []}), err.code or 502
+    except AIServiceError as err:
+        return jsonify({'error': err.user_message, 'modelos': [], 'models': []}), err.status_code
     except Exception as e:
         app.logger.error('%s /api/extratos/modelos-openrouter: %s', request.method, e)
         return jsonify({'error': str(e), 'modelos': [], 'models': []}), 500
@@ -1838,7 +1961,6 @@ def extratos_modelos_openrouter():
 
 @app.route('/api/ia/chat', methods=['POST'])
 def proxy_ia_chat():
-    import urllib.error
     try:
         data = request.get_json(force=True) or {}
         conn = get_db()
@@ -1854,56 +1976,19 @@ def proxy_ia_chat():
         temperature = data.get('temperature', 0.2)
         max_tokens = data.get('max_tokens', 2000)
         
-        # Optionally pass response_format if present in the payload (like from auditor.html)
-        kwargs = {}
-        if 'response_format' in data:
-            kwargs['response_format'] = data['response_format']
-
-        # Build fallback chain: user model -> openrouter/free (auto-router) -> specific backups
-        models_to_try = [model]
-        if model != 'openrouter/free':
-            models_to_try.append('openrouter/free')
-        for backup in ['google/gemma-3-27b-it:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'meta-llama/llama-3.2-3b-instruct:free']:
-            if backup not in models_to_try:
-                models_to_try.append(backup)
-
-        payload = None
-        all_429 = True
-
-        for m in models_to_try:
-            try:
-                # openrouter/free does not support response_format
-                call_kwargs = {} if m == 'openrouter/free' else dict(kwargs)
-                payload = chat_completion(
-                    api_key=api_key,
-                    model=m,
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    referer=settings.openrouter_referer,
-                    title=settings.openrouter_title,
-                    **call_kwargs
-                )
-                if m != model:
-                    app.logger.info('Fallback bem-sucedido para modelo: %s', m)
-                all_429 = False
-                break
-            except urllib.error.HTTPError as err:
-                if err.code == 429:
-                    app.logger.warning('Modelo %s retornou 429. Tentando proximo...', m)
-                    continue
-                all_429 = False
-                raise
-
-        if payload is None:
-            msg = ('Todos os modelos gratuitos estao sobrecarregados agora (erro 429). '
-                   'Aguarde 1-2 minutos e tente novamente.')
-            return jsonify({'error': {'code': 429, 'message': msg}}), 429
-
-        return jsonify(payload)
-    except urllib.error.HTTPError as err:
-        detail = parse_http_error(err)
-        return jsonify({'error': detail}), err.code or 502
+        response = _build_ai_service(api_key, model).chat_by_task(
+            task_type='chat',
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            use_cache=bool(data.get('use_cache', False)),
+            response_format=data.get('response_format'),
+            stream=bool(data.get('stream', False)),
+            metadata={'feature': 'proxy_ia_chat'},
+        )
+        return jsonify(response.payload)
+    except AIServiceError as err:
+        return jsonify(err.to_response()), err.status_code
     except Exception as e:
         app.logger.error('POST /api/ia/chat: %s', e)
         return jsonify({'error': str(e)}), 500
@@ -1911,8 +1996,6 @@ def proxy_ia_chat():
 
 @app.route('/api/empenho-assistente', methods=['POST'])
 def empenho_assistente():
-    import urllib.error
-
     data = request.get_json(silent=True) or {}
     action = (data.get('action') or '').strip()
     payload = data.get('payload') or {}
@@ -1921,133 +2004,26 @@ def empenho_assistente():
     api_key, model = _get_openrouter_config(conn)
     if not api_key:
         return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API.'}), 400
-
-    today = __import__('datetime').date.today().strftime('%d/%m/%Y')
-
-    def _clean(value):
-        return (value or '').strip()
-
-    def _ctx_lines(info: dict) -> list[str]:
-        lines = [
-            '=== CONTEXTO DO EMPENHO ===',
-            f"Secretaria/Setor: {_clean(info.get('secretaria')) or 'Nao informado'}",
-            f"Fornecedor/Credor: {_clean(info.get('fornecedor')) or 'Nao informado'}",
-            f"Tipo da despesa: {_clean(info.get('tipo_despesa')) or 'Nao informado'}",
-            f"Finalidade/necessidade: {_clean(info.get('finalidade')) or 'Nao informado'}",
-            f"Valor: {_clean(info.get('valor')) or 'Nao informado'}",
-            f"Competencia/periodo: {_clean(info.get('competencia')) or 'Nao informado'}",
-            f"Processo: {_clean(info.get('processo')) or 'Nao informado'}",
-            f"Pregao/lictacao: {_clean(info.get('pregao')) or 'Nao informado'}",
-            f"Contrato: {_clean(info.get('contrato')) or 'Nao informado'}",
-            f"Nota fiscal/OS/referencia: {_clean(info.get('nota_fiscal')) or 'Nao informado'}",
-        ]
-        if _clean(info.get('texto_base')):
-            lines.append('\n=== TEXTO BASE / DOCUMENTO COLADO ===')
-            lines.append(_clean(info.get('texto_base')))
-        if _clean(info.get('descricao_atual')):
-            lines.append('\n=== DESCRICAO ATUAL ===')
-            lines.append(_clean(info.get('descricao_atual')))
-        return lines
-
-    system_prompts = {
-        'extract_fields': (
-            f'Voce e um assistente de empenho da Prefeitura Municipal de Inaja/PE. Hoje e {today}. '
-            'Leia o contexto e extraia os campos mais provaveis do documento. '
-            'Responda APENAS com JSON valido contendo as chaves: '
-            '"secretaria", "fornecedor", "tipo_despesa", "finalidade", "valor", "competencia", '
-            '"processo", "pregao", "contrato", "nota_fiscal", "observacoes", "pendencias". '
-            '"pendencias" deve ser um array de strings objetivas. '
-            'Se algum dado nao existir, retorne string vazia. Nao inclua texto fora do JSON.'
-        ),
-        'generate_description': (
-            f'Voce e um redator tecnico especializado em notas de empenho municipais. Hoje e {today}. '
-            'Com base no contexto, escreva a DESCRICAO de uma nota de empenho. '
-            'Regras obrigatorias: '
-            '1. Responda somente com texto puro. '
-            '2. Use EXCLUSIVAMENTE CAIXA ALTA. '
-            '3. O texto deve comecar exatamente com "PELA DESPESA EMPENHADA REFERENTE A". '
-            '4. Seja formal, objetivo e completo. '
-            '5. Inclua secretaria, objeto, finalidade, periodo e referencias como processo, pregao, contrato ou nota fiscal quando existirem. '
-            '6. Nao invente numeros. '
-            '7. Nao use markdown, aspas ou listas.'
-        ),
-        'checklist': (
-            f'Voce e um conferente de empenhos publicos municipais. Hoje e {today}. '
-            'Analise o contexto e gere um checklist objetivo de conferencias antes da emissao do empenho. '
-            'Responda em portugues do Brasil, com no maximo 8 itens curtos. '
-            'Aponte campos ausentes, riscos documentais e dados que precisam ser confirmados. '
-            'Se estiver tudo consistente, diga isso claramente e ainda liste as verificacoes finais.'
-        ),
-        'improve_description': (
-            f'Voce e um revisor tecnico de notas de empenho municipais. Hoje e {today}. '
-            'Recebera uma descricao atual e o contexto do empenho. '
-            'Reescreva a descricao para ficar mais clara, formal e completa, mantendo fidelidade aos dados informados. '
-            'Regras obrigatorias: texto puro, somente em CAIXA ALTA, iniciando exatamente com '
-            '"PELA DESPESA EMPENHADA REFERENTE A". Nao use markdown nem aspas.'
-        ),
-    }
-
-    if action not in system_prompts:
+    if action not in {'extract_fields', 'generate_description', 'checklist', 'improve_description'}:
         return jsonify({'error': 'Acao invalida. Use: extract_fields, generate_description, checklist, improve_description.'}), 400
-
-    messages = [
-        {'role': 'system', 'content': system_prompts[action]},
-        {'role': 'user', 'content': '\n'.join(_ctx_lines(payload))},
-    ]
-
-    models_to_try = [model]
-    if model != 'openrouter/free':
-        models_to_try.append('openrouter/free')
-    for backup in ['google/gemma-3-27b-it:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'meta-llama/llama-3.2-3b-instruct:free']:
-        if backup not in models_to_try:
-            models_to_try.append(backup)
-
     try:
-        raw_text = ''
-        for m in models_to_try:
-            try:
-                response = chat_completion(
-                    api_key=api_key,
-                    model=m,
-                    messages=messages,
-                    max_tokens=1400,
-                    temperature=0.3 if action in ('generate_description', 'improve_description') else 0.2,
-                    referer=settings.openrouter_referer,
-                    title=settings.openrouter_title,
-                )
-                raw_text = _extract_openrouter_text(response)
-                break
-            except urllib.error.HTTPError as err:
-                if err.code == 429:
-                    app.logger.warning('Assistente de empenho: modelo %s retornou 429; tentando proximo.', m)
-                    continue
-                detail = parse_http_error(err)
-                message = detail.get('error', {}).get('message') or detail.get('message') or f'Erro HTTP {err.code}'
-                return jsonify({'error': message}), err.code or 502
-
-        if not raw_text:
-            return jsonify({'error': 'Todos os modelos gratuitos estao sobrecarregados agora. Aguarde e tente novamente.'}), 429
-
-        if action == 'extract_fields':
-            parsed = _extract_json_block(raw_text)
-            if not isinstance(parsed, dict):
-                raise ValueError('A IA retornou um formato inesperado para extracao de campos.')
-            parsed['pendencias'] = parsed.get('pendencias') if isinstance(parsed.get('pendencias'), list) else []
-            return jsonify({'action': action, 'resultado': parsed})
-
-        text = raw_text.strip().replace('**', '').replace('*', '')
-        if action in ('generate_description', 'improve_description'):
-            text = text.upper()
-            prefix = 'PELA DESPESA EMPENHADA REFERENTE A'
-            if not text.startswith(prefix):
-                text = text.lstrip()
-                if text.startswith('REFERENTE A'):
-                    text = f'PELA DESPESA EMPENHADA {text}'
-                else:
-                    text = f'{prefix} {text}'
-        return jsonify({'action': action, 'resultado': text})
+        facade = _build_ai_facade(api_key, model)
+        result = facade.gerar_texto_empenho(payload, acao=action)
+        if isinstance(result, dict):
+            return jsonify({'action': action, 'resultado': result})
+        return jsonify({
+            'action': action,
+            'resultado': result.content,
+            'meta': {
+                'model': result.model,
+                'cached': result.cached,
+                'usage': result.usage,
+            }
+        })
     except ValueError as err:
         return jsonify({'error': str(err)}), 400
+    except AIServiceError as err:
+        return jsonify(err.to_response()), err.status_code
     except Exception as err:
         app.logger.error('POST /api/empenho-assistente: %s', err)
         return jsonify({'error': str(err)}), 500
@@ -2244,6 +2220,129 @@ def kanban_ai_breakdown_task():
         return jsonify({'tasks': tasks})
     except Exception as e:
         app.logger.error('POST /api/kanban/ai/breakdown-task: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/ai/plan-task', methods=['POST'])
+def kanban_ai_plan_task():
+    try:
+        data = request.get_json(force=True) or {}
+        task = data.get('task') or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not isinstance(task, dict) or not (task.get('title') or '').strip():
+            return jsonify({'error': 'Envie uma tarefa válida para a IA planejar'}), 400
+        current_task = {
+            **_sanitize_kanban_task_payload(task),
+            'title': (task.get('title') or '').strip(),
+            'categoria': (task.get('categoria') or '').strip().upper(),
+            'data_vencimento': (task.get('data_vencimento') or '').strip(),
+            'responsavel': (task.get('responsavel') or '').strip(),
+        }
+        parsed, error = _kanban_ai_completion(
+            'plan',
+            prompt,
+            current_task,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        plan = _sanitize_kanban_plan_payload(parsed if isinstance(parsed, dict) else {})
+        if not plan['task']['title']:
+            return jsonify({'error': 'A IA não retornou uma tarefa principal válida'}), 502
+        if not plan['checklist']:
+            return jsonify({'error': 'A IA não retornou checklist válido para o planejamento'}), 502
+        return jsonify(plan)
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/plan-task: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/ai/classify-task', methods=['POST'])
+def kanban_ai_classify_task():
+    try:
+        data = request.get_json(force=True) or {}
+        task = data.get('task') or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not isinstance(task, dict) or not (task.get('title') or '').strip():
+            return jsonify({'error': 'Envie uma tarefa válida para a IA classificar'}), 400
+        current_task = {
+            **_sanitize_kanban_task_payload(task),
+            'title': (task.get('title') or '').strip(),
+            'categoria': (task.get('categoria') or '').strip().upper(),
+            'data_vencimento': (task.get('data_vencimento') or '').strip(),
+            'responsavel': (task.get('responsavel') or '').strip(),
+        }
+        parsed, error = _kanban_ai_completion(
+            'classify',
+            prompt or 'Classifique o tipo principal desta tarefa.',
+            current_task,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        result = _sanitize_kanban_task_classification_payload(parsed if isinstance(parsed, dict) else {})
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/classify-task: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/ai/stale-task', methods=['POST'])
+def kanban_ai_stale_task():
+    try:
+        data = request.get_json(force=True) or {}
+        task = data.get('task') or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not isinstance(task, dict) or not (task.get('title') or '').strip():
+            return jsonify({'error': 'Envie uma tarefa válida para analisar parada'}), 400
+        current_task = {
+            **_sanitize_kanban_task_payload(task),
+            'title': (task.get('title') or '').strip(),
+            'categoria': (task.get('categoria') or '').strip().upper(),
+            'data_vencimento': (task.get('data_vencimento') or '').strip(),
+            'responsavel': (task.get('responsavel') or '').strip(),
+            'criado_em': (task.get('criado_em') or '').strip(),
+            'atualizado_em': (task.get('atualizado_em') or '').strip(),
+        }
+        parsed, error = _kanban_ai_completion(
+            'stale',
+            prompt or 'Avalie se a tarefa está parada e sugira ações.',
+            current_task,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        result = _sanitize_kanban_stale_payload(parsed if isinstance(parsed, dict) else {})
+        return jsonify(result)
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/stale-task: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/kanban/ai/professional-rewrite', methods=['POST'])
+def kanban_ai_professional_rewrite():
+    try:
+        data = request.get_json(force=True) or {}
+        task = data.get('task') or {}
+        prompt = (data.get('prompt') or '').strip()
+        if not isinstance(task, dict) or not (task.get('title') or '').strip():
+            return jsonify({'error': 'Envie uma tarefa válida para reescrita profissional'}), 400
+        current_task = _sanitize_kanban_task_payload(task)
+        current_task['title'] = (task.get('title') or '').strip()
+        parsed, error = _kanban_ai_completion(
+            'professional_rewrite',
+            prompt or 'Reescreva a tarefa em tom profissional e administrativo.',
+            current_task,
+            api_key_override=(data.get('api_key') or '').strip(),
+            model_override=(data.get('model') or '').strip()
+        )
+        if error:
+            return jsonify({'error': error[0]}), error[1]
+        rewritten = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
+        if not rewritten['title']:
+            return jsonify({'error': 'A IA não retornou um título válido para a reescrita'}), 502
+        return jsonify(rewritten)
+    except Exception as e:
+        app.logger.error('POST /api/kanban/ai/professional-rewrite: %s', e)
         return jsonify({'error': str(e)}), 500
 
 
@@ -3702,37 +3801,29 @@ def despesas_ia():
         {'role': 'user',   'content': user_content},
     ]
 
-    for tentativa in range(2):
-        try:
-            payload = chat_completion(
-                api_key=api_key,
-                model=model,
-                messages=messages,
-                max_tokens=1800,
-                temperature=0.5,
-                referer=settings.openrouter_referer,
-                title=settings.openrouter_title,
-            )
-            text = _extract_openrouter_text(payload)
-            return jsonify({'resultado': text, 'action': action})
-        except urllib.error.HTTPError as err:
-            if err.code == 429 and tentativa == 0:
-                detail = parse_http_error(err)
-                try:
-                    wait_s = min(int(float(detail.get('_retry_after') or '15')), 30)
-                except (ValueError, TypeError):
-                    wait_s = 15
-                _time.sleep(wait_s)
-                continue
-            detail = parse_http_error(err)
-            msg = (detail.get('error') or {})
-            if isinstance(msg, dict):
-                msg = msg.get('message', '')
-            return jsonify({'error': msg or f'Erro HTTP {err.code}'}), err.code or 502
-        except Exception as err:
-            app.logger.error('despesas_ia error (action=%s, tentativa=%d): %s', action, tentativa, err)
-            return jsonify({'error': str(err)}), 500
-    return jsonify({'error': 'Erro inesperado ao consultar a IA'}), 500
+    try:
+        response = _build_ai_service(api_key, model).chat_by_task(
+            task_type='auditoria_documento',
+            messages=messages,
+            temperature=0.5,
+            max_tokens=1800,
+            use_cache=False,
+            metadata={'feature': 'despesas_ia', 'action': action},
+        )
+        return jsonify({
+            'resultado': response.text,
+            'action': action,
+            'meta': {
+                'model': response.model,
+                'cached': response.cached,
+                'usage': response.usage,
+            }
+        })
+    except AIServiceError as err:
+        return jsonify(err.to_response()), err.status_code
+    except Exception as err:
+        app.logger.error('despesas_ia error (action=%s): %s', action, err)
+        return jsonify({'error': str(err)}), 500
 
 
 # ────────────────────────────────────────────────────────────
