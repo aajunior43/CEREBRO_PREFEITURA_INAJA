@@ -15,10 +15,14 @@
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
+      .replace(/\n{3,}/g, '\n\n')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/^### (.+)$/gm, '<strong style="font-size:13px">$1</strong>')
       .replace(/^## (.+)$/gm, '<strong style="font-size:14px">$1</strong>')
-      .replace(/^# (.+)$/gm, '<strong style="font-size:15px">$1</strong>');
+      .replace(/^# (.+)$/gm, '<strong style="font-size:15px">$1</strong>')
+      .replace(/^- (.+)$/gm, '• $1')
+      .replace(/\n/g, '<br>');
   }
 
   function ensureStylesLoaded() {
@@ -44,6 +48,12 @@
   window.IaChatWidget = {
     create(config) {
       ensureStylesLoaded();
+      if (config && config.singletonKey) {
+        window.__iaChatWidgetInstances = window.__iaChatWidgetInstances || {};
+        if (window.__iaChatWidgetInstances[config.singletonKey]) {
+          return window.__iaChatWidgetInstances[config.singletonKey];
+        }
+      }
 
       const actions = normalizeActions(config.actions);
       const shortcuts = normalizeActions(config.shortcuts);
@@ -90,6 +100,7 @@
 
       document.body.appendChild(fab);
       document.body.appendChild(panel);
+      window.__iaChatWidgetMounted = true;
 
       const tabRow = panel.querySelector('.iaw-tab-row');
       const descEl = panel.querySelector('.iaw-desc');
@@ -115,6 +126,7 @@
       function open() {
         panel.classList.add('is-open');
         fab.classList.add('is-open');
+        chatInput.focus();
       }
 
       function close() {
@@ -159,6 +171,7 @@
           loadingEl.style.display = 'none';
           resultEl.innerHTML = renderMarkdownLite(result || 'Sem resposta da IA.');
           actionsEl.style.display = 'flex';
+          resultEl.scrollTop = 0;
         } catch (error) {
           loadingEl.style.display = 'none';
           resultEl.style.display = 'block';
@@ -214,8 +227,11 @@
       });
 
       setAction(activeAction);
-
-      return { open, close, run, setAction, elements: { fab, panel, resultEl } };
+      const api = { open, close, run, setAction, elements: { fab, panel, resultEl } };
+      if (config && config.singletonKey) {
+        window.__iaChatWidgetInstances[config.singletonKey] = api;
+      }
+      return api;
     }
   };
 }());

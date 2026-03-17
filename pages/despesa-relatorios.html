@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/index.css" />
   <link rel="stylesheet" href="/static/css/despesa-prefeitura.css" />
+  <script src="/static/js/ia-chat-widget.js"></script>
   <script defer src="/static/js/shared-header.js"></script>
   <style>
     /* ── Layout ─────────────────────────────────────────── */
@@ -477,9 +478,31 @@
         iaActions.style.display = 'flex';
       } catch (e) {
         iaLoading.style.display = 'none';
-        iaResult.textContent = `❌ ${e.message}`;
+        iaResult.textContent = `❌ ${e.message || e}`;
         iaActions.style.display = 'flex';
       }
+    }
+
+    async function runIaRelatorioWidget(action, question = '') {
+      if (!hasComparisonReady()) {
+        throw new Error('Selecione dois períodos e compare antes de usar a IA.');
+      }
+      const [rA, rB] = await Promise.all([carregarResumo(selA), carregarResumo(selB)]);
+      if (!rA || !rB) throw new Error('Não foi possível carregar os resumos dos períodos selecionados.');
+      const response = await fetch('/api/despesas/ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          contexto: buildIaContext(rA, rB),
+          pergunta: question || ''
+        })
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok || json.error) {
+        throw new Error(json.error || `Erro HTTP ${response.status}`);
+      }
+      return json.resultado || 'Sem resposta da IA.';
     }
 
     /* ── Carrega lista de importações ─────────────────────── */
@@ -744,6 +767,37 @@
       iaActions.style.display = 'none';
       iaLoading.style.display = 'none';
     });
+
+    if (window.IaChatWidget) {
+      iaFab.style.display = 'none';
+      iaPanel.style.display = 'none';
+      window.IaChatWidget.create({
+        singletonKey: 'page:/pages/despesa-relatorios.html',
+        title: 'IA dos Relatórios',
+        subtitle: 'Assistente comparativo de dotações',
+        buttonLabel: 'IA',
+        buttonTitle: 'Abrir IA dos Relatórios',
+        chatPlaceholder: 'Ex: O que piorou do período A para o B?',
+        emptyMessage: 'Selecione dois períodos e compare antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: iaDescs.analisar },
+          { id: 'anomalias', label: 'Anomalias', description: iaDescs.anomalias },
+          { id: 'prioridades', label: 'Prioridades', description: iaDescs.prioridades },
+          { id: 'cortes', label: 'Cortes', description: iaDescs.cortes },
+          { id: 'remanejamento', label: 'Remanejamento', description: iaDescs.remanejamento },
+          { id: 'relatorio', label: 'Relatório', description: iaDescs.relatorio },
+          { id: 'chat', label: 'Chat', description: iaDescs.chat }
+        ],
+        shortcuts: [
+          { label: 'Resumo comparativo', action: 'analisar' },
+          { label: 'Riscos da comparação', action: 'anomalias' },
+          { label: 'Onde reforçar', action: 'prioridades' },
+          { label: 'Onde conter', action: 'cortes' }
+        ],
+        hasData: hasComparisonReady,
+        onRun: ({ action, question }) => runIaRelatorioWidget(action, question)
+      });
+    }
 
     /* ── Ações de cards ───────────────────────────────────── */
     window.verPeriodo = id => {

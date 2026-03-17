@@ -201,7 +201,8 @@
             .kb-hero,
             .kb-toolbar,
             .kb-cat-filter,
-            .kb-toolbar2 {
+            .kb-toolbar2,
+            .kb-report-panel {
                 padding: 14px
             }
 
@@ -211,6 +212,11 @@
 
             .kb-toolbar {
                 gap: 10px
+            }
+
+            .kb-report-grid,
+            .kb-report-columns {
+                grid-template-columns: 1fr;
             }
 
             .kb-toolbar > .kb-btn,
@@ -555,6 +561,181 @@
         }
         .kb-view-btn.active { background: var(--accent); color: #fff; border-radius: 7px; }
 
+        .kb-report-panel {
+            max-width: 1680px;
+            margin: 0 auto 18px;
+            padding: 18px 18px 20px;
+            border-radius: 22px;
+            background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 97%, transparent), color-mix(in srgb, var(--surface-2) 94%, transparent));
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .kb-report-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .kb-report-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .kb-report-subtitle {
+            margin: 6px 0 0;
+            font-size: 12px;
+            color: var(--text-3);
+        }
+
+        .kb-report-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .kb-report-date-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 180px;
+        }
+
+        .kb-report-date-wrap label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .kb-report-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .kb-report-card {
+            padding: 14px 16px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, transparent), color-mix(in srgb, var(--bg-2) 92%, transparent));
+            box-shadow: var(--shadow-sm);
+        }
+
+        .kb-report-card-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .kb-report-card-value {
+            margin-top: 8px;
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--text);
+        }
+
+        .kb-report-card-note {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-3);
+            line-height: 1.45;
+        }
+
+        .kb-report-columns {
+            display: grid;
+            grid-template-columns: 1.25fr .85fr .85fr;
+            gap: 14px;
+        }
+
+        .kb-report-block {
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid var(--border);
+            background: color-mix(in srgb, var(--surface) 96%, transparent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .kb-report-block h4 {
+            margin: 0 0 12px;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .kb-report-table-wrap {
+            overflow: auto;
+        }
+
+        .kb-report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .kb-report-table th,
+        .kb-report-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .kb-report-table th {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-3);
+            font-weight: 800;
+        }
+
+        .kb-report-empty {
+            padding: 22px 10px;
+            text-align: center;
+            color: var(--text-3);
+            font-size: 12px;
+        }
+
+        .kb-report-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .kb-report-list-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 14px;
+            background: color-mix(in srgb, var(--bg-2) 86%, transparent);
+            border: 1px solid var(--border);
+        }
+
+        .kb-report-list-key {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+        }
+
+        .kb-report-list-val {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
         /* ── Visão lista ─────────────────────────────────────────────────────── */
         #kb-list-view { display: none; margin-top: 12px; }
         .kb-list-table {
@@ -636,7 +817,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
-            margin: 0 auto 18px;
+            justify-content: space-between;
             flex-wrap: wrap;
             max-width: 1680px;
             padding: 14px 16px;
@@ -1350,6 +1531,75 @@
                 </div>
             </div>
         </div>
+        <div class="kb-report-panel">
+            <div class="kb-report-head">
+                <div>
+                    <h3 class="kb-report-title">Relatório Gerencial de Tarefas</h3>
+                    <p class="kb-report-subtitle">Consulte as tarefas concluídas no dia, produtividade da equipe, prioridades entregues e exporte em PDF ou Excel.</p>
+                </div>
+                <div class="kb-report-controls">
+                    <div class="kb-report-date-wrap">
+                        <label for="kb-report-date">Data de referência</label>
+                        <input class="kb-input" id="kb-report-date" type="date" onchange="renderKanbanReport()" />
+                    </div>
+                    <button class="kb-btn kb-btn-ghost" onclick="setKanbanReportDateToday()">Hoje</button>
+                    <button class="kb-btn kb-btn-ghost" onclick="exportKanbanReportPdf()">🖨️ PDF do Relatório</button>
+                    <button class="kb-btn kb-btn-emerald" onclick="exportKanbanReportExcel()">📊 Excel do Relatório</button>
+                </div>
+            </div>
+
+            <div class="kb-report-grid">
+                <div class="kb-report-card">
+                    <div class="kb-report-card-label">Concluídas no dia</div>
+                    <div class="kb-report-card-value" id="kb-report-done-count">0</div>
+                    <div class="kb-report-card-note" id="kb-report-done-note">Nenhuma tarefa concluída na data selecionada.</div>
+                </div>
+                <div class="kb-report-card">
+                    <div class="kb-report-card-label">Altas prioridades entregues</div>
+                    <div class="kb-report-card-value" id="kb-report-high-count">0</div>
+                    <div class="kb-report-card-note">Tarefas críticas finalizadas na data.</div>
+                </div>
+                <div class="kb-report-card">
+                    <div class="kb-report-card-label">Vencidas entregues no dia</div>
+                    <div class="kb-report-card-value" id="kb-report-overdue-count">0</div>
+                    <div class="kb-report-card-note">Demandas concluídas após o vencimento.</div>
+                </div>
+                <div class="kb-report-card">
+                    <div class="kb-report-card-label">Pendentes abertas</div>
+                    <div class="kb-report-card-value" id="kb-report-open-count">0</div>
+                    <div class="kb-report-card-note">Tarefas que continuam em aberto no quadro.</div>
+                </div>
+            </div>
+
+            <div class="kb-report-columns">
+                <div class="kb-report-block">
+                    <h4>Entregas do dia</h4>
+                    <div class="kb-report-table-wrap">
+                        <table class="kb-report-table">
+                            <thead>
+                                <tr>
+                                    <th>Tarefa</th>
+                                    <th>Responsável</th>
+                                    <th>Categoria</th>
+                                    <th>Prioridade</th>
+                                    <th>Conclusão</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kb-report-table-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="kb-report-empty" id="kb-report-empty" style="display:none">Nenhuma tarefa concluída nesta data.</div>
+                </div>
+                <div class="kb-report-block">
+                    <h4>Resumo por responsável</h4>
+                    <div class="kb-report-list" id="kb-report-responsaveis"></div>
+                </div>
+                <div class="kb-report-block">
+                    <h4>Resumo por categoria</h4>
+                    <div class="kb-report-list" id="kb-report-categorias"></div>
+                </div>
+            </div>
+        </div>
         <div class="kb-cat-filter">
             <span class="kb-cat-filter-label">🔖 Filtrar:</span>
             <button class="kb-cat-filter-btn kb-cat-filter-all active" onclick="setCatFilter('')">Todas <span id="cnt-cat-all"></span></button>
@@ -1722,6 +1972,7 @@
         let aiModelsFetchedAt = 0;
         let activeCatFilter = '';
         let activeSearch = '';
+        let kanbanReportDate = '';
 
         // ── INIT ───────────────────────────────────────────────────────────────────
         async function loadAll() {
@@ -1906,8 +2157,168 @@
                 const ids = { todo: 'st-todo', 'in-progress': 'st-progress', done: 'st-done' };
                 document.getElementById(ids[col]).textContent = tasks.filter(t => t.status === col).length;
             });
+            renderKanbanReport();
             updateProgressBar();
             updateAlertBanner();
+        }
+
+        function getTodayIsoDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function normalizeTaskDate(value) {
+            return String(value || '').slice(0, 10);
+        }
+
+        function formatDateOnly(value) {
+            const dateOnly = normalizeTaskDate(value);
+            if (!dateOnly) return '—';
+            const [year, month, day] = dateOnly.split('-');
+            if (!year || !month || !day) return dateOnly;
+            return `${day}/${month}/${year}`;
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '—';
+            const normalized = String(value).replace(' ', 'T');
+            const date = new Date(normalized);
+            if (Number.isNaN(date.getTime())) return String(value);
+            return date.toLocaleString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatStatusLabel(status) {
+            return ({ todo: 'A Fazer', 'in-progress': 'Em andamento', done: 'Concluído' })[status] || status || '—';
+        }
+
+        function formatPriorityLabel(priority) {
+            return ({ high: 'Alta', medium: 'Média', low: 'Baixa' })[priority] || priority || '—';
+        }
+
+        function getSelectedReportDate() {
+            return kanbanReportDate || document.getElementById('kb-report-date')?.value || getTodayIsoDate();
+        }
+
+        function getKanbanReportData() {
+            const selectedDate = getSelectedReportDate();
+            const doneToday = tasks
+                .filter(task => task.status === 'done' && normalizeTaskDate(task.concluido_em || task.atualizado_em) === selectedDate)
+                .sort((a, b) => (b.concluido_em || b.atualizado_em || '').localeCompare(a.concluido_em || a.atualizado_em || ''));
+
+            const openTasks = tasks.filter(task => task.status !== 'done');
+            const highDone = doneToday.filter(task => task.priority === 'high');
+            const overdueDone = doneToday.filter(task => task.data_vencimento && normalizeTaskDate(task.data_vencimento) < selectedDate);
+
+            const byResponsible = new Map();
+            const byCategory = new Map();
+
+            doneToday.forEach(task => {
+                const responsible = (task.responsavel || 'Sem responsável').trim() || 'Sem responsável';
+                const category = (task.categoria || 'SEM CATEGORIA').trim() || 'SEM CATEGORIA';
+                byResponsible.set(responsible, (byResponsible.get(responsible) || 0) + 1);
+                byCategory.set(category, (byCategory.get(category) || 0) + 1);
+            });
+
+            const topResponsibles = [...byResponsible.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+                .slice(0, 8);
+
+            const topCategories = [...byCategory.entries()]
+                .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'))
+                .slice(0, 8);
+
+            return {
+                selectedDate,
+                doneToday,
+                openTasks,
+                highDone,
+                overdueDone,
+                topResponsibles,
+                topCategories
+            };
+        }
+
+        function renderSummaryList(el, entries, emptyText) {
+            if (!el) return;
+            if (!entries.length) {
+                el.innerHTML = `<div class="kb-report-empty">${emptyText}</div>`;
+                return;
+            }
+            el.innerHTML = entries.map(([label, count]) => `
+                <div class="kb-report-list-item">
+                    <span class="kb-report-list-key">${esc(label)}</span>
+                    <span class="kb-report-list-val">${count}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderKanbanReport() {
+            const dateInput = document.getElementById('kb-report-date');
+            if (dateInput && !dateInput.value) {
+                dateInput.value = kanbanReportDate || getTodayIsoDate();
+            }
+            if (!kanbanReportDate) {
+                kanbanReportDate = dateInput?.value || getTodayIsoDate();
+            }
+
+            const report = getKanbanReportData();
+            const doneCountEl = document.getElementById('kb-report-done-count');
+            const doneNoteEl = document.getElementById('kb-report-done-note');
+            const highCountEl = document.getElementById('kb-report-high-count');
+            const overdueCountEl = document.getElementById('kb-report-overdue-count');
+            const openCountEl = document.getElementById('kb-report-open-count');
+            const tableBody = document.getElementById('kb-report-table-body');
+            const emptyEl = document.getElementById('kb-report-empty');
+
+            if (doneCountEl) doneCountEl.textContent = report.doneToday.length;
+            if (highCountEl) highCountEl.textContent = report.highDone.length;
+            if (overdueCountEl) overdueCountEl.textContent = report.overdueDone.length;
+            if (openCountEl) openCountEl.textContent = report.openTasks.length;
+            if (doneNoteEl) {
+                doneNoteEl.textContent = report.doneToday.length
+                    ? `Data consultada: ${formatDateOnly(report.selectedDate)} · ${report.topResponsibles.length ? `Maior volume: ${report.topResponsibles[0][0]} (${report.topResponsibles[0][1]})` : 'Sem responsável destacado.'}`
+                    : `Data consultada: ${formatDateOnly(report.selectedDate)} · Nenhuma entrega registrada.`;
+            }
+
+            if (tableBody) {
+                tableBody.innerHTML = report.doneToday.map(task => `
+                    <tr>
+                        <td><strong>${esc(task.title || '—')}</strong>${task.description ? `<div style="margin-top:4px;font-size:11px;color:var(--text-3)">${esc(task.description)}</div>` : ''}</td>
+                        <td>${esc(task.responsavel || '—')}</td>
+                        <td>${esc((task.categoria || '—').toUpperCase())}</td>
+                        <td>${formatPriorityLabel(task.priority)}</td>
+                        <td>${formatDateTime(task.concluido_em || task.atualizado_em)}</td>
+                    </tr>
+                `).join('');
+            }
+            if (emptyEl) emptyEl.style.display = report.doneToday.length ? 'none' : '';
+
+            renderSummaryList(
+                document.getElementById('kb-report-responsaveis'),
+                report.topResponsibles,
+                'Nenhuma entrega por responsável nesta data.'
+            );
+            renderSummaryList(
+                document.getElementById('kb-report-categorias'),
+                report.topCategories,
+                'Nenhuma categoria concluída nesta data.'
+            );
+        }
+
+        function setKanbanReportDateToday() {
+            kanbanReportDate = getTodayIsoDate();
+            const input = document.getElementById('kb-report-date');
+            if (input) input.value = kanbanReportDate;
+            renderKanbanReport();
         }
 
         // ── PROGRESS BAR ───────────────────────────────────────────────────────────
@@ -2021,6 +2432,146 @@
             a.href = url; a.download = `tarefas_kanban_${now}.csv`;
             a.click(); URL.revokeObjectURL(url);
             showToast(`📥 CSV exportado (${rows.length} tarefas)`, 'success');
+        }
+
+        function exportKanbanReportExcel() {
+            const report = getKanbanReportData();
+            const rows = report.doneToday.map(task => ({
+                Data_Relatorio: formatDateOnly(report.selectedDate),
+                Titulo: task.title || '',
+                Descricao: task.description || '',
+                Status: formatStatusLabel(task.status),
+                Prioridade: formatPriorityLabel(task.priority),
+                Categoria: (task.categoria || '').toUpperCase(),
+                Data_Vencimento: formatDateOnly(task.data_vencimento),
+                Responsavel: task.responsavel || '',
+                Criado_em: formatDateTime(task.criado_em),
+                Atualizado_em: formatDateTime(task.atualizado_em),
+                Concluido_em: formatDateTime(task.concluido_em)
+            }));
+            const headers = ['Data Relatório', 'Título', 'Descrição', 'Status', 'Prioridade', 'Categoria', 'Data Vencimento', 'Responsável', 'Criado em', 'Atualizado em', 'Concluído em'];
+            const csv = '\uFEFF' + [headers.map(h => `"${h}"`).join(','), ...rows.map(r => Object.values(r).map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))].join('\r\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+            a.href = url; a.download = `relatorio_kanban_${now}.csv`;
+            a.click(); URL.revokeObjectURL(url);
+            showToast('Relatório Excel exportado com sucesso.', 'success');
+        }
+
+        function exportKanbanReportPdf() {
+            const report = getKanbanReportData();
+            if (!report.doneToday.length) {
+                showToast('Não há tarefas concluídas nesta data para gerar o PDF.', 'error');
+                return;
+            }
+
+            const area = document.getElementById('print-area');
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+            const timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+
+            const responsaveisHtml = report.topResponsibles.length
+                ? report.topResponsibles.map(([label, count]) => `<div class="pr-mini-card"><strong>${esc(label)}</strong><span>${count} entrega${count > 1 ? 's' : ''}</span></div>`).join('')
+                : '<p style="font-size:11px;color:#64748b">Nenhum responsável com entregas no período.</p>';
+
+            const categoriasHtml = report.topCategories.length
+                ? report.topCategories.map(([label, count]) => `<div class="pr-mini-card"><strong>${esc(label)}</strong><span>${count} tarefa${count > 1 ? 's' : ''}</span></div>`).join('')
+                : '<p style="font-size:11px;color:#64748b">Nenhuma categoria concluída no período.</p>';
+
+            const rowsHtml = report.doneToday.map((task, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>
+                        <strong>${esc(task.title || '—')}</strong>
+                        ${task.description ? `<div style="font-size:8.5pt;color:#5b6572;margin-top:3px;">${esc(task.description)}</div>` : ''}
+                    </td>
+                    <td>${esc(task.responsavel || '—')}</td>
+                    <td>${esc((task.categoria || '—').toUpperCase())}</td>
+                    <td>${formatPriorityLabel(task.priority)}</td>
+                    <td>${formatDateOnly(task.data_vencimento)}</td>
+                    <td>${formatDateTime(task.concluido_em || task.atualizado_em)}</td>
+                </tr>
+            `).join('');
+
+            area.innerHTML = `
+                <style>
+                    .pr-report-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:16px 0; }
+                    .pr-report-card { border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; background:#f8fafc; }
+                    .pr-report-card strong { display:block; font-size:16pt; color:#0f172a; margin-top:4px; }
+                    .pr-report-card span { font-size:8pt; text-transform:uppercase; letter-spacing:.5px; color:#64748b; }
+                    .pr-report-columns { display:grid; grid-template-columns:1.25fr .9fr .9fr; gap:12px; margin-top:14px; }
+                    .pr-report-block { border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; }
+                    .pr-report-block h3 { margin:0; padding:8px 10px; background:#0f3b66; color:#fff; font-size:9pt; text-transform:uppercase; letter-spacing:.5px; }
+                    .pr-report-body { padding:10px; }
+                    .pr-mini-card { border:1px solid #e2e8f0; border-radius:8px; padding:8px 10px; margin-bottom:8px; background:#fff; }
+                    .pr-mini-card strong { display:block; font-size:9pt; color:#0f172a; }
+                    .pr-mini-card span { display:block; margin-top:3px; font-size:8pt; color:#64748b; }
+                </style>
+                <div class="pr-letterhead">
+                    <div class="pr-lh-seal">🏛</div>
+                    <div class="pr-lh-center">
+                        <p class="pr-lh-gov">Estado de Pernambuco — Agreste Meridional</p>
+                        <p class="pr-lh-name">Prefeitura Municipal de Inajá</p>
+                        <p class="pr-lh-sec">Relatório Gerencial do Kanban</p>
+                    </div>
+                    <div class="pr-lh-right">
+                        <strong>${formatDateOnly(report.selectedDate)}</strong><br>
+                        Emitido em ${dateStr}<br>
+                        às ${timeStr}
+                    </div>
+                </div>
+
+                <div class="pr-doc-title">
+                    <h2>✅ Tarefas concluídas no dia</h2>
+                    <p>Data consultada: ${formatDateOnly(report.selectedDate)} · ${report.doneToday.length} entrega${report.doneToday.length !== 1 ? 's' : ''} registrada${report.doneToday.length !== 1 ? 's' : ''}</p>
+                </div>
+
+                <div class="pr-report-grid">
+                    <div class="pr-report-card"><span>Concluídas no dia</span><strong>${report.doneToday.length}</strong></div>
+                    <div class="pr-report-card"><span>Altas prioridades</span><strong>${report.highDone.length}</strong></div>
+                    <div class="pr-report-card"><span>Vencidas entregues</span><strong>${report.overdueDone.length}</strong></div>
+                    <div class="pr-report-card"><span>Pendentes abertas</span><strong>${report.openTasks.length}</strong></div>
+                </div>
+
+                <div class="pr-report-columns">
+                    <div class="pr-report-block">
+                        <h3>Entregas do dia</h3>
+                        <div class="pr-report-body">
+                            <table class="pr-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Tarefa</th>
+                                        <th>Responsável</th>
+                                        <th>Categoria</th>
+                                        <th>Prioridade</th>
+                                        <th>Vencimento</th>
+                                        <th>Conclusão</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="pr-report-block">
+                        <h3>Por responsável</h3>
+                        <div class="pr-report-body">${responsaveisHtml}</div>
+                    </div>
+                    <div class="pr-report-block">
+                        <h3>Por categoria</h3>
+                        <div class="pr-report-body">${categoriasHtml}</div>
+                    </div>
+                </div>
+
+                <div class="pr-footer">
+                    <span>Sistema de Empenhos Mensais – Prefeitura de Inajá/PE</span>
+                    <span>Relatório gerado automaticamente em ${dateStr} às ${timeStr}</span>
+                </div>
+            `;
+
+            window.print();
         }
 
         // ── DRAG & DROP ────────────────────────────────────────────────────────────

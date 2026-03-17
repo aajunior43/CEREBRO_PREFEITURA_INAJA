@@ -519,6 +519,11 @@ def migrate_db():
         cur.execute("ALTER TABLE kanban_tasks ADD COLUMN responsavel TEXT DEFAULT ''")
     except Exception:
         pass  # coluna já existe
+    # Migração: adicionar coluna concluido_em em kanban_tasks (se ainda não existir)
+    try:
+        cur.execute("ALTER TABLE kanban_tasks ADD COLUMN concluido_em TEXT DEFAULT ''")
+    except Exception:
+        pass  # coluna já existe
     conn.commit()
 
 
@@ -604,6 +609,7 @@ def init_db():
             description TEXT    DEFAULT '',
             status      TEXT    DEFAULT 'todo',
             priority    TEXT    DEFAULT 'medium',
+            concluido_em TEXT   DEFAULT '',
             criado_em   TEXT    DEFAULT (datetime('now', 'localtime')),
             atualizado_em TEXT  DEFAULT (datetime('now', 'localtime'))
         )
@@ -2033,7 +2039,7 @@ def kanban_listar():
     try:
         conn = get_db()
         rows = conn.execute(
-            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
         ).fetchall()
         tasks = [row_to_dict(r) for r in rows]
         attach_rows = conn.execute(
@@ -2062,6 +2068,7 @@ def kanban_criar():
         categoria = (data.get('categoria') or '').strip().upper()
         data_vencimento = (data.get('data_vencimento') or '').strip()
         responsavel = (data.get('responsavel') or '').strip()
+        concluido_em = ''
         if not task_id:
             return jsonify({'error': 'id é obrigatório'}), 400
         if not title:
@@ -2070,14 +2077,16 @@ def kanban_criar():
             status = 'todo'
         if priority not in {'low', 'medium', 'high'}:
             priority = 'medium'
+        if status == 'done':
+            concluido_em = _time.strftime('%Y-%m-%d %H:%M:%S')
         conn = get_db()
         conn.execute(
-            "INSERT INTO kanban_tasks (id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em) VALUES (?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
-            (task_id, title, description, status, priority, categoria, data_vencimento, responsavel)
+            "INSERT INTO kanban_tasks (id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
+            (task_id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em)
         )
         conn.commit()
         row = conn.execute(
-            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
             (task_id,)
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
@@ -2105,15 +2114,21 @@ def kanban_atualizar(task_id):
         if priority not in {'low', 'medium', 'high'}:
             priority = 'medium'
         conn = get_db()
-        cur = conn.execute(
-            "UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?, categoria=?, data_vencimento=?, responsavel=?, atualizado_em=datetime('now','localtime') WHERE id=?",
-            (title, description, status, priority, categoria, data_vencimento, responsavel, task_id)
-        )
-        if cur.rowcount == 0:
+        current = conn.execute("SELECT status, concluido_em FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        if not current:
             return jsonify({'error': 'Tarefa não encontrada'}), 404
+        concluido_em = current['concluido_em'] or ''
+        if status == 'done' and current['status'] != 'done':
+            concluido_em = _time.strftime('%Y-%m-%d %H:%M:%S')
+        elif status != 'done':
+            concluido_em = ''
+        cur = conn.execute(
+            "UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?, categoria=?, data_vencimento=?, responsavel=?, concluido_em=?, atualizado_em=datetime('now','localtime') WHERE id=?",
+            (title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, task_id)
+        )
         conn.commit()
         row = conn.execute(
-            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
             (task_id,)
         ).fetchone()
         return jsonify(row_to_dict(row))

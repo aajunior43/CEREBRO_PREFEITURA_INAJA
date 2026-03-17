@@ -372,6 +372,390 @@
       }).catch(() => {});
     }
 
+    const IA_PAGE_CONFIG = {
+      '/pages/protocolo.html': {
+        title: 'IA de Protocolo',
+        subtitle: 'Assistente para ofícios, memorandos e acompanhamento documental',
+        chatPlaceholder: 'Ex: Quais protocolos vencem primeiro ou merecem resposta urgente?',
+        emptyMessage: 'Cadastre ou carregue protocolos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os protocolos, status e gargalos.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que deve ser respondido primeiro.' },
+          { id: 'prazos', label: 'Prazos', description: 'Aponta vencimentos, atrasos e riscos.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os protocolos.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo geral', action: 'analisar' },
+          { label: 'Pendências urgentes', action: 'prioridades' },
+          { label: 'Prazos críticos', action: 'prazos' }
+        ],
+        contextBuilder() {
+          const rows = Array.from(document.querySelectorAll('.pr-item')).slice(0, 20).map((item) => ({
+            numero: item.querySelector('.pr-item-num')?.textContent?.trim() || '',
+            assunto: item.querySelector('.pr-item-title')?.textContent?.trim() || '',
+            meta: item.querySelector('.pr-item-meta')?.textContent?.replace(/\s+/g, ' ')?.trim() || '',
+            obs: item.querySelector('.pr-item-desc')?.textContent?.trim() || ''
+          }));
+          return { page: 'protocolo', protocolos_visiveis: rows };
+        }
+      },
+      '/pages/prazos.html': {
+        title: 'IA de Prazos',
+        subtitle: 'Assistente para contratos, vencimentos e notificações',
+        chatPlaceholder: 'Ex: Quais prazos estão mais críticos hoje?',
+        emptyMessage: 'Cadastre ou carregue prazos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os prazos e principais pontos de atenção.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Ordena o que precisa de ação imediata.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta atrasos, vencimentos próximos e exposições.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os prazos.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo dos prazos', action: 'analisar' },
+          { label: 'Urgências do dia', action: 'prioridades' },
+          { label: 'Riscos e atrasos', action: 'riscos' }
+        ]
+      },
+      '/pages/documentos.html': {
+        title: 'IA de Documentos',
+        subtitle: 'Assistente para organização documental e critérios de arquivamento',
+        chatPlaceholder: 'Ex: Como organizar melhor esses documentos por categoria?',
+        emptyMessage: 'Carregue documentos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o acervo visível e sugere organização.' },
+          { id: 'categorizar', label: 'Categorias', description: 'Sugere grupos, padrões e separações úteis.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que merece revisão ou ação primeiro.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os documentos.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do acervo', action: 'analisar' },
+          { label: 'Sugerir categorias', action: 'categorizar' },
+          { label: 'O que revisar primeiro', action: 'prioridades' }
+        ]
+      },
+      '/pages/fornecimento.html': {
+        title: 'IA de Aquisições',
+        subtitle: 'Assistente para pedidos, fornecedores e fluxo de compras',
+        chatPlaceholder: 'Ex: O que está pendente no fluxo de aquisição?',
+        emptyMessage: 'Cadastre ou carregue dados de aquisição antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o quadro de aquisições e etapas atuais.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Aponta o que acelerar no processo.' },
+          { id: 'riscos', label: 'Riscos', description: 'Sinaliza atrasos, gargalos e dependências.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre as aquisições.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo das aquisições', action: 'analisar' },
+          { label: 'Próximas ações', action: 'prioridades' },
+          { label: 'Riscos do processo', action: 'riscos' }
+        ]
+      },
+      '/pages/cnpj.html': {
+        title: 'IA de CNPJ',
+        subtitle: 'Assistente para leitura de cadastro empresarial e checagens rápidas',
+        chatPlaceholder: 'Ex: O que devo conferir primeiro neste CNPJ?',
+        emptyMessage: 'Consulte um CNPJ antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os dados consultados e os pontos principais.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que vale conferir primeiro no cadastro.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta inconsistências ou alertas cadastrais.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o cadastro exibido.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do cadastro', action: 'analisar' },
+          { label: 'O que conferir', action: 'prioridades' },
+          { label: 'Alertas cadastrais', action: 'riscos' }
+        ]
+      },
+      '/pages/pdf.html': {
+        title: 'IA de PDF',
+        subtitle: 'Assistente para orientar fusão, divisão, proteção e organização de arquivos',
+        chatPlaceholder: 'Ex: Qual a melhor forma de organizar estes PDFs?',
+        emptyMessage: 'Carregue arquivos PDF antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o cenário atual e sugere organização dos arquivos.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Indica a ordem mais eficiente para trabalhar os PDFs.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o fluxo com PDFs.' }
+        ],
+        shortcuts: [
+          { label: 'Sugestão de fluxo', action: 'analisar' },
+          { label: 'O que fazer primeiro', action: 'prioridades' }
+        ]
+      },
+      '/pages/rpa.html': {
+        title: 'IA de RPA',
+        subtitle: 'Assistente para conferência e preenchimento de recibos',
+        chatPlaceholder: 'Ex: Quais campos do RPA preciso revisar com mais atenção?',
+        emptyMessage: 'Preencha ou carregue dados do RPA antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o RPA e sugere conferências.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta campos sensíveis, ausências e riscos de erro.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o RPA atual.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do RPA', action: 'analisar' },
+          { label: 'Campos críticos', action: 'riscos' }
+        ]
+      },
+      '/pages/manual.html': {
+        title: 'IA do Manual',
+        subtitle: 'Assistente para orientar o uso do sistema e localizar instruções',
+        chatPlaceholder: 'Ex: Onde encontro a orientação para usar este módulo?',
+        emptyMessage: 'Abra o manual para usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o conteúdo visível do manual.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Aponta os trechos mais úteis para começar.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o manual.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo desta seção', action: 'analisar' },
+          { label: 'Onde começar', action: 'prioridades' }
+        ]
+      },
+      '/pages/visualizador.html': {
+        title: 'IA de Empenhos',
+        subtitle: 'Assistente para leitura, filtros e interpretação de empenhos',
+        chatPlaceholder: 'Ex: Quais empenhos merecem atenção imediata?',
+        emptyMessage: 'Carregue dados de empenhos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os empenhos visíveis e os principais achados.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que merece análise primeiro.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta padrões estranhos, valores sensíveis e gaps.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os empenhos.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo dos empenhos', action: 'analisar' },
+          { label: 'O que priorizar', action: 'prioridades' },
+          { label: 'Riscos detectados', action: 'riscos' }
+        ]
+      },
+      '/pages/calendario.html': {
+        title: 'IA do Calendário',
+        subtitle: 'Assistente para organização de eventos, pagamentos e compromissos',
+        chatPlaceholder: 'Ex: Quais eventos desta agenda são mais urgentes?',
+        emptyMessage: 'Cadastre ou carregue eventos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os compromissos e a agenda atual.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que merece atenção imediata.' },
+          { id: 'prazos', label: 'Prazos', description: 'Aponta vencimentos, datas críticas e marcos próximos.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre a agenda.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo da agenda', action: 'analisar' },
+          { label: 'Compromissos urgentes', action: 'prioridades' },
+          { label: 'Datas críticas', action: 'prazos' }
+        ]
+      },
+      '/pages/calculadora-diarias.html': {
+        title: 'IA de Diárias',
+        subtitle: 'Assistente para cálculo, revisão e conferência de diárias',
+        chatPlaceholder: 'Ex: O que preciso conferir antes de finalizar esta diária?',
+        emptyMessage: 'Preencha os dados da diária antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o cálculo atual e os parâmetros informados.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta inconsistências e campos que exigem revisão.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o cálculo da diária.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do cálculo', action: 'analisar' },
+          { label: 'O que revisar', action: 'riscos' }
+        ]
+      },
+      '/pages/autentique-assinatura.html': {
+        title: 'IA de Assinatura Digital',
+        subtitle: 'Assistente para conferência de envios, signatários e pendências',
+        chatPlaceholder: 'Ex: Quais documentos de assinatura merecem acompanhamento?',
+        emptyMessage: 'Carregue os envios de assinatura antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os envios e o estágio das assinaturas.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que deve ser acompanhado primeiro.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta travas, pendências e documentos sensíveis.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre as assinaturas.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo dos envios', action: 'analisar' },
+          { label: 'Pendências prioritárias', action: 'prioridades' },
+          { label: 'Riscos do fluxo', action: 'riscos' }
+        ]
+      },
+      '/pages/auditor.html': {
+        title: 'IA de Auditoria',
+        subtitle: 'Assistente para leitura de NF, inconsistências e validação',
+        chatPlaceholder: 'Ex: Quais inconsistências devo revisar nesta auditoria?',
+        emptyMessage: 'Carregue uma nota fiscal antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume a auditoria atual e os principais achados.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta inconsistências, alertas e sinais de problema.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que deve ser conferido primeiro.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre a auditoria.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo da auditoria', action: 'analisar' },
+          { label: 'Riscos detectados', action: 'riscos' },
+          { label: 'Itens prioritários', action: 'prioridades' }
+        ]
+      },
+      '/pages/assistente-empenho.html': {
+        title: 'IA de Empenho',
+        subtitle: 'Assistente para compor e revisar descrições de empenho',
+        chatPlaceholder: 'Ex: Como deixar esta descrição de empenho mais técnica?',
+        emptyMessage: 'Informe os dados do empenho antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume a composição atual do empenho.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Aponta lacunas e melhorias mais importantes.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o empenho.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do empenho', action: 'analisar' },
+          { label: 'Melhorias principais', action: 'prioridades' }
+        ]
+      },
+      '/pages/extratos.html': {
+        title: 'IA de Extratos',
+        subtitle: 'Assistente para leitura e organização de extratos importados',
+        chatPlaceholder: 'Ex: Que padrão importante existe neste extrato?',
+        emptyMessage: 'Carregue extratos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume os extratos e os principais padrões visíveis.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta anomalias, cobranças e movimentações relevantes.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os extratos.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do extrato', action: 'analisar' },
+          { label: 'Possíveis anomalias', action: 'riscos' }
+        ]
+      },
+      '/pages/gerador-empenho.html': {
+        title: 'IA do Gerador de Empenho',
+        subtitle: 'Assistente para revisar entradas e orientar a geração do texto',
+        chatPlaceholder: 'Ex: Como melhorar o texto gerado para este empenho?',
+        emptyMessage: 'Carregue um documento ou informe um texto antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume a entrada atual e orienta a geração.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Aponta o que precisa ajuste antes de gerar.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre a geração do empenho.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo da entrada', action: 'analisar' },
+          { label: 'O que ajustar', action: 'prioridades' }
+        ]
+      },
+      '/pages/renomear.html': {
+        title: 'IA do Renomeador',
+        subtitle: 'Assistente para padronização e estratégia de nomes de arquivos',
+        chatPlaceholder: 'Ex: Como padronizar melhor esses nomes?',
+        emptyMessage: 'Carregue arquivos antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o lote atual e sugere padrões de nomenclatura.' },
+          { id: 'categorizar', label: 'Categorias', description: 'Sugere separações e critérios para organização.' },
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre a padronização dos nomes.' }
+        ],
+        shortcuts: [
+          { label: 'Padrão sugerido', action: 'analisar' },
+          { label: 'Categorias úteis', action: 'categorizar' }
+        ]
+      }
+    };
+
+    function ensureIaWidgetScript() {
+      return new Promise((resolve) => {
+        if (window.IaChatWidget) {
+          resolve();
+          return;
+        }
+        const existing = document.querySelector('script[data-ia-chat-widget-script]');
+        if (existing) {
+          existing.addEventListener('load', () => resolve(), { once: true });
+          setTimeout(resolve, 1500);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = '/static/js/ia-chat-widget.js';
+        script.async = true;
+        script.setAttribute('data-ia-chat-widget-script', 'true');
+        script.onload = () => resolve();
+        script.onerror = () => resolve();
+        document.head.appendChild(script);
+      });
+    }
+
+    function buildGenericIaContext() {
+      const title = document.title || path;
+      const heading = document.querySelector('h1, h2')?.textContent?.trim() || '';
+      const text = Array.from(document.querySelectorAll('main, section, .content, .page-wrap, .docs-wrap, .pr-wrap, .pz-wrap, .viz-app'))
+        .map((el) => el.textContent || '')
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 6000);
+      return { page_path: path, page_title: title, page_heading: heading, visible_text: text };
+    }
+
+    async function runGenericIaRequest(pageConfig, action, question) {
+      const apiKey = localStorage.getItem('api_openrouter_key') || localStorage.getItem('ext_ia_key') || '';
+      if (!apiKey) throw new Error('Configure a chave OpenRouter em ADM antes de usar a IA.');
+      const model = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || 'openrouter/free';
+      const context = typeof pageConfig.contextBuilder === 'function' ? pageConfig.contextBuilder() : buildGenericIaContext();
+      const prompts = {
+        analisar: 'Faça uma análise objetiva da aba atual, destacando panorama, achados e pontos que merecem atenção.',
+        prioridades: 'Liste as prioridades práticas e a ordem recomendada de atuação na aba atual.',
+        riscos: 'Aponte riscos, gargalos, atrasos, inconsistências ou pontos frágeis observáveis na aba atual.',
+        prazos: 'Analise prazos, vencimentos, urgências e próximos marcos relevantes da aba atual.',
+        categorizar: 'Sugira categorias, agrupamentos e uma organização mais eficiente para os itens da aba atual.',
+        chat: question || 'Responda à pergunta do usuário com base no conteúdo atual da aba.'
+      };
+      const prompt = [
+        `Você é um assistente administrativo da Prefeitura de Inajá.`,
+        `Aba atual: ${pageConfig.title || document.title || path}`,
+        `Objetivo: ${prompts[action] || prompts.analisar}`,
+        question && action !== 'chat' ? `Pergunta complementar: ${question}` : '',
+        `Contexto da página (JSON):`,
+        JSON.stringify(context, null, 2),
+        `Responda em português do Brasil, de forma prática, clara e orientada à ação.`
+      ].filter(Boolean).join('\n\n');
+
+      const response = await fetch('/api/ia/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: apiKey,
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.2
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error?.message || data.error || `Erro HTTP ${response.status}`);
+      }
+      return data?.choices?.[0]?.message?.content || 'Sem resposta da IA.';
+    }
+
+    async function initGenericIaWidget() {
+      const pageConfig = IA_PAGE_CONFIG[path];
+      if (!pageConfig) return;
+      if (window.__iaChatWidgetMounted) return;
+      if (document.querySelector('.ia-panel') || document.querySelector('.ia-fab')) return;
+      await ensureIaWidgetScript();
+      if (!window.IaChatWidget) return;
+      if (window.__iaChatWidgetMounted) return;
+      if (window.__iaChatWidgetInstances && window.__iaChatWidgetInstances[`page:${path}`]) return;
+      window.IaChatWidget.create({
+        singletonKey: `page:${path}`,
+        title: pageConfig.title,
+        subtitle: pageConfig.subtitle,
+        buttonLabel: 'IA',
+        buttonTitle: pageConfig.title,
+        chatPlaceholder: pageConfig.chatPlaceholder,
+        emptyMessage: pageConfig.emptyMessage,
+        actions: pageConfig.actions,
+        shortcuts: pageConfig.shortcuts,
+        hasData: () => true,
+        onRun: ({ action, question }) => runGenericIaRequest(pageConfig, action, question)
+      });
+    }
+    setTimeout(() => { initGenericIaWidget().catch(() => {}); }, 250);
+
     function openMobile() {
       document.getElementById('shd-hamburger').classList.add('active');
       document.getElementById('shd-mobile-nav').classList.add('open');
