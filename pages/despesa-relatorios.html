@@ -147,6 +147,82 @@
     /* ── Empty / loading ─────────────────────────────────── */
     .empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
     .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+    /* ── IA Relatórios ───────────────────────────────────── */
+    .ia-fab {
+      position: fixed; right: 22px; bottom: 22px; z-index: 1200;
+      width: 62px; height: 62px; border: none; border-radius: 999px;
+      background: linear-gradient(135deg, #1f2937, #374151);
+      color: #f9fafb; box-shadow: 0 18px 45px rgba(15, 23, 42, .28);
+      cursor: pointer; display:flex; align-items:center; justify-content:center;
+      font-size: 13px; font-weight: 700; letter-spacing: .04em;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+    .ia-fab:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 24px 56px rgba(15, 23, 42, .36); }
+    .ia-fab.is-open { opacity: 0; pointer-events: none; transform: scale(.9); }
+    .ia-panel {
+      position: fixed; right: 22px; bottom: 22px; z-index: 1201;
+      width: min(420px, calc(100vw - 20px)); max-height: min(78vh, 760px);
+      border: 1px solid rgba(148, 163, 184, .18); background: rgba(15, 23, 42, .98);
+      border-radius: 18px; overflow: hidden;
+      box-shadow: 0 28px 70px rgba(0, 0, 0, .45);
+      display: none; flex-direction: column;
+    }
+    .ia-panel.is-open { display: flex; }
+    .ia-panel-head {
+      display:flex; align-items:center; gap:10px; padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .92));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .ia-head-main { display:flex; flex-direction:column; min-width:0; }
+    .ia-title { font-size: 13px; font-weight: 800; color: #f8fafc; }
+    .ia-subtitle { font-size: 11px; color: #94a3b8; opacity: .9; }
+    .ia-head-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
+    .ia-icon-btn {
+      width: 32px; height: 32px; border-radius: 999px; border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04); color: #e5e7eb; cursor: pointer;
+      display:flex; align-items:center; justify-content:center; font-size: 15px;
+    }
+    .ia-body { padding: 14px 14px 16px; overflow-y: auto; }
+    .ia-tab-row { display:flex; gap:8px; overflow-x:auto; padding-bottom: 6px; margin-bottom: 10px; }
+    .ia-tab {
+      flex: 0 0 auto;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: #cbd5e1;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .ia-tab:hover { background: rgba(255,255,255,0.06); border-color: rgba(148, 163, 184, 0.35); }
+    .ia-tab.active { background: rgba(148, 163, 184, 0.14); border-color: rgba(203, 213, 225, 0.35); color: #fff; }
+    .ia-desc { font-size: 11px; color: var(--muted); margin-bottom: 10px; min-height: 16px; }
+    .ia-shortcuts { display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 12px; }
+    .ia-chat { display:none; gap:8px; margin-bottom:12px; }
+    .ia-chat input {
+      flex:1; padding:8px 12px; background:rgba(255,255,255,0.05);
+      border:1px solid rgba(148, 163, 184, 0.22); border-radius:8px; color:var(--ink); font-size:13px; outline:none;
+    }
+    .ia-exec { display:flex; align-items:center; gap:12px; margin-bottom: 12px; }
+    .ia-result {
+      display:none; background: rgba(255,255,255,0.03); border:1px solid rgba(148, 163, 184, 0.14);
+      border-radius:10px; padding:18px 20px; font-size:13px; line-height:1.75; color:var(--ink);
+      white-space:pre-wrap; max-height:440px; overflow-y:auto;
+    }
+    .ia-actions { display:none; gap:8px; margin-top:10px; }
+    .ia-loading { display:none; padding:12px 0; color:#cbd5e1; font-size:13px; animation: ia-fade 1s ease infinite alternate; }
+    .ia-result strong, .ia-result b { color: #f8fafc; }
+    @keyframes ia-fade { from { opacity:.5 } to { opacity:1 } }
+    @media (max-width: 640px) {
+      .ia-fab { right: 14px; bottom: 14px; width: 58px; height: 58px; }
+      .ia-panel {
+        right: 10px; left: 10px; bottom: 10px; width: auto; max-height: 82vh;
+      }
+      .ia-shortcuts { gap: 6px; }
+    }
   </style>
 </head>
 <body>
@@ -193,8 +269,54 @@
       <button id="btn-comparar" disabled>Comparar →</button>
       <button id="btn-limpar-sel">Limpar</button>
     </div>
+
     <div id="resultado-comparacao"></div>
 
+  </div>
+  <button id="ia-fab-rel" class="ia-fab" type="button" title="Abrir IA dos Relatórios">IA</button>
+  <div id="ia-panel-rel" class="ia-panel" role="dialog" aria-label="IA dos Relatórios" aria-modal="false">
+    <div class="ia-panel-head">
+      <div class="ia-head-main">
+        <span class="ia-title">IA dos Relatórios</span>
+        <span class="ia-subtitle">Assistente comparativo de dotações</span>
+      </div>
+      <div class="ia-head-actions">
+        <button id="ia-min-rel" class="ia-icon-btn" type="button" title="Minimizar">—</button>
+        <button id="ia-close-rel" class="ia-icon-btn" type="button" title="Fechar">×</button>
+      </div>
+    </div>
+    <div class="ia-body">
+      <div class="ia-tab-row">
+        <button class="ia-tab active" data-ia-action="analisar">Analisar</button>
+        <button class="ia-tab" data-ia-action="anomalias">Anomalias</button>
+        <button class="ia-tab" data-ia-action="prioridades">Prioridades</button>
+        <button class="ia-tab" data-ia-action="cortes">Cortes</button>
+        <button class="ia-tab" data-ia-action="remanejamento">Remanejamento</button>
+        <button class="ia-tab" data-ia-action="relatorio">Relatório</button>
+        <button class="ia-tab" data-ia-action="chat">Chat</button>
+      </div>
+      <div id="ia-desc-rel" class="ia-desc"></div>
+      <div class="ia-shortcuts">
+        <button class="ghost ia-shortcut-rel" data-ia-action="analisar" style="font-size:11px;padding:5px 10px;">Resumo comparativo</button>
+        <button class="ghost ia-shortcut-rel" data-ia-action="anomalias" style="font-size:11px;padding:5px 10px;">Riscos da comparação</button>
+        <button class="ghost ia-shortcut-rel" data-ia-action="prioridades" style="font-size:11px;padding:5px 10px;">Onde reforçar</button>
+        <button class="ghost ia-shortcut-rel" data-ia-action="cortes" style="font-size:11px;padding:5px 10px;">Onde conter</button>
+      </div>
+      <div id="ia-chat-rel" class="ia-chat">
+        <input id="ia-chat-input-rel" type="text" placeholder="Ex: O que piorou do período A para o B?" />
+        <button id="ia-chat-send-rel" class="ghost" style="background:rgba(255,255,255,0.05);border-color:rgba(148,163,184,0.22);color:#e5e7eb;white-space:nowrap;">Enviar</button>
+      </div>
+      <div id="ia-exec-rel" class="ia-exec">
+        <button id="ia-exec-btn-rel" class="ghost" style="background:rgba(255,255,255,0.05);border-color:rgba(148,163,184,0.22);color:#e5e7eb;font-size:13px;font-weight:700;">Executar análise</button>
+        <span id="ia-sem-dados-rel" style="display:none;font-size:12px;color:#fca5a5;">Selecione dois períodos e compare antes de usar a IA.</span>
+      </div>
+      <div id="ia-loading-rel" class="ia-loading">Consultando IA, aguarde…</div>
+      <div id="ia-result-rel" class="ia-result"></div>
+      <div id="ia-actions-rel" class="ia-actions">
+        <button id="ia-copy-rel" class="ghost" style="font-size:11px;padding:4px 10px;">Copiar</button>
+        <button id="ia-clear-rel" class="ghost" style="font-size:11px;padding:4px 10px;color:#cbd5e1;border-color:rgba(148,163,184,0.22);">Nova consulta</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -203,6 +325,7 @@
     let importacoes = [];
     let resumos = {};    // id → resumo
     let selA = null, selB = null;
+    let iaAction = 'analisar';
 
     const fmt = v => {
       if (v == null || v === '') return '—';
@@ -219,6 +342,145 @@
       const d = new Date(dt.replace(' ','T'));
       return isNaN(d) ? dt : d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
     };
+    const iaTabs = Array.from(document.querySelectorAll('[data-ia-action]'));
+    const iaShortcuts = Array.from(document.querySelectorAll('.ia-shortcut-rel'));
+    const iaFab = document.getElementById('ia-fab-rel');
+    const iaPanel = document.getElementById('ia-panel-rel');
+    const iaMin = document.getElementById('ia-min-rel');
+    const iaClose = document.getElementById('ia-close-rel');
+    const iaDesc = document.getElementById('ia-desc-rel');
+    const iaChat = document.getElementById('ia-chat-rel');
+    const iaExec = document.getElementById('ia-exec-rel');
+    const iaExecBtn = document.getElementById('ia-exec-btn-rel');
+    const iaSemDados = document.getElementById('ia-sem-dados-rel');
+    const iaLoading = document.getElementById('ia-loading-rel');
+    const iaResult = document.getElementById('ia-result-rel');
+    const iaActions = document.getElementById('ia-actions-rel');
+    const iaCopy = document.getElementById('ia-copy-rel');
+    const iaClear = document.getElementById('ia-clear-rel');
+    const iaChatInput = document.getElementById('ia-chat-input-rel');
+    const iaChatSend = document.getElementById('ia-chat-send-rel');
+    const iaDescs = {
+      analisar: 'Gera leitura executiva da comparação entre os períodos A e B.',
+      anomalias: 'Procura sinais incomuns, saltos abruptos e pontos que merecem auditoria.',
+      prioridades: 'Mostra o que deve ser priorizado após a comparação.',
+      cortes: 'Aponta contenções ou revisões possíveis com base na variação entre períodos.',
+      remanejamento: 'Sugere remanejamentos entre áreas com sobra e áreas pressionadas.',
+      relatorio: 'Produz um relatório formal comparativo pronto para uso administrativo.',
+      chat: 'Permite perguntar livremente sobre a comparação dos períodos.'
+    };
+
+    function openIaPanel() {
+      iaPanel.classList.add('is-open');
+      iaFab.classList.add('is-open');
+    }
+
+    function closeIaPanel() {
+      iaPanel.classList.remove('is-open');
+      iaFab.classList.remove('is-open');
+    }
+
+    function setIaTab(action) {
+      iaAction = action;
+      iaTabs.forEach(btn => btn.classList.toggle('active', btn.dataset.iaAction === action));
+      iaDesc.textContent = iaDescs[action] || '';
+      const isChat = action === 'chat';
+      iaChat.style.display = isChat ? 'flex' : 'none';
+      iaExec.style.display = isChat ? 'none' : 'flex';
+    }
+
+    function hasComparisonReady() {
+      return Boolean(selA && selB);
+    }
+
+    function buildIaContext(rA, rB) {
+      const impA = rA.importacao || {};
+      const impB = rB.importacao || {};
+      const totaisA = rA.totais || {};
+      const totaisB = rB.totais || {};
+      const metricas = Object.keys({ ...totaisA, ...totaisB }).map((key) => {
+        const a = Number(totaisA[key] || 0);
+        const b = Number(totaisB[key] || 0);
+        return {
+          metrica: key,
+          periodo_a: a,
+          periodo_b: b,
+          variacao: b - a
+        };
+      }).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 12);
+
+      const secsA = rA.por_secretaria_valor || {};
+      const secsB = rB.por_secretaria_valor || {};
+      const secretarias = [...new Set([...Object.keys(secsA), ...Object.keys(secsB)])].map((sec) => ({
+        secretaria: sec,
+        periodo_a: secsA[sec] || 0,
+        periodo_b: secsB[sec] || 0,
+        variacao: (secsB[sec] || 0) - (secsA[sec] || 0)
+      })).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 15);
+
+      const funcA = rA.por_funcao || {};
+      const funcB = rB.por_funcao || {};
+      const funcoes = [...new Set([...Object.keys(funcA), ...Object.keys(funcB)])].map((funcao) => ({
+        funcao,
+        periodo_a: funcA[funcao] || 0,
+        periodo_b: funcB[funcao] || 0,
+        variacao: (funcB[funcao] || 0) - (funcA[funcao] || 0)
+      })).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 15);
+
+      return {
+        periodo: `${impA.periodo || 'A'} vs ${impB.periodo || 'B'}`,
+        total_rows: Number(impA.total_rows || 0) + Number(impB.total_rows || 0),
+        periodo_a: { id: impA.id, periodo: impA.periodo, descricao: impA.descricao || '', total_rows: impA.total_rows || 0, totais: totaisA },
+        periodo_b: { id: impB.id, periodo: impB.periodo, descricao: impB.descricao || '', total_rows: impB.total_rows || 0, totais: totaisB },
+        comparativo_metricas: metricas,
+        comparativo_secretarias: secretarias,
+        comparativo_funcoes: funcoes
+      };
+    }
+
+    async function callIaRelatorio(question = '') {
+      if (!hasComparisonReady()) {
+        iaSemDados.style.display = 'inline';
+        return;
+      }
+      iaSemDados.style.display = 'none';
+      iaLoading.style.display = 'block';
+      iaResult.style.display = 'block';
+      iaActions.style.display = 'none';
+      iaResult.textContent = '';
+
+      try {
+        const [rA, rB] = await Promise.all([carregarResumo(selA), carregarResumo(selB)]);
+        if (!rA || !rB) throw new Error('Não foi possível carregar os resumos dos períodos selecionados.');
+        const response = await fetch('/api/despesas/ia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: iaAction,
+            contexto: buildIaContext(rA, rB),
+            pergunta: question || ''
+          })
+        });
+        const json = await response.json();
+        iaLoading.style.display = 'none';
+        if (json.error) {
+          iaResult.textContent = `❌ ${json.error}`;
+          iaActions.style.display = 'flex';
+          return;
+        }
+        iaResult.innerHTML = (json.resultado || '')
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+          .replace(/^### (.+)$/gm,'<strong style="color:#a78bfa;font-size:13px">$1</strong>')
+          .replace(/^## (.+)$/gm,'<strong style="color:#c4b5fd;font-size:14px">$1</strong>')
+          .replace(/^# (.+)$/gm,'<strong style="color:#e9d5ff;font-size:15px">$1</strong>');
+        iaActions.style.display = 'flex';
+      } catch (e) {
+        iaLoading.style.display = 'none';
+        iaResult.textContent = `❌ ${e.message}`;
+        iaActions.style.display = 'flex';
+      }
+    }
 
     /* ── Carrega lista de importações ─────────────────────── */
     async function carregarImportacoes() {
@@ -454,6 +716,35 @@
       document.getElementById('resultado-comparacao').innerHTML = '';
     });
 
+    iaTabs.forEach(btn => btn.addEventListener('click', () => setIaTab(btn.dataset.iaAction)));
+    iaShortcuts.forEach(btn => btn.addEventListener('click', () => {
+      openIaPanel();
+      setIaTab(btn.dataset.iaAction);
+      callIaRelatorio('');
+    }));
+    iaFab.addEventListener('click', openIaPanel);
+    iaMin.addEventListener('click', closeIaPanel);
+    iaClose.addEventListener('click', closeIaPanel);
+    iaExecBtn.addEventListener('click', () => callIaRelatorio(''));
+    iaChatSend.addEventListener('click', () => {
+      const value = iaChatInput.value.trim();
+      if (!value) return;
+      openIaPanel();
+      callIaRelatorio(value);
+      iaChatInput.value = '';
+    });
+    iaChatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') iaChatSend.click(); });
+    iaCopy.addEventListener('click', () => {
+      navigator.clipboard.writeText(iaResult.innerText || iaResult.textContent || '');
+      iaCopy.textContent = '✓ Copiado!';
+      setTimeout(() => { iaCopy.textContent = '📋 Copiar'; }, 2000);
+    });
+    iaClear.addEventListener('click', () => {
+      iaResult.style.display = 'none';
+      iaActions.style.display = 'none';
+      iaLoading.style.display = 'none';
+    });
+
     /* ── Ações de cards ───────────────────────────────────── */
     window.verPeriodo = id => {
       // Vai para o visualizador e carrega o período
@@ -478,6 +769,7 @@
     };
 
     carregarImportacoes();
+    setIaTab('analisar');
   })();
   </script>
 </body>

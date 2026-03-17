@@ -105,9 +105,170 @@
             border: 1px solid var(--border-primary-light);
             transition: background-color 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.3s ease-out;
             box-shadow: var(--shadow-card-light);
-            border-radius: 1rem;
+            border-radius: 1.5rem;
+            overflow: hidden;
         }
         .dark-theme .main-card { background-color: var(--bg-card-dark); border-color: var(--border-primary-dark); box-shadow: var(--shadow-card-dark); }
+
+        .calc-shell {
+            width: 100%;
+            position: relative;
+        }
+        .calc-shell::before {
+            content: none;
+        }
+        .dark-theme .calc-shell::before {
+            content: none;
+        }
+
+        .hero-panel {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 1rem;
+            padding: 1.25rem 1.25rem 1rem;
+            border-radius: 1.25rem;
+            background:
+                linear-gradient(145deg, color-mix(in srgb, var(--bg-card-light) 94%, white), color-mix(in srgb, var(--bg-card-secondary-light) 98%, transparent));
+            border: 1px solid var(--border-primary-light);
+            box-shadow: var(--shadow-card-light);
+        }
+        .dark-theme .hero-panel {
+            background:
+                linear-gradient(145deg, color-mix(in srgb, var(--bg-card-dark) 96%, transparent), color-mix(in srgb, var(--bg-card-secondary-dark) 98%, transparent));
+            border-color: var(--border-primary-dark);
+            box-shadow: var(--shadow-card-dark);
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .42rem .72rem;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            color: var(--text-accent-light);
+            background: color-mix(in srgb, var(--text-accent-light) 10%, transparent);
+            border: 1px solid color-mix(in srgb, var(--text-accent-light) 20%, transparent);
+        }
+        .dark-theme .hero-badge {
+            color: var(--text-accent-dark);
+            background: color-mix(in srgb, var(--text-accent-dark) 12%, transparent);
+            border-color: color-mix(in srgb, var(--text-accent-dark) 24%, transparent);
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.35fr .95fr;
+            gap: 1rem;
+            align-items: start;
+            margin-top: .9rem;
+        }
+        .hero-copy h1 {
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+        .hero-copy p {
+            line-height: 1.6;
+        }
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: .75rem;
+        }
+        .hero-stat {
+            padding: .95rem;
+            border-radius: 1rem;
+            background: color-mix(in srgb, var(--bg-card-secondary-light) 88%, transparent);
+            border: 1px solid var(--border-secondary-light);
+        }
+        .dark-theme .hero-stat {
+            background: color-mix(in srgb, var(--bg-card-secondary-dark) 92%, transparent);
+            border-color: var(--border-secondary-dark);
+        }
+        .hero-stat-label {
+            display: block;
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-secondary-light);
+            margin-bottom: .35rem;
+        }
+        .dark-theme .hero-stat-label { color: var(--text-secondary-dark); }
+        .hero-stat-value {
+            display: block;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-primary-light);
+        }
+        .dark-theme .hero-stat-value { color: var(--text-primary-dark); }
+
+        .section-card {
+            padding: 1rem 1rem 1.1rem;
+            border-radius: 1.15rem;
+            background: color-mix(in srgb, var(--bg-card-secondary-light) 76%, transparent);
+            border: 1px solid var(--border-secondary-light);
+        }
+        .dark-theme .section-card {
+            background: color-mix(in srgb, var(--bg-card-secondary-dark) 78%, transparent);
+            border-color: var(--border-secondary-dark);
+        }
+
+        .result-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: .75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .result-kpis {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: .75rem;
+            margin-bottom: 1rem;
+        }
+        .result-kpi {
+            padding: .95rem 1rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-primary-light);
+            background: linear-gradient(180deg, var(--bg-card-light), var(--bg-card-secondary-light));
+            box-shadow: var(--shadow-input-light);
+        }
+        .dark-theme .result-kpi {
+            border-color: var(--border-primary-dark);
+            background: linear-gradient(180deg, var(--bg-card-dark), var(--bg-card-secondary-dark));
+            box-shadow: var(--shadow-input-dark);
+        }
+        .result-kpi-label {
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--text-secondary-light);
+            margin-bottom: .35rem;
+        }
+        .dark-theme .result-kpi-label { color: var(--text-secondary-dark); }
+        .result-kpi-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-primary-light);
+        }
+        .dark-theme .result-kpi-value { color: var(--text-primary-dark); }
+
+        .report-section {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-bottom: 1px dashed var(--border-secondary-light);
+            border-radius: .9rem;
+            background: color-mix(in srgb, var(--bg-card-light) 92%, transparent);
+        }
+        .dark-theme .report-section {
+            border-bottom-color: var(--border-secondary-dark);
+            background: color-mix(in srgb, var(--bg-card-dark) 92%, transparent);
+        }
 
 
         input[type="date"], input[type="time"], select {
@@ -254,8 +415,6 @@
         .dark-theme .theme-toggle-button:hover { background-color: rgba(50, 60, 75, 0.7); transform: rotate(15deg) scale(1.05); }
 
 
-        .report-section { margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px dashed var(--border-secondary-light); }
-        .dark-theme .report-section { border-bottom-color: var(--border-secondary-dark); }
         .report-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0;}
         .report-field { display: flex; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: baseline;}
         .report-field strong { min-width: 130px; display: inline-block; color: var(--text-secondary-light); font-weight: 500; font-size: 0.875rem; margin-bottom: 0.1rem; }
@@ -317,21 +476,44 @@
 
         /* Estilos de Histórico Removidos */
 
-        .print-header, .print-footer { display: none; }
-         @media print {
-            body { background: #fff !important; color: #000 !important; font-size: 9pt; margin:10mm; padding:0; line-height: 1.25;}
-            #calculadoraForm, .text-center.mb-7, .theme-toggle-button, #toastContainer, #customModalOverlay, .flex.flex-wrap.justify-end, header, #shd-header { display: none !important; } 
-            .main-card { border: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+        .print-header, .print-footer, .print-doc-title, .print-signature { display: none; }
+        @media (max-width: 900px) {
+            .hero-grid,
+            .result-kpis {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            @page { size: A4 portrait; margin: 12mm 11mm 14mm; }
+            body { background: #fff !important; color: #000 !important; font-family: "Segoe UI", Arial, sans-serif !important; font-size: 9.3pt; margin:0; padding:0; line-height: 1.38;}
+            #calculadoraForm, .hero-panel, .theme-toggle-button, #toastContainer, #customModalOverlay, .result-toolbar, header, #shd-header, footer { display: none !important; } 
+            .calc-shell, .main-card { width: 100% !important; max-width: 100% !important; }
+            .main-card { border: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; margin: 0 !important; max-width: 100% !important; overflow: visible !important; }
             #resultadoWrapper { display: block !important; opacity: 1 !important; transform: translateY(0) !important; margin-top: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important; background-color: #fff !important;}
+            #resultadoConteudo { font-size: 9pt !important; }
             #resultadoWrapper h1, #resultadoWrapper h2, #resultadoWrapper h3, #resultadoWrapper p, #resultadoWrapper span, #resultadoWrapper strong { color: #000 !important; }
             #resultadoWrapper .text-main-accent { color: #000 !important; font-weight: bold; }
-            .print-header { display: block !important; text-align: center; margin-bottom: 15px; }
-            .print-header h1 { font-size: 14pt; font-weight: bold; margin-bottom: 2.5px; } .print-header p { font-size: 8pt; margin-bottom: 1px; }
-            .print-footer { display: block !important; text-align: center; margin-top: 25px; font-size: 6.5pt; border-top: 0.7px solid #ccc; padding-top: 6px;}
-            .report-section { border-bottom: 0.7px dashed #b0b0b0 !important; }
-            .report-field strong { color: #111 !important; }
-            .report-conclusion { border: 0.7px solid #333 !important; background-color: #f7f7f7 !important; }
-            footer { display: none !important;}
+            .print-header { display: block !important; text-align: left; margin-bottom: 10px; border: 1.4px solid #151515; padding: 12px 14px; }
+            .print-header h1 { font-size: 14pt; font-weight: 800; margin-bottom: 3px; letter-spacing: .04em; text-transform: uppercase; }
+            .print-header p { font-size: 8pt; margin-bottom: 1px; }
+            .print-doc-title { display: block !important; text-align: center; font-size: 11pt; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin: 10px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #1f1f1f; }
+            .print-footer { display: block !important; text-align: center; margin-top: 22px; font-size: 7pt; border-top: 1px solid #bdbdbd; padding-top: 6px;}
+            .result-kpis { display: table !important; width: 100% !important; border-collapse: collapse !important; margin: 0 0 12px !important; }
+            .result-kpi { display: table-row !important; border: none !important; background: transparent !important; box-shadow: none !important; page-break-inside: avoid; border-radius: 0 !important; padding: 0 !important; min-height: 0; }
+            .result-kpi-label,
+            .result-kpi-value { display: table-cell !important; border: 1px solid #1f1f1f !important; padding: 7px 9px !important; vertical-align: middle !important; }
+            .result-kpi-label { width: 34% !important; font-size: 7.4pt !important; color: #222 !important; margin-bottom: 0 !important; background: #efefef !important; font-weight: 700 !important; }
+            .result-kpi-value { font-size: 9.4pt !important; font-weight: 700 !important; line-height: 1.25 !important; background: #fff !important; }
+            .report-section { border: 1px solid #1f1f1f !important; background: #fff !important; padding: 9px 11px !important; margin-bottom: 9px !important; page-break-inside: avoid; border-radius: 0 !important; }
+            .report-section h3 { font-size: 8.6pt !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #1f1f1f; padding-bottom: 4px; margin: 0 0 8px !important; }
+            .report-field { display: grid !important; grid-template-columns: 110px 1fr; gap: 6px; margin-bottom: 5px !important; }
+            .report-field strong { color: #111 !important; font-size: 8pt !important; min-width: 0 !important; font-weight: 700 !important; }
+            .report-field span { font-size: 8.5pt !important; }
+            .report-conclusion { border: 1.4px solid #111 !important; background-color: #f2f2f2 !important; border-radius: 0 !important; margin-top: 8px !important; padding: 10px 12px !important; }
+            .report-conclusion p { font-size: 8.9pt !important; line-height: 1.48 !important; }
+            .print-signature { display: flex !important; justify-content: flex-end; margin-top: 30px; }
+            .print-signature-box { width: 250px; text-align: center; padding-top: 30px; border-top: 1px solid #111; font-size: 8pt; }
         }
 
         /* Custom Modal Styles */
@@ -471,56 +653,89 @@
         </div>
     </div>
     
-    <main class="flex-grow flex flex-col items-center justify-start w-full max-w-4xl px-2 sm:px-3 pt-[70px] pb-10 mx-auto">
+    <main class="flex-grow flex flex-col items-center justify-start w-full max-w-5xl px-3 sm:px-4 pt-[78px] pb-12 mx-auto">
 
-    <div class="main-card backdrop-blur-sm p-3.5 sm:p-5 md:p-7 w-full max-w-sm relative border"> <div class="loader-overlay" id="loaderOverlay">
+    <div class="calc-shell">
+    <div class="main-card backdrop-blur-sm p-3.5 sm:p-5 md:p-7 w-full relative border">
+        <div class="loader-overlay" id="loaderOverlay">
             <div class="loader"></div>
         </div>
-        <div class="text-center mb-7 animate-fadeInUp" style="animation-delay: 0.05s;">
-            <i class="fas fa-calculator text-main-accent text-3xl sm:text-4xl mb-3 drop-shadow-sm"></i>
-            <h1 class="text-xl sm:text-2xl font-semibold text-transparent bg-clip-text bg-gradient-accent pb-0.5">
-                Calculadora de Diárias
-            </h1>
-            <p class="text-secondary mt-2 text-[0.7rem] sm:text-xs tracking-tight"> Prefeitura Municipal de Inajá, PR
-            </p>
-            <p class="text-[0.65rem] sm:text-xs mt-1" id="baseLegalCabecalho" style="color: var(--text-secondary);">
-                Base Legal: Legislação Municipal Vigente
-            </p>
-        </div>
+        <section class="hero-panel animate-fadeInUp" style="animation-delay: 0.05s;">
+            <span class="hero-badge"><i class="fas fa-landmark"></i> Ferramenta oficial</span>
+            <div class="hero-grid">
+                <div class="hero-copy">
+                    <div class="flex items-start gap-3 mb-3">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:linear-gradient(135deg,var(--text-accent-light),var(--btn-primary-bg-to-light));color:#fff;box-shadow:var(--shadow-card-light);">
+                            <i class="fas fa-calculator text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl sm:text-3xl font-semibold text-transparent bg-clip-text bg-gradient-accent pb-0.5">
+                                Calculadora de Diárias
+                            </h1>
+                            <p class="text-secondary mt-2 text-sm sm:text-[15px] tracking-tight">Prefeitura Municipal de Inajá, PR</p>
+                            <p class="text-[0.78rem] sm:text-[0.82rem] mt-1" id="baseLegalCabecalho" style="color: var(--text-secondary);">
+                                Base Legal: Legislação Municipal Vigente
+                            </p>
+                        </div>
+                    </div>
+                    <p class="text-sm sm:text-[0.95rem]" style="color:var(--text-secondary-light);">
+                        Informe a saída e o retorno da viagem para calcular rapidamente a quantidade de diárias de forma clara, padronizada e pronta para impressão.
+                    </p>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="hero-stat-label">Cálculo</span>
+                        <span class="hero-stat-value">Automático</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-label">Saída</span>
+                        <span class="hero-stat-value">PDF limpo</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-label">Modelo</span>
+                        <span class="hero-stat-value">Relatório oficial</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="hero-stat-label">Uso</span>
+                        <span class="hero-stat-value">Rápido e responsivo</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <form id="calculadoraForm" class="space-y-4">
-            <div class="animate-fadeInUp" style="animation-delay: 0.1s;"> <h2 class="text-sm sm:text-base font-medium text-primary mb-2 mt-3 border-b border-accent-secondary pb-1.5 flex items-center">
-                    <i class="fas fa-plane-departure icon-info text-base sm:text-lg mr-1.5"></i>
+            <div class="section-card animate-fadeInUp" style="animation-delay: 0.1s;">
+                <h2 class="text-sm sm:text-base font-medium text-primary mb-3 border-b border-accent-secondary pb-2 flex items-center">
+                    <i class="fas fa-plane-departure icon-info text-base sm:text-lg mr-2"></i>
                     Informações da Viagem
                 </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3.5 gap-y-3.5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
                     <div class="form-element" style="animation-delay: 0.15s;">
-                        <label for="dataPartida" class="block text-[0.7rem] font-medium text-secondary mb-0.5">Data de Partida:</label>
+                        <label for="dataPartida" class="block text-[0.76rem] font-medium text-secondary mb-1">Data de Partida</label>
                         <input type="date" id="dataPartida" name="dataPartida" required class="w-full" aria-describedby="dataPartidaError">
                         <span id="dataPartidaError" class="input-error-message" aria-live="assertive"></span>
                     </div>
                     <div class="form-element" style="animation-delay: 0.2s;">
-                        <label for="horaPartida" class="block text-[0.7rem] font-medium text-secondary mb-0.5">Hora de Partida:</label>
+                        <label for="horaPartida" class="block text-[0.76rem] font-medium text-secondary mb-1">Hora de Partida</label>
                         <input type="time" id="horaPartida" name="horaPartida" required class="w-full" placeholder="HH:MM" aria-describedby="horaPartidaError">
                         <span id="horaPartidaError" class="input-error-message" aria-live="assertive"></span>
                     </div>
                     <div class="form-element" style="animation-delay: 0.25s;">
-                        <label for="dataRetorno" class="block text-[0.7rem] font-medium text-secondary mb-0.5">Data de Retorno:</label>
+                        <label for="dataRetorno" class="block text-[0.76rem] font-medium text-secondary mb-1">Data de Retorno</label>
                         <input type="date" id="dataRetorno" name="dataRetorno" required class="w-full" aria-describedby="dataRetornoError">
                         <span id="dataRetornoError" class="input-error-message" aria-live="assertive"></span>
                     </div>
                     <div class="form-element" style="animation-delay: 0.3s;">
-                        <label for="horaRetorno" class="block text-[0.7rem] font-medium text-secondary mb-0.5">Hora de Retorno:</label>
+                        <label for="horaRetorno" class="block text-[0.76rem] font-medium text-secondary mb-1">Hora de Retorno</label>
                         <input type="time" id="horaRetorno" name="horaRetorno" required class="w-full" placeholder="HH:MM" aria-describedby="horaRetornoError">
                         <span id="horaRetornoError" class="input-error-message" aria-live="assertive"></span>
                     </div>
                 </div>
+                <button type="submit" id="calculateButton" class="btn-primary w-full mt-5 animate-fadeInUp group" style="animation-delay: 0.35s;">
+                    <i class="fas fa-hourglass-half mr-1 transition-transform duration-200 group-hover:rotate-[10deg] group-active:scale-105"></i>
+                    Calcular Diárias
+                </button>
             </div>
-
-            <button type="submit" id="calculateButton" class="btn-primary w-full mt-5 animate-fadeInUp group" style="animation-delay: 0.35s;">
-                <i class="fas fa-hourglass-half mr-1 transition-transform duration-200 group-hover:rotate-[10deg] group-active:scale-105"></i>
-                Calcular Diárias
-            </button>
         </form>
 
         <div id="resultadoWrapper" class="mt-7 message-card hidden">
@@ -530,37 +745,64 @@
                 <p>Base Legal: <strong id="printLeiAplicada">Legislação Municipal Vigente</strong></p>
                 <p id="printTimestamp"></p>
             </div>
+            <div class="print-doc-title">Demonstrativo de Concessão de Diárias</div>
 
             <div id="resultadoConteudo" class="text-[0.75rem] sm:text-xs">
-                <div class="flex flex-wrap justify-end items-center mb-3 gap-1">
-                    <button id="downloadPdfButton" class="btn-primary !py-1 !px-1.5" title="Baixar Relatório PDF">
-                        <i class="fas fa-file-pdf mr-0.5"></i> <span class="hidden sm:inline">PDF</span>
+                <div class="result-toolbar">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-semibold text-primary">Resultado do cálculo</h2>
+                        <p class="text-[0.72rem] sm:text-xs text-secondary">Resumo pronto para consulta e impressão.</p>
+                    </div>
+                    <button id="downloadPdfButton" class="btn-primary !py-2 !px-3" title="Baixar Relatório PDF">
+                        <i class="fas fa-file-pdf mr-1"></i> <span>Gerar PDF</span>
                     </button>
-                     </div>
+                </div>
 
-                <div class="report-section">
-                    <h3 class="text-xs sm:text-sm font-medium text-primary mb-1.5 mt-2">Período do Afastamento:</h3>
-                    <div class="report-field"><strong>Partida:</strong> <span id="printDataPartida"></span> às <span id="printHoraPartida"></span></div>
-                    <div class="report-field"><strong>Retorno:</strong> <span id="printDataRetorno"></span> às <span id="printHoraRetorno"></span></div>
-                    <div class="report-field"><strong>Duração Total:</strong> <span id="duracaoTotal" class="font-semibold text-main-accent text-xs sm:text-sm"></span></div>
+                <div class="result-kpis">
+                    <div class="result-kpi">
+                        <div class="result-kpi-label">Duração total</div>
+                        <div class="result-kpi-value" id="duracaoTotal"></div>
+                    </div>
+                    <div class="result-kpi">
+                        <div class="result-kpi-label">Diárias devidas</div>
+                        <div class="result-kpi-value" id="numDiariasResumo"></div>
+                    </div>
+                    <div class="result-kpi">
+                        <div class="result-kpi-label">Gerado em</div>
+                        <div class="result-kpi-value" id="resultadoTimestamp"></div>
+                    </div>
                 </div>
 
                 <div class="report-section">
-                     <h3 class="text-xs sm:text-sm font-medium text-primary mb-1.5 mt-2">Resultado:</h3> <div class="report-conclusion">
+                    <h3 class="text-xs sm:text-sm font-medium text-primary mb-1.5 mt-2">Período do Afastamento</h3>
+                    <div class="report-field"><strong>Partida:</strong> <span id="printDataPartida"></span> às <span id="printHoraPartida"></span></div>
+                    <div class="report-field"><strong>Retorno:</strong> <span id="printDataRetorno"></span> às <span id="printHoraRetorno"></span></div>
+                    <div class="report-field"><strong>Duração Total:</strong> <span id="duracaoResumo" class="font-semibold text-main-accent text-xs sm:text-sm"></span></div>
+                </div>
+
+                <div class="report-section">
+                     <h3 class="text-xs sm:text-sm font-medium text-primary mb-1.5 mt-2">Conclusão</h3><div class="report-conclusion">
                         <p>Com base na legislação vigente, para o período de <strong id="duracaoConclusao"></strong>, entre <strong id="partidaConclusao"></strong> e <strong id="retornoConclusao"></strong>, faz jus a <strong id="numDiariasConclusao" class="text-base sm:text-lg text-main-accent font-semibold"></strong> diária(s).</p> </div>
                 </div>
 
-                <div id="explicacao" class="mt-3 text-[0.7rem] sm:text-xs text-secondary">
-                    {/* Conteúdo da explicação */}
+                <div id="explicacao" class="report-section mt-3 text-[0.7rem] sm:text-xs text-secondary">
+                </div>
+
+                <div class="print-signature">
+                    <div class="print-signature-box">
+                        Responsável pela conferência
+                    </div>
                 </div>
             </div>
              <div class="print-footer">
-                Calculadora de Diárias Municipal </div>
+                Prefeitura Municipal de Inajá - PR
+             </div>
         </div>
 
         <div id="mensagemErroGlobal" class="mt-4 message-card bg-rose-700/75 border-rose-600/65 text-rose-50 hidden">
              {/* Conteúdo do erro global */}
         </div>
+    </div>
     </div>
 
     <footer class="text-center text-secondary mt-7 mb-3.5 text-[0.65rem] sm:text-xs tracking-tight animate-fadeInUp" style="animation-delay: 0.45s;">
@@ -580,6 +822,9 @@
         const toastContainer = document.getElementById('toastContainer');
 
         const duracaoTotalSpan = document.getElementById('duracaoTotal');
+        const duracaoResumoSpan = document.getElementById('duracaoResumo');
+        const numDiariasResumoSpan = document.getElementById('numDiariasResumo');
+        const resultadoTimestampSpan = document.getElementById('resultadoTimestamp');
         const explicacaoDiv = document.getElementById('explicacao');
         const downloadPdfButton = document.getElementById('downloadPdfButton');
         // const downloadCsvButton = document.getElementById('downloadCsvButton'); // Removido
@@ -591,7 +836,7 @@
         // const clearHistoryButton = document.getElementById('clearHistoryButton');
 
 
-        const leiReferenciaCabecalhoSpan = document.getElementById('leiReferenciaCabecalho');
+        const leiReferenciaCabecalhoSpan = document.getElementById('baseLegalCabecalho');
         const printLeiAplicadaSpan = document.getElementById('printLeiAplicada');
 
         const dataPartidaInput = document.getElementById('dataPartida');
@@ -827,10 +1072,14 @@
                     }
                 }
 
-                duracaoTotalSpan.textContent = `${totalHorasAfastamento.toFixed(1)} horas`;
+                const duracaoFormatada = `${totalHorasAfastamento.toFixed(1)} horas`;
+                duracaoTotalSpan.textContent = duracaoFormatada;
+                duracaoResumoSpan.textContent = duracaoFormatada;
+                numDiariasResumoSpan.textContent = `${numDiariasCalculadas} diária(s)`;
+                resultadoTimestampSpan.textContent = new Date().toLocaleString('pt-BR');
                 if(printLeiAplicadaSpan) printLeiAplicadaSpan.textContent = textoLeiCurto;
 
-                duracaoConclusaoSpan.textContent = `${totalHorasAfastamento.toFixed(1)} horas`;
+                duracaoConclusaoSpan.textContent = duracaoFormatada;
                 partidaConclusaoSpan.textContent = `${new Date(partidaDateTime).toLocaleDateString('pt-BR')} às ${new Date(partidaDateTime).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
                 retornoConclusaoSpan.textContent = `${new Date(retornoDateTime).toLocaleDateString('pt-BR')} às ${new Date(retornoDateTime).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
                 numDiariasConclusaoSpan.textContent = numDiariasCalculadas;
@@ -846,10 +1095,6 @@
 
                 resultadoWrapperDiv.classList.remove('hidden');
                 requestAnimationFrame(() => { resultadoWrapperDiv.classList.add('visible'); });
-                copyButton.innerHTML = '<i class="fas fa-paste mr-0.5"></i> <span class="hidden sm:inline">Copiar</span>'; copyButton.disabled = false;
-                downloadHtmlButton.innerHTML = '<i class="fas fa-file-code mr-0.5"></i> <span class="hidden sm:inline">HTML</span>'; downloadHtmlButton.disabled = false;
-                // Botões CSV e Salvar não são mais resetados aqui
-                
                 hideLoader();
                 resultadoWrapperDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 

@@ -3786,10 +3786,30 @@ def despesas_ia():
             'Apresente como lista numerada com no máximo 6 sugestões. '
             'Escreva em português do Brasil.'
         ),
+        'prioridades': (
+            f'Você é um consultor de planejamento e execução orçamentária municipal. Hoje é {today}. '
+            'Com base nas dotações, identifique as prioridades orçamentárias mais urgentes para reforço, proteção ou monitoramento intensivo. '
+            'Estruture a resposta com: '
+            '1) **Prioridades imediatas** (itens críticos), '
+            '2) **Áreas que merecem reforço** (por secretaria, programa ou ação), '
+            '3) **Riscos de descontinuidade** se nada for feito, '
+            '4) **Plano de ação em 30 dias** com medidas objetivas. '
+            'Use linguagem executiva, prática e voltada à gestão pública. Escreva em português do Brasil.'
+        ),
+        'cortes': (
+            f'Você é um analista de eficiência do gasto público municipal. Hoje é {today}. '
+            'Com base nos dados de dotações, identifique onde pode haver espaço para contenção, postergação, revisão ou realocação de recursos sem comprometer serviços essenciais. '
+            'Estruture a resposta com: '
+            '1) **Possíveis áreas de corte ou contenção**, '
+            '2) **Justificativa técnica de cada oportunidade**, '
+            '3) **Risco operacional do corte** (baixo, médio ou alto), '
+            '4) **Recomendação final** separando o que pode ser cortado, revisto ou preservado. '
+            'Não sugira cortes em áreas essenciais sem alertar claramente o risco. Escreva em português do Brasil.'
+        ),
     }
 
     if action not in system_prompts:
-        return jsonify({'error': f'Ação "{action}" não reconhecida. Use: analisar, chat, anomalias, relatorio, remanejamento.'}), 400
+        return jsonify({'error': f'Ação "{action}" não reconhecida. Use: analisar, chat, anomalias, relatorio, remanejamento, prioridades, cortes.'}), 400
 
     ctx_text = _build_ctx_text(contexto)
     user_content = ctx_text

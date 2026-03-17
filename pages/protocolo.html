@@ -469,15 +469,25 @@
 
   // ── List interactions (delegation) ────────────────────────
   document.getElementById('pr-list').addEventListener('click', async e => {
-    // Expand toggle
-    const expandBtn = e.target.closest('[data-expand]');
-    if (expandBtn) {
-      const id = expandBtn.dataset.expand;
-      const item = document.querySelector(`.pr-item[data-id="${id}"]`);
-      if (item) {
-        item.classList.toggle('expanded');
-        if (item.classList.contains('expanded')) carregarAnexos(id);
-      }
+    // Delete protocol
+    const deleteBtn = e.target.closest('[data-delete]');
+    if (deleteBtn) {
+      if (!confirm('Excluir este protocolo e todos os seus anexos?')) return;
+      try {
+        const r = await fetch(`${API}/protocolos/${deleteBtn.dataset.delete}`, { method:'DELETE' });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || 'Erro ao excluir protocolo');
+        if (edicaoProtocoloId === Number(deleteBtn.dataset.delete)) {
+          document.getElementById('pr-form').reset();
+          edicaoProtocoloId = null;
+          document.getElementById('pr-submit-btn').textContent = 'Registrar Protocolo';
+          document.getElementById('pr-limpar-btn').textContent = 'Limpar';
+          await carregarProxNumero();
+        }
+        clearStatus();
+        await carregarProtocolos();
+        setStatus('Protocolo excluído com sucesso.', true);
+      } catch (err) { setStatus(err.message || 'Erro ao excluir', false); }
       return;
     }
 
@@ -509,23 +519,11 @@
         document.getElementById('pr-submit-btn').textContent = 'Salvar Alterações';
         document.getElementById('pr-limpar-btn').textContent = 'Cancelar Edição';
         
-        // Scroll até o formulário de edição
         const formPanel = document.querySelector('.pr-panel');
         if (formPanel) formPanel.scrollIntoView({ behavior: 'smooth' });
         
         clearStatus();
       }
-      return;
-    }
-
-    // Delete protocol
-    const deleteBtn = e.target.closest('[data-delete]');
-    if (deleteBtn) {
-      if (!confirm('Excluir este protocolo e todos os seus anexos?')) return;
-      try {
-        await fetch(`${API}/protocolos/${deleteBtn.dataset.delete}`, { method:'DELETE' });
-        await carregarProtocolos();
-      } catch { setStatus('Erro ao excluir', false); }
       return;
     }
 
@@ -559,6 +557,18 @@
     const delAnexo = e.target.closest('[data-del-anexo]');
     if (delAnexo) {
       await excluirAnexo(delAnexo.dataset.protId, delAnexo.dataset.delAnexo);
+      return;
+    }
+
+    // Expand toggle
+    const expandBtn = e.target.closest('[data-expand]');
+    if (expandBtn) {
+      const id = expandBtn.dataset.expand;
+      const item = document.querySelector(`.pr-item[data-id="${id}"]`);
+      if (item) {
+        item.classList.toggle('expanded');
+        if (item.classList.contains('expanded')) carregarAnexos(id);
+      }
       return;
     }
   });

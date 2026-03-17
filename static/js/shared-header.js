@@ -65,26 +65,25 @@
       { href: '/pages/rpa.html',             name: 'RPA',                    desc: 'Recibo de Pagamento Autônomo' },
       { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
       { href: '/pages/assistente-empenho.html', name: 'Assistente de Empenho', desc: 'Gerar descrição de empenho com IA' },
-      { href: '/pages/visualizador.html',    name: 'Rel. de Empenhos',       desc: 'Visualizar e filtrar empenhos' },
+      { href: '/pages/visualizador.html',    name: 'Relatório de Empenhos',  desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
       { href: '/pages/prazos.html',          name: 'Prazos',                 desc: 'Contratos e prazos críticos' },
       { href: '/pages/protocolo.html',       name: 'Protocolo',              desc: 'Ofícios, memorandos e documentos' },
       { href: '/pages/autentique-assinatura.html', name: 'Assinatura Digital', desc: 'Enviar documento para assinatura' },
     ],
     financeiro: [
-      { href: '/pages/extratos.html',             name: 'Extratos Bancários',      desc: 'Organizar arquivos de extrato' },
-      { href: '/pages/tarifas-bancarias.html',    name: 'Analisador Financeiro',   desc: 'Tarifas e encargos bancários' },
-      { href: '/pages/fornecimento.html',         name: 'Aquisições',              desc: 'Solicitações de aquisição' },
-      { href: '/pages/despesa-prefeitura.html',   name: 'Despesa Pública',         desc: 'Visor de despesas da prefeitura' },
-      { href: '/pages/despesa-relatorios.html',   name: 'Relatórios de Despesa',   desc: 'Comparar períodos e histórico' },
+      { href: '/pages/tarifas-bancarias.html',    name: 'Análise de Tarifas Bancárias', desc: 'Leitura de extratos e encargos' },
+      { href: '/pages/fornecimento.html',         name: 'Solicitações de Aquisição',    desc: 'Pedidos e fluxo de compras' },
+      { href: '/pages/despesa-prefeitura.html',   name: 'Execução das Dotações',        desc: 'Consulta de despesas e dotações' },
+      { href: '/pages/despesa-relatorios.html',   name: 'Comparativo Orçamentário',     desc: 'Comparar períodos e histórico' },
     ],
     ferramentas: [
-      { href: '/pages/cnpj.html',       name: 'Consulta CNPJ',    desc: 'Consultar dados de empresas' },
-      { href: '/pages/renomear.html',   name: 'Renomear com IA',  desc: 'Renomear PDFs e extratos' },
-      { href: '/pages/calculadora-diarias.html', name: 'Calc. Diárias', desc: 'Calcular diárias de viagens' },
-      { href: '/pages/tarefas.html',    name: 'Tarefas Kanban',   desc: 'Gerenciar atividades' },
-      { href: '/pages/calendario.html', name: 'Calendário',       desc: 'Calendário de pagamentos' },
-      { href: '/pages/manual.html',     name: '📖 Manual',        desc: 'Guia completo do sistema' },
+      { href: '/pages/cnpj.html',       name: 'Consulta de CNPJ',       desc: 'Consultar dados de empresas' },
+      { href: '/pages/renomear.html',   name: 'Renomeador com IA',      desc: 'Padronizar nomes de documentos' },
+      { href: '/pages/calculadora-diarias.html', name: 'Calculadora de Diárias', desc: 'Calcular diárias de viagens' },
+      { href: '/pages/tarefas.html',    name: 'Painel de Tarefas',      desc: 'Gerenciar atividades' },
+      { href: '/pages/calendario.html', name: 'Calendário Administrativo', desc: 'Calendário de pagamentos' },
+      { href: '/pages/manual.html',     name: 'Manual do Sistema',      desc: 'Guia completo do sistema' },
     ],
   };
 
@@ -133,10 +132,6 @@
           <circle cx="9" cy="7" r="4"/>
         </svg>
         Credores
-      </a>
-      <a href="/pages/extratos.html" class="nav-tab" style="text-decoration:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-        Extratos
       </a>
       <a href="/pages/tarefas.html" class="nav-tab" style="text-decoration:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
@@ -189,7 +184,6 @@
     <button class="mobile-nav-close" id="shd-mobile-nav-close">&times;</button>
   </div>
   <a href="/" class="mobile-nav-item" style="text-decoration:none;">Credores Fixos</a>
-  <a href="/pages/extratos.html" class="mobile-nav-item${isActive('/pages/extratos.html') ? ' active' : ''}" style="text-decoration:none;">Extratos</a>
   <a href="/pages/tarefas.html" class="mobile-nav-item${isActive('/pages/tarefas.html') ? ' active' : ''}" style="text-decoration:none;">Tarefas</a>
   <div class="mobile-nav-divider"></div>
   <div class="mobile-nav-label">Documentos</div>
@@ -249,28 +243,22 @@
 
     /* ── Bottom nav em sub-páginas ───────────────────────────── */
     if (!document.getElementById('shd-bottom-nav')) {
-      const bnav = document.createElement('nav');
-      bnav.className = 'bottom-nav';
+      const bnav = document.createElement('div');
       bnav.id = 'shd-bottom-nav';
-      bnav.setAttribute('aria-label', 'Navegação mobile');
+      bnav.className = 'bottom-nav';
       bnav.innerHTML = `
         <div class="bottom-nav-items">
-          <a class="bottom-nav-item" href="/">
+          <a class="bottom-nav-item${isActive('/') || isActive('/index.html') ? ' active':''}" href="/">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             <span>Credores</span>
             <span class="bottom-nav-indicator"></span>
           </a>
-          <a class="bottom-nav-item${isActive('/pages/extratos.html')?' active':''}" href="/pages/extratos.html">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-            <span>Extratos</span>
-            <span class="bottom-nav-indicator"></span>
-          </a>
-          <a class="bottom-nav-item${isActive('/pages/tarefas.html')?' active':''}" href="/pages/tarefas.html">
+          <a class="bottom-nav-item${isActive('/pages/tarefas.html') ? ' active':''}" href="/pages/tarefas.html">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             <span>Tarefas</span>
             <span class="bottom-nav-indicator"></span>
           </a>
-          <a class="bottom-nav-item${isActive('/pages/cnpj.html')?' active':''}" href="/pages/cnpj.html">
+          <a class="bottom-nav-item${isActive('/pages/cnpj.html') ? ' active':''}" href="/pages/cnpj.html">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
             <span>CNPJ</span>
             <span class="bottom-nav-indicator"></span>

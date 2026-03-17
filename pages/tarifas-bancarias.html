@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
-  <!-- PDF.js CDN -->
+  <script defer src="/static/js/shared-header.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module" id="pdfjs-script"></script>
   <style>
     /* ── Page Wrapper ── */
@@ -163,7 +163,7 @@
       box-shadow: 0 0 6px var(--green);
       flex-shrink: 0;
     }
-    .file-name { font-size: 13px; font-weight: 600; color: var(--text-2); max-width: 400px; truncate: true; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-name { font-size: 13px; font-weight: 600; color: var(--text-2); max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ── Analyze Button ── */
     .btn-analyze {
@@ -396,7 +396,7 @@
       flex-shrink: 0;
     }
   </style>
-  <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>
 
@@ -607,9 +607,6 @@
 
   // ── OpenRouter API ───────────────────────────────────────────────
   async function analyzeBankStatement(text) {
-    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
-    if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
-
     const PROMPT = `Você é um especialista em finanças públicas municipais do Brasil. Analise o extrato bancário abaixo e retorne UM ÚNICO objeto JSON com EXATAMENTE estas chaves (sem texto extra):
 
 {
@@ -642,7 +639,6 @@ ${text.slice(0, 12000)}
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        api_key: openrouterApiKey,
         model,
         messages: [{ role: 'user', content: PROMPT }],
         temperature: 0.1,
@@ -668,6 +664,7 @@ ${text.slice(0, 12000)}
   // ── State ────────────────────────────────────────────────────
   let currentFile = null;
   let lastResult = null;
+  let lastExtractedText = '';
 
   // ── Helpers ──────────────────────────────────────────────────
   const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
@@ -734,11 +731,6 @@ ${text.slice(0, 12000)}
   // ── Analyze ──────────────────────────────────────────────────
   btnAnalyze.addEventListener('click', async () => {
     if (!currentFile) return;
-    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
-    if (!openrouterApiKey) {
-      showError('Configure sua chave API OpenRouter antes de continuar.');
-      return;
-    }
 
     hideError();
     showSection('loader');
@@ -746,6 +738,7 @@ ${text.slice(0, 12000)}
     try {
       loaderMsg.textContent = 'Lendo PDF...';
       const text = await extractTextFromPdf(currentFile);
+      lastExtractedText = text;
 
       if (!text.trim()) {
         throw new Error('Não foi possível extrair texto do PDF. O arquivo pode ser uma imagem digitalizada.');
@@ -826,6 +819,7 @@ ${text.slice(0, 12000)}
   document.getElementById('btn-reset').addEventListener('click', () => {
     currentFile = null;
     lastResult = null;
+    lastExtractedText = '';
     fileInput.value = '';
     fileBadge.style.display = 'none';
     btnAnalyze.style.display = 'none';
@@ -901,6 +895,89 @@ ${text.slice(0, 12000)}
     a.click();
   });
 
+  async function askFinancialAssistant(action, question) {
+    if (!lastResult) {
+      if (!currentFile) throw new Error('Envie um extrato e gere a análise antes de usar o chat.');
+      const text = lastExtractedText || await extractTextFromPdf(currentFile);
+      lastExtractedText = text;
+      if (!text.trim()) throw new Error('Não foi possível extrair texto do PDF atual.');
+      lastResult = await analyzeBankStatement(text);
+    }
+
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
+    const context = JSON.stringify({
+      arquivo: currentFile ? currentFile.name : '',
+      resumo: lastResult?.resumo || '',
+      total_tarifas: lastResult?.total_tarifas || 0,
+      total_creditos: lastResult?.total_creditos || 0,
+      total_debitos: lastResult?.total_debitos || 0,
+      saldo_periodo: lastResult?.saldo_periodo || 0,
+      num_lancamentos: lastResult?.num_lancamentos || 0,
+      categorias_tarifas: lastResult?.categorias_tarifas || [],
+      maiores_debitos: lastResult?.maiores_debitos || [],
+      alertas: lastResult?.alertas || []
+    }, null, 2);
+
+    const prompts = {
+      analisar: 'Faça uma análise executiva do extrato, destacando tarifas, riscos, custos e recomendações objetivas.',
+      anomalias: 'Identifique lançamentos ou padrões suspeitos, cobranças incomuns e riscos financeiros que merecem conferência.',
+      prioridades: 'Liste as prioridades de conferência e ação do analista financeiro com base no extrato analisado.',
+      relatorio: 'Gere um relatório formal e objetivo sobre o extrato, pronto para registro interno.',
+      chat: question || 'Responda à pergunta do usuário usando apenas os dados do extrato.'
+    };
+
+    const userPrompt = [
+      prompts[action] || prompts.analisar,
+      '',
+      'Contexto do extrato:',
+      context,
+      question && action !== 'chat' ? `Pergunta complementar: ${question}` : ''
+    ].filter(Boolean).join('\n');
+
+    const resp = await fetch('/api/ia/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: 'Você é um analista financeiro municipal. Responda em português do Brasil, de forma técnica e objetiva.' },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.2,
+        max_tokens: 1200
+      })
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data?.error?.message || data?.error || `HTTP ${resp.status}`);
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    if (!content) throw new Error('Resposta vazia da IA.');
+    return content;
+  }
+
+  if (window.IaChatWidget) {
+    window.IaChatWidget.create({
+      title: 'IA Financeira',
+      subtitle: 'Assistente para leitura de extratos e tarifas',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir IA Financeira',
+      chatPlaceholder: 'Ex: Há alguma tarifa indevida neste extrato?',
+      emptyMessage: 'Envie um extrato e gere a análise antes de usar a IA.',
+      actions: [
+        { id: 'analisar', label: 'Analisar', description: 'Resume o extrato, custos e principais achados.' },
+        { id: 'anomalias', label: 'Anomalias', description: 'Procura cobranças estranhas, padrões incomuns e riscos.' },
+        { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que conferir primeiro no extrato analisado.' },
+        { id: 'relatorio', label: 'Relatório', description: 'Gera um relatório técnico resumido do extrato.' },
+        { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o extrato atual.' }
+      ],
+      shortcuts: [
+        { label: 'Resumo do extrato', action: 'analisar' },
+        { label: 'Tarifas suspeitas', action: 'anomalias' },
+        { label: 'O que conferir', action: 'prioridades' }
+      ],
+      hasData: () => Boolean(currentFile || lastResult),
+      onRun: ({ action, question }) => askFinancialAssistant(action, question)
+    });
+  }
   </script>
 </body>
 </html>

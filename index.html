@@ -115,10 +115,6 @@
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-group-menu nav-group-menu-sidebar">
-            <a href="/pages/extratos.html" class="nav-group-item">
-              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg></div>
-              <div class="nav-group-item-text"><span class="nav-group-item-name">Extratos</span><span class="nav-group-item-desc">Organizar arquivos bancários</span></div>
-            </a>
             <a href="/pages/tarifas-bancarias.html" class="nav-group-item">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Tarifas</span><span class="nav-group-item-desc">Encargos e tarifas bancárias</span></div>
@@ -212,7 +208,6 @@
       <a href="/pages/calendario.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Financeiro</div>
-      <a href="/pages/extratos.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>Extratos</a>
       <a href="/pages/tarifas-bancarias.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
       <a href="/pages/fornecimento.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Aquisições</a>
       <a href="/pages/despesa-prefeitura.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Dotações Orçamentárias</a>
@@ -273,23 +268,28 @@
       <!-- Operação -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Operação
+          <div class="hs-group-header-main">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <div>
+              <span class="hs-group-title">Rotina Operacional</span>
+              <span class="hs-group-subtitle">Execução diária, acompanhamento e organização interna</span>
+            </div>
+          </div>
         </div>
         <div class="hs-cards">
           <button class="hs-card hs-accent-blue" data-hs-tab="credores-fixos">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Credores Fixos</span><span class="hs-card-desc">Empenhos mensais e credores</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Gestão de Credores Fixos</span><span class="hs-card-desc">Cadastro, controle mensal e emissão de empenhos</span></div>
             <span class="hs-card-arrow">›</span>
           </button>
           <a class="hs-card hs-accent-blue" href="/pages/tarefas.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Tarefas</span><span class="hs-card-desc">Quadro Kanban de atividades</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Painel de Tarefas</span><span class="hs-card-desc">Quadro Kanban para execução e acompanhamento</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-blue" href="/pages/calendario.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Calendário</span><span class="hs-card-desc">Histórico e controle mensal</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Calendário Administrativo</span><span class="hs-card-desc">Agenda, histórico e controle mensal</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
         </div>
@@ -298,33 +298,33 @@
       <!-- Financeiro -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>
-          Financeiro
+          <div class="hs-group-header-main">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>
+            <div>
+              <span class="hs-group-title">Planejamento Financeiro</span>
+              <span class="hs-group-subtitle">Análises, despesas, aquisições e acompanhamento orçamentário</span>
+            </div>
+          </div>
         </div>
         <div class="hs-cards">
-          <a class="hs-card hs-accent-green" href="/pages/extratos.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Extratos</span><span class="hs-card-desc">Organizar arquivos bancários</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
           <a class="hs-card hs-accent-green" href="/pages/tarifas-bancarias.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Tarifas Bancárias</span><span class="hs-card-desc">Encargos e tarifas bancárias</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Análise de Tarifas Bancárias</span><span class="hs-card-desc">Leitura de extratos e conferência de encargos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-green" href="/pages/fornecimento.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Aquisições</span><span class="hs-card-desc">Controle de fornecedores</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Solicitações de Aquisição</span><span class="hs-card-desc">Pedidos, fornecedores e fluxo de compras</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-green" href="/pages/despesa-prefeitura.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Dotações Orçamentárias</span><span class="hs-card-desc">Execução orçamentária com IA</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Execução das Dotações</span><span class="hs-card-desc">Consulta de despesas e análise orçamentária</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-green" href="/pages/despesa-relatorios.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Relatórios Orçamentários</span><span class="hs-card-desc">Comparar períodos e histórico</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Comparativo Orçamentário</span><span class="hs-card-desc">Relatórios, histórico e comparação entre períodos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
         </div>
@@ -333,8 +333,13 @@
       <!-- Documentos -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-orange">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Documentos
+          <div class="hs-group-header-main">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div>
+              <span class="hs-group-title">Documentos e Processos</span>
+              <span class="hs-group-subtitle">Protocolos, arquivos, auditoria e tramitação documental</span>
+            </div>
+          </div>
         </div>
         <div class="hs-cards">
           <a class="hs-card hs-accent-orange" href="/pages/documentos.html">
@@ -349,17 +354,17 @@
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/pdf.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">PDF</span><span class="hs-card-desc">Mesclar, dividir e proteger</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Editor de PDF</span><span class="hs-card-desc">Mesclar, dividir, proteger e reorganizar PDFs</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/assistente-empenho.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Assistente de Empenho</span><span class="hs-card-desc">IA para texto e conferencia</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Assistente de Empenho</span><span class="hs-card-desc">Gerar texto e apoiar a conferência do empenho</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/visualizador.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Rel. de Empenhos</span><span class="hs-card-desc">Documentos e contratos</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Relatório de Empenhos</span><span class="hs-card-desc">Visualizar, filtrar e detalhar empenhos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/auditor.html">
@@ -379,7 +384,7 @@
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/autentique-assinatura.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Assinatura Digital</span><span class="hs-card-desc">Autentique por WhatsApp</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Assinatura Digital</span><span class="hs-card-desc">Envio de documentos para assinatura eletrônica</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
         </div>
@@ -388,23 +393,28 @@
       <!-- Ferramentas -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-          Ferramentas
+          <div class="hs-group-header-main">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <div>
+              <span class="hs-group-title">Consultas e Utilidades</span>
+              <span class="hs-group-subtitle">Ferramentas de apoio, consulta rápida e administração do sistema</span>
+            </div>
+          </div>
         </div>
         <div class="hs-cards">
           <a class="hs-card hs-accent-purple" href="/pages/cnpj.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Consulta CNPJ</span><span class="hs-card-desc">Dados de empresas</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Consulta de CNPJ</span><span class="hs-card-desc">Consulta cadastral de empresas e fornecedores</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-purple" href="/pages/renomear.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Renomear com IA</span><span class="hs-card-desc">Organizar PDFs e extratos</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Renomeador com IA</span><span class="hs-card-desc">Padronizar nomes de documentos automaticamente</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-purple" href="/pages/calculadora-diarias.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Calc. Diárias</span><span class="hs-card-desc">Cálculo de diárias de viagem</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Calculadora de Diárias</span><span class="hs-card-desc">Cálculo administrativo de diárias de viagem</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-purple" href="/pages/manual.html">
@@ -557,7 +567,7 @@
     </div>
   </div>
 
-  <div style="display:flex;flex-wrap:wrap;gap:10px;padding:0 24px 12px;align-items:center;">
+  <div class="credores-meta" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 24px 12px;align-items:center;">
     <span id="credores-counter" style="font-size:13px;color:var(--text-2);font-weight:600;">0 exibidos de 0 cadastrados</span>
     <span id="credores-summary" style="font-size:12px;color:var(--text-3);">Fixos: 0 | Variáveis: 0 | Sem CNPJ: 0 | Sem e-mail: 0 | Vencidos: 0 | Vencendo 30d: 0</span>
   </div>
@@ -950,13 +960,6 @@
         <span>Credores</span>
         <span class="bottom-nav-indicator"></span>
       </button>
-      <a class="bottom-nav-item" href="/pages/extratos.html">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-        </svg>
-        <span>Extratos</span>
-        <span class="bottom-nav-indicator"></span>
-      </a>
       <a class="bottom-nav-item" href="/pages/tarefas.html">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="18" height="18" rx="2"/>

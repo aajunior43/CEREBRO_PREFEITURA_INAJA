@@ -60,7 +60,7 @@
     const { importacao, linhas } = await resp.json();
 
     const { state } = window.App;
-    const { parseCurrency, getTipoGasto, getTipoDespesa, getOrigemRecurso, getSecretaria, getAreaAtuacao } = window.App.utils;
+    const { normalizeText, parseCurrency, getTipoGasto, getTipoDespesa, getOrigemRecurso, getSecretaria, getAreaAtuacao } = window.App.utils;
     const { renderFilterOptions } = window.App.ui;
     const { applyFilters } = window.App.logic;
 
@@ -76,6 +76,8 @@
       r['Origem do Recurso']  = getOrigemRecurso(r['Descrição do recurso']);
       r['Secretaria/Órgão']   = getSecretaria(r['Descrição do organograma']);
       r['Área de Atuação']    = getAreaAtuacao(r['Descrição da função']);
+      r.__searchable = normalizeText(state.columns.map((col) => r[col] || "").join(" "));
+      r.__numDespesaNorm = normalizeText(r["Número da despesa"] || "");
       return r;
     });
 

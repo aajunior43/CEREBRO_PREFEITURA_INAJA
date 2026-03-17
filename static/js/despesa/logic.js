@@ -50,8 +50,17 @@
         if (filter.selected.size && !filter.selected.has(value)) return false;
       }
       if (row.__saldo < min || row.__saldo > max) return false;
+      if (state.saldoCriticoAtivo && row.__saldo > state.saldoCriticoThreshold) return false;
+      if (state.quickFilterPrefixes.length) {
+        const natureza = row["Natureza de Despesa"] || "";
+        if (!state.quickFilterPrefixes.some((prefix) => natureza.startsWith(prefix))) return false;
+      }
+      if (state.numDespesaQuery) {
+        const num = row.__numDespesaNorm || normalizeText(row["Número da despesa"] || "");
+        if (!num.includes(state.numDespesaQuery)) return false;
+      }
       if (!query) return true;
-      const hay = normalizeText(state.columns.map((col) => row[col]).join(" "));
+      const hay = row.__searchable || normalizeText(state.columns.map((col) => row[col] || "").join(" "));
       return hay.includes(query);
     });
 
@@ -83,14 +92,14 @@
         if (filter.box.classList.contains("disabled")) continue;
         const value = row[filter.column] || "";
         if (filter.selected.size && !filter.selected.has(value)) return false;
-        if (filter.query) {
-          const labelText = filter.labelFor ? filter.labelFor(value) : value;
-          if (!normalizeText(labelText).includes(filter.query)) return false;
-        }
       }
       if (row.__saldo < min || row.__saldo > max) return false;
       // Saldo crítico: mostrar apenas despesas abaixo do limite
       if (state.saldoCriticoAtivo && row.__saldo > state.saldoCriticoThreshold) return false;
+      if (state.quickFilterPrefixes.length) {
+        const natureza = row["Natureza de Despesa"] || "";
+        if (!state.quickFilterPrefixes.some((prefix) => natureza.startsWith(prefix))) return false;
+      }
       // Busca por número da despesa
       if (state.numDespesaQuery) {
         const num = row.__numDespesaNorm || normalizeText(row["Número da despesa"] || "");
@@ -125,6 +134,12 @@
       elements.minValue.value = "";
     } else if (type === 'max') {
       elements.maxValue.value = "";
+    } else if (type === 'quick_filter') {
+      const { setQuickFilter } = window.App.logic;
+      if (typeof setQuickFilter === "function") setQuickFilter([], "");
+    } else if (type === 'saldo_critico') {
+      const { setSaldoCritico } = window.App.logic;
+      if (typeof setSaldoCritico === "function") setSaldoCritico(false);
     } else if (type === 'filter_select') {
       filter.selected.clear();
       renderFilterOptions(filter);
@@ -140,11 +155,18 @@
   window.App.logic.resetFilters = function () {
     const { state, elements } = window.App;
     const { renderFilterOptions } = window.App.ui;
-    const { applyFilters } = window.App.logic;
+    const { applyFilters, setQuickFilter, setSaldoCritico } = window.App.logic;
 
     elements.search.value = "";
     elements.minValue.value = "";
     elements.maxValue.value = "";
+    elements.numDespesa.value = "";
+    state.numDespesaQuery = "";
+    if (elements.saldoCriticoThreshold) {
+      state.saldoCriticoThreshold = Number.parseFloat(elements.saldoCriticoThreshold.value) || 1000;
+    }
+    if (typeof setQuickFilter === "function") setQuickFilter([], "");
+    if (typeof setSaldoCritico === "function") setSaldoCritico(false);
     state.filters.forEach((filter) => {
       filter.search.value = "";
       filter.query = "";
@@ -153,6 +175,40 @@
       renderFilterOptions(filter);
     });
     applyFilters();
+  };
+
+  window.App.logic.setQuickFilter = function (prefixes, label = "") {
+    const { state, elements } = window.App;
+    state.quickFilterPrefixes = Array.isArray(prefixes) ? prefixes.filter(Boolean) : [];
+    state.quickFilterLabel = label || "";
+
+    if (elements.quickFilterButtons && elements.quickFilterButtons.length) {
+      elements.quickFilterButtons.forEach((button) => {
+        const buttonPrefixes = (button.dataset.qfPrefix || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+        const isActive = buttonPrefixes.length === state.quickFilterPrefixes.length
+          && buttonPrefixes.every((prefix, index) => prefix === state.quickFilterPrefixes[index]);
+        button.classList.toggle("active", isActive);
+      });
+    }
+
+    if (elements.quickFilterClear) {
+      elements.quickFilterClear.disabled = state.quickFilterPrefixes.length === 0;
+    }
+  };
+
+  window.App.logic.setSaldoCritico = function (active) {
+    const { state, elements } = window.App;
+    state.saldoCriticoAtivo = Boolean(active);
+    if (elements.saldoCriticoThreshold) {
+      state.saldoCriticoThreshold = Number.parseFloat(elements.saldoCriticoThreshold.value) || 1000;
+    }
+    if (elements.saldoCriticoButton) {
+      elements.saldoCriticoButton.classList.toggle("active", state.saldoCriticoAtivo);
+      elements.saldoCriticoButton.textContent = state.saldoCriticoAtivo ? "⚠ Saldo Crítico ATIVO" : "⚠ Ver Saldo Crítico";
+    }
   };
 
   // Update cascade filter options based on parent selections
@@ -178,7 +234,8 @@
         // No parent selections, show all options
         const values = new Set();
         state.rows.forEach((row) => {
-          values.add(row[childFilter.column] || "");
+          const childValue = row[childFilter.column] || "";
+          if (childValue) values.add(childValue);
         });
         childFilter.values = Array.from(values).sort((a, b) =>
           a.localeCompare(b, "pt-BR", { numeric: true })
@@ -190,7 +247,8 @@
         state.rows.forEach((row) => {
           const parentValue = row[parentColumn] || "";
           if (parentFilter.selected.has(parentValue)) {
-            values.add(row[childFilter.column] || "");
+            const childValue = row[childFilter.column] || "";
+            if (childValue) values.add(childValue);
           }
         });
         childFilter.values = Array.from(values).sort((a, b) =>
@@ -405,7 +463,8 @@
         button.addEventListener("click", () => {
           const type = button.dataset.action;
           if (type === "all") {
-            filter.selected = new Set(filter.values);
+            const available = filter.availableOptions ? Array.from(filter.availableOptions) : filter.values;
+            filter.selected = new Set(available);
           } else {
             filter.selected.clear();
           }

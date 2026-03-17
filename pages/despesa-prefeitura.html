@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/index.css" />
   <link rel="stylesheet" href="/static/css/despesa-prefeitura.css" />
+  <script src="/static/js/ia-chat-widget.js"></script>
   <script defer src="/static/js/shared-header.js"></script>
 </head>
 
@@ -117,9 +118,18 @@
       <button class="ia-tab" data-action="anomalias">🔍 Anomalias</button>
       <button class="ia-tab" data-action="relatorio">📄 Relatório</button>
       <button class="ia-tab" data-action="remanejamento">🔀 Remanejamento</button>
+      <button class="ia-tab" data-action="prioridades">🎯 Prioridades</button>
+      <button class="ia-tab" data-action="cortes">✂️ Cortes</button>
       <button id="ia-fechar" style="margin-left:auto;background:transparent;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;" title="Fechar">×</button>
     </div>
     <div id="ia-desc" style="font-size:11px;color:var(--muted);margin-bottom:12px;min-height:16px;"></div>
+    <div id="ia-atalhos" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="ghost ia-shortcut" data-action="analisar" style="font-size:11px;padding:5px 10px;">Resumo executivo</button>
+      <button class="ghost ia-shortcut" data-action="anomalias" style="font-size:11px;padding:5px 10px;">Riscos imediatos</button>
+      <button class="ghost ia-shortcut" data-action="prioridades" style="font-size:11px;padding:5px 10px;">Onde reforçar</button>
+      <button class="ghost ia-shortcut" data-action="cortes" style="font-size:11px;padding:5px 10px;">Onde cortar</button>
+      <button class="ghost ia-shortcut" data-action="remanejamento" style="font-size:11px;padding:5px 10px;">Simular remanejamento</button>
+    </div>
     <div id="ia-chat-input-wrap" style="display:none;margin-bottom:12px;gap:8px;">
       <input id="ia-chat-pergunta" type="text" placeholder="Ex: Qual secretaria tem maior saldo?" style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(124,58,237,0.4);border-radius:8px;color:var(--ink);font-size:13px;outline:none;" />
       <button id="ia-chat-send" class="ghost" style="background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.5);color:#a78bfa;white-space:nowrap;">Enviar →</button>
@@ -222,9 +232,33 @@
           <input class="filter-search" type="text" placeholder="Filtrar por texto" />
           <div class="filter-options"></div>
         </div>
+        <div class="field filter-box" data-column="Descrição do programa">
+          <div class="filter-head">
+            <label>Programa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
         <div class="field filter-box" data-column="Descrição da ação">
           <div class="filter-head">
             <label>Ação</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Secretaria/Órgão">
+          <div class="filter-head">
+            <label>Secretaria/Órgão</label>
             <div class="filter-actions">
               <button type="button" data-action="all">Tudo</button>
               <button type="button" data-action="none">Nada</button>
@@ -246,9 +280,45 @@
           <input class="filter-search" type="text" placeholder="Filtrar por texto" />
           <div class="filter-options"></div>
         </div>
+        <div class="field filter-box" data-column="Área de Atuação">
+          <div class="filter-head">
+            <label>Área de Atuação</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
         <div class="field filter-box" data-column="Natureza de Despesa">
           <div class="filter-head">
             <label>Natureza de despesa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Origem do Recurso">
+          <div class="filter-head">
+            <label>Origem do Recurso</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Tipo de Gasto">
+          <div class="filter-head">
+            <label>Tipo de Gasto</label>
             <div class="filter-actions">
               <button type="button" data-action="all">Tudo</button>
               <button type="button" data-action="none">Nada</button>
@@ -372,8 +442,8 @@
   <script src="/static/js/despesa/ui.js"></script>
   <script src="/static/js/document-autosave.js"></script>
   <script src="/static/js/despesa/logic.js"></script>
-  <script src="/static/js/despesa/main.js"></script>
   <script src="/static/js/despesa/historico.js"></script>
+  <script src="/static/js/despesa/main.js"></script>
   <script>
   // ── Histórico UI ──────────────────────────────────────────
   (function () {
@@ -487,55 +557,47 @@
   <script>
   // ── Filtros Rápidos por Natureza de Despesa ─────────────────────────────
   (function () {
-    let activeQfPrefix = null;
-
-    function applyQuickFilter(prefixes) {
-      const { state } = window.App;
-      if (!state || !state.filters) return;
-
-      const filter = state.filters.find(f => f.column === "Natureza de Despesa");
-      if (!filter) return;
-
-      const prefixList = prefixes ? prefixes.split(',').map(p => p.trim()) : [];
-
-      if (prefixList.length === 0) {
-        // Clear: select all
-        filter.selected = new Set(filter.values);
-      } else {
-        // Select only values matching any prefix
-        filter.selected = new Set(
-          filter.values.filter(v => prefixList.some(p => v.startsWith(p)))
-        );
+    function setQuickFilterFromButton(button) {
+      const prefixes = (button?.dataset.qfPrefix || "")
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+      const label = button ? button.textContent.trim() : "";
+      if (window.App.logic && typeof window.App.logic.setQuickFilter === 'function') {
+        window.App.logic.setQuickFilter(prefixes, label);
       }
-
-      window.App.ui.renderFilterOptions(filter);
-      window.App.logic.applyFilters();
     }
 
     function initQuickFilters() {
       document.querySelectorAll('.qf-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          const prefix = btn.dataset.qfPrefix;
-          if (activeQfPrefix === prefix) {
-            // toggle off
-            activeQfPrefix = null;
-            document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
-            applyQuickFilter(null);
+          const { state, logic } = window.App;
+          if (!state || !logic) return;
+
+          const prefixes = (btn.dataset.qfPrefix || "")
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+
+          const isSameFilter = prefixes.length === state.quickFilterPrefixes.length
+            && prefixes.every((prefix, index) => prefix === state.quickFilterPrefixes[index]);
+
+          if (isSameFilter) {
+            logic.setQuickFilter([], "");
           } else {
-            activeQfPrefix = prefix;
-            document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            applyQuickFilter(prefix);
+            setQuickFilterFromButton(btn);
           }
+          logic.applyFilters();
         });
       });
 
       const clearBtn = document.getElementById('qfClear');
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
-          activeQfPrefix = null;
-          document.querySelectorAll('.qf-btn').forEach(b => b.classList.remove('active'));
-          applyQuickFilter(null);
+          if (window.App.logic && typeof window.App.logic.setQuickFilter === 'function') {
+            window.App.logic.setQuickFilter([], "");
+            window.App.logic.applyFilters();
+          }
         });
       }
 
@@ -544,21 +606,18 @@
       const thresholdInput  = document.getElementById('saldoCriticoThreshold');
       if (btnSaldoCritico) {
         btnSaldoCritico.addEventListener('click', () => {
-          const { state } = window.App;
-          if (!state) return;
-          state.saldoCriticoAtivo = !state.saldoCriticoAtivo;
-          btnSaldoCritico.classList.toggle('active', state.saldoCriticoAtivo);
-          btnSaldoCritico.textContent = state.saldoCriticoAtivo ? '⚠ Saldo Crítico ATIVO' : '⚠ Ver Saldo Crítico';
-          if (thresholdInput) state.saldoCriticoThreshold = parseFloat(thresholdInput.value) || 1000;
-          window.App.logic.applyFilters();
+          const { state, logic } = window.App;
+          if (!state || !logic || typeof logic.setSaldoCritico !== 'function') return;
+          logic.setSaldoCritico(!state.saldoCriticoAtivo);
+          logic.applyFilters();
         });
       }
       if (thresholdInput) {
         thresholdInput.addEventListener('change', () => {
-          const { state } = window.App;
-          if (!state) return;
-          state.saldoCriticoThreshold = parseFloat(thresholdInput.value) || 1000;
-          if (state.saldoCriticoAtivo) window.App.logic.applyFilters();
+          const { state, logic } = window.App;
+          if (!state || !logic || typeof logic.setSaldoCritico !== 'function') return;
+          logic.setSaldoCritico(state.saldoCriticoAtivo);
+          if (state.saldoCriticoAtivo) logic.applyFilters();
         });
       }
     }
@@ -801,6 +860,7 @@
     const painel    = document.getElementById('ia-painel');
     const btnFechar = document.getElementById('ia-fechar');
     const tabs      = document.querySelectorAll('.ia-tab');
+    const atalhos   = document.querySelectorAll('.ia-shortcut');
     const descEl    = document.getElementById('ia-desc');
     const chatWrap  = document.getElementById('ia-chat-input-wrap');
     const execWrap  = document.getElementById('ia-exec-wrap');
@@ -822,6 +882,8 @@
       anomalias:    'A IA identifica inconsistências, valores suspeitos e situações que merecem investigação.',
       relatorio:    'Gera um relatório formal de execução orçamentária pronto para arquivamento ou prestação de contas.',
       remanejamento:'Sugestões de remanejamento orçamentário baseadas nos saldos disponíveis.',
+      prioridades:  'Mostra onde vale priorizar reforço orçamentário e quais áreas exigem atenção imediata.',
+      cortes:       'Aponta onde pode haver espaço para contenção, postergação ou revisão de gasto.',
     };
 
     function hasData() {
@@ -837,6 +899,8 @@
       const secCol    = cols.find(c => c.toLowerCase().includes('organograma'));
       const natCol    = cols.find(c => c.toLowerCase().includes('natureza') && !c.toLowerCase().includes('descri'));
       const funcCol   = cols.find(c => /fun[çc][ãa]o/.test(c.toLowerCase()));
+      const programaCol = cols.find(c => c.toLowerCase().includes('programa'));
+      const acaoCol   = cols.find(c => c.toLowerCase().includes('ação') || c.toLowerCase().includes('acao'));
       const numCol    = cols.find(c => /n[úu]mero/.test(c.toLowerCase()) && /despesa/.test(c.toLowerCase()));
       const descNatCol= cols.find(c => c.toLowerCase().includes('natureza') && c.toLowerCase().includes('descri'));
 
@@ -849,6 +913,10 @@
       const totais = {};
       valCols.forEach(c => { totais[c] = rows.reduce((s, r) => s + pv(r[c]), 0); });
 
+      const filteredRows = Array.isArray(st.filtered) && st.filtered.length ? st.filtered : rows;
+      const totalSaldo = saldoCol ? rows.reduce((sum, row) => sum + pv(row[saldoCol]), 0) : 0;
+      const filteredSaldo = saldoCol ? filteredRows.reduce((sum, row) => sum + pv(row[saldoCol]), 0) : 0;
+
       const porSec = {};
       if (secCol && saldoCol) {
         rows.forEach(r => {
@@ -858,6 +926,15 @@
       }
       const porSecTop = Object.fromEntries(Object.entries(porSec).sort((a,b) => b[1]-a[1]).slice(0,12));
 
+      const porPrograma = {};
+      if (programaCol && saldoCol) {
+        rows.forEach(r => {
+          const k = r[programaCol] || '(Sem programa)';
+          porPrograma[k] = (porPrograma[k] || 0) + pv(r[saldoCol]);
+        });
+      }
+      const porProgramaTop = Object.fromEntries(Object.entries(porPrograma).sort((a,b) => b[1]-a[1]).slice(0,10));
+
       const porNat = {};
       if (natCol) rows.forEach(r => { const k = r[natCol]||'?'; porNat[k] = (porNat[k]||0)+1; });
       const porNatTop = Object.fromEntries(Object.entries(porNat).sort((a,b)=>b[1]-a[1]).slice(0,10));
@@ -865,6 +942,33 @@
       const porFunc = {};
       if (funcCol) rows.forEach(r => { const k = r[funcCol]||'?'; porFunc[k] = (porFunc[k]||0)+1; });
       const porFuncTop = Object.fromEntries(Object.entries(porFunc).sort((a,b)=>b[1]-a[1]).slice(0,8));
+
+      const maioresSaldos = saldoCol ? rows
+        .slice()
+        .sort((a,b) => pv(b[saldoCol]) - pv(a[saldoCol]))
+        .slice(0,8)
+        .map(r => ({
+          num: r[numCol] || '?',
+          secretaria: secCol ? (r[secCol] || '(Sem secretaria)') : '(Sem secretaria)',
+          programa: programaCol ? (r[programaCol] || '(Sem programa)') : '(Sem programa)',
+          acao: acaoCol ? (r[acaoCol] || '(Sem ação)') : '(Sem ação)',
+          desc: r[descNatCol] || r[natCol] || '?',
+          saldo: r[saldoCol] || '0',
+        })) : [];
+
+      const menoresSaldos = saldoCol ? rows
+        .filter(r => pv(r[saldoCol]) >= 0)
+        .slice()
+        .sort((a,b) => pv(a[saldoCol]) - pv(b[saldoCol]))
+        .slice(0,8)
+        .map(r => ({
+          num: r[numCol] || '?',
+          secretaria: secCol ? (r[secCol] || '(Sem secretaria)') : '(Sem secretaria)',
+          programa: programaCol ? (r[programaCol] || '(Sem programa)') : '(Sem programa)',
+          acao: acaoCol ? (r[acaoCol] || '(Sem ação)') : '(Sem ação)',
+          desc: r[descNatCol] || r[natCol] || '?',
+          saldo: r[saldoCol] || '0',
+        })) : [];
 
       const limite = st.saldoCriticoThreshold || 1000;
       const criticos = saldoCol ? rows
@@ -878,17 +982,83 @@
         })) : [];
 
       const periodoLabel = (document.getElementById('periodo-ativo') || {}).textContent || 'Período atual';
+      const activeFilters = [];
+      if (window.App && window.App.state && Array.isArray(window.App.state.filters)) {
+        window.App.state.filters.forEach(filter => {
+          if (filter.selected && filter.selected.size) {
+            activeFilters.push(`${filter.column}: ${Array.from(filter.selected).slice(0,4).join(', ')}${filter.selected.size > 4 ? '…' : ''}`);
+          }
+          if (filter.query) {
+            activeFilters.push(`${filter.column} contém "${filter.query}"`);
+          }
+        });
+      }
 
       return {
         periodo:       periodoLabel.replace('📂','').trim(),
         total_rows:    rows.length,
+        filtered_rows: filteredRows.length,
+        total_saldo: totalSaldo,
+        filtered_saldo: filteredSaldo,
+        filtros_ativos: activeFilters,
         totais,
         por_secretaria: porSecTop,
+        por_programa: porProgramaTop,
         por_natureza:   porNatTop,
         por_funcao:     porFuncTop,
+        maiores_saldos: maioresSaldos,
+        menores_saldos: menoresSaldos,
         criticos,
         limite_critico: limite,
       };
+    }
+
+    async function runIaRequest(action, pergunta) {
+      const res = await fetch('/api/despesas/ia', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          action,
+          contexto: buildContext(),
+          pergunta: pergunta || '',
+        }),
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      return json.resultado || '';
+    }
+
+    if (window.IaChatWidget) {
+      painel.style.display = 'none';
+      const widget = window.IaChatWidget.create({
+        title: 'IA Orçamentária',
+        subtitle: 'Assistente de análise de dotações',
+        buttonLabel: 'IA',
+        buttonTitle: 'Abrir IA Orçamentária',
+        chatPlaceholder: 'Ex: Qual secretaria tem maior saldo?',
+        emptyMessage: 'Carregue um período antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: descs.analisar },
+          { id: 'anomalias', label: 'Anomalias', description: descs.anomalias },
+          { id: 'prioridades', label: 'Prioridades', description: descs.prioridades },
+          { id: 'cortes', label: 'Cortes', description: descs.cortes },
+          { id: 'remanejamento', label: 'Remanejamento', description: descs.remanejamento },
+          { id: 'relatorio', label: 'Relatório', description: descs.relatorio },
+          { id: 'chat', label: 'Chat', description: descs.chat }
+        ],
+        shortcuts: [
+          { label: 'Resumo executivo', action: 'analisar' },
+          { label: 'Riscos imediatos', action: 'anomalias' },
+          { label: 'Onde reforçar', action: 'prioridades' },
+          { label: 'Onde cortar', action: 'cortes' },
+          { label: 'Simular remanejamento', action: 'remanejamento' }
+        ],
+        hasData,
+        onRun: ({ action, question }) => runIaRequest(action, question)
+      });
+
+      btnAbrir.addEventListener('click', () => widget.open());
+      return;
     }
 
     function setTab(action) {
@@ -946,6 +1116,10 @@
     btnFechar.addEventListener('click', () => { painel.style.display = 'none'; });
 
     tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.action)));
+    atalhos.forEach(btn => btn.addEventListener('click', () => {
+      setTab(btn.dataset.action);
+      callIA('');
+    }));
 
     execBtn.addEventListener('click', () => callIA(''));
     chatSend.addEventListener('click', () => {

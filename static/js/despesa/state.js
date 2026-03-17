@@ -14,7 +14,9 @@
     pageSize: 50,
     saldoCriticoAtivo: false,
     saldoCriticoThreshold: 1000,
-    numDespesaQuery: ''
+    numDespesaQuery: '',
+    quickFilterPrefixes: [],
+    quickFilterLabel: ''
   };
 
   window.App.elements = {
@@ -32,6 +34,10 @@
     printSelected: document.getElementById("printSelected"),
     exportCsv: document.getElementById("exportCsv"),
     numDespesa: document.getElementById("numDespesa"),
+    quickFilterButtons: Array.from(document.querySelectorAll(".qf-btn[data-qf-prefix]")),
+    quickFilterClear: document.getElementById("qfClear"),
+    saldoCriticoButton: document.getElementById("qfSaldoCritico"),
+    saldoCriticoThreshold: document.getElementById("saldoCriticoThreshold"),
     printDate: document.getElementById("printDate"),
     table: document.getElementById("dataTable"),
     tableCount: document.getElementById("tableCount"),

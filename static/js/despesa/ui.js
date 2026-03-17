@@ -153,6 +153,10 @@
       addChip(`Mín: ${elements.minValue.value}`, 'min', null);
     if (elements.maxValue && elements.maxValue.value)
       addChip(`Máx: ${elements.maxValue.value}`, 'max', null);
+    if (state.quickFilterPrefixes && state.quickFilterPrefixes.length)
+      addChip(`Rápido: ${state.quickFilterLabel || state.quickFilterPrefixes.join(", ")}`, 'quick_filter', null);
+    if (state.saldoCriticoAtivo)
+      addChip(`Saldo crítico até ${state.saldoCriticoThreshold}`, 'saldo_critico', null);
 
     state.filters.forEach(filter => {
       if (filter.selected.size) {

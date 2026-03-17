@@ -165,6 +165,33 @@
   updateAccordionDefaults();
   accordionQuery.addEventListener("change", updateAccordionDefaults);
 
+  function updatePeriodoAtivoLabel(importacao) {
+    const label = document.getElementById("periodo-ativo");
+    if (!label || !importacao) return;
+    label.textContent = `📂 ${importacao.periodo}${importacao.descricao ? " – " + importacao.descricao : ""}`;
+  }
+
+  async function autoLoadLatestImport() {
+    if (!window.DespesaHistorico || typeof window.DespesaHistorico.listar !== "function" || typeof window.DespesaHistorico.carregar !== "function") {
+      return false;
+    }
+
+    try {
+      const importacoes = await window.DespesaHistorico.listar();
+      if (!Array.isArray(importacoes) || !importacoes.length) {
+        return false;
+      }
+
+      const ultimaImportacao = importacoes[0];
+      const importacaoCarregada = await window.DespesaHistorico.carregar(Number(ultimaImportacao.id));
+      updatePeriodoAtivoLabel(importacaoCarregada);
+      return true;
+    } catch (e) {
+      console.warn("Não foi possível carregar a última importação salva de dotações.", e);
+      return false;
+    }
+  }
+
   async function autoLoadCSV() {
     const candidates = [
       "/static/dados/Relação de Despesas.csv",
@@ -187,5 +214,10 @@
     }
   }
 
-  autoLoadCSV();
+  (async () => {
+    const loadedLatestImport = await autoLoadLatestImport();
+    if (!loadedLatestImport) {
+      await autoLoadCSV();
+    }
+  })();
 })();
