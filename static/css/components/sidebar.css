@@ -1,0 +1,4 @@
+app-sidebar:not(:defined) {
+  display: block; width: 272px; min-height: 100vh;
+  background: linear-gradient(180deg, #e8eef6 0%, #dbe6f2 100%);
+}

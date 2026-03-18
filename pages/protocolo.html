@@ -7,7 +7,9 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
-  <script defer src="/static/js/shared-header.js"></script>
+  <script type="module" src="/static/js/components/app-header.js"></script>
+  <script type="module" src="/static/js/components/toast-notification.js"></script>
+  <script type="module" src="/static/js/components/confirm-dialog.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>
   <style>
     .pr-wrap { max-width: 1180px; margin: 24px auto 80px; padding: 0 20px; }
@@ -102,6 +104,9 @@
   </style>
 </head>
 <body>
+  <app-header page-title="Protocolo" active-page="/pages/protocolo.html"></app-header>
+  <toast-notification></toast-notification>
+  <confirm-dialog></confirm-dialog>
   <div class="pr-wrap">
     <div class="pr-hero">
       <div>

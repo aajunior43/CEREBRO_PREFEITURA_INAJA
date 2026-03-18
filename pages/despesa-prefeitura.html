@@ -9,10 +9,15 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <link rel="stylesheet" href="/static/css/despesa-prefeitura.css" />
   <script src="/static/js/ia-chat-widget.js"></script>
-  <script defer src="/static/js/shared-header.js"></script>
+  <script type="module" src="/static/js/components/app-header.js"></script>
+  <script type="module" src="/static/js/components/toast-notification.js"></script>
+  <script type="module" src="/static/js/components/confirm-dialog.js"></script>
 </head>
 
 <body>
+  <app-header page-title="Execução das Dotações" active-page="/pages/despesa-prefeitura.html"></app-header>
+  <toast-notification></toast-notification>
+  <confirm-dialog></confirm-dialog>
   <div class="bg-orb orb-a"></div>
   <div class="bg-orb orb-b"></div>
 

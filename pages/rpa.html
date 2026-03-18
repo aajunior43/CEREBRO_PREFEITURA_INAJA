@@ -80,10 +80,15 @@
     .modelo-item small { font-size:11px; color:var(--text-3); }
     @media print { .rpa-tabs, .rpa-actions, header, .main-content { display: none !important; } }
   </style>
-  <script defer src="/static/js/shared-header.js"></script>
+  <script type="module" src="/static/js/components/app-header.js"></script>
+  <script type="module" src="/static/js/components/toast-notification.js"></script>
+  <script type="module" src="/static/js/components/confirm-dialog.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>
+  <app-header page-title="RPA" active-page="/pages/rpa.html"></app-header>
+  <toast-notification></toast-notification>
+  <confirm-dialog></confirm-dialog>
 
   <!-- HEADER igual ao index.html -->
 
@@ -999,6 +1004,9 @@ function montarHTMLRecibo(rpa) {
     @media print{body{padding:10px;}@page{margin:15mm;}}
   </style>
 </head><body>
+  <app-header page-title="RPA" active-page="/pages/rpa.html"></app-header>
+  <toast-notification></toast-notification>
+  <confirm-dialog></confirm-dialog>
   <div class="header">
     <h1>${escHtml(c.nomeEntidade)}</h1>
     <p>${escHtml(c.orgao)}</p>
