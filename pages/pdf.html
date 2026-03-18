@@ -103,6 +103,7 @@
     }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>
 
@@ -329,6 +330,59 @@
   </div>
 
   <input type="file" id="file-input-trocar" accept=".pdf,application/pdf" style="display:none;" />
+
+<script>
+(function() {
+  async function askIaPdf(action, question) {
+    // Use actual variable names found in the file
+    const arquivo = typeof pdfFile !== 'undefined' && pdfFile ? pdfFile.name : null;
+    const tamanho = typeof pdfFile !== 'undefined' && pdfFile ? (pdfFile.size / 1024 / 1024).toFixed(2) + ' MB' : null;
+    const ferramenta = typeof currentTool !== 'undefined' ? currentTool : null;
+    const anotacoes = document.querySelectorAll('.ann-note, .ann-sticky, [class*="annotation"]').length;
+    const ctx = { arquivo, tamanho, ferramenta_ativa: ferramenta, total_anotacoes: anotacoes };
+
+    const prompts = {
+      dicas:      'Com base no nome e tipo do arquivo carregado, sugira como usá-lo corretamente: quais anotações são adequadas para documentos oficiais, se deve ser protegido com senha, e como nomeá-lo para facilitar o arquivamento.',
+      orientacoes:'Quais cuidados legais e administrativos são necessários ao editar este tipo de documento PDF? Considere: autenticidade, integridade, requisitos de assinatura digital e vedações à alteração de documentos já assinados.',
+      mesclar:    'Sugira como organizar e nomear documentos PDF municipais para um arquivo digital que atenda às exigências do TCE-PR: estrutura de pastas, convenção de nomenclatura, indexação e prazo de guarda.',
+      chat:       question || 'Responda à pergunta sobre edição, organização ou arquivamento de documentos PDF municipais.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.dicas, '', 'Contexto:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o especialista em gestão documental da Prefeitura de Inajá. Orienta sobre como organizar, nomear, editar e proteger documentos PDF conforme as normas do CONARQ, os requisitos de prestação de contas do TCE-PR e as boas práticas de arquivo digital municipal. Responda de forma prática e direta.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.3, max_tokens: 1200 });
+  }
+  function initIaPdf() {
+    if (!window.IaChatWidget) { setTimeout(initIaPdf, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Editor PDF',
+      subtitle: 'Gestão documental conforme CONARQ e requisitos TCE-PR',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA do Editor PDF',
+      chatPlaceholder: 'Ex: Posso editar um contrato já assinado digitalmente?',
+      emptyMessage: 'Carregue um PDF para começar.',
+      actions: [
+        { id: 'dicas',      label: 'Dicas para este arquivo', description: 'Anotações adequadas, proteção com senha e nomenclatura correta.' },
+        { id: 'orientacoes',label: 'Cuidados legais',         description: 'Autenticidade, integridade e vedações à alteração de documentos assinados.' },
+        { id: 'mesclar',    label: 'Nomenclatura e arquivo',  description: 'Estrutura de pastas, nomenclatura e prazo de guarda para TCE-PR.' },
+        { id: 'chat',       label: 'Chat',                    description: 'Pergunta sobre edição, organização ou arquivamento de PDFs municipais.' }
+      ],
+      shortcuts: [
+        { label: 'Dicas para este arquivo', action: 'dicas' },
+        { label: 'Cuidados legais',         action: 'orientacoes' },
+        { label: 'Nomenclatura e arquivo',  action: 'mesclar' }
+      ],
+      hasData: () => true,
+      onRun: ({ action, question }) => askIaPdf(action, question)
+    });
+  }
+  initIaPdf();
+})();
+</script>
 
   <script>
   // Theme

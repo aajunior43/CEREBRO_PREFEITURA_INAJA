@@ -8,6 +8,7 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
   <style>
     .pr-wrap { max-width: 1180px; margin: 24px auto 80px; padding: 0 20px; }
     .pr-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:24px; flex-wrap:wrap; }
@@ -601,5 +602,65 @@
   document.getElementById('pr-data').value = new Date().toISOString().split('T')[0];
   Promise.all([carregarProxNumero(), carregarProtocolos()]);
   </script>
+<script>
+(function() {
+  async function askIaProtocolo(action, question) {
+    const cache = typeof protocolosCache !== 'undefined' ? protocolosCache : [];
+    const hoje = new Date();
+    const atrasados = cache.filter(p => p.prazo_resposta && new Date(p.prazo_resposta) < hoje && p.status !== 'arquivado');
+    const ctx = {
+      total: cache.length,
+      em_analise: cache.filter(p => p.status === 'análise' || p.status === 'analise').length,
+      respondidos: cache.filter(p => p.status === 'respondido').length,
+      arquivados: cache.filter(p => p.status === 'arquivado').length,
+      atrasados: atrasados.length,
+      protocolos: cache.slice(0, 20).map(p => ({
+        numero: p.numero, tipo: p.tipo, assunto: p.assunto,
+        status: p.status, prazo: p.prazo_resposta, origem: p.origem_destino
+      }))
+    };
+    const prompts = {
+      resumo:      'Apresente um panorama dos protocolos: quantos estão em cada status (recebido, análise, respondido, arquivado), quais estão com prazo vencido e quais chegaram recentemente.',
+      prioridades: 'Liste em ordem de urgência os protocolos que precisam de resposta imediata. Priorize: prazo vencido > prazo em 3 dias > em análise há mais de 10 dias > recebido sem triagem.',
+      relatorio:   'Gere um relatório formal de status dos protocolos em tramitação, adequado para apresentação à chefia imediata. Inclua totais por tipo de documento e por status.',
+      chat:        question || 'Responda à pergunta sobre os protocolos em tramitação na prefeitura.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.resumo, '', 'Contexto:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o assistente de protocolo da Prefeitura de Inajá. Domina os fluxos de documentos oficiais: ofícios, memorandos, portarias e requerimentos. Conhece os prazos legais de resposta, as rotinas de tramitação e a linguagem administrativa formal brasileira. Responda de forma técnica e objetiva.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+
+  function initIaProtocolo() {
+    if (!window.IaChatWidget) { setTimeout(initIaProtocolo, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Protocolo',
+      subtitle: 'Tramitação de ofícios, memorandos e requerimentos',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de Protocolo',
+      chatPlaceholder: 'Ex: Quais ofícios ainda não foram respondidos?',
+      emptyMessage: 'Nenhum protocolo carregado ainda.',
+      actions: [
+        { id: 'resumo',      label: 'Panorama dos protocolos', description: 'Totais por status, prazos vencidos e recebimentos recentes.' },
+        { id: 'prioridades', label: 'Atrasados e urgentes',    description: 'Protocolos por ordem de urgência para resposta imediata.' },
+        { id: 'relatorio',   label: 'Relatório para chefia',   description: 'Relatório formal adequado para apresentação à chefia.' },
+        { id: 'chat',        label: 'Chat',                    description: 'Pergunta livre sobre os protocolos em tramitação.' }
+      ],
+      shortcuts: [
+        { label: 'Panorama dos protocolos', action: 'resumo' },
+        { label: 'Atrasados e urgentes',    action: 'prioridades' },
+        { label: 'Relatório para chefia',   action: 'relatorio' }
+      ],
+      hasData: () => (typeof protocolosCache !== 'undefined' && protocolosCache.length > 0),
+      onRun: ({ action, question }) => askIaProtocolo(action, question)
+    });
+  }
+  initIaProtocolo();
+})();
+</script>
 </body>
 </html>

@@ -515,7 +515,7 @@
       </select>
 
       <select id="filter-cadastro" class="select-filter">
-        <option value="">Cadastro Completo ou Incompleto</option>
+        <option value="">Todos os Cadastros</option>
         <option value="sem_cnpj">Sem CNPJ</option>
         <option value="sem_email">Sem E-mail</option>
         <option value="com_pendencias">Com Pendências</option>
@@ -567,9 +567,9 @@
     </div>
   </div>
 
-  <div class="credores-meta" style="display:flex;flex-wrap:wrap;gap:10px;padding:0 24px 12px;align-items:center;">
-    <span id="credores-counter" style="font-size:13px;color:var(--text-2);font-weight:600;">0 exibidos de 0 cadastrados</span>
-    <span id="credores-summary" style="font-size:12px;color:var(--text-3);">Fixos: 0 | Variáveis: 0 | Sem CNPJ: 0 | Sem e-mail: 0 | Vencidos: 0 | Vencendo 30d: 0</span>
+  <div class="credores-meta">
+    <span id="credores-counter">0 exibidos de 0 cadastrados</span>
+    <span id="credores-summary">Fixos: 0 | Variáveis: 0 | Sem CNPJ: 0 | Sem e-mail: 0 | Vencidos: 0 | Vencendo 30d: 0</span>
   </div>
 
   <!-- EMPENHOS LIST -->
@@ -1451,17 +1451,7 @@
       requestAnimationFrame(tick);
     }
   
-    const statIds = ['stat-total', 'stat-done', 'stat-pending', 'stat-valor', 'stat-restante'];
-    statIds.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const observer = new MutationObserver(() => {
-        const raw = el.textContent.replace(/[R$\s.]/g, '').replace(',', '.');
-        const num = parseFloat(raw);
-        if (!isNaN(num) && num > 0) animateCounter(el, num, 600);
-      });
-      observer.observe(el, { childList: true, characterData: true, subtree: true });
-    });
+    // animateCounter is called directly from app.js via _setStat — no MutationObserver needed
   })();
    </script>
   <!-- HOME SCREEN JS -->

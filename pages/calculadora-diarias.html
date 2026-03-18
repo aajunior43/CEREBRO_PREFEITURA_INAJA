@@ -639,6 +639,7 @@
         }
 
     </style>
+    <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body class="bg-transparent text-primary-[var(--text-primary-light)] light-theme m-0 p-0 block">
     <div id="toastContainer"></div>
@@ -1150,5 +1151,68 @@
             if(printLeiAplicadaSpan) printLeiAplicadaSpan.textContent = "Legislação Municipal Vigente";
         });
     </script>
+<script>
+(function() {
+  function getCalcContext() {
+    const getVal = id => document.getElementById(id)?.value || '';
+    const getText = id => document.getElementById(id)?.textContent?.trim() || '';
+    return {
+      data_partida:  getVal('dataPartida'),
+      hora_partida:  getVal('horaPartida'),
+      data_retorno:  getVal('dataRetorno'),
+      hora_retorno:  getVal('horaRetorno'),
+      duracao_total: getText('duracaoTotal'),
+      num_diarias:   getText('numDiariasResumo'),
+      base_legal:    getText('baseLegalCabecalho')
+    };
+  }
+
+  async function askIaDiarias(action, question) {
+    const ctx = getCalcContext();
+    const prompts = {
+      explicar:     'Explique passo a passo como foi calculado o número de diárias: considere a duração total da viagem, os critérios de diária inteira vs. meia diária, e se o resultado está correto conforme as regras aplicadas.',
+      conformidade: 'Verifique se este cálculo está em conformidade com as normas do TCE-PR para concessão de diárias municipais: documentação mínima exigida, limitações legais, necessidade de autorização prévia e vedações.',
+      justificativa:'Redija uma justificativa formal para a concessão das diárias calculadas, adequada para instrução do processo administrativo e aprovação pelo controle interno. Inclua fundamento legal, período, destino e finalidade da viagem.',
+      chat:         question || 'Responda à pergunta sobre diárias de viagem, legislação aplicável ou cálculos específicos.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.explicar, '', 'Dados do cálculo:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o assessor de pessoal da Prefeitura de Inajá especializado em diárias de viagem. Conhece o Decreto Municipal de Diárias, as regras do TCE-PR para concessão de diárias (tempo mínimo de afastamento, casos de meia diária, documentação exigida), e como redigir justificativas que passem pelo controle interno. Responda de forma precisa e prática.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+  function initIaDiarias() {
+    if (!window.IaChatWidget) { setTimeout(initIaDiarias, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Diárias',
+      subtitle: 'Diárias de viagem: cálculo, conformidade TCE-PR e justificativas',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de Diárias',
+      chatPlaceholder: 'Ex: Qual a documentação exigida para autorizar as diárias?',
+      emptyMessage: 'Realize um cálculo de diárias primeiro para usar o assistente.',
+      actions: [
+        { id: 'explicar',     label: 'Por que esse número de diárias?', description: 'Explica o cálculo: duração, critérios inteira vs. meia diária.' },
+        { id: 'conformidade', label: 'Conformidade TCE-PR',             description: 'Documentação exigida, limitações legais e vedações.' },
+        { id: 'justificativa',label: 'Redigir justificativa',           description: 'Texto formal com fundamento legal para o processo administrativo.' },
+        { id: 'chat',         label: 'Chat',                            description: 'Pergunta sobre diárias, legislação ou cálculos específicos.' }
+      ],
+      shortcuts: [
+        { label: 'Por que esse número de diárias?', action: 'explicar' },
+        { label: 'Conformidade TCE-PR',             action: 'conformidade' },
+        { label: 'Redigir justificativa',           action: 'justificativa' }
+      ],
+      hasData: () => {
+        const ctx = getCalcContext();
+        return Boolean(ctx.duracao_total || ctx.data_partida);
+      },
+      onRun: ({ action, question }) => askIaDiarias(action, question)
+    });
+  }
+  initIaDiarias();
+})();
+</script>
 </body>
 </html>

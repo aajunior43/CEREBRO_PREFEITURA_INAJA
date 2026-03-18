@@ -358,6 +358,7 @@
   }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>﻿
   <!-- Quick Nav -->
@@ -2049,5 +2050,73 @@
   })();
 
   </script>
+<script>
+(function() {
+  function getVisualizadorContext() {
+    const state = window.App?.state || {};
+    const filtered = state.filteredData || state.data || [];
+    const soma = filtered.reduce((s, r) => s + (parseFloat(r.valor || 0)), 0);
+    const porCredor = {}, porUnidade = {};
+    filtered.forEach(r => {
+      const c = r.credor || 'Desconhecido';
+      const u = r.unidade || 'Geral';
+      porCredor[c] = (porCredor[c] || 0) + parseFloat(r.valor || 0);
+      porUnidade[u] = (porUnidade[u] || 0) + parseFloat(r.valor || 0);
+    });
+    const topCredores  = Object.entries(porCredor).sort((a,b) => b[1]-a[1]).slice(0,10).map(([nome, valor]) => ({ nome, valor }));
+    const topUnidades  = Object.entries(porUnidade).sort((a,b) => b[1]-a[1]).slice(0,8).map(([nome, valor]) => ({ nome, valor }));
+    return {
+      total_registros: filtered.length,
+      valor_total: soma,
+      filtros_ativos: state.filters || {},
+      top_credores: topCredores,
+      top_unidades: topUnidades
+    };
+  }
+
+  async function askIaVisualizador(action, question) {
+    const ctx = getVisualizadorContext();
+    const prompts = {
+      analise:   'Analise os empenhos filtrados: quais credores concentram mais recursos, como os gastos se distribuem pelas unidades orçamentárias, quais valores se destacam e qual o perfil geral desta carteira de empenhos.',
+      anomalias: 'Identifique possíveis anomalias nos empenhos: credores com valores atipicamente altos, empenhos duplicados ou muito próximos em valor, concentração excessiva em um único fornecedor e outros padrões que merecem verificação pelo controle interno.',
+      relatorio: 'Gere um relatório executivo de execução orçamentária com base nos empenhos filtrados. Inclua: total empenhado, top 5 credores, distribuição por unidade, e síntese para prestação de contas.',
+      chat:      question || 'Responda à pergunta sobre os empenhos, dotações ou execução orçamentária.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.analise, '', 'Dados dos empenhos:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o analista orçamentário da Prefeitura de Inajá. Analisa dados de empenhos (comprometimentos orçamentários) identificando concentração de gastos por credor, distribuição por unidade orçamentária, evolução temporal e possíveis irregularidades. Responda com linguagem técnica de controladoria pública, citando valores em R$ quando relevante.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+  function initIaVisualizador() {
+    if (!window.IaChatWidget) { setTimeout(initIaVisualizador, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Empenhos',
+      subtitle: 'Análise orçamentária e detecção de anomalias em empenhos',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de Empenhos',
+      chatPlaceholder: 'Ex: Qual secretaria empenhou mais neste período?',
+      emptyMessage: 'Nenhum dado de empenho carregado ainda.',
+      actions: [
+        { id: 'analise',   label: 'Análise orçamentária', description: 'Concentração por credor, unidade e perfil da carteira de empenhos.' },
+        { id: 'anomalias', label: 'Detectar anomalias',   description: 'Valores atípicos, duplicidades e concentração excessiva por fornecedor.' },
+        { id: 'relatorio', label: 'Relatório executivo',  description: 'Relatório de execução com top 5 credores e distribuição por unidade.' },
+        { id: 'chat',      label: 'Chat',                 description: 'Pergunta sobre empenhos, dotações ou execução orçamentária.' }
+      ],
+      shortcuts: [
+        { label: 'Análise orçamentária', action: 'analise' },
+        { label: 'Detectar anomalias',   action: 'anomalias' },
+        { label: 'Relatório executivo',  action: 'relatorio' }
+      ],
+      hasData: () => (window.App?.state?.filteredData?.length || window.App?.state?.data?.length || 0) > 0,
+      onRun: ({ action, question }) => askIaVisualizador(action, question)
+    });
+  }
+  initIaVisualizador();
+})();
+</script>
 </body>
 </html>

@@ -485,6 +485,7 @@
     }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>
 
@@ -1225,5 +1226,62 @@
   renderCalendar();
 
   </script>
+<script>
+(function() {
+  async function askIaCalendario(action, question) {
+    const ctx = {
+      mes: typeof MESES !== 'undefined' ? MESES[state.month] : (state.month + 1),
+      ano: state.year,
+      data_hoje: new Date().toLocaleDateString('pt-BR'),
+      eventos: Object.entries(typeof customEvents !== 'undefined' ? customEvents : {})
+        .filter(([d]) => {
+          const dt = new Date(d);
+          return dt.getFullYear() === state.year && dt.getMonth() === state.month;
+        })
+        .map(([d, evs]) => ({ data: d, eventos: evs }))
+    };
+    const prompts = {
+      resumo:      'Liste todos os compromissos financeiros e administrativos do mês atual: datas de pagamento, empenhos, feriados e eventos especiais. Organize por data.',
+      planejamento:'Considerando o calendário deste mês, sugira como organizar a semana de trabalho: quais dias priorizar para empenhos, pagamentos e tarefas administrativas.',
+      alertas:     'Identifique riscos no calendário: feriados próximos a datas de pagamento que possam atrasar, semanas curtas, acúmulo de vencimentos e datas críticas que exigem antecipação.',
+      chat:        question || 'Responda à pergunta sobre o calendário financeiro e administrativo da prefeitura.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.resumo, '', 'Contexto:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o assistente de planejamento do setor financeiro da Prefeitura de Inajá. Conhece as regras de pagamento (último dia útil), empenho (5º dia útil), feriados municipais e prazos administrativos. Responda de forma direta, prática e focada na rotina mensal da prefeitura.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+
+  function initIaCalendario() {
+    if (!window.IaChatWidget) { setTimeout(initIaCalendario, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Calendário',
+      subtitle: 'Planejamento financeiro e administrativo mensal',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA do Calendário',
+      chatPlaceholder: 'Ex: Há feriado próximo ao dia de pagamento?',
+      emptyMessage: 'Nenhum dado de calendário disponível.',
+      actions: [
+        { id: 'resumo',       label: 'Compromissos do mês', description: 'Lista pagamentos, empenhos, feriados e eventos por data.' },
+        { id: 'planejamento', label: 'Planejamento semanal', description: 'Organiza a semana priorizando empenhos e pagamentos.' },
+        { id: 'alertas',      label: 'Riscos e alertas',    description: 'Feriados conflitantes, semanas curtas e vencimentos críticos.' },
+        { id: 'chat',         label: 'Chat',                description: 'Pergunta livre sobre o calendário da prefeitura.' }
+      ],
+      shortcuts: [
+        { label: 'Compromissos do mês', action: 'resumo' },
+        { label: 'Riscos e alertas',    action: 'alertas' },
+        { label: 'Planejamento semanal',action: 'planejamento' }
+      ],
+      hasData: () => true,
+      onRun: ({ action, question }) => askIaCalendario(action, question)
+    });
+  }
+  initIaCalendario();
+})();
+</script>
 </body>
 </html>

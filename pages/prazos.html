@@ -8,6 +8,7 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');else if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
   <style>
     .pz-wrap { max-width: 1180px; margin: 24px auto 80px; padding: 0 20px; }
     .pz-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:24px; flex-wrap:wrap; }
@@ -358,5 +359,67 @@
   // Initialize
   Promise.all([carregarResumo(), carregarPrazos(), carregarCredores()]);
   </script>
+<script>
+(function() {
+  async function askIaPrazos(action, question) {
+    const cache = typeof prazosCache !== 'undefined' ? prazosCache : [];
+    const hoje = new Date();
+    const vencidos  = cache.filter(p => !p.resolvido && new Date(p.data_limite) < hoje);
+    const urgentes  = cache.filter(p => !p.resolvido && (() => { const d = new Date(p.data_limite); return d >= hoje && d <= new Date(hoje.getTime() + 7*86400000); })());
+    const atencao   = cache.filter(p => !p.resolvido && (() => { const d = new Date(p.data_limite); return d >= hoje && d <= new Date(hoje.getTime() + 30*86400000); })());
+    const ctx = {
+      data_hoje: hoje.toLocaleDateString('pt-BR'),
+      total: cache.length,
+      vencidos: vencidos.length,
+      urgentes: urgentes.length,
+      atencao: atencao.length,
+      ok: cache.filter(p => !p.resolvido && new Date(p.data_limite) > new Date(hoje.getTime() + 30*86400000)).length,
+      prazos: cache.filter(p => !p.resolvido).slice(0, 20).map(p => ({
+        titulo: p.titulo, data_limite: p.data_limite, categoria: p.categoria, descricao: p.descricao
+      }))
+    };
+    const prompts = {
+      risco:       'Analise os prazos e classifique os riscos: quais prazos vencidos representam risco legal imediato, quais urgentes podem ser regularizados e quais precisam de renovação ou aditamento contratual.',
+      prioridades: 'Monte um plano de ação ordenado por urgência: para cada prazo crítico, indique o que precisa ser feito (renovar, aditar, notificar, arquivar) e até quando.',
+      relatorio:   'Gere um relatório formal de controle de prazos para o gestor municipal. Destaque contratos vencidos, próximos do vencimento e situação geral da carteira.',
+      chat:        question || 'Responda à pergunta sobre prazos contratuais e administrativos da prefeitura.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.risco, '', 'Contexto:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o assessor jurídico-administrativo da Prefeitura de Inajá especializado em gestão de contratos e prazos legais. Conhece os impactos de prazos vencidos: nulidade contratual, multas, responsabilidade do gestor e ações de controle externo (TCE). Responda de forma técnica, destacando consequências e ações necessárias.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+
+  function initIaPrazos() {
+    if (!window.IaChatWidget) { setTimeout(initIaPrazos, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Prazos',
+      subtitle: 'Controle jurídico de contratos e processos administrativos',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de Prazos',
+      chatPlaceholder: 'Ex: Quais contratos precisam de aditamento esta semana?',
+      emptyMessage: 'Nenhum prazo cadastrado ainda.',
+      actions: [
+        { id: 'risco',       label: 'Análise de risco jurídico', description: 'Prazos vencidos com risco legal, contratos a regularizar.' },
+        { id: 'prioridades', label: 'Plano de ação',             description: 'O que fazer (renovar, aditar, notificar) e até quando.' },
+        { id: 'relatorio',   label: 'Relatório para gestor',     description: 'Relatório formal de controle de prazos para o gestor.' },
+        { id: 'chat',        label: 'Chat',                      description: 'Pergunta livre sobre prazos contratuais e administrativos.' }
+      ],
+      shortcuts: [
+        { label: 'Análise de risco jurídico', action: 'risco' },
+        { label: 'Plano de ação',             action: 'prioridades' },
+        { label: 'Relatório para gestor',     action: 'relatorio' }
+      ],
+      hasData: () => (typeof prazosCache !== 'undefined' && prazosCache.length > 0),
+      onRun: ({ action, question }) => askIaPrazos(action, question)
+    });
+  }
+  initIaPrazos();
+})();
+</script>
 </body>
 </html>

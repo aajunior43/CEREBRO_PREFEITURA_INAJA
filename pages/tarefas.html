@@ -1531,75 +1531,7 @@
                 </div>
             </div>
         </div>
-        <div class="kb-report-panel">
-            <div class="kb-report-head">
-                <div>
-                    <h3 class="kb-report-title">Relatório Gerencial de Tarefas</h3>
-                    <p class="kb-report-subtitle">Consulte as tarefas concluídas no dia, produtividade da equipe, prioridades entregues e exporte em PDF ou Excel.</p>
-                </div>
-                <div class="kb-report-controls">
-                    <div class="kb-report-date-wrap">
-                        <label for="kb-report-date">Data de referência</label>
-                        <input class="kb-input" id="kb-report-date" type="date" onchange="renderKanbanReport()" />
-                    </div>
-                    <button class="kb-btn kb-btn-ghost" onclick="setKanbanReportDateToday()">Hoje</button>
-                    <button class="kb-btn kb-btn-ghost" onclick="exportKanbanReportPdf()">🖨️ PDF do Relatório</button>
-                    <button class="kb-btn kb-btn-emerald" onclick="exportKanbanReportExcel()">📊 Excel do Relatório</button>
-                </div>
-            </div>
-
-            <div class="kb-report-grid">
-                <div class="kb-report-card">
-                    <div class="kb-report-card-label">Concluídas no dia</div>
-                    <div class="kb-report-card-value" id="kb-report-done-count">0</div>
-                    <div class="kb-report-card-note" id="kb-report-done-note">Nenhuma tarefa concluída na data selecionada.</div>
-                </div>
-                <div class="kb-report-card">
-                    <div class="kb-report-card-label">Altas prioridades entregues</div>
-                    <div class="kb-report-card-value" id="kb-report-high-count">0</div>
-                    <div class="kb-report-card-note">Tarefas críticas finalizadas na data.</div>
-                </div>
-                <div class="kb-report-card">
-                    <div class="kb-report-card-label">Vencidas entregues no dia</div>
-                    <div class="kb-report-card-value" id="kb-report-overdue-count">0</div>
-                    <div class="kb-report-card-note">Demandas concluídas após o vencimento.</div>
-                </div>
-                <div class="kb-report-card">
-                    <div class="kb-report-card-label">Pendentes abertas</div>
-                    <div class="kb-report-card-value" id="kb-report-open-count">0</div>
-                    <div class="kb-report-card-note">Tarefas que continuam em aberto no quadro.</div>
-                </div>
-            </div>
-
-            <div class="kb-report-columns">
-                <div class="kb-report-block">
-                    <h4>Entregas do dia</h4>
-                    <div class="kb-report-table-wrap">
-                        <table class="kb-report-table">
-                            <thead>
-                                <tr>
-                                    <th>Tarefa</th>
-                                    <th>Responsável</th>
-                                    <th>Categoria</th>
-                                    <th>Prioridade</th>
-                                    <th>Conclusão</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kb-report-table-body"></tbody>
-                        </table>
-                    </div>
-                    <div class="kb-report-empty" id="kb-report-empty" style="display:none">Nenhuma tarefa concluída nesta data.</div>
-                </div>
-                <div class="kb-report-block">
-                    <h4>Resumo por responsável</h4>
-                    <div class="kb-report-list" id="kb-report-responsaveis"></div>
-                </div>
-                <div class="kb-report-block">
-                    <h4>Resumo por categoria</h4>
-                    <div class="kb-report-list" id="kb-report-categorias"></div>
-                </div>
-            </div>
-        </div>
+        
         <div class="kb-cat-filter">
             <span class="kb-cat-filter-label">🔖 Filtrar:</span>
             <button class="kb-cat-filter-btn kb-cat-filter-all active" onclick="setCatFilter('')">Todas <span id="cnt-cat-all"></span></button>
@@ -1978,9 +1910,15 @@
         async function loadAll() {
             try {
                 const res = await fetch('/api/kanban');
-                tasks = await res.json();
+                const data = await res.json();
+                tasks = Array.isArray(data) ? data : [];
             } catch (e) { tasks = []; showToast('Erro ao carregar tarefas', 'error'); }
-            renderBoard();
+            try {
+                renderBoard();
+            } catch (e) {
+                console.error('[KANBAN] Falha ao renderizar tarefas:', e, tasks);
+                showToast('Erro ao renderizar o Kanban. Recarregue a página.', 'error');
+            }
         }
 
         loadAll();
@@ -2012,17 +1950,28 @@
         }
 
         function renderBoard() {
+            if (!Array.isArray(tasks)) tasks = [];
             const cols = ['todo', 'in-progress', 'done'];
             const visible = _getVisibleTasks();
             cols.forEach(col => {
                 const body = document.getElementById(`body-${col}`);
+                const badge = document.getElementById(`badge-${col}`);
+                if (!body || !badge) {
+                    throw new Error(`Estrutura da coluna "${col}" não encontrada.`);
+                }
                 const colTasks = _sortTasks(visible.filter(t => t.status === col));
-                document.getElementById(`badge-${col}`).textContent = colTasks.length;
+                badge.textContent = colTasks.length;
                 body.innerHTML = '';
                 if (!colTasks.length) {
                     body.innerHTML = '<div class="kb-empty">Nenhuma tarefa aqui.<br>Arraste uma card ou crie uma nova.</div>';
                 }
-                colTasks.forEach(task => body.appendChild(createCard(task)));
+                colTasks.forEach(task => {
+                    try {
+                        body.appendChild(createCard(task));
+                    } catch (e) {
+                        console.error('[KANBAN] Erro ao renderizar card:', task, e);
+                    }
+                });
             });
             updateStats();
             updateCatCounts();

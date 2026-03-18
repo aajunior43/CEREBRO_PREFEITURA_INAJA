@@ -8,6 +8,7 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
   <style>
     .docs-wrap { max-width: 1120px; margin: 24px auto 70px; padding: 0 20px; }
     .docs-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
@@ -263,5 +264,59 @@
 
     carregarDocumentos().catch(err => setStatus(err.message || 'Erro ao carregar documentos.', false));
   </script>
+<script>
+(function() {
+  async function askIaDocumentos(action, question) {
+    const cache = typeof docsCache !== 'undefined' ? docsCache : [];
+    const porCategoria = cache.reduce((acc, d) => { acc[d.categoria] = (acc[d.categoria] || 0) + 1; return acc; }, {});
+    const ctx = {
+      total: cache.length,
+      por_categoria: porCategoria,
+      documentos_recentes: cache.slice(0, 15).map(d => ({
+        nome: d.nome_original, categoria: d.categoria,
+        referencia: d.referencia, descricao: d.descricao, criado_em: d.criado_em
+      }))
+    };
+    const prompts = {
+      resumo:    'Apresente um diagnóstico do acervo digital: distribuição por categoria, secretarias com mais documentos, documentos mais recentes e possíveis lacunas no arquivo.',
+      organizar: 'Avalie a organização atual do acervo e sugira melhorias: convenção de nomenclatura, categorias faltantes, documentos que deveriam ser renomeados e boas práticas para facilitar auditorias.',
+      buscar:    'Com base nos documentos disponíveis e na pergunta do usuário, indique quais documentos são relevantes, suas categorias e referências para facilitar a localização.',
+      chat:      question || 'Responda à pergunta sobre os documentos do arquivo municipal.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.resumo, '', 'Contexto:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o arquivista digital da Prefeitura de Inajá. Domina a organização e classificação de documentos municipais conforme as normas do CONARQ (Conselho Nacional de Arquivos) e a legislação de transparência. Ajude a organizar, localizar e descrever documentos de forma que atendam às exigências de prestação de contas e auditoria.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+  function initIaDocumentos() {
+    if (!window.IaChatWidget) { setTimeout(initIaDocumentos, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Documentos',
+      subtitle: 'Arquivo digital municipal conforme CONARQ e transparência',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de Documentos',
+      chatPlaceholder: 'Ex: Temos contratos de locação arquivados?',
+      emptyMessage: 'Nenhum documento carregado ainda.',
+      actions: [
+        { id: 'resumo',    label: 'Diagnóstico do acervo',    description: 'Distribuição por categoria, secretaria e lacunas no arquivo.' },
+        { id: 'organizar', label: 'Sugestões de organização', description: 'Nomenclatura, categorias faltantes e boas práticas para auditoria.' },
+        { id: 'buscar',    label: 'Localizar documentos',     description: 'Indica documentos relevantes por categoria e referência.' },
+        { id: 'chat',      label: 'Chat',                     description: 'Pergunta livre sobre o arquivo municipal.' }
+      ],
+      shortcuts: [
+        { label: 'Diagnóstico do acervo',    action: 'resumo' },
+        { label: 'Sugestões de organização', action: 'organizar' }
+      ],
+      hasData: () => (typeof docsCache !== 'undefined' && docsCache.length > 0),
+      onRun: ({ action, question }) => askIaDocumentos(action, question)
+    });
+  }
+  initIaDocumentos();
+})();
+</script>
 </body>
 </html>

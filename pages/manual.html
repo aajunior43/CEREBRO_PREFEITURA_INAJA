@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="/static/js/ia-chat-widget.js"></script>
   <style>
     /* ── Layout ── */
     .man-wrap {
@@ -787,6 +788,77 @@
   </div>
 
 </div>
+
+<script>
+(function() {
+  const MODULOS_SISTEMA = [
+    { nome: 'Gestão de Credores Fixos', desc: 'Cadastro, controle mensal e emissão de empenhos de credores com pagamentos fixos.' },
+    { nome: 'Painel de Tarefas (Kanban)', desc: 'Quadro Kanban para criação, organização e acompanhamento de tarefas administrativas.' },
+    { nome: 'Calendário Administrativo', desc: 'Agenda mensal com datas de pagamento, empenhos, feriados e eventos customizados.' },
+    { nome: 'Análise de Tarifas Bancárias', desc: 'Leitura de extratos PDF e identificação de tarifas e encargos bancários.' },
+    { nome: 'Solicitações de Aquisição', desc: 'Pedidos de compra, controle de fornecedores e fluxo de aquisições.' },
+    { nome: 'Execução das Dotações', desc: 'Consulta de despesas orçamentárias e análise da execução por secretaria.' },
+    { nome: 'Comparativo Orçamentário', desc: 'Relatórios comparativos entre períodos orçamentários.' },
+    { nome: 'Centro de Documentos', desc: 'Upload e organização de arquivos municipais por categoria e referência.' },
+    { nome: 'RPA', desc: 'Recibo de Pagamento Autônomo: cálculo de tributos (INSS, ISS, IR) e emissão de recibos.' },
+    { nome: 'Renomeador com IA', desc: 'Renomeação automática de arquivos usando IA para interpretar o conteúdo.' },
+    { nome: 'Consulta de CNPJ', desc: 'Consulta cadastral de empresas e fornecedores na Receita Federal.' },
+    { nome: 'Relatório de Empenhos', desc: 'Visualização, filtros e análise detalhada dos empenhos importados.' },
+    { nome: 'Auditor NF', desc: 'Auditoria de notas fiscais com IA para detectar fraudes e superfaturamento.' },
+    { nome: 'Assistente de Empenho', desc: 'Geração e verificação de descrições de empenhos com base em notas fiscais.' },
+    { nome: 'Editor de PDF', desc: 'Ferramentas para mesclar, dividir, anotar e proteger arquivos PDF.' },
+    { nome: 'Protocolo', desc: 'Registro e acompanhamento de ofícios, memorandos e documentos protocolados.' },
+    { nome: 'Prazos', desc: 'Controle de contratos, processos e prazos críticos com alertas de vencimento.' },
+    { nome: 'Calculadora de Diárias', desc: 'Cálculo de diárias de viagem conforme legislação municipal.' },
+    { nome: 'Assinatura Digital', desc: 'Envio de documentos para assinatura eletrônica via Autentique.' },
+    { nome: 'Gerador de Empenho', desc: 'Geração de texto e apoio na conferência de empenhos.' },
+    { nome: 'Organizador de Extratos', desc: 'Renomeia e organiza extratos bancários PDF por banco e período.' }
+  ];
+
+  async function askIaManual(action, question) {
+    const ctx = { modulos: MODULOS_SISTEMA, pergunta: question };
+    const prompts = {
+      explicar:     'Explique detalhadamente como usar o módulo mencionado na pergunta: onde está no menu, quais são os passos principais, o que é possível fazer e quais erros comuns evitar.',
+      encontrar:    'O usuário está procurando uma funcionalidade. Com base na pergunta, diga exatamente em qual módulo ela está, como acessar e o que fazer.',
+      dicas:        'Liste as 5 funcionalidades mais úteis e menos conhecidas do sistema, com dicas práticas de uso diário para servidores municipais.',
+      chat:         question || 'Responda à pergunta sobre como usar o sistema de gestão da prefeitura.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.chat, '', 'Módulos disponíveis:', JSON.stringify(MODULOS_SISTEMA, null, 2),
+      question ? `Pergunta do usuário: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o suporte técnico do sistema de gestão da Prefeitura de Inajá. Conhece em detalhes todos os 21 módulos do sistema: Credores Fixos, Kanban de Tarefas, Calendário, Tarifas Bancárias, Dotações Orçamentárias, Comparativo Orçamentário, Centro de Documentos, RPA, Renomeador IA, CNPJ, Empenhos, Auditor NF, Assistente de Empenho, Editor PDF, Protocolo, Prazos, Calculadora de Diárias, Assinatura Digital, Gerador de Empenho, Organizador de Extratos e Manual. Responda de forma clara, didática e prática, como se fosse um treinamento.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.3, max_tokens: 1200 });
+  }
+  function initIaManual() {
+    if (!window.IaChatWidget) { setTimeout(initIaManual, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Manual',
+      subtitle: 'Suporte técnico dos 21 módulos do sistema municipal',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente do Manual',
+      chatPlaceholder: 'Ex: Como cadastrar um novo credor fixo com empenho mensal?',
+      emptyMessage: '',
+      actions: [
+        { id: 'explicar',  label: 'Como usar este módulo?',    description: 'Passos principais, funcionalidades e erros comuns a evitar.' },
+        { id: 'encontrar', label: 'Onde fica essa função?',    description: 'Módulo exato, como acessar e o que fazer.' },
+        { id: 'dicas',     label: 'Dicas avançadas',           description: '5 funcionalidades úteis e menos conhecidas do sistema.' },
+        { id: 'chat',      label: 'Chat',                      description: 'Pergunta sobre como usar o sistema de gestão da prefeitura.' }
+      ],
+      shortcuts: [
+        { label: 'Como usar este módulo?', action: 'explicar' },
+        { label: 'Onde fica essa função?', action: 'encontrar' },
+        { label: 'Dicas avançadas',        action: 'dicas' }
+      ],
+      hasData: () => true,
+      onRun: ({ action, question }) => askIaManual(action, question)
+    });
+  }
+  initIaManual();
+})();
+</script>
 
 </body>
 </html>

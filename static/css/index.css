@@ -1001,6 +1001,27 @@ body {
 /* ============================================================
    TOOLBAR
    ============================================================ */
+.credores-meta {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 28px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+#credores-counter {
+  font-size: 13px;
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+#credores-summary {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
 .toolbar {
   max-width: 1200px;
   margin: 20px auto 0;
@@ -1196,7 +1217,7 @@ body {
 /* Cabeçalho da tabela */
 .list-header {
   display: grid;
-  grid-template-columns: 1fr 165px 135px 130px 180px;
+  grid-template-columns: 1fr 165px 135px 130px 290px;
   gap: 0;
   padding: 8px 18px;
   color: var(--text-3);
@@ -1244,20 +1265,17 @@ body {
 .empenho-card.done {
   border-color: rgba(58, 170, 110, 0.3);
   background: linear-gradient(135deg, var(--surface) 85%, rgba(58, 170, 110, 0.04));
+  border-left: 3px solid rgba(58, 170, 110, 0.5);
 }
 
 .empenho-card:not(.done) {
   border-left: 3px solid rgba(217, 124, 58, 0.4);
 }
 
-.empenho-card.done {
-  border-left: 3px solid rgba(58, 170, 110, 0.5);
-}
-
 /* Linha principal */
 .card-row {
   display: grid;
-  grid-template-columns: 1fr 165px 135px 130px 230px;
+  grid-template-columns: 1fr 165px 135px 130px 290px;
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
@@ -1377,8 +1395,6 @@ body {
   padding: 4px 10px;
   border-radius: 100px;
   margin-right: 8px;
-  position: relative;
-  z-index: -1;
 }
 
 .tipo-fixo {
@@ -1752,7 +1768,7 @@ body {
 .modal-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 10px;
   padding: 16px 24px 22px;
   border-top: 1px solid rgba(184, 194, 204, 0.4);
@@ -1760,6 +1776,13 @@ body {
 
 .modal-footer-left {
   margin-right: auto;
+}
+
+.modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
 }
 
 /* ============================================================
@@ -2888,7 +2911,7 @@ body.home-page .credores-meta,
 body.home-page .main-content,
 body.home-page .adm-panel {
   width: calc(100% - 272px);
-  max-width: 1280px;
+  max-width: 100%;
 }
 
 body.home-page.sidebar-collapsed .stats-bar,
@@ -3393,10 +3416,19 @@ body.home-page.home-active .footer {
   gap: 12px;
   padding: 14px 15px;
   border-radius: var(--radius);
-  background: rgba(255,255,255,0.8);
-  border: 1px solid rgba(0,0,0,0.06);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
   text-decoration: none;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+  transition: all .15s;
+}
+.hs-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--border-hover);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
 }
 .hs-card-icon {
   width: 42px;
@@ -3427,7 +3459,7 @@ body.home-page.home-active .footer {
 .hs-card-desc {
   display: block;
   font-size: 0.79rem;
-  color: #4b5d70;
+  color: var(--text-3);
   line-height: 1.35;
   margin-top: 2px;
   white-space: nowrap;

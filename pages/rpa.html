@@ -81,6 +81,7 @@
     @media print { .rpa-tabs, .rpa-actions, header, .main-content { display: none !important; } }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>
 
@@ -1085,5 +1086,65 @@ async function baixarTodos() {
   }
 }
 
+</script>
+<script>
+(function() {
+  async function askIaRpa(action, question) {
+    const listaRpas = typeof rpas !== 'undefined' ? rpas : [];
+    const cfg = typeof config !== 'undefined' ? config : {};
+    const ctx = {
+      total_rpas: listaRpas.length,
+      configuracao: { aliquotaINSS: cfg.aliquotaINSS, aliquotaISS: cfg.aliquotaISS, tetoINSS: cfg.tetoINSS },
+      rpas_resumo: listaRpas.slice(0, 20).map(r => ({
+        prestador: r.nome || r.prestador,
+        cpf: r.cpf,
+        servico: r.servico || r.descricao_servico,
+        valor_bruto: r.valor_bruto,
+        valor_liquido: r.valor_liquido || r.liquido,
+        periodo: r.periodo_referencia || r.periodo,
+        data: r.data_emissao || r.data
+      }))
+    };
+    const prompts = {
+      tributacao: 'Verifique se as alíquotas configuradas (INSS, ISS, IR) estão corretas conforme a legislação atual. Para o INSS, confirme se a tabela progressiva está sendo aplicada corretamente. Alerte sobre qualquer divergência.',
+      relatorio:  'Gere um relatório consolidado de todos os RPAs emitidos: total de prestadores por CPF único, somatório de valores brutos e líquidos, total de tributos retidos (INSS, ISS, IR) e distribuição por período de referência.',
+      servico:    'Com base na pergunta, redija uma descrição formal do serviço prestado adequada para o campo "descrição" do RPA, usando linguagem técnica e compatível com o objeto do contrato.',
+      chat:       question || 'Responda à pergunta sobre cálculo de RPA, tributação de autônomos ou obrigações acessórias.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.relatorio, '', 'Contexto:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o assessor tributário da Prefeitura de Inajá especializado em RPA. Conhece a tabela progressiva do INSS para autônomos, as alíquotas de ISS para serviços municipais, a tabela do IRRF e as obrigações acessórias (SEFIP, DIRF). Responda de forma técnica, citando a legislação quando relevante.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+  function initIaRpa() {
+    if (!window.IaChatWidget) { setTimeout(initIaRpa, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA RPA',
+      subtitle: 'Tributação de autônomos: INSS progressivo, ISS e IRRF',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de RPA',
+      chatPlaceholder: 'Ex: Como calcular o INSS para um prestador que recebe R$ 3.500,00?',
+      emptyMessage: 'Nenhum RPA cadastrado ainda.',
+      actions: [
+        { id: 'tributacao', label: 'Conferir tributação',       description: 'Verifica alíquotas INSS/ISS/IR e tabela progressiva.' },
+        { id: 'relatorio',  label: 'Relatório de RPAs',         description: 'Consolidado por CPF, valores brutos/líquidos e tributos retidos.' },
+        { id: 'servico',    label: 'Redigir descrição do serviço', description: 'Texto formal do serviço compatível com o objeto do contrato.' },
+        { id: 'chat',       label: 'Chat',                      description: 'Pergunta sobre RPA, tributação de autônomos ou obrigações acessórias.' }
+      ],
+      shortcuts: [
+        { label: 'Conferir tributação',        action: 'tributacao' },
+        { label: 'Relatório de RPAs',          action: 'relatorio' },
+        { label: 'Redigir descrição do serviço', action: 'servico' }
+      ],
+      hasData: () => (typeof rpas !== 'undefined' && rpas.length > 0),
+      onRun: ({ action, question }) => askIaRpa(action, question)
+    });
+  }
+  initIaRpa();
+})();
 </script>
 </body></html>

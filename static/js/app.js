@@ -33,6 +33,7 @@ let state = {
 let _filterCacheKey = '';
 let _filterCacheResult = [];
 let _searchDebounceTimer = null;
+let _filterDebounceTimer = null;
 let _brasaoB64Promise = null;
 let _mainAppLoaded = false;
 let _mainAppLoadingPromise = null;
@@ -61,13 +62,28 @@ function getFilterCacheKey() {
 }
 
 // ── API Calls ────────────────────────────────────────────────
-async function apiGet(path) {
+const _apiCache = new Map();
+const _API_CACHE_TTL = 30_000; // 30s para GET requests (invalidado em mutações)
+
+async function apiGet(path, { cache = false } = {}) {
+  if (cache) {
+    const cached = _apiCache.get(path);
+    if (cached && Date.now() - cached.ts < _API_CACHE_TTL) return cached.data;
+  }
   const r = await fetch(API + path);
   if (!r.ok) {
     const d = await r.json().catch(() => ({}));
     throw new Error(d.error || `GET ${path} → ${r.status}`);
   }
-  return r.json();
+  const data = await r.json();
+  if (cache) _apiCache.set(path, { data, ts: Date.now() });
+  return data;
+}
+
+function apiCacheInvalidate(prefix) {
+  for (const key of _apiCache.keys()) {
+    if (key.startsWith(prefix)) _apiCache.delete(key);
+  }
 }
 
 async function apiPost(path, body) {
@@ -403,7 +419,7 @@ function handleCardExpand(cardEl, credorId) {
   const histEl = cardEl.querySelector('.historico-pills');
   if (histEl && !histEl.dataset.loaded) {
     histEl.innerHTML = '<span style="font-size:11px;color:var(--text-3)">...</span>';
-    apiGet(`/credores/${credorId}/historico?meses=6`).then(hist => {
+    apiGet(`/credores/${credorId}/historico?meses=6`, { cache: true }).then(hist => {
       histEl.innerHTML = hist.map(h =>
         `<span class="hist-pill ${h.empenhado ? 'hist-emp' : 'hist-pend'}" title="${h.mes_nome}/${h.ano}">${h.mes_nome}</span>`
       ).join('');
@@ -428,11 +444,17 @@ function renderStats() {
   const total = credores.length;
   const pct = total > 0 ? Math.round((doneCt / total) * 100) : 0;
 
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-done').textContent = doneCt;
-  document.getElementById('stat-pending').textContent = pendCt;
-  document.getElementById('stat-valor').textContent = formatBRL(valorDone);
-  document.getElementById('stat-restante').textContent = formatBRL(valorPend);
+  function _setStat(id, value, isCurrency) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = isCurrency ? formatBRL(value) : value;
+    if (typeof animateCounter === 'function' && value > 0) animateCounter(el, value, 600);
+  }
+  _setStat('stat-total', total, false);
+  _setStat('stat-done', doneCt, false);
+  _setStat('stat-pending', pendCt, false);
+  _setStat('stat-valor', valorDone, true);
+  _setStat('stat-restante', valorPend, true);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-label').textContent = `${pct}% concluído`;
   const counterEl = document.getElementById('credores-counter');
@@ -1042,20 +1064,28 @@ function attachEvents() {
     }, 120);
   });
 
-  document.getElementById('filter-dept').addEventListener('change', async e => {
+  function debouncedLoadCredores(delay = 300) {
+    clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        await loadCredores();
+        render();
+      } finally {
+        setLoading(false);
+      }
+    }, delay);
+  }
+
+  document.getElementById('filter-dept').addEventListener('change', e => {
     state.filterDept = e.target.value;
-    document.querySelectorAll('.dept-stat-btn').forEach(b => b.classList.remove('active-dept'));
+    const deptBtns = document.querySelectorAll('.dept-stat-btn');
+    deptBtns.forEach(b => b.classList.remove('active-dept'));
     if (state.filterDept) {
       const btn = document.querySelector(`.dept-stat-btn[data-dept="${state.filterDept}"]`);
       if (btn) btn.classList.add('active-dept');
     }
-    setLoading(true);
-    try {
-      await loadCredores();
-      render();
-    } finally {
-      setLoading(false);
-    }
+    debouncedLoadCredores();
   });
 
   document.getElementById('filter-status').addEventListener('change', e => {
@@ -1064,37 +1094,19 @@ function attachEvents() {
     render();
   });
 
-  document.getElementById('filter-tipo').addEventListener('change', async e => {
+  document.getElementById('filter-tipo').addEventListener('change', e => {
     state.filterTipo = e.target.value;
-    setLoading(true);
-    try {
-      await loadCredores();
-      render();
-    } finally {
-      setLoading(false);
-    }
+    debouncedLoadCredores();
   });
 
-  document.getElementById('filter-cadastro').addEventListener('change', async e => {
+  document.getElementById('filter-cadastro').addEventListener('change', e => {
     state.filterCadastro = e.target.value;
-    setLoading(true);
-    try {
-      await loadCredores();
-      render();
-    } finally {
-      setLoading(false);
-    }
+    debouncedLoadCredores();
   });
 
-  document.getElementById('filter-vencimento').addEventListener('change', async e => {
+  document.getElementById('filter-vencimento').addEventListener('change', e => {
     state.filterVencimento = e.target.value;
-    setLoading(true);
-    try {
-      await loadCredores();
-      render();
-    } finally {
-      setLoading(false);
-    }
+    debouncedLoadCredores();
   });
 
   document.getElementById('btn-expand-all').addEventListener('click', () => {

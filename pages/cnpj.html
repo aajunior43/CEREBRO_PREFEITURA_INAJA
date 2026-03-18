@@ -70,6 +70,7 @@
     .error-box { background: var(--red-bg); border-radius: var(--radius-sm); padding: 16px 20px; color: var(--red); font-size: 13px; font-weight: 600; }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
 </head>
 <body>
 
@@ -246,6 +247,7 @@
     }
 
     function exibirResultado(d) {
+      window._lastCnpjData = d;
       document.getElementById('r-razao').textContent = d.razao_social || '—';
       document.getElementById('r-fantasia').textContent = d.nome_fantasia ? `"${d.nome_fantasia}"` : '';
       document.getElementById('r-cnpj-fmt').textContent = formatCNPJ(d.cnpj || '');
@@ -322,5 +324,66 @@
     }
 
   </script>
+<script>
+(function() {
+  async function askIaCnpj(action, question) {
+    const d = window._lastCnpjData || {};
+    const ctx = {
+      cnpj: d.cnpj,
+      razao_social: d.razao_social,
+      nome_fantasia: d.nome_fantasia,
+      situacao: d.situacao,
+      data_abertura: d.data_abertura,
+      natureza_juridica: d.natureza_juridica,
+      porte: d.porte,
+      capital_social: d.capital_social,
+      endereco: d.logradouro ? `${d.logradouro}, ${d.numero} - ${d.municipio}/${d.uf}` : undefined,
+      cnae_principal: d.cnae_fiscal_descricao || d.cnae_principal,
+      simples: d.opcao_pelo_simples,
+      mei: d.opcao_pelo_mei,
+      socios: (d.qsa || []).slice(0, 5).map(s => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio }))
+    };
+    const prompts = {
+      analise:     'Analise esta empresa para fins de contratação pelo município: verifique se a situação cadastral está regular, se o CNAE é compatível com serviços municipais típicos, se o porte é adequado e se há pontos de atenção (MEI, empresa recém-aberta, capital social baixo).',
+      regularidade:'Avalie detalhadamente a regularidade desta empresa: situação na Receita Federal, tempo de atividade, natureza jurídica, opção pelo Simples/MEI e quaisquer restrições que possam impedir a contratação pública.',
+      relatorio:   'Gere uma nota técnica de habilitação preliminar desta empresa para anexar ao processo de contratação, conforme exigido pela Lei 14.133/2021. Inclua CNPJ, razão social, situação, atividade principal e parecer.',
+      chat:        question || 'Responda à pergunta sobre esta empresa ou sobre os requisitos para contratação pública.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.analise, '', 'Dados da empresa:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o fiscal de contratos da Prefeitura de Inajá. Avalia fornecedores para contratação pública conforme a Lei 14.133/2021 (Nova Lei de Licitações), verificando regularidade, compatibilidade de atividade (CNAE) com o objeto do contrato, porte da empresa, tempo de atuação e riscos. Responda de forma objetiva, apontando se a empresa está apta ou se há impedimentos.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+  function initIaCnpj() {
+    if (!window.IaChatWidget) { setTimeout(initIaCnpj, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Consulta CNPJ',
+      subtitle: 'Habilitação de fornecedores conforme Lei 14.133/2021',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA para CNPJ',
+      chatPlaceholder: 'Ex: Esta empresa pode prestar serviços de TI para a prefeitura?',
+      emptyMessage: 'Consulte um CNPJ primeiro para usar o assistente.',
+      actions: [
+        { id: 'analise',     label: 'Apta para contratar?',  description: 'Situação, CNAE, porte e pontos de atenção para contratação.' },
+        { id: 'regularidade',label: 'Regularidade cadastral',description: 'Receita Federal, tempo de atividade, natureza jurídica e restrições.' },
+        { id: 'relatorio',   label: 'Nota técnica',          description: 'Nota de habilitação preliminar conforme Lei 14.133/2021.' },
+        { id: 'chat',        label: 'Chat',                  description: 'Pergunta sobre a empresa ou requisitos de contratação pública.' }
+      ],
+      shortcuts: [
+        { label: 'Apta para contratar?',   action: 'analise' },
+        { label: 'Regularidade cadastral', action: 'regularidade' },
+        { label: 'Nota técnica',           action: 'relatorio' }
+      ],
+      hasData: () => Boolean(window._lastCnpjData),
+      onRun: ({ action, question }) => askIaCnpj(action, question)
+    });
+  }
+  initIaCnpj();
+})();
+</script>
 </body>
 </html>

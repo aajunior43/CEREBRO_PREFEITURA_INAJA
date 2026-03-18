@@ -825,3 +825,56 @@
   }
 
 })();
+
+/* ── callIaFree: helper global com fallback automático entre modelos free ── */
+window.callIaFree = async function callIaFree(messages, { temperature = 0.2, max_tokens = 1200 } = {}) {
+  const api_key = (localStorage.getItem('api_openrouter_key') || '').trim();
+
+  // Lista de modelos free em ordem de preferência
+  const preferred = (localStorage.getItem('api_openrouter_modelo') || '').trim();
+  const FREE_MODELS = [
+    preferred,
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'mistralai/mistral-7b-instruct:free',
+    'google/gemma-2-9b-it:free',
+    'qwen/qwen-2-7b-instruct:free',
+    'openrouter/free'
+  ].filter((v, i, a) => v && a.indexOf(v) === i); // deduplica e remove vazios
+
+  const errors = [];
+
+  for (const model of FREE_MODELS) {
+    try {
+      const resp = await fetch('/api/ia/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, api_key, messages, temperature, max_tokens })
+      });
+
+      // Erros que justificam tentar o próximo modelo
+      if (resp.status === 429 || resp.status === 503 || resp.status === 502) {
+        errors.push(`${model}: sobrecarregado (${resp.status})`);
+        continue;
+      }
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        errors.push(`${model}: ${data?.error?.message || data?.error || resp.status}`);
+        continue; // tenta próximo modelo
+      }
+
+      const content = (data?.choices?.[0]?.message?.content || '').trim();
+      if (!content) { errors.push(`${model}: resposta vazia`); continue; }
+
+      // Salva o modelo que funcionou
+      if (model !== preferred) localStorage.setItem('api_openrouter_modelo', model);
+
+      return content;
+    } catch (e) {
+      errors.push(`${model}: ${e.message}`);
+    }
+  }
+
+  throw new Error('Todos os modelos gratuitos falharam:\n' + errors.join('\n'));
+};
