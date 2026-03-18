@@ -7,7 +7,9 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
-  <script defer src="/static/js/shared-header.js"></script>
+  <script type="module" src="/static/js/components/app-header.js"></script>
+  <script type="module" src="/static/js/components/toast-notification.js"></script>
+  <script type="module" src="/static/js/components/confirm-dialog.js"></script>
   <style>
     .aut-wrap { max-width: 1220px; margin: 24px auto 70px; padding: 0 20px; }
     .aut-overview, .aut-card { background:var(--bg); border-radius:var(--radius); box-shadow:var(--neo); }
@@ -108,6 +110,9 @@
   </style>
 </head>
 <body>
+  <app-header page-title="Assinatura Digital" active-page="/pages/autentique-assinatura.html"></app-header>
+  <toast-notification></toast-notification>
+  <confirm-dialog></confirm-dialog>
   <div class="aut-wrap">
     <section class="aut-overview">
       <div>

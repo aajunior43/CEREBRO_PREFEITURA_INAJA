@@ -357,10 +357,15 @@
     .viz-app .detail-item.full-width { grid-column: 1 / -1; }
   }
   </style>
-  <script defer src="/static/js/shared-header.js"></script>
+  <script type="module" src="/static/js/components/app-header.js"></script>
+  <script type="module" src="/static/js/components/toast-notification.js"></script>
+  <script type="module" src="/static/js/components/confirm-dialog.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>
 </head>
-<body>﻿
+<body>
+  <app-header page-title="Relatório de Empenhos" active-page="/pages/visualizador.html"></app-header>
+  <toast-notification></toast-notification>
+  <confirm-dialog></confirm-dialog>﻿
   <!-- Quick Nav -->
   <div style="position:fixed;top:12px;right:12px;z-index:1000;display:flex;gap:8px;">
     <a href="/" style="background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:8px 16px;text-decoration:none;color:var(--text);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Início</a>
