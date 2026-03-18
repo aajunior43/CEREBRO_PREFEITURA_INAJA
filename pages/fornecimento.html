@@ -8,6 +8,7 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script>window.addEventListener('load',function(){var s=document.createElement('script');s.src='/static/js/brasao_b64.js';document.head.appendChild(s);});</script>
   <style>
     /* ── PAGE ── */
@@ -908,297 +909,223 @@ setInterval(() => {
 function generatePDF(req) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF('p', 'mm', 'a4');
-  const W = 210, M = 14;
-  const pw = W - 2 * M;
+  const W = 210, M = 15, pw = W - 2 * M;
 
-  // Paleta de cores institucional
-  const blue      = [26,  86, 179];
-  const blueDark  = [18,  60, 130];
-  const blueLight = [235, 242, 255];
-  const gold      = [195, 155,  35];
-  const white     = [255, 255, 255];
-  const dark      = [22,  33,  50];
-  const gray      = [100, 115, 135];
-  const grayLight = [218, 226, 238];
-  const rowAlt    = [247, 251, 255];
+  const C = {
+    navy:   [18,  52, 110],
+    blue:   [30,  90, 175],
+    blueLt: [237, 244, 255],
+    gold:   [185, 140,  20],
+    white:  [255, 255, 255],
+    dark:   [28,  40,  58],
+    gray:   [108, 120, 140],
+    grLt:   [218, 226, 238],
+    rowAlt: [247, 251, 255],
+  };
 
   doc.setProperties({
-    title: 'Solicitação de Aquisição / Fornecimento',
-    subject: 'Solicitação de Aquisição',
-    author: 'Prefeitura Municipal de Inajá',
-    creator: 'Sistema de Aquisições – Prefeitura Municipal de Inajá',
-    keywords: 'solicitação, aquisição, fornecimento, inajá'
+    title:   'Solicitação de Aquisição / Fornecimento',
+    subject: 'Solicitação de Aquisição – Prefeitura Municipal de Inajá',
+    author:  'Prefeitura Municipal de Inajá – PR',
+    creator: 'Sistema de Aquisições – PMI',
   });
 
-  // Função para adicionar rodapé em todas as páginas (chamada ao final)
+  /* ── helpers de rodapé/cabeçalho em cada página ── */
+  function drawPageHeader() {
+    // Fundo navy
+    doc.setFillColor(...C.navy);
+    doc.rect(0, 0, W, 40, 'F');
+    // Faixa dourada
+    doc.setFillColor(...C.gold);
+    doc.rect(0, 40, W, 2.2, 'F');
+
+    // Brasão
+    let bW = 0;
+    if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
+      try {
+        const p = doc.getImageProperties(BRASAO_B64);
+        const bH = 33;
+        bW = bH * (p.width / p.height);
+        doc.addImage(BRASAO_B64, 'PNG', M, 3.5, bW, bH);
+      } catch(e) {}
+    }
+
+    const cX = M + bW + (bW > 0 ? 6 : 0);
+    const cCenter = (cX + W - M) / 2;
+    doc.setFontSize(14.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
+    doc.text('PREFEITURA MUNICIPAL DE INAJÁ', cCenter, 15, { align: 'center' });
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(195, 215, 255);
+    doc.text('Estado do Paraná', cCenter, 22, { align: 'center' });
+    doc.setFontSize(7.5); doc.setTextColor(160, 190, 240);
+    doc.text('Gabinete do Prefeito – Setor de Compras e Suprimentos', cCenter, 28.5, { align: 'center' });
+  }
+
   function stampFooters() {
     const total = doc.internal.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       doc.setPage(i);
-      doc.setFillColor(...blueDark);
-      doc.rect(0, 286, W, 11, 'F');
-      doc.setFillColor(...gold);
-      doc.rect(0, 286, W, 1.5, 'F');
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...white);
-      doc.text(`Página ${i} de ${total}`, W / 2, 292, { align: 'center' });
+      doc.setFillColor(...C.navy);
+      doc.rect(0, 285, W, 12, 'F');
+      doc.setFillColor(...C.gold);
+      doc.rect(0, 285, W, 1.5, 'F');
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.white);
+      doc.text(`Documento gerado eletronicamente em ${new Date().toLocaleDateString('pt-BR')}`, M, 291.5);
+      doc.text(`Página ${i} de ${total}`, W - M, 291.5, { align: 'right' });
     }
   }
 
-  let y = 0;
+  /* ── PÁGINA 1: cabeçalho ── */
+  drawPageHeader();
+  let y = 49;
 
-  /* ── CABEÇALHO ─────────────────────────────────────── */
-  // Fundo azul escuro
-  doc.setFillColor(...blueDark);
-  doc.rect(0, 0, W, 38, 'F');
-  // Faixa dourada inferior
-  doc.setFillColor(...gold);
-  doc.rect(0, 38, W, 2.5, 'F');
-
-  // Brasão à esquerda
-  let brasaoW = 0;
-  if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
-    try {
-      const imgProps = doc.getImageProperties(BRASAO_B64);
-      const imgH = 32;
-      brasaoW = imgH * (imgProps.width / imgProps.height);
-      doc.addImage(BRASAO_B64, 'PNG', M, 3, brasaoW, imgH);
-    } catch(e) {}
-  }
-
-  // Texto da prefeitura à direita do brasão
-  const textX = M + brasaoW + (brasaoW > 0 ? 6 : 0);
-  const textCenter = (textX + W - M) / 2;
-  doc.setFontSize(13);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...white);
-  doc.text('PREFEITURA MUNICIPAL DE INAJÁ', textCenter, 14, { align: 'center' });
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(200, 218, 255);
-  doc.text('Estado do Paraná', textCenter, 21, { align: 'center' });
-
-  y = 47;
-
-  /* ── BANDA DO TÍTULO ──────────────────────────────── */
-  doc.setFillColor(...blueLight);
-  doc.setDrawColor(...blue);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(M, y, pw, 13, 2, 2, 'FD');
-
-  doc.setFontSize(11.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...blue);
+  /* ── TÍTULO DO DOCUMENTO ── */
+  doc.setFillColor(...C.blue);
+  doc.roundedRect(M, y, pw, 13, 1.5, 1.5, 'F');
+  doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
   doc.text('SOLICITAÇÃO DE AQUISIÇÃO / FORNECIMENTO', W / 2, y + 9, { align: 'center' });
-
-
   y += 19;
 
-  /* ── GRADE DE INFORMAÇÕES ─────────────────────────── */
-  const infoH = 30;
-  doc.setFillColor(...blueLight);
-  doc.setDrawColor(...grayLight);
-  doc.setLineWidth(0.25);
+  /* ── GRADE DE INFORMAÇÕES ── */
+  const infoH = 34;
+  doc.setFillColor(...C.blueLt);
+  doc.setDrawColor(...C.grLt);
+  doc.setLineWidth(0.3);
   doc.roundedRect(M, y, pw, infoH, 2.5, 2.5, 'FD');
 
-  // Barra azul lateral esquerda
-  doc.setFillColor(...blue);
-  doc.roundedRect(M, y, 3.5, infoH, 2.5, 2.5, 'F');
-  doc.rect(M + 2, y, 1.5, infoH, 'F');
-
-  const col1x = M + 8;
-  const col2x = M + pw * 0.52 + 4;
-  const r1y = y + 11;
-  const r2y = y + 23;
+  // Barra lateral azul
+  doc.setFillColor(...C.blue);
+  doc.roundedRect(M, y, 4, infoH, 2.5, 2.5, 'F');
+  doc.rect(M + 2.5, y, 1.5, infoH, 'F');
 
   // Divisores internos
-  doc.setDrawColor(...grayLight);
-  doc.setLineWidth(0.3);
-  doc.line(M + pw * 0.52, y + 5, M + pw * 0.52, y + infoH - 5);
-  doc.line(col1x, y + 16.5, M + pw - 4, y + 16.5);
+  const mid = M + pw * 0.5;
+  doc.setDrawColor(...C.grLt); doc.setLineWidth(0.25);
+  doc.line(mid, y + 5, mid, y + infoH - 5);
+  doc.line(M + 7, y + infoH / 2, M + pw - 5, y + infoH / 2);
 
-  const lbl = (txt, x, yy) => {
-    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...gray);
-    doc.text(txt, x, yy);
+  const iLbl = (t, x, yy) => {
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray);
+    doc.text(t, x, yy);
   };
-  const val = (txt, x, yy, color) => {
-    doc.setFontSize(9); doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...(color || dark));
-    doc.text(txt, x, yy);
+  const iVal = (t, x, yy) => {
+    doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+    // Truncate se ultrapassar a coluna
+    const safe = doc.splitTextToSize(t || '—', mid - x - 4)[0];
+    doc.text(safe, x, yy);
   };
 
-  lbl('SOLICITANTE', col1x, r1y - 4);
-  val(req.solicitante || '—', col1x, r1y + 2);
-  lbl('DATA DA SOLICITAÇÃO', col2x, r1y - 4);
-  val(req.data || '—', col2x, r1y + 2);
-  lbl('EMPRESA / FORNECEDOR', col1x, r2y - 2);
-  val(req.empresa || '—', col1x, r2y + 4);
+  const c1 = M + 8, c2 = mid + 6;
+  const row1y = y + 12, row2y = y + 27;
+  iLbl('SOLICITANTE', c1, row1y - 5);     iVal(req.solicitante || '—', c1, row1y);
+  iLbl('DATA DA SOLICITAÇÃO', c2, row1y - 5); iVal(req.data || '—', c2, row1y);
+  iLbl('EMPRESA / FORNECEDOR', c1, row2y - 5);
+  const empSafe = doc.splitTextToSize(req.empresa || '—', pw * 0.9)[0];
+  doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+  doc.text(empSafe, c1, row2y);
+  y += infoH + 10;
 
-  y += infoH + 9;
-
-  /* ── TABELA DE ITENS ──────────────────────────────── */
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...gray);
-  doc.text('ITENS DA SOLICITAÇÃO', M, y);
-  y += 5;
-
-  const cols = [
-    { label: '#',           w: 9,  align: 'center' },
-    { label: 'Item',        w: 37, align: 'left'   },
-    { label: 'Descrição',   w: 55, align: 'left'   },
-    { label: 'Qtd',         w: 13, align: 'center' },
-    { label: 'Preço Unit.', w: 28, align: 'right'  },
-    { label: 'Total',       w: 0,  align: 'right'  },
-  ];
-  cols[cols.length - 1].w = pw - cols.slice(0, -1).reduce((s, c) => s + c.w, 0);
-
-  const rowH = 8.5;
-
-  // Cabeçalho da tabela
-  doc.setFillColor(...blue);
-  doc.roundedRect(M, y, pw, rowH + 2, 2, 2, 'F');
-  doc.rect(M, y + 4, pw, rowH - 2, 'F');  // fecha cantos inferiores
-
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...white);
-  let cx = M;
-  cols.forEach((c, ci) => {
-    const tx = c.align === 'right' ? cx + c.w - 3 : c.align === 'center' ? cx + c.w / 2 : cx + 3;
-    doc.text(c.label, tx, y + 7, { align: c.align === 'right' ? 'right' : c.align === 'center' ? 'center' : 'left' });
-    if (ci < cols.length - 1) {
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.15);
-      doc.line(cx + c.w, y + 2, cx + c.w, y + rowH);
-    }
-    cx += c.w;
-  });
-  y += rowH + 2;
-
-  // Linhas de dados
-  const rowItems = req.items || [];
+  /* ── TABELA DE ITENS (autoTable) ── */
+  const items = req.items || [];
   let grandTotal = 0;
-  rowItems.forEach((item, idx) => {
+  const tableBody = items.map((item, idx) => {
     const qtd   = parseFloat(item.qtd) || 0;
     const preco = parseMoney(item.preco);
     const total = qtd * preco;
     grandTotal += total;
-
-    if (y > 260) { doc.addPage(); y = 18; }
-
-    doc.setFillColor(...(idx % 2 === 0 ? rowAlt : white));
-    doc.rect(M, y, pw, rowH, 'F');
-
-    // Borda inferior de linha
-    doc.setDrawColor(...grayLight);
-    doc.setLineWidth(0.15);
-    doc.line(M, y + rowH, M + pw, y + rowH);
-
-    const vals = [String(idx + 1), item.nome || '', item.desc || '', String(qtd), fmtMoney(preco), fmtMoney(total)];
-    cx = M;
-    cols.forEach((c, ci) => {
-      const maxChars = Math.floor(c.w / 1.68);
-      const txt = String(vals[ci]).substring(0, maxChars);
-
-      if (ci === 0) {
-        // Número de linha — destaque
-        doc.setFillColor(...blueLight);
-        doc.rect(cx, y, c.w, rowH, 'F');
-        doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...blue);
-        doc.text(txt, cx + c.w / 2, y + 5.8, { align: 'center' });
-      } else if (ci >= 4) {
-        // Valores monetários — alinhado à direita
-        doc.setFontSize(8); doc.setFont('helvetica', ci === 5 ? 'bold' : 'normal');
-        if (ci === 5) doc.setTextColor(...blue); else doc.setTextColor(...dark);
-        doc.text(txt, cx + c.w - 3, y + 5.8, { align: 'right' });
-      } else {
-        doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...dark);
-        doc.text(txt, cx + 3, y + 5.8);
-      }
-
-      // Separadores de coluna
-      if (ci < cols.length - 1) {
-        doc.setDrawColor(...grayLight); doc.setLineWidth(0.15);
-        doc.line(cx + c.w, y, cx + c.w, y + rowH);
-      }
-      cx += c.w;
-    });
-
-    // Bordas laterais da tabela
-    doc.setDrawColor(...grayLight); doc.setLineWidth(0.15);
-    doc.line(M, y, M, y + rowH);
-    doc.line(M + pw, y, M + pw, y + rowH);
-
-    y += rowH;
+    return [idx + 1, item.nome || '', item.desc || '', qtd, fmtMoney(preco), fmtMoney(total)];
   });
 
-  // Borda inferior da tabela
-  doc.setDrawColor(...blue); doc.setLineWidth(0.5);
-  doc.line(M, y, M + pw, y);
-  y += 3;
+  doc.autoTable({
+    startY: y,
+    margin: { left: M, right: M },
+    tableWidth: pw,
+    head: [['#', 'Item', 'Descrição', 'Qtd', 'Preço Unit.', 'Total']],
+    body: tableBody,
+    styles: {
+      font: 'helvetica',
+      fontSize: 8.5,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+      lineColor: C.grLt,
+      lineWidth: 0.25,
+      textColor: C.dark,
+      overflow: 'linebreak',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: C.navy,
+      textColor: C.white,
+      fontStyle: 'bold',
+      fontSize: 8,
+      cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },
+      lineWidth: 0,
+    },
+    alternateRowStyles: {
+      fillColor: C.rowAlt,
+    },
+    columnStyles: {
+      0: { cellWidth: 10,   halign: 'center', fontStyle: 'bold', textColor: C.blue, fillColor: C.blueLt },
+      1: { cellWidth: 38,   halign: 'left'   },
+      2: { cellWidth: 'auto' },
+      3: { cellWidth: 14,   halign: 'center' },
+      4: { cellWidth: 28,   halign: 'right'  },
+      5: { cellWidth: 28,   halign: 'right',  fontStyle: 'bold', textColor: C.blue },
+    },
+    tableLineColor: C.grLt,
+    tableLineWidth: 0.3,
+    didDrawPage: (data) => {
+      // Cabeçalho institucional em páginas de continuação
+      if (data.pageNumber > 1) {
+        drawPageHeader();
+        // Reposiciona a tabela abaixo do cabeçalho nas páginas seguintes
+        data.settings.margin.top = 46;
+      }
+    },
+  });
 
-  /* ── LINHA DE TOTAL ───────────────────────────────── */
-  doc.setFillColor(...blue);
-  doc.roundedRect(M, y, pw, 11, 2, 2, 'F');
-  doc.rect(M, y, pw, 6, 'F');
-  doc.setFontSize(9.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...white);
-  doc.text('VALOR TOTAL DA SOLICITAÇÃO', M + 6, y + 7.5);
-  doc.text(fmtMoney(grandTotal), M + pw - 4, y + 7.5, { align: 'right' });
-  y += 18;
+  y = doc.lastAutoTable.finalY + 5;
 
-  /* ── OBSERVAÇÕES ──────────────────────────────────── */
-  if (req.obs) {
-    if (y > 242) { doc.addPage(); y = 18; }
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...gray);
+  /* ── TOTAL ── */
+  if (y + 13 > 276) { doc.addPage(); drawPageHeader(); y = 48; }
+  doc.setFillColor(...C.navy);
+  doc.roundedRect(M, y, pw, 13, 1.5, 1.5, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
+  doc.text('VALOR TOTAL DA SOLICITAÇÃO', M + 7, y + 9);
+  doc.text(fmtMoney(grandTotal), M + pw - 5, y + 9, { align: 'right' });
+  y += 20;
+
+  /* ── OBSERVAÇÕES ── */
+  if (req.obs && req.obs.trim()) {
+    if (y + 20 > 272) { doc.addPage(); drawPageHeader(); y = 48; }
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray);
     doc.text('OBSERVAÇÕES', M, y);
-    y += 4;
+    y += 5;
 
-    const obsTextW = pw - 14;
-    const lines = doc.splitTextToSize(req.obs, obsTextW);
-    const obsH  = lines.length * 5 + 10;
-    if (y + obsH > 278) { doc.addPage(); y = 18; }
-    doc.setFillColor(248, 251, 255);
-    doc.setDrawColor(...grayLight);
-    doc.setLineWidth(0.3);
+    const obsLines = doc.splitTextToSize(req.obs, pw - 18);
+    const obsH = Math.max(obsLines.length * 5.5 + 14, 20);
+    if (y + obsH > 272) { doc.addPage(); drawPageHeader(); y = 48; }
+
+    doc.setFillColor(249, 252, 255);
+    doc.setDrawColor(...C.grLt); doc.setLineWidth(0.3);
     doc.roundedRect(M, y, pw, obsH, 2, 2, 'FD');
-    // Faixa azul esquerda
-    doc.setFillColor(...blue);
-    doc.roundedRect(M, y, 3.5, obsH, 2, 2, 'F');
-    doc.rect(M + 2, y, 1.5, obsH, 'F');
+    doc.setFillColor(...C.blue);
+    doc.roundedRect(M, y, 4, obsH, 2, 2, 'F');
+    doc.rect(M + 2.5, y, 1.5, obsH, 'F');
 
-    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...dark);
-    doc.text(lines, M + 8, y + 7);
-    y += obsH + 10;
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark);
+    doc.text(obsLines, M + 9, y + 8);
+    y += obsH + 12;
   }
 
-  /* ── ASSINATURAS ──────────────────────────────────── */
-  if (y > 256) { doc.addPage(); y = 30; }
-  y = Math.max(y + 8, 250);
+  /* ── LOCAL E DATA ── */
+  if (y + 30 > 278) { doc.addPage(); drawPageHeader(); y = 48; }
+  y = Math.max(y, 252);
+  doc.setDrawColor(...C.grLt); doc.setLineWidth(0.4);
+  doc.line(M, y, M + pw, y);
+  y += 8;
+  doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(...C.gray);
+  doc.text(`Inajá – PR, ${req.data || '_____ / _____ / __________'}`, W / 2, y, { align: 'center' });
 
-  doc.setDrawColor(...grayLight); doc.setLineWidth(0.3);
-  doc.line(M, y - 5, W - M, y - 5);
-
-  const sigW = 80;
-  const sig1x = W / 2 - sigW / 2;
-
-  // Bloco – Solicitante (centralizado)
-  doc.setFillColor(...blueLight);
-  doc.roundedRect(sig1x - 2, y - 2, sigW + 4, 20, 2, 2, 'F');
-  doc.setDrawColor(...blue); doc.setLineWidth(0.5);
-  doc.line(sig1x + 4, y + 11, sig1x + sigW - 4, y + 11);
-  doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...dark);
-  doc.text(req.solicitante || 'Solicitante', sig1x + sigW / 2, y + 15, { align: 'center' });
-  doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(...gray);
-  doc.text('Assinatura do Solicitante', sig1x + sigW / 2, y + 20, { align: 'center' });
-
-
-  /* ── RODAPÉ EM TODAS AS PÁGINAS ─────────────────── */
+  /* ── RODAPÉ EM TODAS AS PÁGINAS ── */
   stampFooters();
 
   return doc;
