@@ -550,9 +550,9 @@
   </script>
 <script>
 (function() {
-  async function askIaExtratos(action, question) {
+  window.buildExtratosContext = function() {
     const res = typeof ultimoResultado !== 'undefined' ? ultimoResultado : null;
-    const ctx = res ? {
+    return res ? {
       total: res.total,
       sucessos: res.sucessos,
       erros: res.erros,
@@ -561,46 +561,10 @@
         nome_novo: r.nome_novo, estrutura: r.estrutura, sucesso: r.sucesso, erro: r.erro
       }))
     } : {};
-    const prompts = {
-      resumo:   'Resuma a operação de organização: quantos extratos foram identificados com sucesso por banco, quais períodos foram cobertos e se a estrutura de pastas criada está adequada para auditoria.',
-      erros:    'Para cada arquivo que falhou ou teve confiança baixa na identificação, explique possível causa e como o servidor deve corrigi-lo manualmente: nomeclatura correta, pasta adequada e banco provável.',
-      relatorio:'Gere um relatório formal da operação de organização de extratos para registro no processo de prestação de contas. Inclua data, totais, bancos e resultado por arquivo.',
-      chat:     question || 'Responda à pergunta sobre a organização dos extratos bancários municipais.'
-    };
-    const userPrompt = [
-      prompts[action] || prompts.resumo, '', 'Contexto:', JSON.stringify(ctx, null, 2),
-      question && action !== 'chat' ? `Pergunta: ${question}` : ''
-    ].filter(Boolean).join('\n');
-    return await window.callIaFree([
-      { role: 'system', content: 'Você é o controller financeiro da Prefeitura de Inajá. Analisa operações de organização de extratos bancários, identificando arquivos não reconhecidos, inconsistências nos bancos identificados e sugerindo correções manuais para garantir a integridade do arquivo financeiro municipal.' },
-      { role: 'user', content: userPrompt }
-    ], { temperature: 0.2, max_tokens: 1200 });
   }
-  function initIaExtratos() {
-    if (!window.IaChatWidget) { setTimeout(initIaExtratos, 300); return; }
-    window.IaChatWidget.create({
-      title: 'IA Extratos',
-      subtitle: 'Organização de extratos bancários para prestação de contas',
-      buttonLabel: 'IA',
-      buttonTitle: 'Abrir Assistente de IA de Extratos',
-      chatPlaceholder: 'Ex: O extrato do Banco do Brasil não foi reconhecido, o que fazer?',
-      emptyMessage: 'Execute uma organização de extratos primeiro.',
-      actions: [
-        { id: 'resumo',   label: 'Resumo da operação',    description: 'Extratos por banco, períodos cobertos e adequação da estrutura.' },
-        { id: 'erros',    label: 'Como corrigir erros',   description: 'Causa dos arquivos não identificados e correção manual.' },
-        { id: 'relatorio',label: 'Relatório para processo',description: 'Relatório formal para o processo de prestação de contas.' },
-        { id: 'chat',     label: 'Chat',                  description: 'Pergunta sobre organização dos extratos bancários municipais.' }
-      ],
-      shortcuts: [
-        { label: 'Resumo da operação',    action: 'resumo' },
-        { label: 'Como corrigir erros',   action: 'erros' },
-        { label: 'Relatório para processo',action: 'relatorio' }
-      ],
-      hasData: () => Boolean(typeof ultimoResultado !== 'undefined' && ultimoResultado),
-      onRun: ({ action, question }) => askIaExtratos(action, question)
-    });
+  if (window.IaChatWidget) {
+    return;
   }
-  initIaExtratos();
 })();
 </script>
 </body>

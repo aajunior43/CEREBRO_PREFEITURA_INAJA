@@ -890,7 +890,7 @@
       return window.App && window.App.state && window.App.state.rows && window.App.state.rows.length > 0;
     }
 
-    function buildContext() {
+    window.buildContext = function() {
       const st = window.App.state;
       const rows = st.rows || [];
       const cols = st.columns || (rows.length ? Object.keys(rows[0]) : []);
@@ -1013,51 +1013,19 @@
       };
     }
 
-    async function runIaRequest(action, pergunta) {
-      const res = await fetch('/api/despesas/ia', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          action,
-          contexto: buildContext(),
-          pergunta: pergunta || '',
-        }),
-      });
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
-      return json.resultado || '';
-    }
-
     if (window.IaChatWidget) {
       painel.style.display = 'none';
-      const widget = window.IaChatWidget.create({
-        title: 'IA Orçamentária',
-        subtitle: 'Assistente de análise de dotações',
-        buttonLabel: 'IA',
-        buttonTitle: 'Abrir IA Orçamentária',
-        chatPlaceholder: 'Ex: Qual secretaria tem maior saldo?',
-        emptyMessage: 'Carregue um período antes de usar a IA.',
-        actions: [
-          { id: 'analisar', label: 'Analisar', description: descs.analisar },
-          { id: 'anomalias', label: 'Anomalias', description: descs.anomalias },
-          { id: 'prioridades', label: 'Prioridades', description: descs.prioridades },
-          { id: 'cortes', label: 'Cortes', description: descs.cortes },
-          { id: 'remanejamento', label: 'Remanejamento', description: descs.remanejamento },
-          { id: 'relatorio', label: 'Relatório', description: descs.relatorio },
-          { id: 'chat', label: 'Chat', description: descs.chat }
-        ],
-        shortcuts: [
-          { label: 'Resumo executivo', action: 'analisar' },
-          { label: 'Riscos imediatos', action: 'anomalias' },
-          { label: 'Onde reforçar', action: 'prioridades' },
-          { label: 'Onde cortar', action: 'cortes' },
-          { label: 'Simular remanejamento', action: 'remanejamento' }
-        ],
-        hasData,
-        onRun: ({ action, question }) => runIaRequest(action, question)
+      btnAbrir.addEventListener('click', () => {
+        const instances = window.__iaChatWidgetInstances || {};
+        const widget = instances[`page:${location.pathname}`];
+        if (widget) widget.open();
+        else {
+           // Fallback if not yet initialized
+           const open = painel.style.display === 'block';
+           painel.style.display = open ? 'none' : 'block';
+           if (!open) setTab(activeAction);
+        }
       });
-
-      btnAbrir.addEventListener('click', () => widget.open());
       return;
     }
 

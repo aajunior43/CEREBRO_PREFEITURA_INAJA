@@ -3606,6 +3606,8 @@
             };
         }
 
+        window.buildKanbanContext = buildKanbanIaContext;
+
         async function askKanbanBoardAssistant(action, question) {
             const prompts = {
                 analisar: 'Faça uma leitura executiva do quadro Kanban, destacando carga de trabalho, gargalos, urgências e recomendações práticas.',
@@ -3639,31 +3641,6 @@
             const content = data?.choices?.[0]?.message?.content?.trim();
             if (!content) throw new Error('Resposta vazia da IA.');
             return content;
-        }
-
-        if (window.IaChatWidget) {
-            window.IaChatWidget.create({
-                title: 'IA de Tarefas',
-                subtitle: 'Assistente de execução do quadro Kanban',
-                buttonLabel: 'IA',
-                buttonTitle: 'Abrir IA de Tarefas',
-                chatPlaceholder: 'Ex: Qual tarefa devo atacar primeiro hoje?',
-                emptyMessage: 'Cadastre ou carregue tarefas antes de usar a IA.',
-                actions: [
-                    { id: 'analisar', label: 'Analisar', description: 'Resume o quadro e mostra gargalos operacionais.' },
-                    { id: 'prioridades', label: 'Prioridades', description: 'Ordena o que merece atenção imediata.' },
-                    { id: 'riscos', label: 'Riscos', description: 'Aponta atrasos, tarefas paradas e vencimentos.' },
-                    { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o quadro atual.' }
-                ],
-                shortcuts: [
-                    { label: 'Resumo do quadro', action: 'analisar' },
-                    { label: 'Tarefas críticas', action: 'prioridades' },
-                    { label: 'Tarefas paradas', action: 'riscos' },
-                    { label: 'Criar com IA', onClick: () => openAiCreate() }
-                ],
-                hasData: () => Array.isArray(tasks) && tasks.length > 0,
-                onRun: ({ action, question }) => askKanbanBoardAssistant(action, question)
-            });
         }
 
     </script>

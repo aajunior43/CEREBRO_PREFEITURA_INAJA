@@ -394,49 +394,61 @@
       return Boolean(selA && selB);
     }
 
-    function buildIaContext(rA, rB) {
-      const impA = rA.importacao || {};
-      const impB = rB.importacao || {};
-      const totaisA = rA.totais || {};
-      const totaisB = rB.totais || {};
-      const metricas = Object.keys({ ...totaisA, ...totaisB }).map((key) => {
-        const a = Number(totaisA[key] || 0);
-        const b = Number(totaisB[key] || 0);
+    window.buildComparisonContext = async function() {
+      if (!hasComparisonReady()) return buildGenericIaContext();
+      try {
+        const [rA, rB] = await Promise.all([carregarResumo(selA), carregarResumo(selB)]);
+        if (!rA || !rB) return buildGenericIaContext();
+        
+        const impA = rA.importacao || {};
+        const impB = rB.importacao || {};
+        const totaisA = rA.totais || {};
+        const totaisB = rB.totais || {};
+        const metricas = Object.keys({ ...totaisA, ...totaisB }).map((key) => {
+          const a = Number(totaisA[key] || 0);
+          const b = Number(totaisB[key] || 0);
+          return {
+            metrica: key,
+            periodo_a: a,
+            periodo_b: b,
+            variacao: b - a
+          };
+        }).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 12);
+
+        const secsA = rA.por_secretaria_valor || {};
+        const secsB = rB.por_secretaria_valor || {};
+        const secretarias = [...new Set([...Object.keys(secsA), ...Object.keys(secsB)])].map((sec) => ({
+          secretaria: sec,
+          periodo_a: secsA[sec] || 0,
+          periodo_b: secsB[sec] || 0,
+          variacao: (secsB[sec] || 0) - (secsA[sec] || 0)
+        })).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 15);
+
+        const funcA = rA.por_funcao || {};
+        const funcB = rB.por_funcao || {};
+        const funcoes = [...new Set([...Object.keys(funcA), ...Object.keys(funcB)])].map((funcao) => ({
+          funcao,
+          periodo_a: funcA[funcao] || 0,
+          periodo_b: funcB[funcao] || 0,
+          variacao: (funcB[funcao] || 0) - (funcA[funcao] || 0)
+        })).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 15);
+
         return {
-          metrica: key,
-          periodo_a: a,
-          periodo_b: b,
-          variacao: b - a
+          periodo: `${impA.periodo || 'A'} vs ${impB.periodo || 'B'}`,
+          total_rows: Number(impA.total_rows || 0) + Number(impB.total_rows || 0),
+          periodo_a: { id: impA.id, periodo: impA.periodo, descricao: impA.descricao || '', total_rows: impA.total_rows || 0, totais: totaisA },
+          periodo_b: { id: impB.id, periodo: impB.periodo, descricao: impB.descricao || '', total_rows: impB.total_rows || 0, totais: totaisB },
+          comparativo_metricas: metricas,
+          comparativo_secretarias: secretarias,
+          comparativo_funcoes: funcoes
         };
-      }).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 12);
+      } catch (e) {
+        return buildGenericIaContext();
+      }
+    }
 
-      const secsA = rA.por_secretaria_valor || {};
-      const secsB = rB.por_secretaria_valor || {};
-      const secretarias = [...new Set([...Object.keys(secsA), ...Object.keys(secsB)])].map((sec) => ({
-        secretaria: sec,
-        periodo_a: secsA[sec] || 0,
-        periodo_b: secsB[sec] || 0,
-        variacao: (secsB[sec] || 0) - (secsA[sec] || 0)
-      })).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 15);
-
-      const funcA = rA.por_funcao || {};
-      const funcB = rB.por_funcao || {};
-      const funcoes = [...new Set([...Object.keys(funcA), ...Object.keys(funcB)])].map((funcao) => ({
-        funcao,
-        periodo_a: funcA[funcao] || 0,
-        periodo_b: funcB[funcao] || 0,
-        variacao: (funcB[funcao] || 0) - (funcA[funcao] || 0)
-      })).sort((x, y) => Math.abs(y.variacao) - Math.abs(x.variacao)).slice(0, 15);
-
-      return {
-        periodo: `${impA.periodo || 'A'} vs ${impB.periodo || 'B'}`,
-        total_rows: Number(impA.total_rows || 0) + Number(impB.total_rows || 0),
-        periodo_a: { id: impA.id, periodo: impA.periodo, descricao: impA.descricao || '', total_rows: impA.total_rows || 0, totais: totaisA },
-        periodo_b: { id: impB.id, periodo: impB.periodo, descricao: impB.descricao || '', total_rows: impB.total_rows || 0, totais: totaisB },
-        comparativo_metricas: metricas,
-        comparativo_secretarias: secretarias,
-        comparativo_funcoes: funcoes
-      };
+    async function OLD_buildIaContext(rA, rB) { // temporary for compatibility while removing other functions
+      return window.buildComparisonContext();
     }
 
     async function callIaRelatorio(question = '') {

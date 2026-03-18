@@ -648,12 +648,100 @@
         actions: [
           { id: 'analisar', label: 'Analisar', description: 'Resume o lote atual e sugere padrões de nomenclatura.' },
           { id: 'categorizar', label: 'Categorias', description: 'Sugere separações e critérios para organização.' },
-          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre a padronização dos nomes.' }
+          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre la padronização dos nomes.' }
         ],
         shortcuts: [
           { label: 'Padrão sugerido', action: 'analisar' },
           { label: 'Categorias úteis', action: 'categorizar' }
         ]
+      },
+      '/pages/despesa-prefeitura.html': {
+        title: 'IA Orçamentária',
+        subtitle: 'Assistente de análise de dotações',
+        chatPlaceholder: 'Ex: Qual secretaria tem maior saldo?',
+        emptyMessage: 'Carregue um período antes de usar a IA.',
+        endpoint: '/api/despesas/ia',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Panorama geral do orçamento, saldos e execução.' },
+          { id: 'anomalias', label: 'Anomalias', description: 'Sinaliza baixos saldos, riscos e padrões estranhos.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Aponta onde reforçar recursos ou atenção.' },
+          { id: 'cortes', label: 'Cortes', description: 'Sugere onde conter gastos com menor impacto.' },
+          { id: 'remanejamento', label: 'Remanejamento', description: 'Simula trocas de saldo entre dotações.' },
+          { id: 'relatorio', label: 'Relatório', description: 'Gera resumo técnico para controle interno.' },
+          { id: 'chat', label: 'Chat', description: 'Pergunta livre sobre o orçamento carregado.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo executivo', action: 'analisar' },
+          { label: 'Riscos imediatos', action: 'anomalias' },
+          { label: 'Onde reforçar', action: 'prioridades' },
+          { label: 'Onde cortar', action: 'cortes' }
+        ],
+        contextBuilder() {
+          if (typeof window.buildContext === 'function') return window.buildContext();
+          return buildGenericIaContext();
+        }
+      },
+      '/pages/despesa-relatorios.html': {
+        title: 'IA dos Relatórios',
+        subtitle: 'Assistente comparativo de dotações',
+        chatPlaceholder: 'Ex: O que piorou do período A para o B?',
+        emptyMessage: 'Selecione dois períodos e compare antes de usar a IA.',
+        endpoint: '/api/despesas/ia',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Compara os períodos, variações e panorama.' },
+          { id: 'anomalias', label: 'Anomalias', description: 'Aponta variações bruscas ou riscos comparativos.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra onde focar a gestão no novo período.' },
+          { id: 'relatorio', label: 'Relatório', description: 'Gera análise técnica do comparativo.' },
+          { id: 'chat', label: 'Chat', description: 'Pergunta livre sobre a comparação.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo comparativo', action: 'analisar' },
+          { label: 'Riscos da comparação', action: 'anomalias' }
+        ],
+        contextBuilder() {
+          if (typeof window.buildComparisonContext === 'function') return window.buildComparisonContext();
+          return buildGenericIaContext();
+        }
+      },
+      '/pages/tarifas-bancarias.html': {
+        title: 'IA Financeira',
+        subtitle: 'Assistente para leitura de extratos e tarifas',
+        chatPlaceholder: 'Ex: Há alguma tarifa indevida neste extrato?',
+        emptyMessage: 'Envie um extrato e gere a análise antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o extrato, custos e principais achados.' },
+          { id: 'anomalias', label: 'Anomalias', description: 'Procura cobranças estranhas e riscos.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que conferir primeiro no extrato.' },
+          { id: 'chat', label: 'Chat', description: 'Pergunta livre sobre o extrato.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do extrato', action: 'analisar' },
+          { label: 'Tarifas suspeitas', action: 'anomalias' }
+        ],
+        contextBuilder() {
+          if (typeof window.buildFinancialContext === 'function') return window.buildFinancialContext();
+          return buildGenericIaContext();
+        }
+      },
+      '/pages/tarefas.html': {
+        title: 'IA de Tarefas',
+        subtitle: 'Assistente para organização de atividades e prioridades',
+        chatPlaceholder: 'Ex: Quais tarefas devo focar para terminar o dia bem?',
+        emptyMessage: 'Cadastre tarefas antes de usar a IA.',
+        actions: [
+          { id: 'analisar', label: 'Analisar', description: 'Resume o quadro de tarefas e gargalos.' },
+          { id: 'prioridades', label: 'Prioridades', description: 'Ordena o que deve ser feito primeiro.' },
+          { id: 'riscos', label: 'Riscos', description: 'Aponta atrasos e tarefas críticas.' },
+          { id: 'chat', label: 'Chat', description: 'Pergunta livre sobre suas tarefas.' }
+        ],
+        shortcuts: [
+          { label: 'Resumo do quadro', action: 'analisar' },
+          { label: 'O que fazer hoje', action: 'prioridades' }
+        ],
+        contextBuilder() {
+          if (typeof window.buildKanbanContext === 'function') return window.buildKanbanContext();
+          return buildGenericIaContext();
+        }
       }
     };
 
@@ -693,9 +781,22 @@
 
     async function runGenericIaRequest(pageConfig, action, question) {
       const apiKey = localStorage.getItem('api_openrouter_key') || localStorage.getItem('ext_ia_key') || '';
-      if (!apiKey) throw new Error('Configure a chave OpenRouter em ADM antes de usar a IA.');
+      if (!apiKey && !pageConfig.endpoint) throw new Error('Configure a chave OpenRouter em ADM antes de usar a IA.');
       const model = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || 'openrouter/free';
       const context = typeof pageConfig.contextBuilder === 'function' ? pageConfig.contextBuilder() : buildGenericIaContext();
+
+      if (pageConfig.endpoint) {
+        // Specialized endpoint (like /api/despesas/ia)
+        const resp = await fetch(pageConfig.endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, contexto: context, pergunta: question || '' })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(data.error?.message || data.error || `Erro HTTP ${resp.status}`);
+        return data.resultado || 'Sem resposta da IA.';
+      }
+
       const prompts = {
         analisar: 'Faça uma análise objetiva da aba atual, destacando panorama, achados e pontos que merecem atenção.',
         prioridades: 'Liste as prioridades práticas e a ordem recomendada de atuação na aba atual.',
