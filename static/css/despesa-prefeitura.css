@@ -1355,3 +1355,94 @@ h3 {
   font-size: 0.9rem;
   opacity: 0.8;
 }
+
+/* Keep print rules at the end so screen styles do not override the PDF layout. */
+@media print {
+  .table-wrap,
+  .table-wrap.grid-mode {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .table-wrap.grid-mode #dataTable tbody,
+  #dataTable tbody {
+    display: table-row-group !important;
+  }
+
+  .table-wrap.grid-mode #dataTable tbody tr,
+  #dataTable tbody tr {
+    display: table-row !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    min-height: 0 !important;
+    border: none !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    transform: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .table-wrap.grid-mode #dataTable tbody tr td,
+  #dataTable tbody tr td,
+  .table-wrap.grid-mode #dataTable td,
+  #dataTable td {
+    display: table-cell !important;
+    min-width: auto !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 6px 8px !important;
+    border: 1px solid #ccc !important;
+    border-top: 1px solid #ccc !important;
+    flex: none !important;
+    background: transparent !important;
+    color: #000 !important;
+    white-space: normal !important;
+  }
+
+  .table-wrap.grid-mode #dataTable td::before,
+  #dataTable td::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .table-wrap.grid-mode #dataTable td.col-saldo,
+  #dataTable td.col-saldo {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding-top: 6px !important;
+    border-top: 1px solid #ccc !important;
+    text-align: right !important;
+    font-weight: bold !important;
+    font-size: 9pt !important;
+    white-space: nowrap !important;
+  }
+
+  .table-wrap.grid-mode #dataTable th,
+  #dataTable th {
+    padding: 6px 8px !important;
+    border: 1px solid #ccc !important;
+    border-bottom: 2px solid #000 !important;
+    background: #f0f0f0 !important;
+    color: #000 !important;
+  }
+
+  body.print-selected .print-card {
+    display: block !important;
+    max-width: none !important;
+    margin: 1rem 0 0 !important;
+    padding: 1.25rem !important;
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+  }
+
+  body.print-selected .print-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem 1.25rem !important;
+  }
+}
