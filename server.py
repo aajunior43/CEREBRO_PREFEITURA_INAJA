@@ -3026,6 +3026,18 @@ def classificador_despesa_historico_delete(hid):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/classificador-despesa/historico", methods=["DELETE"])
+def classificador_despesa_historico_limpar():
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM classificador_despesa_historico")
+        conn.commit()
+        return jsonify({"ok": True, "cleared": True})
+    except Exception as e:
+        app.logger.error("DELETE /api/classificador-despesa/historico: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/kanban", methods=["GET"])
 def kanban_listar():
     try:
