@@ -97,20 +97,16 @@ PROMPT_TEMPLATES = {
             "Contabilidade Aplicada ao Setor Público (MCASP) vigente (11ª edição/2025 em diante). "
             "Hoje é {today}. A Prefeitura Municipal de Inajá-PR deseja classificar a despesa corretamente. "
             "{response_style} "
-            "Aplique mentalmente o seguinte checklist antes de responder: "
-            "(1) Consumo vs. Permanente: use os critérios da Portaria STN nº 448/2002 — Durabilidade (<2 anos), "
-            "Fragilidade, Perecibilidade, Incorporabilidade e Transformabilidade. Material de reparo sem aumento "
-            "de vida útil ou capacidade = 3.3.90.30. Peças de reposição (salvo reforma valorizadora) = 3.3.90.30. "
-            "Bem com vida útil >2 anos não incorporado a imóvel = 4.4.90.52. "
-            "(2) Serviços: Pessoa Física sem vínculo empregatício = elemento 36 (subel. 3.3.90.36). "
-            "Pessoa Jurídica = elemento 39 (subel. 3.3.90.39). Serviços de tecnologia = 3.3.90.39. "
-            "(3) Obras vs. Reparos: reforma que amplia área ou aumenta vida útil = 4.4.90.51. "
-            "Pintura, reparo simples, manutenção = 3.3.90.39 (serviço) ou 3.3.90.30 (material separado). "
-            "(4) Veículos (carros, motos, caminhões, ambulâncias, ônibus): SÃO BENS PERMANENTES. "
-            "Classificação correta: GND 4 (Investimento), Elemento 52, Subelemento 4.4.90.52 "
-            "(Equipamentos e Material Permanente). NUNCA classifique veículos como serviço ou material de consumo. "
-            "(5) Combustível, lubrificantes, peças de manutenção veicular = 3.3.90.30 (Material de Consumo). "
-            "(6) Dê preferência à nomenclatura do elenco de contas do TCE-PR (SIM-AM). "
+            "Siga ESTE PROCESSO em ordem:\n"
+            "1ª ETAPA — Leia os resultados da busca web (seção CONTEXTO WEB) que contêm informações atualizadas sobre classificação contábil. "
+            "2ª ETAPA — Aplique o checklist: "
+            "(a) Consumo vs. Permanente: Portaria STN nº 448/2002 — Durabilidade (<2 anos), Fragilidade, Perecibilidade. "
+            "Material de consumo = 3.3.90.30. Bem permanente >2 anos não incorporado a imóvel = 4.4.90.52. "
+            "(b) Serviços: PF sem vínculo = elemento 36. PJ = elemento 39. "
+            "(c) Obras: reforma valorizadora = 4.4.90.51. Reparo simples = 3.3.90.39. "
+            "(d) Veículos (carros, motos, ambulâncias, ônibus): SEMPRE 4.4.90.52 (Investimento). "
+            "(e) Combustível e lubrificantes: SEMPRE 3.3.90.30 (Custeio). "
+            "3ª ETAPA — Cruze as informações da busca web com o checklist e defina a classificação mais precisa. "
             "Responda APENAS com JSON válido no seguinte formato exato: "
             '{{"item_analisado":"...","codigo_completo":"...","grupo":"...","modalidade":"...","elemento":"...",'
             '"subelemento_codigo":"...","subelemento_nome":"...","justificativa":"...","ponto_atencao":"...",'
@@ -128,7 +124,7 @@ PROMPT_TEMPLATES = {
             '{{"codigo_completo":"...","subelemento_nome":"...","justificativa":"..."}} '
             "representando as classificações concorrentes mais prováveis, em ordem decrescente de probabilidade."
         ),
-        user_template="Classifique a seguinte despesa da Prefeitura de Inajá-PR:\n\n{item}",
+        user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
     ),
 }
 
