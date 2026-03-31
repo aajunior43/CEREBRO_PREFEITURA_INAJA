@@ -162,10 +162,6 @@ PROMPT_TEMPLATES = {
         ),
         user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
     ),
-        user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
-    ),
-        user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
-    ),
 }
 
 
