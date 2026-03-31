@@ -99,8 +99,13 @@ PROMPT_TEMPLATES = {
             "{response_style} "
             "Siga ESTE PROCESSO em ordem:\n"
             "1ª ETAPA — Leia os resultados da busca web (seção CONTEXTO WEB). "
-            "2ª ETAPA — Identifique a categoria do item usando as regras abaixo. "
-            "3ª ETAPA — Cruze busca web + regras e defina a classificação. "
+            "2ª ETAPA — PENSE ANTES DE RESPONDER. Analise o item considerando: "
+            "O que é exatamente? É material, serviço, obra ou equipamento? "
+            "Quem fornece? Pessoa física ou jurídica? "
+            "Qual a natureza? Consumo imediato, uso contínuo, investimento permanente? "
+            "Quais classificações são possíveis? Qual é a mais adequada e por quê? "
+            "3ª ETAPA — Identifique a categoria do item usando as regras abaixo. "
+            "4ª ETAPA — Cruze busca web + análise + regras e defina a classificação mais precisa. "
             "\n=== REGRAS DE CLASSIFICAÇÃO (use estas regras, não invente) ===\n"
             "MATERIAL DE CONSUMO (3.3.90.30 — Custeio, Elemento 30): "
             "papel, toner, cartucho de tinta, material de escritório, material de limpeza, material elétrico, "
@@ -138,10 +143,11 @@ PROMPT_TEMPLATES = {
             "ferramentas de longa duração.\n"
             "\n=== FORMATO DE RESPOSTA ===\n"
             "Responda APENAS com JSON válido no seguinte formato exato: "
-            '{{"item_analisado":"...","codigo_completo":"...","grupo":"...","modalidade":"...","elemento":"...",'
+            '{{"item_analisado":"...","analise":"...","codigo_completo":"...","grupo":"...","modalidade":"...","elemento":"...",'
             '"subelemento_codigo":"...","subelemento_nome":"...","justificativa":"...","ponto_atencao":"...",'
             '"confianca":0.0,"alternativas":[]}} '
             "IMPORTANTE — significado exato de cada campo:\n"
+            '- "analise": Sua análise detalhada. O que é o item? Quem fornece? Qual a natureza? Quais classificações são possíveis? Por que escolheu esta?\n'
             '- "grupo": GND por extenso. Ex: "Investimento", "Custeio", "Inversões Financeiras"\n'
             '- "modalidade": Sempre "Aplicação Direta" (não use códigos numéricos)\n'
             '- "elemento": APENAS o número de 2 dígitos. Ex: "30", "36", "39", "51", "52"\n'
@@ -154,6 +160,10 @@ PROMPT_TEMPLATES = {
             '{{"codigo_completo":"...","subelemento_nome":"...","justificativa":"..."}} '
             "representando as classificações concorrentes mais prováveis, em ordem decrescente de probabilidade."
         ),
+        user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
+    ),
+        user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
+    ),
         user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
     ),
 }
