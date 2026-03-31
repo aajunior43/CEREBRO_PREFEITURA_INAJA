@@ -169,11 +169,16 @@ class AITaskFacade:
         )
 
     def classificar_despesa(
-        self, item: str, use_cache: bool = True
+        self, item: str, use_cache: bool = True, web_context: str = ""
     ) -> TaskResult | dict[str, Any]:
+        contexto_extra = ""
+        if web_context:
+            contexto_extra = f"\n\n{web_context}"
         response = self.service.chat_by_task(
             task_type="classificacao_despesa",
-            messages=build_prompt("classificador_despesa", item=limit_text(item, 2000)),
+            messages=build_prompt(
+                "classificador_despesa", item=limit_text(item, 2000) + contexto_extra
+            ),
             temperature=0.1,
             max_tokens=800,
             use_cache=use_cache,

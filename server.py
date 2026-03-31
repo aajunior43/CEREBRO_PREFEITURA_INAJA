@@ -60,6 +60,7 @@ ALLOWED_CONFIG_KEYS = {
     "api_openrouter_modelo",
     "api_cnpja_key",
     "api_autentique_key",
+    "api_tavily_key",
 }
 
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
@@ -1947,6 +1948,15 @@ def _get_openrouter_config(conn, api_key_override: str = "", model_override: str
     return api_key, model
 
 
+def _get_tavily_config(conn, api_key_override: str = ""):
+    rows = conn.execute(
+        "SELECT valor FROM configuracoes WHERE chave=?",
+        ("api_tavily_key",),
+    ).fetchall()
+    cfg_val = rows[0]["valor"] if rows else ""
+    return (api_key_override or cfg_val or os.environ.get("TAVILY_API_KEY", "")).strip()
+
+
 def _normalize_openrouter_free_model(model: str) -> str:
     normalized = (model or "").strip()
     if not normalized:
@@ -2874,9 +2884,29 @@ def classificador_despesa():
                 "error": "Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API."
             }
         ), 400
+
+    # Busca contexto web via Tavily (se configurado)
+    web_context = ""
+    tavily_key = _get_tavily_config(
+        conn, api_key_override=(data.get("tavily_key") or "").strip()
+    )
+    tavily_used = False
+    if tavily_key:
+        try:
+            from services.tavily_service import build_tavily_service
+
+            tavily = build_tavily_service(api_key=tavily_key, logger=app.logger)
+            query = f"classificação contábil despesa pública {item} TCE MCASP elemento despesa"
+            web_context = tavily.search_as_context(query, max_results=3)
+            tavily_used = bool(web_context)
+        except Exception as tavily_err:
+            app.logger.warning(
+                "classificador_despesa: Tavily search failed: %s", tavily_err
+            )
+
     try:
         facade = _build_ai_facade(api_key, model)
-        result = facade.classificar_despesa(item)
+        result = facade.classificar_despesa(item, web_context=web_context)
         used_model = model
         used_cached = False
         if isinstance(result, dict):
@@ -2914,13 +2944,21 @@ def classificador_despesa():
             return jsonify(
                 {
                     "resultado": result,
-                    "meta": {"model": used_model, "cached": used_cached},
+                    "meta": {
+                        "model": used_model,
+                        "cached": used_cached,
+                        "tavily_search": tavily_used,
+                    },
                 }
             )
         return jsonify(
             {
                 "resultado": {"item_analisado": item, "raw": result.content},
-                "meta": {"model": result.model, "cached": result.cached},
+                "meta": {
+                    "model": result.model,
+                    "cached": result.cached,
+                    "tavily_search": tavily_used,
+                },
             }
         )
     except AIServiceError as err:
