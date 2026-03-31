@@ -3360,8 +3360,7 @@ body.home-page.home-active .dept-stats-row,
 body.home-page.home-active .progress-section,
 body.home-page.home-active .toolbar,
 body.home-page.home-active .main-content,
-body.home-page.home-active .adm-panel,
-body.home-page.home-active .footer {
+body.home-page.home-active .adm-panel {
   display: none;
 }
 
