@@ -251,6 +251,20 @@ class AITaskFacade:
         ]
         is_servico_pf = any(kw in item_lower for kw in servicos_pf_keywords)
 
+        # Certificados digitais (A1, A3, e-CPF, e-CNPJ) = serviço PJ
+        certificado_keywords = [
+            "certificado",
+            "a1",
+            "a3",
+            "e-cpf",
+            "e-cnpj",
+            "certificação digital",
+            "certificacao digital",
+            "token digital",
+            "assinatura digital",
+        ]
+        is_certificado = any(kw in item_lower for kw in certificado_keywords)
+
         if is_veiculo and not subel.startswith("4.4.90.52"):
             result["grupo"] = "Investimento"
             result["modalidade"] = "Aplicação Direta"
