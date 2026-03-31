@@ -28,6 +28,8 @@
       document.documentElement.setAttribute('data-theme', 'dark');
     } else if (saved === 'vintage') {
       document.documentElement.setAttribute('data-theme', 'vintage');
+    } else if (saved === 'cosmos') {
+      document.documentElement.setAttribute('data-theme', 'cosmos');
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
@@ -41,6 +43,9 @@
     } else if (current === 'dark') {
       document.documentElement.setAttribute('data-theme', 'vintage');
       localStorage.setItem('theme', 'vintage');
+    } else if (current === 'vintage') {
+      document.documentElement.setAttribute('data-theme', 'cosmos');
+      localStorage.setItem('theme', 'cosmos');
     } else {
       document.documentElement.removeAttribute('data-theme');
       localStorage.setItem('theme', 'light');
@@ -51,10 +56,90 @@
     const current = document.documentElement.getAttribute('data-theme') || 'light';
     let text = 'Tema Escuro';
     if (current === 'dark') text = 'Tema Vintage';
-    if (current === 'vintage') text = 'Tema Claro';
+    if (current === 'vintage') text = 'Tema Cosmos';
+    if (current === 'cosmos') text = 'Tema Claro';
     document.querySelectorAll('.shd-theme-label').forEach(el => {
       el.textContent = text;
     });
+  }
+
+  function initCosmosEffects() {
+    if (window.__cosmosEffectsInitialized) return;
+    window.__cosmosEffectsInitialized = true;
+
+    const cosmosState = {
+      timer: null,
+    };
+
+    function isCosmosTheme() {
+      return document.documentElement.getAttribute('data-theme') === 'cosmos';
+    }
+
+    function prefersReducedMotion() {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
+    function clearTimer() {
+      if (cosmosState.timer) {
+        clearTimeout(cosmosState.timer);
+        cosmosState.timer = null;
+      }
+    }
+
+    function createComet() {
+      if (!isCosmosTheme() || prefersReducedMotion() || document.hidden || !document.body) return;
+
+      const comet = document.createElement('div');
+      comet.className = 'cosmic-comet';
+
+      const fromLeft = Math.random() > 0.45;
+      const startX = fromLeft ? -220 : window.innerWidth + 220;
+      const startY = Math.round(window.innerHeight * (0.06 + Math.random() * 0.34));
+      const moveX = fromLeft ? window.innerWidth + 420 : -(window.innerWidth + 420);
+      const moveY = Math.round(window.innerHeight * (0.14 + Math.random() * 0.22));
+      const angle = fromLeft ? `${8 + Math.random() * 9}deg` : `${172 - Math.random() * 9}deg`;
+      const duration = `${3.6 + Math.random() * 2.8}s`;
+
+      comet.style.setProperty('--startX', `${startX}px`);
+      comet.style.setProperty('--startY', `${startY}px`);
+      comet.style.setProperty('--moveX', `${moveX}px`);
+      comet.style.setProperty('--moveY', `${moveY}px`);
+      comet.style.setProperty('--angle', angle);
+      comet.style.setProperty('--duration', duration);
+      comet.style.setProperty('--comet-length', `${80 + Math.round(Math.random() * 60)}px`);
+
+      comet.addEventListener('animationend', () => comet.remove(), { once: true });
+      document.body.appendChild(comet);
+    }
+
+    function scheduleNextComet() {
+      clearTimer();
+      if (!isCosmosTheme() || prefersReducedMotion()) return;
+      const delay = 8000 + Math.random() * 10000;
+      cosmosState.timer = window.setTimeout(() => {
+        createComet();
+        scheduleNextComet();
+      }, delay);
+    }
+
+    function syncCosmosEffects() {
+      if (!document.body) return;
+      document.body.classList.toggle('cosmos-active', isCosmosTheme());
+      if (isCosmosTheme()) scheduleNextComet();
+      else clearTimer();
+    }
+
+    new MutationObserver(syncCosmosEffects).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearTimer();
+      else syncCosmosEffects();
+    });
+
+    syncCosmosEffects();
   }
   initTheme();
 
@@ -62,10 +147,11 @@
   const NAV_ITEMS = {
     documentos: [
       { href: '/pages/documentos.html',      name: 'Centro de Documentos',   desc: 'Salvar e organizar arquivos' },
-      { href: '/pages/rpa.html',             name: 'RPA',                    desc: 'Recibo de Pagamento Autônomo' },
+      { href: '/pages/rpa.html',             name: 'Gerador de RPAs',        desc: 'Recibo de Pagamento Autônomo' },
       { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
-      { href: '/pages/assistente-empenho.html', name: 'Assistente de Empenho', desc: 'Gerar descrição de empenho com IA' },
-      { href: '/pages/visualizador.html',    name: 'Relatório de Empenhos',  desc: 'Visualizar e filtrar empenhos' },
+      { href: '/pages/assistente-empenho.html', name: 'Gerador de Descrição para Empenhos', desc: 'Gerar descrição de empenho com IA' },
+      { href: '/pages/classificador-despesa.html', name: 'Classificador de Despesas', desc: 'Identificar desdobramento correto da despesa (TCE-PR)' },
+      { href: '/pages/visualizador.html',    name: 'Relação de Empenhos Emitidos',  desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
       { href: '/pages/prazos.html',          name: 'Prazos',                 desc: 'Contratos e prazos críticos' },
       { href: '/pages/protocolo.html',       name: 'Protocolo',              desc: 'Ofícios, memorandos e documentos' },
@@ -73,16 +159,16 @@
     ],
     financeiro: [
       { href: '/pages/tarifas-bancarias.html',    name: 'Análise de Tarifas Bancárias', desc: 'Leitura de extratos e encargos' },
-      { href: '/pages/fornecimento.html',         name: 'Solicitações de Aquisição',    desc: 'Pedidos e fluxo de compras' },
-      { href: '/pages/despesa-prefeitura.html',   name: 'Execução das Dotações',        desc: 'Consulta de despesas e dotações' },
+      { href: '/pages/fornecimento.html',         name: 'Gerador de Solicitação de Compra ou Serviço',    desc: 'Pedidos e fluxo de compras' },
+      { href: '/pages/despesa-prefeitura.html',   name: 'Dotação Orçamentária',        desc: 'Consulta de despesas e dotações' },
       { href: '/pages/despesa-relatorios.html',   name: 'Comparativo Orçamentário',     desc: 'Comparar períodos e histórico' },
     ],
     ferramentas: [
       { href: '/pages/cnpj.html',       name: 'Consulta de CNPJ',       desc: 'Consultar dados de empresas' },
-      { href: '/pages/renomear.html',   name: 'Renomeador com IA',      desc: 'Padronizar nomes de documentos' },
+      { href: '/pages/renomear.html',   name: 'Renomeador de Arquivos',  desc: 'Padronizar nomes de documentos' },
       { href: '/pages/calculadora-diarias.html', name: 'Calculadora de Diárias', desc: 'Calcular diárias de viagens' },
       { href: '/pages/tarefas.html',    name: 'Painel de Tarefas',      desc: 'Gerenciar atividades' },
-      { href: '/pages/calendario.html', name: 'Calendário Administrativo', desc: 'Calendário de pagamentos' },
+      { href: '/pages/calendario.html', name: 'Calendário', desc: 'Calendário de pagamentos' },
       { href: '/pages/manual.html',     name: 'Manual do Sistema',      desc: 'Guia completo do sistema' },
     ],
   };
@@ -118,8 +204,6 @@
         <a href="/" style="display:flex;align-items:center;text-decoration:none;">
           <img src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:48px;width:auto;object-fit:contain;" />
           <div class="header-title" style="margin-left:10px;">
-            <h1>Prefeitura de Inajá</h1>
-            <p>Gestão Municipal</p>
           </div>
         </a>
       </div>
@@ -209,6 +293,7 @@
 
   /* ── Injeta + Event listeners após DOM pronto ───────────────*/
   function initDOM() {
+    initCosmosEffects();
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
 
     /* ── Breadcrumb ──────────────────────────────────────────── */

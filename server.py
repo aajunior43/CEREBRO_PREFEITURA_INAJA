@@ -19,6 +19,12 @@ import mimetypes
 import sys
 import urllib.error
 import requests
+
+# Garante que o terminal no Windows use UTF-8 (evita UnicodeEncodeError com CP1252)
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 import urllib.error as _urllib_error
@@ -27,7 +33,7 @@ from flask import Flask, request, jsonify, send_from_directory, send_file, Respo
 from config import settings
 from services.empenhos_service import listar_empenhos_mes, listar_historico_credor, persistir_empenho
 from services.extratos_service import listar_subpastas, processar_extratos, validar_origem_destino
-from services.ai_tasks import AITaskFacade
+from services.ai_tasks import AITaskFacade, serialize_task_result
 from services.openrouter_service import AIServiceError, build_openrouter_service, chat_completion, listar_modelos, parse_http_error
 
 # ── Configurações ───────────────────────────────────────────
@@ -284,6 +290,8 @@ def ensure_db_indexes(cur):
     cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_referencia ON documentos_centro(referencia)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_criado_em ON documentos_centro(criado_em)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_categoria_ref ON documentos_centro(categoria, referencia)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenho_hist_action ON empenho_assistente_historico(action)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenho_hist_created ON empenho_assistente_historico(criado_em)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_importacoes_periodo ON despesas_importacoes(periodo)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_linhas_importacao ON despesas_linhas(importacao_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_importacoes_periodo ON empenhos_importacoes(periodo)")
@@ -692,7 +700,40 @@ def init_db():
             atualizado_em   TEXT    DEFAULT (datetime('now', 'localtime'))
         )
     """)
-
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS empenho_assistente_historico (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            action              TEXT    NOT NULL,
+            payload_json        TEXT    NOT NULL DEFAULT '{}',
+            resultado_json      TEXT    NOT NULL DEFAULT '{}',
+            campos_json         TEXT    NOT NULL DEFAULT '{}',
+            checklist_json      TEXT    NOT NULL DEFAULT '{}',
+            descricao_base      TEXT    DEFAULT '',
+            descricao_melhorada TEXT    DEFAULT '',
+            diff_json           TEXT    NOT NULL DEFAULT '{}',
+            model               TEXT    DEFAULT '',
+            cached              INTEGER DEFAULT 0,
+            criado_em           TEXT    DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS classificador_despesa_historico (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            item             TEXT    NOT NULL,
+            codigo_completo  TEXT    NOT NULL DEFAULT '',
+            grupo            TEXT    DEFAULT '',
+            modalidade       TEXT    DEFAULT '',
+            elemento         TEXT    DEFAULT '',
+            subelemento      TEXT    DEFAULT '',
+            justificativa    TEXT    DEFAULT '',
+            ponto_atencao    TEXT    DEFAULT '',
+            confianca        REAL    DEFAULT 0.0,
+            resultado_json   TEXT    NOT NULL DEFAULT '{}',
+            model            TEXT    DEFAULT '',
+            cached           INTEGER DEFAULT 0,
+            criado_em        TEXT    DEFAULT (datetime('now', 'localtime'))
+        )
+    """)
     # Popula credores iniciais se a tabela estiver vazia
     count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
     if count == 0 and os.path.exists(DATA_JS):
@@ -1483,6 +1524,176 @@ def _build_ai_service(api_key: str, model: str):
 def _build_ai_facade(api_key: str, model: str):
     return AITaskFacade(_build_ai_service(api_key, model))
 
+
+def _clean_value(value):
+    if value is None:
+        return ''
+    if isinstance(value, str):
+        return value.strip()
+    return str(value).strip()
+
+
+def _normalize_empenho_payload(payload: dict) -> dict:
+    data = dict(payload or {})
+    normalized = {
+        'secretaria': _clean_value(data.get('secretaria')),
+        'fornecedor': _clean_value(data.get('fornecedor')),
+        'tipo_despesa': _clean_value(data.get('tipo_despesa')),
+        'finalidade': _clean_value(data.get('finalidade')),
+        'valor': _clean_value(data.get('valor')),
+        'competencia': _clean_value(data.get('competencia')),
+        'processo': _clean_value(data.get('processo')),
+        'pregao': _clean_value(data.get('pregao')),
+        'contrato': _clean_value(data.get('contrato')),
+        'nota_fiscal': _clean_value(data.get('nota_fiscal')),
+        'texto_base': _clean_value(data.get('texto_base')),
+        'descricao_atual': _clean_value(data.get('descricao_atual')),
+        'observacoes': _clean_value(data.get('observacoes')),
+        'fonte': _clean_value(data.get('fonte')),
+        'arquivo_nome': _clean_value(data.get('arquivo_nome')),
+        'arquivo_tipo': _clean_value(data.get('arquivo_tipo')),
+    }
+    return normalized
+
+
+def _serialize_json(value):
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return '{}'
+        try:
+            json.loads(text)
+            return text
+        except Exception:
+            return json.dumps({'texto': text}, ensure_ascii=False)
+    if value is None:
+        return '{}'
+    try:
+        return json.dumps(value, ensure_ascii=False, default=str)
+    except Exception:
+        return json.dumps({'texto': str(value)}, ensure_ascii=False)
+
+
+def _extract_text_from_result(result):
+    if isinstance(result, dict):
+        return _serialize_json(result)
+    if hasattr(result, 'content'):
+        return result.content or ''
+    if result is None:
+        return ''
+    return str(result)
+
+
+def _build_empenho_diff(before_text: str, after_text: str) -> dict:
+    from difflib import SequenceMatcher
+
+    before = _clean_value(before_text)
+    after = _clean_value(after_text)
+    if before == after:
+        return {
+            'changed': False,
+            'before_len': len(before),
+            'after_len': len(after),
+            'summary': 'Sem alteracao',
+            'before_excerpt': before[:240],
+            'after_excerpt': after[:240],
+        }
+
+    matcher = SequenceMatcher(None, before, after)
+    segments = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == 'equal':
+            continue
+        segments.append({
+            'tag': tag,
+            'before': before[i1:i2],
+            'after': after[j1:j2],
+        })
+
+    first = segments[0] if segments else {'before': '', 'after': ''}
+    return {
+        'changed': True,
+        'before_len': len(before),
+        'after_len': len(after),
+        'segments': segments[:6],
+        'summary': 'Texto revisado com ajustes pontuais.',
+        'before_excerpt': before[:240],
+        'after_excerpt': after[:240],
+        'first_change': {
+            'before': first.get('before', '')[:180],
+            'after': first.get('after', '')[:180],
+        },
+    }
+
+
+def _save_empenho_assistente_history(conn, action: str, payload: dict, result, meta: dict | None = None) -> int:
+    meta = meta or {}
+    extracted = {}
+    checklist = {}
+    descricao_base = ''
+    descricao_melhorada = ''
+    diff = {}
+
+    if action == 'extract_fields' and isinstance(result, dict):
+        extracted = result
+    elif action == 'checklist' and isinstance(result, dict):
+        checklist = result
+    elif action == 'generate_description':
+        descricao_base = _extract_text_from_result(result)
+    elif action == 'improve_description':
+        descricao_melhorada = _extract_text_from_result(result)
+    elif action == 'review_bundle' and isinstance(result, dict):
+        extracted = result.get('campos') if isinstance(result.get('campos'), dict) else {}
+        checklist = result.get('checklist') if isinstance(result.get('checklist'), dict) else {}
+        descricao_base = _clean_value(result.get('descricao_base'))
+        descricao_melhorada = _clean_value(result.get('descricao_melhorada'))
+        diff = result.get('diff') if isinstance(result.get('diff'), dict) else {}
+
+    if not diff and (descricao_base or descricao_melhorada):
+        diff = _build_empenho_diff(descricao_base, descricao_melhorada or descricao_base)
+
+    result_payload = serialize_task_result(result) if not isinstance(result, dict) else result
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO empenho_assistente_historico (
+            action, payload_json, resultado_json, campos_json, checklist_json,
+            descricao_base, descricao_melhorada, diff_json, model, cached
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            action,
+            _serialize_json(payload),
+            _serialize_json(result_payload),
+            _serialize_json(extracted),
+            _serialize_json(checklist),
+            descricao_base,
+            descricao_melhorada,
+            _serialize_json(diff),
+            _clean_value(meta.get('model')),
+            1 if meta.get('cached') else 0,
+        ),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def _format_empenho_history_row(row):
+    return {
+        'id': row['id'],
+        'action': row['action'],
+        'payload': json.loads(row['payload_json'] or '{}'),
+        'resultado': json.loads(row['resultado_json'] or '{}'),
+        'campos': json.loads(row['campos_json'] or '{}'),
+        'checklist': json.loads(row['checklist_json'] or '{}'),
+        'descricao_base': row['descricao_base'] or '',
+        'descricao_melhorada': row['descricao_melhorada'] or '',
+        'diff': json.loads(row['diff_json'] or '{}'),
+        'model': row['model'] or '',
+        'cached': bool(row['cached']),
+        'criado_em': row['criado_em'],
+    }
+
 def _parse_autentique_keys(value: str) -> list[str]:
     text = (value or '').replace('\r', '\n')
     raw_items = []
@@ -2009,27 +2220,34 @@ def proxy_ia_chat():
 def empenho_assistente():
     data = request.get_json(silent=True) or {}
     action = (data.get('action') or '').strip()
-    payload = data.get('payload') or {}
+    payload = _normalize_empenho_payload(data.get('payload') or {})
 
     conn = get_db()
     api_key, model = _get_openrouter_config(conn)
     if not api_key:
         return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API.'}), 400
-    if action not in {'extract_fields', 'generate_description', 'checklist', 'improve_description'}:
-        return jsonify({'error': 'Acao invalida. Use: extract_fields, generate_description, checklist, improve_description.'}), 400
+    if action not in {'extract_fields', 'generate_description', 'checklist', 'improve_description', 'review_bundle'}:
+        return jsonify({'error': 'Acao invalida. Use: extract_fields, generate_description, checklist, improve_description, review_bundle.'}), 400
     try:
         facade = _build_ai_facade(api_key, model)
         result = facade.gerar_texto_empenho(payload, acao=action)
-        if isinstance(result, dict):
-            return jsonify({'action': action, 'resultado': result})
-        return jsonify({
-            'action': action,
-            'resultado': result.content,
-            'meta': {
+        meta = {'model': model, 'cached': False, 'usage': {}}
+        if hasattr(result, 'model'):
+            meta = {
                 'model': result.model,
                 'cached': result.cached,
                 'usage': result.usage,
             }
+
+        history_id = _save_empenho_assistente_history(conn, action, payload, result, meta=meta)
+        if isinstance(result, dict):
+            response = {'action': action, 'resultado': result, 'history_id': history_id, 'meta': meta}
+            return jsonify(response)
+        return jsonify({
+            'action': action,
+            'resultado': result.content,
+            'history_id': history_id,
+            'meta': meta,
         })
     except ValueError as err:
         return jsonify({'error': str(err)}), 400
@@ -2038,6 +2256,139 @@ def empenho_assistente():
     except Exception as err:
         app.logger.error('POST /api/empenho-assistente: %s', err)
         return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/empenho-assistente/historico', methods=['GET'])
+def empenho_assistente_historico():
+    try:
+        conn = get_db()
+        try:
+            limit = int(request.args.get('limit', 12) or 12)
+        except (TypeError, ValueError):
+            limit = 12
+        limit = min(max(limit, 1), 50)
+        rows = conn.execute(
+            """
+            SELECT id, action, payload_json, resultado_json, campos_json, checklist_json,
+                   descricao_base, descricao_melhorada, diff_json, model, cached, criado_em
+            FROM empenho_assistente_historico
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,)
+        ).fetchall()
+        return jsonify({'items': [_format_empenho_history_row(row) for row in rows]})
+    except Exception as e:
+        app.logger.error('GET /api/empenho-assistente/historico: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/classificador-despesa', methods=['POST'])
+def classificador_despesa():
+    data = request.get_json(silent=True) or {}
+    item = (data.get('item') or '').strip()
+    if not item:
+        return jsonify({'error': 'Informe o item ou serviço a ser classificado.'}), 400
+    conn = get_db()
+    api_key, model = _get_openrouter_config(conn)
+    if not api_key:
+        return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API.'}), 400
+    try:
+        facade = _build_ai_facade(api_key, model)
+        result = facade.classificar_despesa(item)
+        used_model = model
+        used_cached = False
+        if isinstance(result, dict):
+            used_model = result.pop('_model', model)
+            used_cached = result.pop('_cached', False)
+            # Salva no histórico
+            try:
+                conn.execute(
+                    """INSERT INTO classificador_despesa_historico
+                       (item, codigo_completo, grupo, modalidade, elemento, subelemento,
+                        justificativa, ponto_atencao, confianca, resultado_json, model, cached)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        item,
+                        result.get('codigo_completo', ''),
+                        result.get('grupo', ''),
+                        result.get('modalidade', ''),
+                        result.get('elemento', ''),
+                        f"{result.get('subelemento_codigo','')} - {result.get('subelemento_nome','')}".strip(' -'),
+                        result.get('justificativa', ''),
+                        result.get('ponto_atencao', ''),
+                        float(result.get('confianca', 0)),
+                        json.dumps(result, ensure_ascii=False),
+                        used_model,
+                        1 if used_cached else 0,
+                    )
+                )
+                conn.commit()
+            except Exception as e:
+                app.logger.warning('classificador_despesa: erro ao salvar histórico: %s', e)
+            return jsonify({'resultado': result, 'meta': {'model': used_model, 'cached': used_cached}})
+        return jsonify({'resultado': {'item_analisado': item, 'raw': result.content}, 'meta': {'model': result.model, 'cached': result.cached}})
+    except AIServiceError as err:
+        return jsonify(err.to_response()), err.status_code
+    except Exception as err:
+        app.logger.error('POST /api/classificador-despesa: %s', err)
+        return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/classificador-despesa/historico', methods=['GET'])
+def classificador_despesa_historico():
+    try:
+        conn = get_db()
+        try:
+            limit = int(request.args.get('limit', 30) or 30)
+        except (TypeError, ValueError):
+            limit = 30
+        limit = min(max(limit, 1), 100)
+        rows = conn.execute(
+            """SELECT id, item, codigo_completo, grupo, modalidade, elemento, subelemento,
+                      justificativa, ponto_atencao, confianca, resultado_json, model, cached, criado_em
+               FROM classificador_despesa_historico
+               ORDER BY id DESC LIMIT ?""",
+            (limit,)
+        ).fetchall()
+        items = []
+        for row in rows:
+            try:
+                resultado = json.loads(row['resultado_json'] or '{}')
+            except Exception:
+                resultado = {}
+            items.append({
+                'id': row['id'],
+                'item': row['item'],
+                'codigo_completo': row['codigo_completo'],
+                'grupo': row['grupo'],
+                'modalidade': row['modalidade'],
+                'elemento': row['elemento'],
+                'subelemento': row['subelemento'],
+                'justificativa': row['justificativa'],
+                'ponto_atencao': row['ponto_atencao'],
+                'confianca': row['confianca'],
+                'resultado': resultado,
+                'model': row['model'],
+                'cached': bool(row['cached']),
+                'criado_em': row['criado_em'],
+            })
+        return jsonify({'items': items})
+    except Exception as e:
+        app.logger.error('GET /api/classificador-despesa/historico: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/classificador-despesa/historico/<int:hid>', methods=['DELETE'])
+def classificador_despesa_historico_delete(hid):
+    try:
+        conn = get_db()
+        conn.execute('DELETE FROM classificador_despesa_historico WHERE id = ?', (hid,))
+        conn.commit()
+        return jsonify({'ok': True})
+    except Exception as e:
+        app.logger.error('DELETE /api/classificador-despesa/historico/%s: %s', hid, e)
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/kanban', methods=['GET'])
 def kanban_listar():
@@ -4157,4 +4508,5 @@ if __name__ == '__main__':
     _terminal_log('INFO', f'Modo debug: {"ligado" if settings.debug else "desligado"} | Host: {settings.host}', 'yellow')
     _terminal_log('TIME', f'Startup concluído em {boot_elapsed_ms:.1f} ms', 'magenta')
     _terminal_log('INFO', 'Para encerrar: feche esta janela ou pressione Ctrl+C', 'cyan')
-    app.run(host=settings.host, port=settings.port, debug=settings.debug, threaded=True)
+    app.run(host=settings.host, port=settings.port, debug=settings.debug,
+            use_reloader=settings.reloader, threaded=True)

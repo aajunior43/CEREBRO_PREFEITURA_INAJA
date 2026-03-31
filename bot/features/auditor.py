@@ -5,6 +5,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from bot.ai_services import call_local_ai, generate_empenho_text
 from bot.config import TELEGRAM_TOKEN, logger
+from bot.telegram_safe import safe_answer_callback, safe_edit_message_text
 
 import requests
 
@@ -21,7 +22,7 @@ async def start_auditor_flow(update: Update, context: ContextTypes.DEFAULT_TYPE)
     )
     kb = InlineKeyboardMarkup([[InlineKeyboardButton('❌ Cancelar', callback_data='cmd_cancelar')]])
     if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=kb, parse_mode='HTML')
+        await safe_edit_message_text(update.callback_query, text, reply_markup=kb, parse_mode='HTML')
     else:
         await update.message.reply_text(text, reply_markup=kb, parse_mode='HTML')
 
@@ -152,10 +153,10 @@ async def generate_empenho_from_auditor(update: Update, context: ContextTypes.DE
     """Gera o texto do empenho aproveitando o PDF salvo em cache pelo auditor."""
     nf_text = context.user_data.get('last_nf_text')
     if not nf_text:
-        await update.callback_query.answer("⚠️ Dados da nota expiraram, envie o arquivo novamente.", show_alert=True)
+        await safe_answer_callback(update.callback_query, "⚠️ Dados da nota expiraram, envie o arquivo novamente.", show_alert=True)
         return
 
-    await update.callback_query.answer("Gerando Empenho...", show_alert=False)
+    await safe_answer_callback(update.callback_query, "Gerando Empenho...", show_alert=False)
     
     # Criamos a mensagem de progresso na thread
     msg = await update.callback_query.message.reply_text('⏳ <i>Processando texto da NF para linguagem formal de empenho...</i>', parse_mode='HTML')

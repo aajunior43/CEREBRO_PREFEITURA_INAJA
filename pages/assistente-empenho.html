@@ -762,9 +762,70 @@
               </section>
             </div>
 
+              <section class="ea-block">
+                <div class="ea-block-title">
+                  <strong>Dados complementares</strong>
+                  <span>preenchimento manual</span>
+                </div>
+                <div class="ea-grid">
+                  <label class="ea-field">
+                    <span class="ea-label">Secretaria / setor</span>
+                    <input class="ea-input" id="secretaria" placeholder="Secretaria de Saude" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Fornecedor / credor</span>
+                    <input class="ea-input" id="fornecedor" placeholder="Nome do fornecedor" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Tipo da despesa</span>
+                    <input class="ea-input" id="tipo_despesa" placeholder="Material, servico, locacao..." />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Finalidade</span>
+                    <input class="ea-input" id="finalidade" placeholder="Pagamento de..." />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Valor</span>
+                    <input class="ea-input" id="valor" placeholder="R$ 0,00" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Competencia / periodo</span>
+                    <input class="ea-input" id="competencia" placeholder="03/2026" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Processo</span>
+                    <input class="ea-input" id="processo" placeholder="Processo administrativo" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Pregao / licitacao</span>
+                    <input class="ea-input" id="pregao" placeholder="Pregao 012/2026" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Contrato</span>
+                    <input class="ea-input" id="contrato" placeholder="Contrato 123/2026" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Nota fiscal / OS</span>
+                    <input class="ea-input" id="nota_fiscal" placeholder="NF 000123" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Fonte / origem</span>
+                    <input class="ea-input" id="fonte" placeholder="Empenho, NF, arquivo, etc." />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Observacoes</span>
+                    <input class="ea-input" id="observacoes" placeholder="Pontos de atencao" />
+                  </label>
+                </div>
+              </section>
+
             <div class="ea-actions">
               <button class="ea-btn" id="btn-read-file" type="button">Ler arquivo</button>
+              <button class="ea-btn" id="btn-extract" type="button">Extrair campos</button>
               <button class="ea-btn ea-btn-primary" id="btn-generate" type="button">Gerar descricao</button>
+              <button class="ea-btn" id="btn-checklist" type="button">Checklist</button>
+              <button class="ea-btn" id="btn-review" type="button">Revisar tudo</button>
+              <button class="ea-btn" id="btn-improve" type="button">Melhorar descricao</button>
               <button class="ea-btn ea-btn-danger" id="btn-clear" type="button">Limpar tudo</button>
             </div>
 
@@ -790,6 +851,20 @@
             </div>
           </div>
         </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Historico recente</h2>
+            <p>Ultimas execucoes do assistente.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="historico_lista">
+              <div class="ea-mini-item">
+                <strong>Carregando historico...</strong>
+              </div>
+            </div>
+          </div>
+        </article>
       </section>
 
       <aside class="ea-stack">
@@ -812,11 +887,56 @@
             </div>
           </div>
         </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Campos extraidos</h2>
+            <p>Resultado da leitura estruturada do documento.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="painel_campos">
+              <div class="ea-mini-item">
+                <strong>Nenhuma extracao ainda.</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Checklist</h2>
+            <p>O que falta conferir antes de finalizar.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="painel_checklist">
+              <div class="ea-mini-item">
+                <strong>Checklist ainda nao gerado.</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Comparacao</h2>
+            <p>Mostra a diferenca entre a descricao base e a revisada.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="painel_diff">
+              <div class="ea-mini-item">
+                <strong>Use a revisao para gerar o diff.</strong>
+              </div>
+            </div>
+          </div>
+        </article>
       </aside>
     </div>
   </div>
 
+  <script src="/static/js/assistente-empenho.js"></script>
+
   <script>
+    if (window.__ASSISTENTE_EMPENHO_CUSTOM__) {} else {
     'use strict';
 
     const pdfLib = window.pdfjsLib;
@@ -1074,6 +1194,7 @@
       fields.descricao_resultado.setSelectionRange(pos, pos);
     });
 
-  </script>
+    }
+    </script>
 </body>
 </html>

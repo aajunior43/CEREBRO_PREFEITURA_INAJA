@@ -7,11 +7,12 @@ except ImportError:
     TZ = pytz.timezone("America/Sao_Paulo")
 
 from telegram.ext import ContextTypes
-from bot.config import TELEGRAM_CHAT_ID, logger
+from bot.config import get_target_chat_ids, logger
 from bot.features.calendario import calcular_eventos_mes
 
 async def check_daily_events(context: ContextTypes.DEFAULT_TYPE):
-    if not TELEGRAM_CHAT_ID: return
+    chat_ids = get_target_chat_ids()
+    if not chat_ids: return
     
     hoje = datetime.date.today()
     eventos = calcular_eventos_mes(hoje.year, hoje.month)
@@ -25,7 +26,6 @@ async def check_daily_events(context: ContextTypes.DEFAULT_TYPE):
         
     msg = "\n".join(lines)
     
-    chat_ids = [cid.strip() for cid in str(TELEGRAM_CHAT_ID).split(',') if cid.strip()]
     for cid in chat_ids:
         try:
             await context.bot.send_message(chat_id=cid, text=msg, parse_mode='HTML')

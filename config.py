@@ -16,6 +16,7 @@ class Settings:
     host: str = os.environ.get('APP_HOST', '0.0.0.0')
     port: int = int(os.environ.get('APP_PORT', '5000'))
     debug: bool = os.environ.get('APP_DEBUG', '').strip().lower() in {'1', 'true', 'yes', 'on'}
+    reloader: bool = os.environ.get('APP_RELOADER', '').strip().lower() in {'1', 'true', 'yes', 'on'}
     admin_password: str = os.environ.get('ADM_PASSWORD', '1999')
     openrouter_default_model: str = os.environ.get('OPENROUTER_DEFAULT_MODEL', 'openai/gpt-4o-mini')
     openrouter_chat_model: str = os.environ.get('OPENROUTER_CHAT_MODEL', 'meta-llama/llama-3.3-70b-instruct:free')

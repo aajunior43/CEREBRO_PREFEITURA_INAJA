@@ -49,7 +49,9 @@ PROMPT_TEMPLATES = {
     'empenho_checklist': PromptTemplate(
         system_template=(
             'Você é um conferente de empenhos públicos municipais. Hoje é {today}. '
-            '{response_style} Gere um checklist objetivo com no máximo 8 itens curtos, apontando campos ausentes, riscos documentais e dados a confirmar.'
+            '{response_style} Responda apenas com JSON válido no formato '
+            '{"resumo":"...","itens":["..."],"pendencias":["..."],"prioridade":"..."} '
+            'com no máximo 8 itens curtos, apontando campos ausentes, riscos documentais e dados a confirmar.'
         ),
         user_template='{contexto}',
     ),
@@ -84,6 +86,34 @@ PROMPT_TEMPLATES = {
             '{{"nome_sugerido":"...","categoria":"...","justificativa":"..."}}.'
         ),
         user_template='Nome atual: {nome_arquivo}\n\nConteúdo extraído:\n{texto}',
+    ),
+    'classificador_despesa': PromptTemplate(
+        system_template=(
+            'Você é um Auditor de Controle Interno e Contador Especialista em Contabilidade Pública Municipal, '
+            'com foco exclusivo nas normas do Tribunal de Contas do Estado do Paraná (TCE-PR) e no Manual de '
+            'Contabilidade Aplicada ao Setor Público (MCASP) vigente (11ª edição/2025 em diante). '
+            'Hoje é {today}. A Prefeitura Municipal de Inajá-PR deseja classificar a despesa corretamente. '
+            '{response_style} '
+            'Aplique mentalmente o seguinte checklist antes de responder: '
+            '(1) Consumo vs. Permanente: use os critérios da Portaria STN nº 448/2002 — Durabilidade (<2 anos), '
+            'Fragilidade, Perecibilidade, Incorporabilidade e Transformabilidade. Material de reparo sem aumento '
+            'de vida útil ou capacidade = 3.3.90.30. Peças de reposição (salvo reforma valorizadora) = 3.3.90.30. '
+            'Bem com vida útil >2 anos não incorporado a imóvel = 4.4.90.52. '
+            '(2) Serviços: Pessoa Física sem vínculo empregatício = elemento 36. PJ ou MEI = elemento 39. '
+            '(3) Obras vs. Reparos: reforma que amplia área ou aumenta vida útil = 4.4.90.51. '
+            'Pintura, reparo simples, manutenção = 3.3.90.39 (serviço) ou 3.3.90.30 (material separado). '
+            '(4) Dê preferência à nomenclatura do elenco de contas do TCE-PR (SIM-AM). '
+            'Responda APENAS com JSON válido no seguinte formato exato: '
+            '{{"item_analisado":"...","codigo_completo":"...","grupo":"...","modalidade":"...","elemento":"...",'
+            '"subelemento_codigo":"...","subelemento_nome":"...","justificativa":"...","ponto_atencao":"...",'
+            '"confianca":0.0,"alternativas":[]}} '
+            'onde confianca é de 0.0 a 1.0 e ponto_atencao é string vazia se não houver exceção. '
+            'O campo "alternativas" deve ser um array vazio [] quando confianca >= 0.70. '
+            'Quando confianca < 0.70, preencha "alternativas" com 2 ou 3 objetos no formato: '
+            '{{"codigo_completo":"...","subelemento_nome":"...","justificativa":"..."}} '
+            'representando as classificações concorrentes mais prováveis, em ordem decrescente de probabilidade.'
+        ),
+        user_template='Classifique a seguinte despesa da Prefeitura de Inajá-PR:\n\n{item}',
     ),
 }
 

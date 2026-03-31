@@ -20,6 +20,9 @@ class AITaskFacade:
         self.service = service
 
     def gerar_texto_empenho(self, dados: dict[str, Any], acao: str = 'generate_description') -> TaskResult | dict[str, Any]:
+        if acao == 'review_bundle':
+            return self.revisar_empenho(dados)
+
         template_map = {
             'extract_fields': 'empenho_extract_fields',
             'generate_description': 'empenho_generate_description',
@@ -45,6 +48,12 @@ class AITaskFacade:
                 raise AIServiceError('A IA retornou um formato inesperado para extração de campos.', user_message='Não foi possível interpretar a extração retornada pela IA.')
             parsed['pendencias'] = parsed.get('pendencias') if isinstance(parsed.get('pendencias'), list) else []
             return parsed
+        if acao == 'checklist':
+            parsed = extract_json_block(text)
+            if isinstance(parsed, dict):
+                parsed['itens'] = parsed.get('itens') if isinstance(parsed.get('itens'), list) else []
+                parsed['pendencias'] = parsed.get('pendencias') if isinstance(parsed.get('pendencias'), list) else []
+                return parsed
         if acao in {'generate_description', 'improve_description'}:
             text = text.upper()
             prefix = 'PELA DESPESA EMPENHADA REFERENTE A'
@@ -57,6 +66,23 @@ class AITaskFacade:
             usage=response.usage,
             provider_response=response.payload,
         )
+
+    def revisar_empenho(self, dados: dict[str, Any]) -> dict[str, Any]:
+        campos = self.gerar_texto_empenho(dados, acao='extract_fields')
+        checklist = self.gerar_texto_empenho(dados, acao='checklist')
+        descricao_base = self.gerar_texto_empenho(dados, acao='generate_description')
+        contexto_melhorado = dict(dados)
+        if isinstance(descricao_base, TaskResult):
+            contexto_melhorado['descricao_atual'] = descricao_base.content
+        descricao_melhorada = self.gerar_texto_empenho(contexto_melhorado, acao='improve_description')
+
+        return {
+            'campos': campos,
+            'checklist': checklist if isinstance(checklist, dict) else {'resumo': '', 'itens': [checklist.content] if isinstance(checklist, TaskResult) else [str(checklist)], 'pendencias': [], 'prioridade': ''},
+            'descricao_base': descricao_base.content if isinstance(descricao_base, TaskResult) else descricao_base,
+            'descricao_melhorada': descricao_melhorada.content if isinstance(descricao_melhorada, TaskResult) else descricao_melhorada,
+            'descricao_atual': contexto_melhorado.get('descricao_atual', ''),
+        }
 
     def analisar_documento(self, texto: str, use_cache: bool = True) -> TaskResult | dict[str, Any]:
         response = self.service.chat_by_task(
@@ -81,6 +107,22 @@ class AITaskFacade:
         )
         content = extract_json_block(response.text)
         return content if isinstance(content, dict) else TaskResult(response.text, response.model, response.cached, response.usage, response.payload)
+
+    def classificar_despesa(self, item: str, use_cache: bool = True) -> TaskResult | dict[str, Any]:
+        response = self.service.chat_by_task(
+            task_type='classificacao_despesa',
+            messages=build_prompt('classificador_despesa', item=limit_text(item, 2000)),
+            temperature=0.1,
+            max_tokens=800,
+            use_cache=use_cache,
+            metadata={'feature': 'classificador_despesa'},
+        )
+        content = extract_json_block(response.text)
+        if isinstance(content, dict):
+            content['_model'] = response.model
+            content['_cached'] = response.cached
+            return content
+        return TaskResult(response.text, response.model, response.cached, response.usage, response.payload)
 
     def sugerir_nome_arquivo(self, nome_arquivo: str, texto: str, use_cache: bool = True) -> TaskResult | dict[str, Any]:
         response = self.service.chat_by_task(

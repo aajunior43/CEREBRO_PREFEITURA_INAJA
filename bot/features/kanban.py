@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from bot.database import db_listar_tarefas
 from bot.ui import _format_task_item
+from bot.telegram_safe import safe_edit_message_text
 
 ITEMS_PER_PAGE = 5
 
@@ -43,7 +44,7 @@ async def show_tarefas_page(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     text = '\n'.join(lines)
     
     if update.callback_query:
-        await update.callback_query.edit_message_text(text, reply_markup=markup, parse_mode='HTML')
+        await safe_edit_message_text(update.callback_query, text, reply_markup=markup, parse_mode='HTML')
     else:
         await update.message.reply_text(text, reply_markup=markup, parse_mode='HTML')
 

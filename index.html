@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Controle de Empenhos Mensais – Prefeitura de Inajá</title>
+  <link rel="icon" type="image/png" href="/static/img/brasao.png" />
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
@@ -23,8 +24,6 @@
         <div class="header-brand">
           <img id="header-brasao" src="/static/img/brasao.png" alt="Brasão de Inajá" style="height:52px;width:auto;object-fit:contain;" />
           <div class="header-title">
-            <h1>Prefeitura de Inajá</h1>
-            <p>Navegação unificada</p>
           </div>
         </div>
       </div>
@@ -39,6 +38,12 @@
         </div>
 
         <div class="dropdown">
+          <button type="button" class="header-manual-btn" id="header-admin-btn" onclick="document.querySelector('.nav-tab[data-tab=&quot;adm&quot;]')?.click();" title="Abrir administração">
+            ADM
+          </button>
+          <button type="button" class="header-manual-btn" id="header-manual-btn" onclick="window.location.href='/pages/manual.html'" title="Abrir manual">
+            Manual
+          </button>
           <button class="dropdown-toggle" id="dropdown-toggle">
           </button>
           <div class="dropdown-menu" id="dropdown-menu">
@@ -121,11 +126,11 @@
             </a>
             <a href="/pages/fornecimento.html" class="nav-group-item">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-              <div class="nav-group-item-text"><span class="nav-group-item-name">Aquisições</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Solicitação de Compra ou Serviço</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
             </a>
             <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-              <div class="nav-group-item-text"><span class="nav-group-item-name">Dotações Orçamentárias</span><span class="nav-group-item-desc">Dotações e execução orçamentária</span></div>
+              <div class="nav-group-item-text"><span class="nav-group-item-name">Dotação Orçamentária</span><span class="nav-group-item-desc">Dotações e execução orçamentária</span></div>
             </a>
             <a href="/pages/despesa-relatorios.html" class="nav-group-item">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
@@ -145,10 +150,11 @@
           </button>
           <div class="nav-group-menu nav-group-menu-sidebar">
             <a href="/pages/documentos.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Centro de Documentos</span><span class="nav-group-item-desc">Salvar e organizar arquivos</span></div></a>
-            <a href="/pages/rpa.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">RPA</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
+            <a href="/pages/rpa.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de RPAs</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
             <a href="/pages/pdf.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">PDF</span><span class="nav-group-item-desc">Mesclar, dividir e proteger</span></div></a>
-            <a href="/pages/assistente-empenho.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Assistente de Empenho</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
-            <a href="/pages/visualizador.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Rel. de Empenhos</span><span class="nav-group-item-desc">Documentos e contratos</span></div></a>
+            <a href="/pages/assistente-empenho.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Descrição para Empenhos</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
+            <a href="/pages/classificador-despesa.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Classificador de Despesas</span><span class="nav-group-item-desc">Desdobramento correto via TCE-PR</span></div></a>
+            <a href="/pages/visualizador.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Relação de Empenhos Emitidos</span><span class="nav-group-item-desc">Documentos e contratos</span></div></a>
             <a href="/pages/auditor.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Auditor NF</span><span class="nav-group-item-desc">Auditoria e notas fiscais</span></div></a>
             <a href="/pages/prazos.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Prazos</span><span class="nav-group-item-desc">Contratos e prazos críticos</span></div></a>
             <a href="/pages/protocolo.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Protocolo</span><span class="nav-group-item-desc">Ofícios e memorandos</span></div></a>
@@ -167,7 +173,7 @@
           </button>
           <div class="nav-group-menu nav-group-menu-sidebar">
             <a href="/pages/cnpj.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">CNPJ</span><span class="nav-group-item-desc">Consultar dados de empresas</span></div></a>
-            <a href="/pages/renomear.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Renomear com IA</span><span class="nav-group-item-desc">Organizar PDFs e extratos</span></div></a>
+            <a href="/pages/renomear.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Renomeador de Arquivos</span><span class="nav-group-item-desc">Organizar PDFs e extratos</span></div></a>
             <a href="/pages/calculadora-diarias.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Calc. Diárias</span><span class="nav-group-item-desc">Cálculo de diárias de viagem</span></div></a>
             <a href="/pages/manual.html" class="nav-group-item"><div class="nav-group-item-icon">📖</div><div class="nav-group-item-text"><span class="nav-group-item-name">Manual</span><span class="nav-group-item-desc">Guia completo do sistema</span></div></a>
           </div>
@@ -209,16 +215,17 @@
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Financeiro</div>
       <a href="/pages/tarifas-bancarias.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>Tarifas</a>
-      <a href="/pages/fornecimento.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Aquisições</a>
-      <a href="/pages/despesa-prefeitura.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Dotações Orçamentárias</a>
+      <a href="/pages/fornecimento.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Gerador de Solicitação de Compra ou Serviço</a>
+      <a href="/pages/despesa-prefeitura.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Dotação Orçamentária</a>
       <a href="/pages/despesa-relatorios.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg>Relatórios</a>
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Documentos</div>
       <a href="/pages/documentos.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Centro de Documentos</a>
-      <a href="/pages/rpa.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>RPA</a>
+      <a href="/pages/rpa.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Gerador de RPAs</a>
       <a href="/pages/pdf.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg>PDF</a>
-      <a href="/pages/assistente-empenho.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg>Assistente de Empenho</a>
-      <a href="/pages/visualizador.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Rel. de Empenhos</a>
+      <a href="/pages/assistente-empenho.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg>Gerador de Descrição para Empenhos</a>
+      <a href="/pages/classificador-despesa.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>Classificador de Despesas</a>
+      <a href="/pages/visualizador.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg>Relação de Empenhos Emitidos</a>
       <a href="/pages/auditor.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Auditor NF</a>
       <a href="/pages/prazos.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Prazos</a>
       <a href="/pages/protocolo.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Protocolo</a>
@@ -226,7 +233,7 @@
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Ferramentas</div>
       <a href="/pages/cnpj.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>CNPJ</a>
-      <a href="/pages/renomear.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Renomear com IA</a>
+      <a href="/pages/renomear.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Renomeador de Arquivos</a>
       <a href="/pages/calculadora-diarias.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg>Calc. Diárias</a>
       <a href="/pages/manual.html" class="mobile-nav-item" style="text-decoration:none;">📖 Manual</a>
       <div class="mobile-nav-divider"></div>
@@ -241,37 +248,16 @@
   <!-- ═══════════════════ HOME SCREEN ═══════════════════ -->
   <section id="home-screen">
 
-    <!-- Hero -->
-    <div class="hs-hero">
-      <div class="hs-hero-main">
-        <div class="hs-hero-brand">
-          <div class="hs-brasao-wrap">
-            <img src="/static/img/brasao.png" alt="Brasão de Inajá" class="hs-brasao" />
-          </div>
-          <div class="hs-hero-text">
-            <h2 class="hs-title">Prefeitura Municipal de Inajá - PR</h2>
-          </div>
-        </div>
-      </div>
-
-      <div class="hs-hero-side">
-        <div class="hs-clock-box">
-          <div class="hs-clock-label">Horário local</div>
-          <div class="hs-clock" id="hs-clock">--:--:--</div>
-          <div class="hs-date" id="hs-date">&nbsp;</div>
-        </div>
-      </div>
-    </div>
     <!-- Modules -->
     <div class="hs-modules">
 
-      <!-- Operação -->
+      <!-- Operacional -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-blue">
           <div class="hs-group-header-main">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <div>
-              <span class="hs-group-title">Rotina Operacional</span>
+              <span class="hs-group-title">Operacional</span>
               <span class="hs-group-subtitle">Execução diária, acompanhamento e organização interna</span>
             </div>
           </div>
@@ -289,37 +275,42 @@
           </a>
           <a class="hs-card hs-accent-blue" href="/pages/calendario.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Calendário Administrativo</span><span class="hs-card-desc">Agenda, histórico e controle mensal</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Calendário</span><span class="hs-card-desc">Agenda, histórico e controle mensal</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
         </div>
       </div>
 
-      <!-- Financeiro -->
+      <!-- Empenhos -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-green">
           <div class="hs-group-header-main">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
             <div>
-              <span class="hs-group-title">Planejamento Financeiro</span>
-              <span class="hs-group-subtitle">Análises, despesas, aquisições e acompanhamento orçamentário</span>
+              <span class="hs-group-title">Empenhos</span>
+              <span class="hs-group-subtitle">Geração, classificação, consulta e acompanhamento orçamentário</span>
             </div>
           </div>
         </div>
         <div class="hs-cards">
-          <a class="hs-card hs-accent-green" href="/pages/tarifas-bancarias.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Análise de Tarifas Bancárias</span><span class="hs-card-desc">Leitura de extratos e conferência de encargos</span></div>
+          <a class="hs-card hs-accent-green" href="/pages/assistente-empenho.html">
+            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
+            <div class="hs-card-body"><span class="hs-card-name">Gerador de Descrição para Empenhos</span><span class="hs-card-desc">Gerar texto e apoiar a conferência do empenho</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-green" href="/pages/fornecimento.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Solicitações de Aquisição</span><span class="hs-card-desc">Pedidos, fornecedores e fluxo de compras</span></div>
+          <a class="hs-card hs-accent-green" href="/pages/classificador-despesa.html">
+            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
+            <div class="hs-card-body"><span class="hs-card-name">Classificador de Despesas</span><span class="hs-card-desc">Desdobramento correto da despesa via TCE-PR e MCASP</span></div>
+            <span class="hs-card-arrow">›</span>
+          </a>
+          <a class="hs-card hs-accent-green" href="/pages/visualizador.html">
+            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <div class="hs-card-body"><span class="hs-card-name">Relação de Empenhos Emitidos</span><span class="hs-card-desc">Visualizar, filtrar e detalhar empenhos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-green" href="/pages/despesa-prefeitura.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Execução das Dotações</span><span class="hs-card-desc">Consulta de despesas e análise orçamentária</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Dotação Orçamentária</span><span class="hs-card-desc">Consulta de despesas e análise orçamentária</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-green" href="/pages/despesa-relatorios.html">
@@ -330,14 +321,14 @@
         </div>
       </div>
 
-      <!-- Documentos -->
+      <!-- Documentos e Compras -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-orange">
           <div class="hs-group-header-main">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <div>
-              <span class="hs-group-title">Documentos e Processos</span>
-              <span class="hs-group-subtitle">Protocolos, arquivos, auditoria e tramitação documental</span>
+              <span class="hs-group-title">Documentos e Compras</span>
+              <span class="hs-group-subtitle">Arquivos, aquisições, protocolos e tramitação documental</span>
             </div>
           </div>
         </div>
@@ -347,24 +338,19 @@
             <div class="hs-card-body"><span class="hs-card-name">Centro de Documentos</span><span class="hs-card-desc">Salvar e organizar arquivos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
+          <a class="hs-card hs-accent-orange" href="/pages/fornecimento.html">
+            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+            <div class="hs-card-body"><span class="hs-card-name">Gerador de Solicitação de Compra ou Serviço</span><span class="hs-card-desc">Pedidos, fornecedores e fluxo de compras</span></div>
+            <span class="hs-card-arrow">›</span>
+          </a>
           <a class="hs-card hs-accent-orange" href="/pages/rpa.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">RPA</span><span class="hs-card-desc">Recibo de Pagamento Autônomo</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Gerador de RPAs</span><span class="hs-card-desc">Recibo de Pagamento Autônomo</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/pdf.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Editor de PDF</span><span class="hs-card-desc">Mesclar, dividir, proteger e reorganizar PDFs</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange" href="/pages/assistente-empenho.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Assistente de Empenho</span><span class="hs-card-desc">Gerar texto e apoiar a conferência do empenho</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange" href="/pages/visualizador.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Relatório de Empenhos</span><span class="hs-card-desc">Visualizar, filtrar e detalhar empenhos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-orange" href="/pages/auditor.html">
@@ -390,18 +376,23 @@
         </div>
       </div>
 
-      <!-- Ferramentas -->
+      <!-- Financeiro e Ferramentas -->
       <div class="hs-group">
         <div class="hs-group-header hs-group-purple">
           <div class="hs-group-header-main">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             <div>
-              <span class="hs-group-title">Consultas e Utilidades</span>
-              <span class="hs-group-subtitle">Ferramentas de apoio, consulta rápida e administração do sistema</span>
+              <span class="hs-group-title">Financeiro e Ferramentas</span>
+              <span class="hs-group-subtitle">Tarifas, consultas, utilitários e administração do sistema</span>
             </div>
           </div>
         </div>
         <div class="hs-cards">
+          <a class="hs-card hs-accent-purple" href="/pages/tarifas-bancarias.html">
+            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+            <div class="hs-card-body"><span class="hs-card-name">Análise de Tarifas Bancárias</span><span class="hs-card-desc">Leitura de extratos e conferência de encargos</span></div>
+            <span class="hs-card-arrow">›</span>
+          </a>
           <a class="hs-card hs-accent-purple" href="/pages/cnpj.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Consulta de CNPJ</span><span class="hs-card-desc">Consulta cadastral de empresas e fornecedores</span></div>
@@ -409,7 +400,7 @@
           </a>
           <a class="hs-card hs-accent-purple" href="/pages/renomear.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Renomeador com IA</span><span class="hs-card-desc">Padronizar nomes de documentos automaticamente</span></div>
+            <div class="hs-card-body"><span class="hs-card-name">Renomeador de Arquivos</span><span class="hs-card-desc">Padronizar nomes de documentos automaticamente</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
           <a class="hs-card hs-accent-purple" href="/pages/calculadora-diarias.html">
@@ -417,16 +408,6 @@
             <div class="hs-card-body"><span class="hs-card-name">Calculadora de Diárias</span><span class="hs-card-desc">Cálculo administrativo de diárias de viagem</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-purple" href="/pages/manual.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Manual</span><span class="hs-card-desc">Guia completo do sistema</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <button class="hs-card hs-accent-purple" data-hs-tab="adm" data-requires-auth="true">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Administração</span><span class="hs-card-desc">Configurações e sistema</span></div>
-            <span class="hs-card-arrow">›</span>
-          </button>
         </div>
       </div>
 
@@ -565,11 +546,6 @@
         Novo Credor
       </button>
     </div>
-  </div>
-
-  <div class="credores-meta">
-    <span id="credores-counter">0 exibidos de 0 cadastrados</span>
-    <span id="credores-summary">Fixos: 0 | Variáveis: 0 | Sem CNPJ: 0 | Sem e-mail: 0 | Vencidos: 0 | Vencendo 30d: 0</span>
   </div>
 
   <!-- EMPENHOS LIST -->

@@ -1,4 +1,4 @@
-import os
+import asyncio
 import requests
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
@@ -44,7 +44,7 @@ async def process_voice_note(update: Update, context: ContextTypes.DEFAULT_TYPE)
         }
         
         # Envia de forma sincrona porem usando run_async idealmente. Mas requests direto:
-        resp = requests.post(url, headers=headers, files=files, data=data, timeout=60)
+        resp = await asyncio.to_thread(requests.post, url, headers=headers, files=files, data=data, timeout=60)
         
         if not resp.ok:
             await msg.edit_text(f"⚠️ Erro na transcrição (verifique se a API do Whisper suporta essa chave): {resp.text}")
@@ -99,4 +99,3 @@ Responda APENAS um JSON válido:
     except Exception as e:
         logger.error(f"Erro no módulo de voz: {e}")
         await msg.edit_text(f"⚠️ Erro inesperado ao processar áudio: {e}")
-

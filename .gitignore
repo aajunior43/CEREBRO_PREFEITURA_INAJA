@@ -35,3 +35,13 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Refatoração (nova estrutura modular)
+app/routes/__pycache__/
+app/utils/__pycache__/
+app/models/__pycache__/
+
+# Arquivos de backup do servidor
+server_monolitico.py
+server_novo.py
+server_modular.py
+

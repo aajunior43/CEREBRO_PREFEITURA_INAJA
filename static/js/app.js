@@ -1324,6 +1324,8 @@ function initTheme() {
     document.documentElement.setAttribute('data-theme', 'dark');
   } else if (saved === 'vintage') {
     document.documentElement.setAttribute('data-theme', 'vintage');
+  } else if (saved === 'cosmos') {
+    document.documentElement.setAttribute('data-theme', 'cosmos');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -1335,7 +1337,86 @@ function syncThemeLabel() {
   const current = document.documentElement.getAttribute('data-theme') || 'light';
   if (current === 'light') label.textContent = 'Tema Escuro';
   else if (current === 'dark') label.textContent = 'Tema Vintage';
+  else if (current === 'vintage') label.textContent = 'Tema Cosmos';
   else label.textContent = 'Tema Claro';
+}
+
+function initCosmosEffects() {
+  if (window.__cosmosEffectsInitialized) return;
+  window.__cosmosEffectsInitialized = true;
+
+  const state = {
+    timer: null,
+    observer: null,
+  };
+
+  function isCosmosTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'cosmos';
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function clearTimer() {
+    if (state.timer) {
+      clearTimeout(state.timer);
+      state.timer = null;
+    }
+  }
+
+  function createComet() {
+    if (!isCosmosTheme() || prefersReducedMotion() || document.hidden) return;
+
+    const comet = document.createElement('div');
+    comet.className = 'cosmic-comet';
+
+    const fromLeft = Math.random() > 0.45;
+    const startX = fromLeft ? -220 : window.innerWidth + 220;
+    const startY = Math.round(window.innerHeight * (0.06 + Math.random() * 0.34));
+    const moveX = fromLeft ? window.innerWidth + 420 : -(window.innerWidth + 420);
+    const moveY = Math.round(window.innerHeight * (0.14 + Math.random() * 0.22));
+    const angle = fromLeft ? `${8 + Math.random() * 9}deg` : `${172 - Math.random() * 9}deg`;
+    const duration = `${3.6 + Math.random() * 2.8}s`;
+
+    comet.style.setProperty('--startX', `${startX}px`);
+    comet.style.setProperty('--startY', `${startY}px`);
+    comet.style.setProperty('--moveX', `${moveX}px`);
+    comet.style.setProperty('--moveY', `${moveY}px`);
+    comet.style.setProperty('--angle', angle);
+    comet.style.setProperty('--duration', duration);
+    comet.style.setProperty('--comet-length', `${80 + Math.round(Math.random() * 60)}px`);
+
+    comet.addEventListener('animationend', () => comet.remove(), { once: true });
+    document.body.appendChild(comet);
+  }
+
+  function scheduleNextComet() {
+    clearTimer();
+    if (!isCosmosTheme() || prefersReducedMotion()) return;
+    const delay = 8000 + Math.random() * 10000;
+    state.timer = window.setTimeout(() => {
+      createComet();
+      scheduleNextComet();
+    }, delay);
+  }
+
+  function syncCosmosEffects() {
+    if (!document.body) return;
+    document.body.classList.toggle('cosmos-active', isCosmosTheme());
+    if (isCosmosTheme()) scheduleNextComet();
+    else clearTimer();
+  }
+
+  state.observer = new MutationObserver(syncCosmosEffects);
+  state.observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clearTimer();
+    else syncCosmosEffects();
+  });
+
+  syncCosmosEffects();
 }
 
 function toggleTheme() {
@@ -1347,6 +1428,9 @@ function toggleTheme() {
   } else if (current === 'dark') {
     html.setAttribute('data-theme', 'vintage');
     localStorage.setItem('theme', 'vintage');
+  } else if (current === 'vintage') {
+    html.setAttribute('data-theme', 'cosmos');
+    localStorage.setItem('theme', 'cosmos');
   } else {
     html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
@@ -1355,6 +1439,7 @@ function toggleTheme() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  initCosmosEffects();
   syncThemeLabel();
   const syncExtraThemeLabels = () => {
     const current = document.documentElement.getAttribute('data-theme') || 'light';

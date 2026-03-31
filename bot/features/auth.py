@@ -1,11 +1,13 @@
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from bot.database import db_get_user, db_add_user, db_update_user_status
-from bot.config import TELEGRAM_CHAT_ID
+from bot.config import get_target_chat_ids
+from bot.telegram_safe import safe_answer_callback, safe_edit_message_text
 
 async def is_authorized_async(user_id: int) -> bool:
-    if not TELEGRAM_CHAT_ID: return True
-    allowed = {cid.strip() for cid in str(TELEGRAM_CHAT_ID).split(',') if cid.strip()}
+    allowed = set(get_target_chat_ids())
+    if not allowed:
+        return True
     if str(user_id) in allowed: return True
     
     user = await db_get_user(str(user_id))
@@ -33,8 +35,8 @@ async def handle_login_request(update: Update, context: ContextTypes.DEFAULT_TYP
     await update.message.reply_text("✅ <b>Solicitação Enviada!</b>\n\nSua chave de acesso foi enviada aos administradores. Aguarde a aprovação.", parse_mode='HTML')
     
     # Notificar admins
-    if TELEGRAM_CHAT_ID:
-        admin_ids = [cid.strip() for cid in str(TELEGRAM_CHAT_ID).split(',') if cid.strip()]
+    admin_ids = get_target_chat_ids()
+    if admin_ids:
         kb = InlineKeyboardMarkup([
             [InlineKeyboardButton('✅ Aprovar', callback_data=f'auth_approve_{user_id}'),
              InlineKeyboardButton('❌ Rejeitar', callback_data=f'auth_reject_{user_id}')]
@@ -56,9 +58,9 @@ async def handle_auth_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     user_id = update.effective_user.id
     # Apenas admin mestre pode aprovar
-    allowed = {cid.strip() for cid in str(TELEGRAM_CHAT_ID).split(',') if cid.strip()}
+    allowed = set(get_target_chat_ids())
     if str(user_id) not in allowed:
-        await update.callback_query.answer("Sem permissão.", show_alert=True)
+        await safe_answer_callback(update.callback_query, "Sem permissão.", show_alert=True)
         return True
         
     parts = data.split('_')
@@ -67,12 +69,12 @@ async def handle_auth_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if action == 'approve':
         await db_update_user_status(target_id, 'approved')
-        await update.callback_query.edit_message_text(f"✅ Usuário {target_id} <b>aprovado</b>.", parse_mode='HTML')
+        await safe_edit_message_text(update.callback_query, f"✅ Usuário {target_id} <b>aprovado</b>.", parse_mode='HTML')
         try:
             await context.bot.send_message(chat_id=target_id, text="🎉 <b>Seu acesso foi APROVADO!</b>\n\nDigite /start para acessar seu painel.", parse_mode='HTML')
         except Exception: pass
     elif action == 'reject':
         await db_update_user_status(target_id, 'rejected')
-        await update.callback_query.edit_message_text(f"❌ Usuário {target_id} <b>rejeitado</b>.", parse_mode='HTML')
+        await safe_edit_message_text(update.callback_query, f"❌ Usuário {target_id} <b>rejeitado</b>.", parse_mode='HTML')
         
     return True
