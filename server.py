@@ -21,31 +21,45 @@ import urllib.error
 import requests
 
 # Garante que o terminal no Windows use UTF-8 (evita UnicodeEncodeError com CP1252)
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from logging.handlers import RotatingFileHandler
 from collections import defaultdict
 import urllib.error as _urllib_error
 
 from flask import Flask, request, jsonify, send_from_directory, send_file, Response, g
 from config import settings
-from services.empenhos_service import listar_empenhos_mes, listar_historico_credor, persistir_empenho
-from services.extratos_service import listar_subpastas, processar_extratos, validar_origem_destino
+from services.empenhos_service import (
+    listar_empenhos_mes,
+    listar_historico_credor,
+    persistir_empenho,
+)
+from services.extratos_service import (
+    listar_subpastas,
+    processar_extratos,
+    validar_origem_destino,
+)
 from services.ai_tasks import AITaskFacade, serialize_task_result
-from services.openrouter_service import AIServiceError, build_openrouter_service, chat_completion, listar_modelos, parse_http_error
+from services.openrouter_service import (
+    AIServiceError,
+    build_openrouter_service,
+    chat_completion,
+    listar_modelos,
+    parse_http_error,
+)
 
 # ── Configurações ───────────────────────────────────────────
 BASE_DIR = str(settings.base_dir)
 DB_PATH = str(settings.db_path)
 DATA_JS = str(settings.data_js_path)
-DOCUMENTS_DIR = os.path.join(BASE_DIR, 'documentos_centro')
+DOCUMENTS_DIR = os.path.join(BASE_DIR, "documentos_centro")
 ALLOWED_CONFIG_KEYS = {
-    'api_openrouter_key',
-    'api_openrouter_modelo',
-    'api_cnpja_key',
-    'api_autentique_key',
+    "api_openrouter_key",
+    "api_openrouter_modelo",
+    "api_cnpja_key",
+    "api_autentique_key",
 }
 
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
@@ -56,8 +70,9 @@ app = Flask(__name__, static_folder=BASE_DIR)
 _LOG_DIR = str(settings.log_dir)
 os.makedirs(_LOG_DIR, exist_ok=True)
 _log_handler = RotatingFileHandler(
-    str(settings.log_file), maxBytes=2*1024*1024, backupCount=3, encoding='utf-8')
-_log_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+    str(settings.log_file), maxBytes=2 * 1024 * 1024, backupCount=3, encoding="utf-8"
+)
+_log_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 _log_handler.setLevel(logging.WARNING)
 app.logger.addHandler(_log_handler)
 
@@ -67,62 +82,75 @@ _RATE_LOCK = threading.Lock()
 _SERVER_START = _time.time()
 
 _TERM_COLORS = {
-    'reset': '\033[0m',
-    'dim': '\033[2m',
-    'bold': '\033[1m',
-    'cyan': '\033[36m',
-    'green': '\033[32m',
-    'yellow': '\033[33m',
-    'red': '\033[31m',
-    'magenta': '\033[35m',
+    "reset": "\033[0m",
+    "dim": "\033[2m",
+    "bold": "\033[1m",
+    "cyan": "\033[36m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "red": "\033[31m",
+    "magenta": "\033[35m",
 }
 
 try:
-    if os.name == 'nt':
-        os.system('')
+    if os.name == "nt":
+        os.system("")
 except Exception:
     pass
 
+
 def _term_enabled() -> bool:
     return sys.stdout.isatty()
+
 
 def _color(text: str, name: str) -> str:
     if not _term_enabled():
         return text
     return f"{_TERM_COLORS.get(name, '')}{text}{_TERM_COLORS['reset']}"
 
+
 def _fmt_bytes(num: int) -> str:
     if num < 1024:
-        return f'{num} B'
+        return f"{num} B"
     if num < 1024 * 1024:
-        return f'{num / 1024:.1f} KB'
-    return f'{num / (1024 * 1024):.1f} MB'
+        return f"{num / 1024:.1f} KB"
+    return f"{num / (1024 * 1024):.1f} MB"
 
-def _terminal_log(kind: str, message: str, color_name: str = 'cyan'):
-    ts = _time.strftime('%H:%M:%S')
-    prefix = _color(f'[{ts}] [{kind}]', color_name)
-    print(f'{prefix} {message}')
 
-def _terminal_request_line(method: str, path: str, status_code: int, elapsed_ms: float, client_ip: str = ''):
+def _terminal_log(kind: str, message: str, color_name: str = "cyan"):
+    ts = _time.strftime("%H:%M:%S")
+    prefix = _color(f"[{ts}] [{kind}]", color_name)
+    print(f"{prefix} {message}")
+
+
+def _terminal_request_line(
+    method: str, path: str, status_code: int, elapsed_ms: float, client_ip: str = ""
+):
     if status_code >= 500:
-        tone = 'red'
-        icon = 'ERR'
+        tone = "red"
+        icon = "ERR"
     elif status_code >= 400:
-        tone = 'yellow'
-        icon = 'WARN'
+        tone = "yellow"
+        icon = "WARN"
     elif elapsed_ms >= 800:
-        tone = 'magenta'
-        icon = 'SLOW'
+        tone = "magenta"
+        icon = "SLOW"
     else:
-        tone = 'green'
-        icon = 'OK'
-    ip_label = client_ip or '-'
-    _terminal_log(icon, f'{ip_label:<15} {method:<6} {status_code:<3} {elapsed_ms:>7.1f} ms  {path}', tone)
+        tone = "green"
+        icon = "OK"
+    ip_label = client_ip or "-"
+    _terminal_log(
+        icon,
+        f"{ip_label:<15} {method:<6} {status_code:<3} {elapsed_ms:>7.1f} ms  {path}",
+        tone,
+    )
+
 
 def _terminal_section(title: str):
-    line = '─' * 72
-    print(_color(line, 'dim'))
-    print(_color(title, 'bold'))
+    line = "─" * 72
+    print(_color(line, "dim"))
+    print(_color(title, "bold"))
+
 
 def _rate_limited(key: str, max_hits: int = 5, window: int = 60) -> bool:
     """Retorna True se o key excedeu max_hits em window segundos."""
@@ -135,36 +163,54 @@ def _rate_limited(key: str, max_hits: int = 5, window: int = 60) -> bool:
         _rate_buckets[key].append(now)
         return False
 
+
 # ── Cache de arquivos estáticos em RAM ───────────────────────
 # Todos os arquivos estáticos são lidos do disco UMA VEZ no startup e
 # mantidos em memória. Requisições subsequentes não tocam o OneDrive,
 # eliminando a latência do interceptor de sincronização em cada leitura.
 import mimetypes as _mimetypes
 
-_file_cache:   dict[str, tuple[bytes, str]] = {}   # url_path -> (bytes, mimetype)
-_gzip_cache:   dict[str, bytes] = {}               # url_path -> gzip(bytes)
-_brotli_cache: dict[str, bytes] = {}               # url_path -> brotli(bytes)
-_etag_cache:   dict[str, str]   = {}               # url_path -> ETag (hex hash)
-_file_mtime_cache: dict[str, float] = {}           # url_path -> mtime do arquivo em disco
+_file_cache: dict[str, tuple[bytes, str]] = {}  # url_path -> (bytes, mimetype)
+_gzip_cache: dict[str, bytes] = {}  # url_path -> gzip(bytes)
+_brotli_cache: dict[str, bytes] = {}  # url_path -> brotli(bytes)
+_etag_cache: dict[str, str] = {}  # url_path -> ETag (hex hash)
+_file_mtime_cache: dict[str, float] = {}  # url_path -> mtime do arquivo em disco
 
 try:
     import brotli as _brotli
+
     _BROTLI_OK = True
 except ImportError:
     _BROTLI_OK = False
 
-_COMPRESSIBLE = {'text/html', 'text/css', 'text/javascript', 'application/javascript',
-                 'application/json', 'image/svg+xml', 'text/plain', 'text/xml'}
+_COMPRESSIBLE = {
+    "text/html",
+    "text/css",
+    "text/javascript",
+    "application/javascript",
+    "application/json",
+    "image/svg+xml",
+    "text/plain",
+    "text/xml",
+}
 
-_SKIP_EXTS = {'.db', '.db-shm', '.db-wal', '.pyc', '.pyo', '.log', '.bat'}
-_SKIP_DIRS = {'__pycache__', '.git', 'DADOS', 'renomer', 'documentos_centro',
-              'PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL'}
+_SKIP_EXTS = {".db", ".db-shm", ".db-wal", ".pyc", ".pyo", ".log", ".bat"}
+_SKIP_DIRS = {
+    "__pycache__",
+    ".git",
+    "DADOS",
+    "renomer",
+    "documentos_centro",
+    "PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL",
+}
+
 
 def _url_to_static_path(url: str) -> str:
-    rel = (url or '/').lstrip('/')
+    rel = (url or "/").lstrip("/")
     if not rel:
-      rel = 'index.html'
-    return os.path.join(BASE_DIR, rel.replace('/', os.sep))
+        rel = "index.html"
+    return os.path.join(BASE_DIR, rel.replace("/", os.sep))
+
 
 def _refresh_cached_file(url: str) -> bool:
     path = _url_to_static_path(url)
@@ -172,16 +218,16 @@ def _refresh_cached_file(url: str) -> bool:
         return False
     mime, _ = _mimetypes.guess_type(path)
     if mime is None:
-        mime = 'application/octet-stream'
+        mime = "application/octet-stream"
     try:
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             data = f.read()
         _file_cache[url] = (data, mime)
         _etag_cache[url] = hashlib.md5(data).hexdigest()[:16]
         _file_mtime_cache[url] = os.path.getmtime(path)
         _gzip_cache.pop(url, None)
         _brotli_cache.pop(url, None)
-        base_mime = (mime or '').split(';')[0].strip()
+        base_mime = (mime or "").split(";")[0].strip()
         if base_mime in _COMPRESSIBLE and len(data) > 256:
             _gzip_cache[url] = _gzip.compress(data, compresslevel=6)
             if _BROTLI_OK:
@@ -189,6 +235,7 @@ def _refresh_cached_file(url: str) -> bool:
         return True
     except OSError:
         return False
+
 
 def _refresh_debug_cached_file(url: str) -> bool:
     path = _url_to_static_path(url)
@@ -203,26 +250,27 @@ def _refresh_debug_cached_file(url: str) -> bool:
         return _refresh_cached_file(url)
     return True
 
+
 def _preload_static_files():
     """Lê todos os arquivos estáticos para RAM no startup (+ versões gzip/brotli + ETags)."""
     count, total_kb = 0, 0
     started_at = _time.perf_counter()
-    _terminal_log('BOOT', 'Pré-carregando arquivos estáticos em RAM...', 'cyan')
+    _terminal_log("BOOT", "Pré-carregando arquivos estáticos em RAM...", "cyan")
     for root, dirs, files in os.walk(BASE_DIR):
         # Não descer em diretórios que não precisamos servir
         dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
-        rel_root = os.path.relpath(root, BASE_DIR).replace('\\', '/')
-        if rel_root == '.':
-            rel_root = ''
+        rel_root = os.path.relpath(root, BASE_DIR).replace("\\", "/")
+        if rel_root == ".":
+            rel_root = ""
         for fname in files:
             ext = os.path.splitext(fname)[1].lower()
             if ext in _SKIP_EXTS:
                 continue
             fpath = os.path.join(root, fname)
-            url = ('/' + rel_root + '/' + fname).replace('//', '/')
+            url = ("/" + rel_root + "/" + fname).replace("//", "/")
             mime, _ = _mimetypes.guess_type(fpath)
             if mime is None:
-                mime = 'application/octet-stream'
+                mime = "application/octet-stream"
             try:
                 if _refresh_cached_file(url):
                     data, _ = _file_cache[url]
@@ -231,20 +279,30 @@ def _preload_static_files():
             except OSError:
                 pass
     elapsed_ms = (_time.perf_counter() - started_at) * 1000
-    _terminal_log('CACHE', f'{count} arquivos carregados em RAM ({_fmt_bytes(total_kb * 1024)})', 'green')
+    _terminal_log(
+        "CACHE",
+        f"{count} arquivos carregados em RAM ({_fmt_bytes(total_kb * 1024)})",
+        "green",
+    )
     enc_count = max(len(_brotli_cache), len(_gzip_cache))
-    enc_name = 'brotli+gzip' if _BROTLI_OK else 'gzip'
-    _terminal_log('GZIP', f'{enc_count} arquivos com versão {enc_name} prontos em {elapsed_ms:.1f} ms', 'green')
+    enc_name = "brotli+gzip" if _BROTLI_OK else "gzip"
+    _terminal_log(
+        "GZIP",
+        f"{enc_count} arquivos com versão {enc_name} prontos em {elapsed_ms:.1f} ms",
+        "green",
+    )
+
 
 # ── Banco de Dados ───────────────────────────────────────────
 # Conexão thread-local reutilizada durante todo o ciclo de vida da requisição.
 # Evita abrir/fechar conexão a cada chamada (crítico em ambientes OneDrive/rede).
 _db_local = threading.local()
 
+
 def get_db():
     """Retorna conexão SQLite persistente por thread (reutilizada entre requests).
     PRAGMAs de performance aplicados em TODA nova conexão (incluindo threads do Flask)."""
-    db = getattr(_db_local, 'conn', None)
+    db = getattr(_db_local, "conn", None)
     if db is None:
         started_at = _time.perf_counter()
         db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
@@ -252,95 +310,164 @@ def get_db():
         # Aplicar PRAGMAs em cada nova conexão — threads do Flask criam conexões
         # independentes e precisam dos mesmos settings para não cair nos defaults lentos
         db.execute("PRAGMA foreign_keys=ON")
-        db.execute("PRAGMA journal_mode=DELETE")  # sem WAL (OneDrive não suporta .db-wal)
-        db.execute("PRAGMA synchronous=NORMAL")   # sem espera de confirmação do OS a cada write
-        db.execute("PRAGMA cache_size=-8000")     # 8MB de cache em memória
-        db.execute("PRAGMA temp_store=MEMORY")    # tabelas temporárias em RAM
-        db.execute("PRAGMA mmap_size=0")          # desabilita mmap — perigoso no OneDrive
-        db.execute("PRAGMA auto_vacuum=INCREMENTAL")  # compacta páginas livres incrementalmente
+        db.execute(
+            "PRAGMA journal_mode=DELETE"
+        )  # sem WAL (OneDrive não suporta .db-wal)
+        db.execute(
+            "PRAGMA synchronous=NORMAL"
+        )  # sem espera de confirmação do OS a cada write
+        db.execute("PRAGMA cache_size=-8000")  # 8MB de cache em memória
+        db.execute("PRAGMA temp_store=MEMORY")  # tabelas temporárias em RAM
+        db.execute("PRAGMA mmap_size=0")  # desabilita mmap — perigoso no OneDrive
+        db.execute(
+            "PRAGMA auto_vacuum=INCREMENTAL"
+        )  # compacta páginas livres incrementalmente
         _db_local.conn = db
         elapsed_ms = (_time.perf_counter() - started_at) * 1000
-        _terminal_log('DB', f'Conexão SQLite pronta em {elapsed_ms:.1f} ms -> {DB_PATH}', 'green')
+        _terminal_log(
+            "DB", f"Conexão SQLite pronta em {elapsed_ms:.1f} ms -> {DB_PATH}", "green"
+        )
     return db
+
 
 @app.teardown_appcontext
 def close_db(exception):
-    # Conexão mantida aberta entre requisições para evitar overhead de re-abertura
-    # (crítico em ambientes OneDrive onde abrir arquivo tem latência alta)
-    pass
+    conn = getattr(_db_local, "conn", None)
+    if conn is not None:
+        try:
+            conn.close()
+        except Exception:
+            pass
+        _db_local.conn = None
+
 
 def ensure_db_indexes(cur):
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor ON empenhos(credor_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes ON empenhos(ano, mes)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes_empenhado ON empenhos(ano, mes, empenhado)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_credor_ano_mes ON empenhos(credor_id, ano, mes)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_departamento ON credores(departamento)")
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_empenhos_ano_mes_empenhado ON empenhos(ano, mes, empenhado)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_empenhos_credor_ano_mes ON empenhos(credor_id, ano, mes)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_credores_departamento ON credores(departamento)"
+    )
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_nome ON credores(nome)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_ativo ON credores(ativo)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_tipo_valor ON credores(tipo_valor)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_validade ON credores(validade)")
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_credores_tipo_valor ON credores(tipo_valor)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_credores_validade ON credores(validade)"
+    )
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_cnpj ON credores(cnpj)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_credores_email ON credores(email)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_acao ON logs(acao)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_logs_data ON logs(data)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_rpas_cpf ON rpas(cpf_prestador)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_rpas_periodo ON rpas(periodo_referencia)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_rpas_data_emissao ON rpas(data_emissao)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_categoria ON documentos_centro(categoria)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_referencia ON documentos_centro(referencia)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_criado_em ON documentos_centro(criado_em)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_docs_categoria_ref ON documentos_centro(categoria, referencia)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenho_hist_action ON empenho_assistente_historico(action)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenho_hist_created ON empenho_assistente_historico(criado_em)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_importacoes_periodo ON despesas_importacoes(periodo)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_despesas_linhas_importacao ON despesas_linhas(importacao_id)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_importacoes_periodo ON empenhos_importacoes(periodo)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_empenhos_linhas_importacao ON empenhos_linhas(importacao_id)")
-    cur.execute("CREATE INDEX IF NOT EXISTS idx_kanban_attach_task ON kanban_attachments(task_id)")
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_rpas_periodo ON rpas(periodo_referencia)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_rpas_data_emissao ON rpas(data_emissao)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_docs_categoria ON documentos_centro(categoria)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_docs_referencia ON documentos_centro(referencia)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_docs_criado_em ON documentos_centro(criado_em)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_docs_categoria_ref ON documentos_centro(categoria, referencia)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_empenho_hist_action ON empenho_assistente_historico(action)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_empenho_hist_created ON empenho_assistente_historico(criado_em)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_despesas_importacoes_periodo ON despesas_importacoes(periodo)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_despesas_linhas_importacao ON despesas_linhas(importacao_id)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_empenhos_importacoes_periodo ON empenhos_importacoes(periodo)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_empenhos_linhas_importacao ON empenhos_linhas(importacao_id)"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS idx_kanban_attach_task ON kanban_attachments(task_id)"
+    )
+
 
 @app.before_request
 def mark_request_start():
     g._request_started_at = _time.perf_counter()
     g._request_path = request.path
-    g._request_full_path = request.full_path.rstrip('?')
-    g._request_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '-').split(',')[0].strip()
+    g._request_full_path = request.full_path.rstrip("?")
+    g._request_ip = (
+        request.headers.get("X-Forwarded-For", request.remote_addr or "-")
+        .split(",")[0]
+        .strip()
+    )
+
 
 @app.after_request
 def compress_response(response):
     """Comprime respostas JSON/texto da API com gzip e adiciona cache headers."""
-    started_at = getattr(g, '_request_started_at', None)
+    started_at = getattr(g, "_request_started_at", None)
     if started_at is not None:
         elapsed_ms = (_time.perf_counter() - started_at) * 1000
-        response.headers['X-Response-Time-ms'] = f'{elapsed_ms:.1f}'
-        if request.path.startswith('/api/'):
+        response.headers["X-Response-Time-ms"] = f"{elapsed_ms:.1f}"
+        if request.path.startswith("/api/"):
             _terminal_request_line(
                 request.method,
-                getattr(g, '_request_full_path', request.path),
+                getattr(g, "_request_full_path", request.path),
                 response.status_code,
                 elapsed_ms,
-                getattr(g, '_request_ip', '-')
+                getattr(g, "_request_ip", "-"),
             )
-        if request.path.startswith('/api/') and elapsed_ms >= 250:
-            app.logger.warning('Slow request %.1fms %s %s [%s]', elapsed_ms, request.method, request.path, response.status_code)
+        if request.path.startswith("/api/") and elapsed_ms >= 250:
+            app.logger.warning(
+                "Slow request %.1fms %s %s [%s]",
+                elapsed_ms,
+                request.method,
+                request.path,
+                response.status_code,
+            )
     # Cache-Control para APIs GET (dados são estáveis entre navegações)
-    if (request.method == 'GET' and request.path.startswith('/api/')
-            and response.status_code == 200
-            and 'Cache-Control' not in response.headers):
-        response.headers['Cache-Control'] = 'public, max-age=20'
+    if (
+        request.method == "GET"
+        and request.path.startswith("/api/")
+        and response.status_code == 200
+        and "Cache-Control" not in response.headers
+    ):
+        response.headers["Cache-Control"] = "public, max-age=20"
 
-    if (response.status_code < 200 or response.status_code >= 300
-            or response.direct_passthrough
-            or 'Content-Encoding' in response.headers):
+    if (
+        response.status_code < 200
+        or response.status_code >= 300
+        or response.direct_passthrough
+        or "Content-Encoding" in response.headers
+    ):
         return response
-    mime = (response.content_type or '').split(';')[0].strip()
-    if mime in _COMPRESSIBLE and 'gzip' in request.headers.get('Accept-Encoding', ''):
+    mime = (response.content_type or "").split(";")[0].strip()
+    if mime in _COMPRESSIBLE and "gzip" in request.headers.get("Accept-Encoding", ""):
         data = response.get_data()
         if len(data) > 256:
             response.set_data(_gzip.compress(data, compresslevel=4))
-            response.headers['Content-Encoding'] = 'gzip'
-            response.headers['Vary'] = 'Accept-Encoding'
-            response.headers['Content-Length'] = len(response.get_data())
+            response.headers["Content-Encoding"] = "gzip"
+            response.headers["Vary"] = "Accept-Encoding"
+            response.headers["Content-Length"] = len(response.get_data())
     return response
+
 
 def migrate_db():
     """Aplica migrações no banco existente."""
@@ -517,6 +644,13 @@ def migrate_db():
         )
     """)
     ensure_db_indexes(cur)
+    # Migração: adicionar coluna atualizado_em em credores (se ainda não existir)
+    try:
+        cur.execute(
+            "ALTER TABLE credores ADD COLUMN atualizado_em TEXT DEFAULT (datetime('now','localtime'))"
+        )
+    except Exception:
+        pass  # coluna já existe
     # Migração: adicionar coluna categoria em kanban_tasks (se ainda não existir)
     try:
         cur.execute("ALTER TABLE kanban_tasks ADD COLUMN categoria TEXT DEFAULT ''")
@@ -524,7 +658,9 @@ def migrate_db():
         pass  # coluna já existe
     # Migração: adicionar coluna data_vencimento em kanban_tasks (se ainda não existir)
     try:
-        cur.execute("ALTER TABLE kanban_tasks ADD COLUMN data_vencimento TEXT DEFAULT ''")
+        cur.execute(
+            "ALTER TABLE kanban_tasks ADD COLUMN data_vencimento TEXT DEFAULT ''"
+        )
     except Exception:
         pass  # coluna já existe
     # Migração: adicionar coluna responsavel em kanban_tasks (se ainda não existir)
@@ -543,7 +679,7 @@ def migrate_db():
 def init_db():
     """Cria as tabelas e popula credores iniciais a partir do data.js."""
     conn = get_db()
-    cur  = conn.cursor()
+    cur = conn.cursor()
 
     cur.execute("""
         CREATE TABLE IF NOT EXISTS credores (
@@ -744,43 +880,98 @@ def init_db():
 
     conn.commit()
 
+
 def _seed_from_data_js(cur):
     """Lê o data.js e insere os credores no banco."""
     import re
-    with open(DATA_JS, encoding='utf-8') as f:
+
+    with open(DATA_JS, encoding="utf-8") as f:
         content = f.read()
     # Extrai o array JSON do arquivo JS
-    match = re.search(r'const CREDORES_FIXOS\s*=\s*(\[[\s\S]*?\]);', content)
+    match = re.search(r"const CREDORES_FIXOS\s*=\s*(\[[\s\S]*?\]);", content)
     if not match:
         print("ATENÇÃO: Não foi possível ler o data.js para popular o banco.")
         return
     data = json.loads(match.group(1))
     for c in data:
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO credores
               (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, departamento, obs)
             VALUES (?,?,?,?,?,?,?,?,?,?)
-        """, (
-            c.get('NOME', ''),
-            float(c.get('VALOR') or 0),
-            c.get('DESCRIÇÃO', ''),
-            c.get('CNPJ', ''),
-            c.get('EMAIL', ''),
-            c.get('TIPO DE VALOR', 'FIXO'),
-            str(c.get('SOLICITAÇÃO', '')),
-            str(c.get('PAGAMENTO', '')),
-            c.get('DEPARTAMENTO', ''),
-            c.get('OBS', ''),
-        ))
+        """,
+            (
+                c.get("NOME", ""),
+                float(c.get("VALOR") or 0),
+                c.get("DESCRIÇÃO", ""),
+                c.get("CNPJ", ""),
+                c.get("EMAIL", ""),
+                c.get("TIPO DE VALOR", "FIXO"),
+                str(c.get("SOLICITAÇÃO", "")),
+                str(c.get("PAGAMENTO", "")),
+                c.get("DEPARTAMENTO", ""),
+                c.get("OBS", ""),
+            ),
+        )
     print(f"  {len(data)} credores inseridos.")
+
 
 # ── Helpers ──────────────────────────────────────────────────
 def row_to_dict(row):
     return dict(row)
 
 
+def api_error(message: str, status: int = 400, details: dict | None = None):
+    """Retorna resposta de erro padronizada em JSON."""
+    body: dict = {"error": message}
+    if details:
+        body["details"] = details
+    return jsonify(body), status
+
+
+ALLOWED_UPLOAD_EXTENSIONS = {
+    ".pdf",
+    ".xlsx",
+    ".xls",
+    ".csv",
+    ".doc",
+    ".docx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".bmp",
+    ".tiff",
+    ".txt",
+    ".zip",
+    ".rar",
+    ".7z",
+}
+
+
+def validate_file_upload(file, max_mb: int = 20):
+    """Valida arquivo enviado: presença, tamanho e extensão permitida."""
+    if not file or not file.filename:
+        return None, ("Arquivo é obrigatório", 400)
+    content = file.read()
+    if not content:
+        return None, ("Arquivo vazio", 400)
+    max_bytes = max_mb * 1024 * 1024
+    if len(content) > max_bytes:
+        return None, (f"Arquivo excede o limite de {max_mb} MB", 413)
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext and ext not in ALLOWED_UPLOAD_EXTENSIONS:
+        return None, (f"Tipo de arquivo não permitido: {ext}", 400)
+    # Recria um file-like object para que o código downstream possa ler novamente
+    from io import BytesIO as _BytesIO
+
+    file.stream = _BytesIO(content)
+    file.content_length = len(content)
+    return content, None
+
+
 def _normalizar_cnpj(cnpj: str) -> str:
-    return re.sub(r'\D', '', (cnpj or '').strip())
+    return re.sub(r"\D", "", (cnpj or "").strip())
 
 
 def _cnpj_valido(cnpj: str) -> bool:
@@ -806,7 +997,7 @@ def _cnpj_valido(cnpj: str) -> bool:
 
 
 def _parse_bool(value) -> bool:
-    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on', 'sim'}
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on", "sim"}
 
 
 def _credor_payload(data: dict, *, partial: bool = False) -> tuple[dict, list[str]]:
@@ -816,69 +1007,71 @@ def _credor_payload(data: dict, *, partial: bool = False) -> tuple[dict, list[st
     def has_value(key: str) -> bool:
         return key in data and data.get(key) is not None
 
-    if not partial or has_value('nome'):
-        nome = (data.get('nome') or '').strip().upper()
+    if not partial or has_value("nome"):
+        nome = (data.get("nome") or "").strip().upper()
         if not nome:
             errors.append('Campo "nome" é obrigatório')
         elif len(nome) < 3:
             errors.append('Campo "nome" deve ter pelo menos 3 caracteres')
         else:
-            payload['nome'] = nome
+            payload["nome"] = nome
 
-    if not partial or has_value('descricao'):
-        payload['descricao'] = (data.get('descricao') or '').strip().upper()
+    if not partial or has_value("descricao"):
+        payload["descricao"] = (data.get("descricao") or "").strip().upper()
 
-    if not partial or has_value('departamento'):
-        payload['departamento'] = (data.get('departamento') or '').strip().upper()
+    if not partial or has_value("departamento"):
+        payload["departamento"] = (data.get("departamento") or "").strip().upper()
 
-    if not partial or has_value('tipo_valor'):
-        tipo_valor = (data.get('tipo_valor') or 'FIXO').strip().upper()
-        if tipo_valor not in {'FIXO', 'VARIÁVEL', 'VARIAVEL'}:
+    if not partial or has_value("tipo_valor"):
+        tipo_valor = (data.get("tipo_valor") or "FIXO").strip().upper()
+        if tipo_valor not in {"FIXO", "VARIÁVEL", "VARIAVEL"}:
             errors.append('Campo "tipo_valor" deve ser FIXO ou VARIÁVEL')
         else:
-            payload['tipo_valor'] = 'VARIÁVEL' if tipo_valor == 'VARIAVEL' else tipo_valor
+            payload["tipo_valor"] = (
+                "VARIÁVEL" if tipo_valor == "VARIAVEL" else tipo_valor
+            )
 
-    if not partial or has_value('valor'):
+    if not partial or has_value("valor"):
         try:
-            valor = float(data.get('valor') or 0)
+            valor = float(data.get("valor") or 0)
             if valor < 0:
                 raise ValueError
-            payload['valor'] = valor
+            payload["valor"] = valor
         except Exception:
             errors.append('Campo "valor" deve ser numérico e maior ou igual a zero')
 
-    if not partial or has_value('cnpj'):
-        cnpj = _normalizar_cnpj(data.get('cnpj', ''))
+    if not partial or has_value("cnpj"):
+        cnpj = _normalizar_cnpj(data.get("cnpj", ""))
         if cnpj:
             if len(cnpj) != 14:
                 errors.append('Campo "cnpj" deve conter 14 dígitos')
             elif not _cnpj_valido(cnpj):
                 errors.append('Campo "cnpj" inválido')
-        payload['cnpj'] = cnpj
+        payload["cnpj"] = cnpj
 
-    if not partial or has_value('email'):
-        email = (data.get('email') or '').strip().lower()
-        if email and not re.fullmatch(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+    if not partial or has_value("email"):
+        email = (data.get("email") or "").strip().lower()
+        if email and not re.fullmatch(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
             errors.append('Campo "email" inválido')
-        payload['email'] = email
+        payload["email"] = email
 
-    if not partial or has_value('pagamento'):
-        pagamento = (data.get('pagamento') or '').strip()
-        if pagamento and not re.fullmatch(r'\d{1,3}', pagamento):
+    if not partial or has_value("pagamento"):
+        pagamento = (data.get("pagamento") or "").strip()
+        if pagamento and not re.fullmatch(r"\d{1,3}", pagamento):
             errors.append('Campo "pagamento" deve conter apenas dias em número')
-        payload['pagamento'] = pagamento
+        payload["pagamento"] = pagamento
 
-    if not partial or has_value('solicitacao'):
-        payload['solicitacao'] = (data.get('solicitacao') or '').strip()
+    if not partial or has_value("solicitacao"):
+        payload["solicitacao"] = (data.get("solicitacao") or "").strip()
 
-    if not partial or has_value('validade'):
-        validade = (data.get('validade') or '').strip()
-        if validade and not re.fullmatch(r'\d{4}-\d{2}-\d{2}', validade):
+    if not partial or has_value("validade"):
+        validade = (data.get("validade") or "").strip()
+        if validade and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", validade):
             errors.append('Campo "validade" deve estar no formato AAAA-MM-DD')
-        payload['validade'] = validade
+        payload["validade"] = validade
 
-    if not partial or has_value('obs'):
-        payload['obs'] = (data.get('obs') or '').strip().upper()
+    if not partial or has_value("obs"):
+        payload["obs"] = (data.get("obs") or "").strip().upper()
 
     return payload, errors
 
@@ -889,30 +1082,29 @@ def _buscar_credor_duplicado(conn, cnpj: str, *, ignore_id: int | None = None):
         row = conn.execute(
             "SELECT id, nome FROM credores WHERE ativo=1 AND cnpj=?"
             + (" AND id<>?" if ignore_id else ""),
-            (cnpj, ignore_id) if ignore_id else (cnpj,)
+            (cnpj, ignore_id) if ignore_id else (cnpj,),
         ).fetchone()
         if row:
-            return row, 'Já existe um credor ativo com este CNPJ'
-    return None, ''
-
+            return row, "Já existe um credor ativo com este CNPJ"
+    return None, ""
 
 
 def _montar_filtros_credores(args):
-    search = (args.get('search') or '').strip()
-    departamento = (args.get('departamento') or '').strip().upper()
-    tipo = (args.get('tipo') or '').strip().upper()
-    status_cadastro = (args.get('status_cadastro') or '').strip().lower()
-    somente_vencidos = _parse_bool(args.get('somente_vencidos'))
-    vencendo_dias = args.get('vencendo_dias', type=int)
-    status = (args.get('status') or '').strip().lower()
-    ano = args.get('ano', type=int)
-    mes = args.get('mes', type=int)
+    search = (args.get("search") or "").strip()
+    departamento = (args.get("departamento") or "").strip().upper()
+    tipo = (args.get("tipo") or "").strip().upper()
+    status_cadastro = (args.get("status_cadastro") or "").strip().lower()
+    somente_vencidos = _parse_bool(args.get("somente_vencidos"))
+    vencendo_dias = args.get("vencendo_dias", type=int)
+    status = (args.get("status") or "").strip().lower()
+    ano = args.get("ano", type=int)
+    mes = args.get("mes", type=int)
 
     clauses = ["ativo=1"]
     params: list = []
 
     if search:
-        like = f'%{search.lower()}%'
+        like = f"%{search.lower()}%"
         clauses.append("""(
             LOWER(nome) LIKE ?
             OR LOWER(COALESCE(descricao, '')) LIKE ?
@@ -927,65 +1119,103 @@ def _montar_filtros_credores(args):
 
     if tipo:
         clauses.append("COALESCE(tipo_valor, 'FIXO')=?")
-        params.append('VARIÁVEL' if tipo == 'VARIAVEL' else tipo)
+        params.append("VARIÁVEL" if tipo == "VARIAVEL" else tipo)
 
-    if status_cadastro == 'sem_cnpj':
+    if status_cadastro == "sem_cnpj":
         clauses.append("COALESCE(cnpj, '')=''")
-    elif status_cadastro == 'sem_email':
+    elif status_cadastro == "sem_email":
         clauses.append("COALESCE(email, '')=''")
-    elif status_cadastro == 'com_pendencias':
+    elif status_cadastro == "com_pendencias":
         clauses.append("(COALESCE(cnpj, '')='' OR COALESCE(email, '')='')")
 
     if somente_vencidos:
-        clauses.append("COALESCE(validade, '')<>'' AND date(validade) < date('now','localtime')")
+        clauses.append(
+            "COALESCE(validade, '')<>'' AND date(validade) < date('now','localtime')"
+        )
     elif vencendo_dias is not None and vencendo_dias >= 0:
-        clauses.append("COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', ?)")
-        params.append(f'+{vencendo_dias} day')
+        clauses.append(
+            "COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', ?)"
+        )
+        params.append(f"+{vencendo_dias} day")
 
-    if status in {'empenhado', 'pendente'} and ano and mes:
+    if status in {"empenhado", "pendente"} and ano and mes:
         exists_sql = (
             "EXISTS (SELECT 1 FROM empenhos e "
             "WHERE e.credor_id = credores.id AND e.ano=? AND e.mes=?)"
         )
-        clauses.append(exists_sql if status == 'empenhado' else f'NOT {exists_sql}')
+        clauses.append(exists_sql if status == "empenhado" else f"NOT {exists_sql}")
         params.extend([ano, mes])
 
     return clauses, params
 
-def _slugify(value: str, fallback: str = 'geral') -> str:
-    text = (value or '').strip().lower()
-    text = re.sub(r'[^a-z0-9_-]+', '-', text)
-    text = re.sub(r'-+', '-', text).strip('-')
+
+def _slugify(value: str, fallback: str = "geral") -> str:
+    text = (value or "").strip().lower()
+    text = re.sub(r"[^a-z0-9_-]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
     return text or fallback
 
-def _build_document_storage(categoria: str, referencia: str, original_name: str) -> tuple[str, str, str]:
-    categoria_slug = _slugify(categoria, 'geral')
-    referencia_slug = _slugify(referencia, 'sem-referencia') if referencia else 'sem-referencia'
-    ext = os.path.splitext(original_name or '')[1].lower()
+
+def _build_document_storage(
+    categoria: str, referencia: str, original_name: str
+) -> tuple[str, str, str]:
+    categoria_slug = _slugify(categoria, "geral")
+    referencia_slug = (
+        _slugify(referencia, "sem-referencia") if referencia else "sem-referencia"
+    )
+    ext = os.path.splitext(original_name or "")[1].lower()
     ext = ext[:20]
     unique_name = f"{int(_time.time() * 1000)}_{hashlib.sha1((original_name + str(_time.time())).encode()).hexdigest()[:10]}{ext}"
     relative_dir = os.path.join(categoria_slug, referencia_slug)
     abs_dir = os.path.join(DOCUMENTS_DIR, relative_dir)
     os.makedirs(abs_dir, exist_ok=True)
-    return unique_name, relative_dir.replace('\\', '/'), os.path.join(abs_dir, unique_name)
+    return (
+        unique_name,
+        relative_dir.replace("\\", "/"),
+        os.path.join(abs_dir, unique_name),
+    )
 
-def _persist_document_file(original_name: str, content: bytes, categoria: str = 'gerados', referencia: str = '', descricao: str = '', mime_type: str = ''):
-    nome_arquivo, relative_dir, abs_path = _build_document_storage(categoria, referencia, original_name)
-    with open(abs_path, 'wb') as fh:
+
+def _persist_document_file(
+    original_name: str,
+    content: bytes,
+    categoria: str = "gerados",
+    referencia: str = "",
+    descricao: str = "",
+    mime_type: str = "",
+):
+    nome_arquivo, relative_dir, abs_path = _build_document_storage(
+        categoria, referencia, original_name
+    )
+    with open(abs_path, "wb") as fh:
         fh.write(content)
     tamanho = os.path.getsize(abs_path)
     extensao = os.path.splitext(original_name)[1].lower()
-    caminho_relativo = f"{relative_dir}/{nome_arquivo}" if relative_dir else nome_arquivo
+    caminho_relativo = (
+        f"{relative_dir}/{nome_arquivo}" if relative_dir else nome_arquivo
+    )
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO documentos_centro (nome_original, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo) VALUES (?,?,?,?,?,?,?,?)",
-        (original_name, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo)
+        (
+            original_name,
+            nome_arquivo,
+            categoria,
+            referencia,
+            descricao,
+            tamanho,
+            extensao,
+            caminho_relativo,
+        ),
     )
     new_id = cur.lastrowid
     conn.commit()
-    row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (new_id,)).fetchone()
+    row = conn.execute(
+        "SELECT * FROM documentos_centro WHERE id=?", (new_id,)
+    ).fetchone()
     return row_to_dict(row)
+
 
 def _serve_cached(url, cache_control):
     """Serve arquivo do cache com brotli/gzip + ETag (304 quando possível)."""
@@ -1001,91 +1231,103 @@ def _serve_cached(url, cache_control):
     etag = _etag_cache.get(url)
 
     # 304 Not Modified — se cliente já tem a versão correta, poupa banda total
-    if etag and request.headers.get('If-None-Match') == f'"{etag}"':
-        return Response(status=304, headers={
-            'Cache-Control': cache_control,
-            'ETag': f'"{etag}"',
-        })
+    if etag and request.headers.get("If-None-Match") == f'"{etag}"':
+        return Response(
+            status=304,
+            headers={
+                "Cache-Control": cache_control,
+                "ETag": f'"{etag}"',
+            },
+        )
 
-    headers = {'Cache-Control': cache_control}
+    headers = {"Cache-Control": cache_control}
     if etag:
-        headers['ETag'] = f'"{etag}"'
+        headers["ETag"] = f'"{etag}"'
 
-    accept_enc = request.headers.get('Accept-Encoding', '')
+    accept_enc = request.headers.get("Accept-Encoding", "")
     # Brotli tem melhor compressão que gzip (~20-30% menor)
     br = _brotli_cache.get(url)
     gz = _gzip_cache.get(url)
-    if br and 'br' in accept_enc:
-        headers['Content-Encoding'] = 'br'
-        headers['Vary'] = 'Accept-Encoding'
-        headers['Content-Length'] = len(br)
+    if br and "br" in accept_enc:
+        headers["Content-Encoding"] = "br"
+        headers["Vary"] = "Accept-Encoding"
+        headers["Content-Length"] = len(br)
         return Response(br, mimetype=mime, headers=headers)
-    if gz and 'gzip' in accept_enc:
-        headers['Content-Encoding'] = 'gzip'
-        headers['Vary'] = 'Accept-Encoding'
-        headers['Content-Length'] = len(gz)
+    if gz and "gzip" in accept_enc:
+        headers["Content-Encoding"] = "gzip"
+        headers["Vary"] = "Accept-Encoding"
+        headers["Content-Length"] = len(gz)
         return Response(gz, mimetype=mime, headers=headers)
-    headers['Content-Length'] = len(data)
+    headers["Content-Length"] = len(data)
     return Response(data, mimetype=mime, headers=headers)
+
 
 # ────────────────────────────────────────────────────────────
 # ROTAS – Statics
 # ────────────────────────────────────────────────────────────
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    resp = _serve_cached('/index.html', 'no-cache, no-store, must-revalidate')
+    resp = _serve_cached("/index.html", "no-cache, no-store, must-revalidate")
     if resp:
         return resp
-    r = send_file(os.path.join(BASE_DIR, 'index.html'))
-    r.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    r = send_file(os.path.join(BASE_DIR, "index.html"))
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return r
 
 
-@app.route('/static/<path:filename>')
+@app.route("/static/<path:filename>")
 def static_cached(filename):
-    url = '/static/' + filename
+    url = "/static/" + filename
     ext = os.path.splitext(filename)[1].lower()
-    if ext in {'.js', '.css', '.html'}:
-        cc = 'no-cache, must-revalidate'
-    elif ext in {'.woff2', '.woff', '.ttf', '.otf', '.eot'}:
-        cc = 'public, max-age=31536000, immutable'  # fontes: 1 ano
+    if ext in {".js", ".css", ".html"}:
+        cc = "no-cache, must-revalidate"
+    elif ext in {".woff2", ".woff", ".ttf", ".otf", ".eot"}:
+        cc = "public, max-age=31536000, immutable"  # fontes: 1 ano
     else:
-        cc = 'public, max-age=86400'
+        cc = "public, max-age=86400"
     resp = _serve_cached(url, cc)
     if resp:
         return resp
-    r = send_from_directory(os.path.join(BASE_DIR, 'static'), filename)
-    r.headers['Cache-Control'] = cc
+    r = send_from_directory(os.path.join(BASE_DIR, "static"), filename)
+    r.headers["Cache-Control"] = cc
     return r
 
 
-@app.route('/<path:filename>')
+@app.route("/<path:filename>")
 def static_files(filename):
-    if filename.startswith('api/'):
-        return jsonify({'error': 'Rota não encontrada: ' + filename}), 404
-    url = '/' + filename
-    cc = 'no-cache, must-revalidate' if filename.endswith('.html') else 'public, max-age=3600'
+    if filename.startswith("api/"):
+        return jsonify({"error": "Rota não encontrada: " + filename}), 404
+    url = "/" + filename
+    cc = (
+        "no-cache, must-revalidate"
+        if filename.endswith(".html")
+        else "public, max-age=3600"
+    )
     resp = _serve_cached(url, cc)
     if resp:
         return resp
     r = send_from_directory(BASE_DIR, filename)
-    if filename.endswith('.html'):
-        r.headers['Cache-Control'] = 'no-cache, must-revalidate'
+    if filename.endswith(".html"):
+        r.headers["Cache-Control"] = "no-cache, must-revalidate"
     return r
+
 
 @app.errorhandler(404)
 def not_found(e):
-    if request.path.startswith('/api/'):
-        return jsonify({'error': 'Rota não encontrada', 'path': request.path}), 404
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Rota não encontrada", "path": request.path}), 404
     return str(e), 404
+
 
 @app.errorhandler(500)
 def server_error(e):
-    app.logger.error('500 em %s: %s', request.path, e)
-    if request.path.startswith('/api/'):
-        return jsonify({'error': 'Erro interno do servidor', 'detail': str(e)}), 500
+    app.logger.error("500 em %s: %s", request.path, e)
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Erro interno do servidor", "detail": str(e)}), 500
     return str(e), 500
+
 
 # ────────────────────────────────────────────────────────────
 # API – Autenticação ADM
@@ -1093,28 +1335,40 @@ def server_error(e):
 
 # Senha armazenada como hash SHA-256 — nunca em texto puro em memória
 _ADM_RAW = settings.admin_password
-_ADM_HASH = hashlib.sha256(_ADM_RAW.encode()).hexdigest()
+_ADM_HASH = hashlib.sha256(_ADM_RAW.encode()).hexdigest() if _ADM_RAW else ""
 del _ADM_RAW  # limpa texto puro da memória
 
-@app.route('/api/auth/adm', methods=['POST'])
+
+@app.route("/api/auth/adm", methods=["POST"])
 def auth_adm():
     """Verifica a senha da área administrativa (com rate limit)."""
-    ip = request.remote_addr or 'unknown'
-    if _rate_limited(f'auth:{ip}', max_hits=5, window=60):
-        app.logger.warning('Rate limit auth: %s', ip)
-        return jsonify({'ok': False, 'error': 'Muitas tentativas. Aguarde 1 minuto.'}), 429
+    if not _ADM_HASH:
+        return jsonify(
+            {
+                "ok": False,
+                "error": "Senha administrativa não configurada. Defina ADM_PASSWORD no .env.",
+            }
+        ), 503
+    ip = request.remote_addr or "unknown"
+    if _rate_limited(f"auth:{ip}", max_hits=5, window=60):
+        app.logger.warning("Rate limit auth: %s", ip)
+        return jsonify(
+            {"ok": False, "error": "Muitas tentativas. Aguarde 1 minuto."}
+        ), 429
     d = request.get_json(force=True) or {}
-    senha = d.get('senha', '')
+    senha = d.get("senha", "")
     if hashlib.sha256(senha.encode()).hexdigest() == _ADM_HASH:
-        return jsonify({'ok': True})
-    app.logger.warning('Senha incorreta de %s', ip)
-    return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
+        return jsonify({"ok": True})
+    app.logger.warning("Senha incorreta de %s", ip)
+    return jsonify({"ok": False, "error": "Senha incorreta"}), 401
 
-@app.route('/api/ping', methods=['GET'])
+
+@app.route("/api/ping", methods=["GET"])
 def ping():
-    return jsonify({'ok': True})
+    return jsonify({"ok": True})
 
-@app.route('/api/health', methods=['GET'])
+
+@app.route("/api/health", methods=["GET"])
 def health():
     """Status do servidor para monitoramento."""
     try:
@@ -1123,46 +1377,49 @@ def health():
         db_ok = True
     except Exception:
         db_ok = False
-    return jsonify({
-        'status': 'ok' if db_ok else 'degraded',
-        'db': db_ok,
-        'uptime_s': int(_time.time() - _SERVER_START),
-        'cache_files': len(_file_cache),
-        'cache_gzip': len(_gzip_cache),
-    })
+    return jsonify(
+        {
+            "status": "ok" if db_ok else "degraded",
+            "db": db_ok,
+            "uptime_s": int(_time.time() - _SERVER_START),
+            "cache_files": len(_file_cache),
+            "cache_gzip": len(_gzip_cache),
+        }
+    )
+
 
 def _should_include_credores_summary(args) -> bool:
-    raw = (args.get('include_summary') or '').strip().lower()
-    return raw in {'1', 'true', 'yes', 'on'}
+    raw = (args.get("include_summary") or "").strip().lower()
+    return raw in {"1", "true", "yes", "on"}
 
-@app.route('/api/credores', methods=['GET'])
+
+@app.route("/api/credores", methods=["GET"])
 def get_credores():
     try:
-        limit = max(1, min(request.args.get('limit', 50, type=int), 1000))
-        offset = request.args.get('offset', 0, type=int)
-        sort_col = (request.args.get('sort_col') or 'departamento').strip().lower()
-        sort_dir = (request.args.get('sort_dir') or 'asc').strip().lower()
-        if sort_dir not in {'asc', 'desc'}:
-            sort_dir = 'asc'
+        limit = max(1, min(request.args.get("limit", 50, type=int), 1000))
+        offset = request.args.get("offset", 0, type=int)
+        sort_col = (request.args.get("sort_col") or "departamento").strip().lower()
+        sort_dir = (request.args.get("sort_dir") or "asc").strip().lower()
+        if sort_dir not in {"asc", "desc"}:
+            sort_dir = "asc"
         sort_map = {
-            'nome': 'nome',
-            'departamento': 'departamento',
-            'valor': 'valor',
-            'tipo': 'tipo_valor',
-            'tipo_valor': 'tipo_valor',
-            'validade': 'validade',
+            "nome": "nome",
+            "departamento": "departamento",
+            "valor": "valor",
+            "tipo": "tipo_valor",
+            "tipo_valor": "tipo_valor",
+            "validade": "validade",
         }
-        order_by = sort_map.get(sort_col, 'departamento')
+        order_by = sort_map.get(sort_col, "departamento")
         clauses, params = _montar_filtros_credores(request.args)
-        where_sql = ' AND '.join(clauses)
+        where_sql = " AND ".join(clauses)
         conn = get_db()
         total = conn.execute(
-            f"SELECT COUNT(*) AS total FROM credores WHERE {where_sql}",
-            params
-        ).fetchone()['total']
+            f"SELECT COUNT(*) AS total FROM credores WHERE {where_sql}", params
+        ).fetchone()["total"]
         rows = conn.execute(
             f"SELECT * FROM credores WHERE {where_sql} ORDER BY {order_by} {sort_dir}, nome ASC LIMIT ? OFFSET ?",
-            (*params, limit, offset)
+            (*params, limit, offset),
         ).fetchall()
         itens = [row_to_dict(r) for r in rows]
         resumo = None
@@ -1181,143 +1438,169 @@ def get_credores():
                 WHERE ativo=1
                 """
             ).fetchone()
-        return jsonify({
-            'items': itens,
-            'total': total,
-            'limit': limit,
-            'offset': offset,
-            'summary': row_to_dict(resumo) if resumo else None,
-        })
+        return jsonify(
+            {
+                "items": itens,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "summary": row_to_dict(resumo) if resumo else None,
+            }
+        )
     except Exception as e:
-        app.logger.error('GET /api/credores: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/credores: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/credores', methods=['POST'])
+
+@app.route("/api/credores", methods=["POST"])
 def add_credor():
     data = request.get_json(force=True) or {}
     payload, errors = _credor_payload(data, partial=False)
     if errors:
-        return jsonify({'error': errors[0], 'errors': errors}), 400
+        return jsonify({"error": errors[0], "errors": errors}), 400
     try:
         conn = get_db()
-        duplicado, msg = _buscar_credor_duplicado(conn, payload.get('cnpj', ''))
+        duplicado, msg = _buscar_credor_duplicado(conn, payload.get("cnpj", ""))
         if duplicado:
-            return jsonify({'error': msg, 'duplicado_id': duplicado['id']}), 409
-        cur  = conn.cursor()
-        cur.execute("""
+            return jsonify({"error": msg, "duplicado_id": duplicado["id"]}), 409
+        cur = conn.cursor()
+        cur.execute(
+            """
             INSERT INTO credores
               (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
             VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            payload.get('nome', ''),
-            payload.get('valor', 0),
-            payload.get('descricao', ''),
-            payload.get('cnpj', ''),
-            payload.get('email', ''),
-            payload.get('tipo_valor', 'FIXO'),
-            payload.get('solicitacao', ''),
-            payload.get('pagamento', ''),
-            payload.get('validade', ''),
-            payload.get('departamento', ''),
-            payload.get('obs', ''),
-        ))
+        """,
+            (
+                payload.get("nome", ""),
+                payload.get("valor", 0),
+                payload.get("descricao", ""),
+                payload.get("cnpj", ""),
+                payload.get("email", ""),
+                payload.get("tipo_valor", "FIXO"),
+                payload.get("solicitacao", ""),
+                payload.get("pagamento", ""),
+                payload.get("validade", ""),
+                payload.get("departamento", ""),
+                payload.get("obs", ""),
+            ),
+        )
         new_id = cur.lastrowid
         conn.execute(
             "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('CRIAR', new_id, payload.get('nome', ''), payload.get('departamento', '') or 'Cadastro de credor')
+            (
+                "CRIAR",
+                new_id,
+                payload.get("nome", ""),
+                payload.get("departamento", "") or "Cadastro de credor",
+            ),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        app.logger.error('POST /api/credores: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/credores: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/credores/<int:cid>', methods=['PUT'])
+@app.route("/api/credores/<int:cid>", methods=["PUT"])
 def update_credor(cid):
     data = request.get_json(force=True) or {}
     payload, errors = _credor_payload(data, partial=False)
     if errors:
-        return jsonify({'error': errors[0], 'errors': errors}), 400
+        return jsonify({"error": errors[0], "errors": errors}), 400
     try:
         conn = get_db()
-        atual = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
+        atual = conn.execute(
+            "SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)
+        ).fetchone()
         if not atual:
-            return jsonify({'error': 'Credor não encontrado'}), 404
+            return jsonify({"error": "Credor não encontrado"}), 404
         # Apenas checamos duplicidade para nome/CNPJ se o usuário os alterou de fato.
         # Normaliza o CNPJ do banco também antes de comparar, pois o payload já vem
         # normalizado (só dígitos) mas o banco pode ter dados em formato diferente.
-        cnpj_atual_normalizado = _normalizar_cnpj(atual['cnpj'] or '')
-        cnpj_alterado = (payload.get('cnpj', '') != cnpj_atual_normalizado)
-        cnpj_para_verificar = payload.get('cnpj', '') if cnpj_alterado else ''
+        cnpj_atual_normalizado = _normalizar_cnpj(atual["cnpj"] or "")
+        cnpj_alterado = payload.get("cnpj", "") != cnpj_atual_normalizado
+        cnpj_para_verificar = payload.get("cnpj", "") if cnpj_alterado else ""
 
-        duplicado, msg = _buscar_credor_duplicado(conn, cnpj_para_verificar, ignore_id=cid)
+        duplicado, msg = _buscar_credor_duplicado(
+            conn, cnpj_para_verificar, ignore_id=cid
+        )
         if duplicado:
-            return jsonify({'error': msg, 'duplicado_id': duplicado['id']}), 409
-        conn.execute("""
+            return jsonify({"error": msg, "duplicado_id": duplicado["id"]}), 409
+        conn.execute(
+            """
             UPDATE credores
                SET nome=?, valor=?, descricao=?, cnpj=?, email=?, tipo_valor=?, solicitacao=?, pagamento=?, validade=?, departamento=?, obs=?
              WHERE id=?
-        """, (
-            payload.get('nome', ''),
-            payload.get('valor', 0),
-            payload.get('descricao', ''),
-            payload.get('cnpj', ''),
-            payload.get('email', ''),
-            payload.get('tipo_valor', 'FIXO'),
-            payload.get('solicitacao', ''),
-            payload.get('pagamento', ''),
-            payload.get('validade', ''),
-            payload.get('departamento', ''),
-            payload.get('obs', ''),
-            cid,
-        ))
+        """,
+            (
+                payload.get("nome", ""),
+                payload.get("valor", 0),
+                payload.get("descricao", ""),
+                payload.get("cnpj", ""),
+                payload.get("email", ""),
+                payload.get("tipo_valor", "FIXO"),
+                payload.get("solicitacao", ""),
+                payload.get("pagamento", ""),
+                payload.get("validade", ""),
+                payload.get("departamento", ""),
+                payload.get("obs", ""),
+                cid,
+            ),
+        )
         detalhes = []
         for key, label in (
-            ('nome', 'Nome'),
-            ('departamento', 'Departamento'),
-            ('valor', 'Valor'),
-            ('tipo_valor', 'Tipo'),
-            ('validade', 'Validade'),
-            ('cnpj', 'CNPJ'),
-            ('email', 'E-mail'),
+            ("nome", "Nome"),
+            ("departamento", "Departamento"),
+            ("valor", "Valor"),
+            ("tipo_valor", "Tipo"),
+            ("validade", "Validade"),
+            ("cnpj", "CNPJ"),
+            ("email", "E-mail"),
         ):
-            anterior = atual[key] if key in atual.keys() else ''
-            novo = payload.get(key, '')
-            if str(anterior or '') != str(novo or ''):
-                detalhes.append(f'{label}: {anterior or "—"} → {novo or "—"}')
+            anterior = atual[key] if key in atual.keys() else ""
+            novo = payload.get(key, "")
+            if str(anterior or "") != str(novo or ""):
+                detalhes.append(f"{label}: {anterior or '—'} → {novo or '—'}")
         conn.execute(
             "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('EDITAR', cid, payload.get('nome', ''), ' | '.join(detalhes) or 'Cadastro atualizado')
+            (
+                "EDITAR",
+                cid,
+                payload.get("nome", ""),
+                " | ".join(detalhes) or "Cadastro atualizado",
+            ),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
         return jsonify(row_to_dict(row))
     except Exception as e:
-        app.logger.error('PUT /api/credores/%s: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("PUT /api/credores/%s: %s", cid, e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/credores/<int:cid>', methods=['DELETE'])
+@app.route("/api/credores/<int:cid>", methods=["DELETE"])
 def delete_credor(cid):
     try:
         conn = get_db()
-        row = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Credor não encontrado'}), 404
+            return jsonify({"error": "Credor não encontrado"}), 404
         conn.execute("UPDATE credores SET ativo=0 WHERE id=?", (cid,))
         conn.execute(
             "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('EXCLUIR', cid, row['nome'], row['departamento'] or 'Exclusão lógica')
+            ("EXCLUIR", cid, row["nome"], row["departamento"] or "Exclusão lógica"),
         )
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('DELETE /api/credores/%s: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("DELETE /api/credores/%s: %s", cid, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/credores/deletados', methods=['GET'])
+
+@app.route("/api/credores/deletados", methods=["GET"])
 def listar_credores_deletados():
     """Retorna todos os credores com ativo=0 (excluídos), ordenados pelo mais recente."""
     try:
@@ -1327,161 +1610,198 @@ def listar_credores_deletados():
         ).fetchall()
         return jsonify([row_to_dict(r) for r in rows])
     except Exception as e:
-        app.logger.error('GET /api/credores/deletados: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/credores/deletados: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/credores/<int:cid>/restaurar', methods=['PUT'])
+@app.route("/api/credores/<int:cid>/restaurar", methods=["PUT"])
 def restaurar_credor(cid):
     """Restaura um credor excluído (ativo=0 → ativo=1)."""
     try:
         conn = get_db()
-        row = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=0", (cid,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM credores WHERE id=? AND ativo=0", (cid,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Credor não encontrado na lixeira'}), 404
+            return jsonify({"error": "Credor não encontrado na lixeira"}), 404
         # Verifica conflito de nome com credores ativos
         conflito = conn.execute(
-            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=UPPER(?)", (row['nome'],)
+            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=UPPER(?)",
+            (row["nome"],),
         ).fetchone()
         if conflito:
-            return jsonify({'error': f'Já existe um credor ativo com o nome "{row["nome"]}"'}), 409
+            return jsonify(
+                {"error": f'Já existe um credor ativo com o nome "{row["nome"]}"'}
+            ), 409
         conn.execute(
-            "UPDATE credores SET ativo=1, atualizado_em=datetime('now','localtime') WHERE id=?", (cid,)
+            "UPDATE credores SET ativo=1, atualizado_em=datetime('now','localtime') WHERE id=?",
+            (cid,),
         )
         conn.execute(
             "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('RESTAURAR', cid, row['nome'], row['departamento'] or 'Restaurado da lixeira')
+            (
+                "RESTAURAR",
+                cid,
+                row["nome"],
+                row["departamento"] or "Restaurado da lixeira",
+            ),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
-        return jsonify({'ok': True, 'credor': row_to_dict(row)})
+        return jsonify({"ok": True, "credor": row_to_dict(row)})
     except Exception as e:
-        app.logger.error('PUT /api/credores/%s/restaurar: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("PUT /api/credores/%s/restaurar: %s", cid, e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/credores/<int:cid>/duplicate', methods=['POST'])
+@app.route("/api/credores/<int:cid>/duplicate", methods=["POST"])
 def duplicate_credor(cid):
     """Duplica um credor existente com o nome 'CÓPIA – <nome original>'."""
     try:
         conn = get_db()
-        orig = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)).fetchone()
+        orig = conn.execute(
+            "SELECT * FROM credores WHERE id=? AND ativo=1", (cid,)
+        ).fetchone()
         if not orig:
-            return jsonify({'error': 'Credor original não encontrado'}), 404
+            return jsonify({"error": "Credor original não encontrado"}), 404
         novo_nome_base = f"CÓPIA – {orig['nome']}"
         # Garante unicidade no nome da cópia
         novo_nome = novo_nome_base
         sufixo = 2
         while conn.execute(
-            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=?", (novo_nome.upper(),)
+            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=?",
+            (novo_nome.upper(),),
         ).fetchone():
             novo_nome = f"{novo_nome_base} ({sufixo})"
             sufixo += 1
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO credores
               (nome, valor, descricao, cnpj, email, tipo_valor, solicitacao, pagamento, validade, departamento, obs)
             VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            novo_nome,
-            orig['valor'],
-            orig['descricao'] or '',
-            '',  # CNPJ em branco para evitar conflito de duplicata
-            orig['email'] or '',
-            orig['tipo_valor'] or 'FIXO',
-            orig['solicitacao'] or '',
-            orig['pagamento'] or '',
-            orig['validade'] or '',
-            orig['departamento'] or '',
-            orig['obs'] or '',
-        ))
+        """,
+            (
+                novo_nome,
+                orig["valor"],
+                orig["descricao"] or "",
+                "",  # CNPJ em branco para evitar conflito de duplicata
+                orig["email"] or "",
+                orig["tipo_valor"] or "FIXO",
+                orig["solicitacao"] or "",
+                orig["pagamento"] or "",
+                orig["validade"] or "",
+                orig["departamento"] or "",
+                orig["obs"] or "",
+            ),
+        )
         new_id = cur.lastrowid
         conn.execute(
             "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
-            ('CRIAR', new_id, novo_nome, f'Duplicado a partir do credor #{cid} ({orig["nome"]})')
+            (
+                "CRIAR",
+                new_id,
+                novo_nome,
+                f"Duplicado a partir do credor #{cid} ({orig['nome']})",
+            ),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        app.logger.error('POST /api/credores/%s/duplicate: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/credores/%s/duplicate: %s", cid, e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/empenhos/<int:ano>/<int:mes>', methods=['GET'])
+@app.route("/api/empenhos/<int:ano>/<int:mes>", methods=["GET"])
 def get_empenhos(ano, mes):
     try:
         conn = get_db()
         return jsonify(listar_empenhos_mes(conn, ano, mes, row_to_dict))
     except Exception as e:
-        app.logger.error('GET /api/empenhos/%s/%s: %s', ano, mes, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/empenhos/%s/%s: %s", ano, mes, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/empenhos', methods=['POST'])
+
+@app.route("/api/empenhos", methods=["POST"])
 def toggle_empenho():
     d = request.get_json(force=True) or {}
-    credor_id = d.get('credor_id')
-    ano = d.get('ano')
-    mes = d.get('mes')
+    credor_id = d.get("credor_id")
+    ano = d.get("ano")
+    mes = d.get("mes")
     if not credor_id or not ano or not mes:
-        return jsonify({'error': 'credor_id, ano e mes são obrigatórios'}), 400
+        return jsonify({"error": "credor_id, ano e mes são obrigatórios"}), 400
     try:
         conn = get_db()
-        result = persistir_empenho(conn, credor_id, ano, mes, _time.strftime('%Y-%m-%d %H:%M:%S'))
+        result = persistir_empenho(
+            conn, credor_id, ano, mes, _time.strftime("%Y-%m-%d %H:%M:%S")
+        )
         conn.commit()
-        return jsonify({'ok': True, 'empenhado': result['empenhado']})
+        return jsonify({"ok": True, "empenhado": result["empenhado"]})
     except ValueError as e:
-        return jsonify({'error': str(e)}), 404
+        return jsonify({"error": str(e)}), 404
     except Exception as e:
-        app.logger.error('POST /api/empenhos: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/empenhos: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/empenhos/lote', methods=['POST'])
+
+@app.route("/api/empenhos/lote", methods=["POST"])
 def empenho_lote():
     d = request.get_json(force=True) or {}
-    itens = d.get('itens') or []
+    itens = d.get("itens") or []
     if not itens:
-        return jsonify({'error': 'Nenhum item informado'}), 400
+        return jsonify({"error": "Nenhum item informado"}), 400
     try:
         conn = get_db()
         resultados = []
         for item in itens:
-            credor_id = item.get('credor_id')
-            ano = item.get('ano')
-            mes = item.get('mes')
+            credor_id = item.get("credor_id")
+            ano = item.get("ano")
+            mes = item.get("mes")
             if not credor_id or not ano or not mes:
-                return jsonify({'error': 'Todos os itens devem conter credor_id, ano e mes'}), 400
-            resultados.append(persistir_empenho(conn, credor_id, ano, mes, _time.strftime('%Y-%m-%d %H:%M:%S')))
+                return jsonify(
+                    {"error": "Todos os itens devem conter credor_id, ano e mes"}
+                ), 400
+            resultados.append(
+                persistir_empenho(
+                    conn, credor_id, ano, mes, _time.strftime("%Y-%m-%d %H:%M:%S")
+                )
+            )
         conn.commit()
-        return jsonify({'ok': True, 'resultados': resultados})
+        return jsonify({"ok": True, "resultados": resultados})
     except ValueError as e:
-        return jsonify({'error': str(e)}), 404
+        return jsonify({"error": str(e)}), 404
     except Exception as e:
-        app.logger.error('POST /api/empenhos/lote: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/empenhos/lote: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/credores/<int:cid>/historico', methods=['GET'])
+
+@app.route("/api/credores/<int:cid>/historico", methods=["GET"])
 def get_historico_credor(cid):
-    meses = request.args.get('meses', 6, type=int)
+    meses = request.args.get("meses", 6, type=int)
     meses = max(1, min(meses, 24))
     try:
         conn = get_db()
         return jsonify(listar_historico_credor(conn, cid, meses, _time.localtime()))
     except Exception as e:
-        app.logger.error('GET /api/credores/%s/historico: %s', cid, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/credores/%s/historico: %s", cid, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/config', methods=['GET'])
+
+@app.route("/api/config", methods=["GET"])
 def config_get():
     try:
         conn = get_db()
         rows = conn.execute("SELECT chave, valor FROM configuracoes").fetchall()
-        return jsonify({r['chave']: r['valor'] for r in rows if r['chave'] in ALLOWED_CONFIG_KEYS})
+        return jsonify(
+            {r["chave"]: r["valor"] for r in rows if r["chave"] in ALLOWED_CONFIG_KEYS}
+        )
     except Exception as e:
-        app.logger.error('GET /api/config: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/config: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/config', methods=['POST'])
+
+@app.route("/api/config", methods=["POST"])
 def config_set():
     d = request.get_json(force=True)
     try:
@@ -1491,29 +1811,45 @@ def config_set():
                 conn.execute(
                     "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?,?,datetime('now','localtime')) "
                     "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor, atualizado_em=excluded.atualizado_em",
-                    (chave, str(valor))
+                    (chave, str(valor)),
                 )
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('POST /api/config: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/config: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/admin/summary', methods=['GET'])
+
+@app.route("/api/admin/summary", methods=["GET"])
 def admin_summary():
     try:
         conn = get_db()
         rows = conn.execute(
             "SELECT chave, valor, atualizado_em FROM configuracoes WHERE chave IN (?,?,?,?)",
-            ('api_openrouter_key', 'api_openrouter_modelo', 'api_cnpja_key', 'api_autentique_key')
+            (
+                "api_openrouter_key",
+                "api_openrouter_modelo",
+                "api_cnpja_key",
+                "api_autentique_key",
+            ),
         ).fetchall()
-        cfg = {row['chave']: row_to_dict(row) for row in rows}
+        cfg = {row["chave"]: row_to_dict(row) for row in rows}
 
-        credores_ativos = conn.execute("SELECT COUNT(*) AS total FROM credores WHERE ativo=1").fetchone()['total']
-        rpas_total = conn.execute("SELECT COUNT(*) AS total FROM rpas").fetchone()['total']
-        kanban_total = conn.execute("SELECT COUNT(*) AS total FROM kanban_tasks").fetchone()['total']
-        importacoes_total = conn.execute("SELECT COUNT(*) AS total FROM empenhos_importacoes").fetchone()['total']
-        logs_total = conn.execute("SELECT COUNT(*) AS total FROM logs").fetchone()['total']
+        credores_ativos = conn.execute(
+            "SELECT COUNT(*) AS total FROM credores WHERE ativo=1"
+        ).fetchone()["total"]
+        rpas_total = conn.execute("SELECT COUNT(*) AS total FROM rpas").fetchone()[
+            "total"
+        ]
+        kanban_total = conn.execute(
+            "SELECT COUNT(*) AS total FROM kanban_tasks"
+        ).fetchone()["total"]
+        importacoes_total = conn.execute(
+            "SELECT COUNT(*) AS total FROM empenhos_importacoes"
+        ).fetchone()["total"]
+        logs_total = conn.execute("SELECT COUNT(*) AS total FROM logs").fetchone()[
+            "total"
+        ]
         recent_logs = conn.execute(
             "SELECT id, acao, credor_id, credor_nome, detalhes, data FROM logs ORDER BY data DESC LIMIT 8"
         ).fetchall()
@@ -1524,66 +1860,100 @@ def admin_summary():
         except Exception:
             db_ok = False
 
-        return jsonify({
-            'overview': {
-                'credores_ativos': credores_ativos,
-                'rpas_total': rpas_total,
-                'kanban_total': kanban_total,
-                'importacoes_total': importacoes_total,
-                'logs_total': logs_total,
-            },
-            'health': {
-                'status': 'ok' if db_ok else 'degraded',
-                'db': db_ok,
-                'uptime_s': int(_time.time() - _SERVER_START),
-                'cache_files': len(_file_cache),
-                'cache_gzip': len(_gzip_cache),
-            },
-            'config_status': {
-                'openrouter_key_configured': bool(cfg.get('api_openrouter_key', {}).get('valor', '').strip()),
-                'openrouter_model': cfg.get('api_openrouter_modelo', {}).get('valor', settings.openrouter_default_model) or settings.openrouter_default_model,
-                'openrouter_updated_at': cfg.get('api_openrouter_key', {}).get('atualizado_em') or cfg.get('api_openrouter_modelo', {}).get('atualizado_em'),
-                'cnpja_key_configured': bool(cfg.get('api_cnpja_key', {}).get('valor', '').strip()),
-                'cnpja_updated_at': cfg.get('api_cnpja_key', {}).get('atualizado_em'),
-                'autentique_key_configured': bool(_parse_autentique_keys(cfg.get('api_autentique_key', {}).get('valor', ''))),
-                'autentique_key_count': len(_parse_autentique_keys(cfg.get('api_autentique_key', {}).get('valor', ''))),
-                'autentique_updated_at': cfg.get('api_autentique_key', {}).get('atualizado_em'),
-            },
-            'recent_logs': [row_to_dict(row) for row in recent_logs],
-            'technical': {
-                'host': settings.host,
-                'port': settings.port,
-                'debug': settings.debug,
-                'db_path': DB_PATH,
-                'log_file': str(settings.log_file),
-                'base_dir': BASE_DIR,
+        return jsonify(
+            {
+                "overview": {
+                    "credores_ativos": credores_ativos,
+                    "rpas_total": rpas_total,
+                    "kanban_total": kanban_total,
+                    "importacoes_total": importacoes_total,
+                    "logs_total": logs_total,
+                },
+                "health": {
+                    "status": "ok" if db_ok else "degraded",
+                    "db": db_ok,
+                    "uptime_s": int(_time.time() - _SERVER_START),
+                    "cache_files": len(_file_cache),
+                    "cache_gzip": len(_gzip_cache),
+                },
+                "config_status": {
+                    "openrouter_key_configured": bool(
+                        cfg.get("api_openrouter_key", {}).get("valor", "").strip()
+                    ),
+                    "openrouter_model": cfg.get("api_openrouter_modelo", {}).get(
+                        "valor", settings.openrouter_default_model
+                    )
+                    or settings.openrouter_default_model,
+                    "openrouter_updated_at": cfg.get("api_openrouter_key", {}).get(
+                        "atualizado_em"
+                    )
+                    or cfg.get("api_openrouter_modelo", {}).get("atualizado_em"),
+                    "cnpja_key_configured": bool(
+                        cfg.get("api_cnpja_key", {}).get("valor", "").strip()
+                    ),
+                    "cnpja_updated_at": cfg.get("api_cnpja_key", {}).get(
+                        "atualizado_em"
+                    ),
+                    "autentique_key_configured": bool(
+                        _parse_autentique_keys(
+                            cfg.get("api_autentique_key", {}).get("valor", "")
+                        )
+                    ),
+                    "autentique_key_count": len(
+                        _parse_autentique_keys(
+                            cfg.get("api_autentique_key", {}).get("valor", "")
+                        )
+                    ),
+                    "autentique_updated_at": cfg.get("api_autentique_key", {}).get(
+                        "atualizado_em"
+                    ),
+                },
+                "recent_logs": [row_to_dict(row) for row in recent_logs],
+                "technical": {
+                    "host": settings.host,
+                    "port": settings.port,
+                    "debug": settings.debug,
+                    "db_path": DB_PATH,
+                    "log_file": str(settings.log_file),
+                    "base_dir": BASE_DIR,
+                },
             }
-        })
+        )
     except Exception as e:
-        app.logger.error('GET /api/admin/summary: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/admin/summary: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-def _get_openrouter_config(conn, api_key_override: str = '', model_override: str = ''):
+
+def _get_openrouter_config(conn, api_key_override: str = "", model_override: str = ""):
     rows = conn.execute(
         "SELECT chave, valor FROM configuracoes WHERE chave IN (?, ?)",
-        ('api_openrouter_key', 'api_openrouter_modelo')
+        ("api_openrouter_key", "api_openrouter_modelo"),
     ).fetchall()
-    cfg = {row['chave']: (row['valor'] or '').strip() for row in rows}
-    env_api_key = (os.environ.get('OPENROUTER_API_KEY') or '').strip()
-    env_model = (os.environ.get('OPENROUTER_MODEL') or '').strip()
-    api_key = (api_key_override or '').strip() or cfg.get('api_openrouter_key', '') or env_api_key
-    raw_model = (model_override or '').strip() or cfg.get('api_openrouter_modelo', '') or env_model or settings.openrouter_default_model
+    cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
+    env_api_key = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+    env_model = (os.environ.get("OPENROUTER_MODEL") or "").strip()
+    api_key = (
+        (api_key_override or "").strip()
+        or cfg.get("api_openrouter_key", "")
+        or env_api_key
+    )
+    raw_model = (
+        (model_override or "").strip()
+        or cfg.get("api_openrouter_modelo", "")
+        or env_model
+        or settings.openrouter_default_model
+    )
     model = _normalize_openrouter_free_model(raw_model)
     return api_key, model
 
 
 def _normalize_openrouter_free_model(model: str) -> str:
-    normalized = (model or '').strip()
+    normalized = (model or "").strip()
     if not normalized:
-        return 'openrouter/free'
-    if normalized == 'openrouter/free' or normalized.endswith(':free'):
+        return "openrouter/free"
+    if normalized == "openrouter/free" or normalized.endswith(":free"):
         return normalized
-    return 'openrouter/free'
+    return "openrouter/free"
 
 
 def _build_ai_service(api_key: str, model: str):
@@ -1606,7 +1976,7 @@ def _build_ai_facade(api_key: str, model: str):
 
 def _clean_value(value):
     if value is None:
-        return ''
+        return ""
     if isinstance(value, str):
         return value.strip()
     return str(value).strip()
@@ -1615,22 +1985,22 @@ def _clean_value(value):
 def _normalize_empenho_payload(payload: dict) -> dict:
     data = dict(payload or {})
     normalized = {
-        'secretaria': _clean_value(data.get('secretaria')),
-        'fornecedor': _clean_value(data.get('fornecedor')),
-        'tipo_despesa': _clean_value(data.get('tipo_despesa')),
-        'finalidade': _clean_value(data.get('finalidade')),
-        'valor': _clean_value(data.get('valor')),
-        'competencia': _clean_value(data.get('competencia')),
-        'processo': _clean_value(data.get('processo')),
-        'pregao': _clean_value(data.get('pregao')),
-        'contrato': _clean_value(data.get('contrato')),
-        'nota_fiscal': _clean_value(data.get('nota_fiscal')),
-        'texto_base': _clean_value(data.get('texto_base')),
-        'descricao_atual': _clean_value(data.get('descricao_atual')),
-        'observacoes': _clean_value(data.get('observacoes')),
-        'fonte': _clean_value(data.get('fonte')),
-        'arquivo_nome': _clean_value(data.get('arquivo_nome')),
-        'arquivo_tipo': _clean_value(data.get('arquivo_tipo')),
+        "secretaria": _clean_value(data.get("secretaria")),
+        "fornecedor": _clean_value(data.get("fornecedor")),
+        "tipo_despesa": _clean_value(data.get("tipo_despesa")),
+        "finalidade": _clean_value(data.get("finalidade")),
+        "valor": _clean_value(data.get("valor")),
+        "competencia": _clean_value(data.get("competencia")),
+        "processo": _clean_value(data.get("processo")),
+        "pregao": _clean_value(data.get("pregao")),
+        "contrato": _clean_value(data.get("contrato")),
+        "nota_fiscal": _clean_value(data.get("nota_fiscal")),
+        "texto_base": _clean_value(data.get("texto_base")),
+        "descricao_atual": _clean_value(data.get("descricao_atual")),
+        "observacoes": _clean_value(data.get("observacoes")),
+        "fonte": _clean_value(data.get("fonte")),
+        "arquivo_nome": _clean_value(data.get("arquivo_nome")),
+        "arquivo_tipo": _clean_value(data.get("arquivo_tipo")),
     }
     return normalized
 
@@ -1639,27 +2009,27 @@ def _serialize_json(value):
     if isinstance(value, str):
         text = value.strip()
         if not text:
-            return '{}'
+            return "{}"
         try:
             json.loads(text)
             return text
         except Exception:
-            return json.dumps({'texto': text}, ensure_ascii=False)
+            return json.dumps({"texto": text}, ensure_ascii=False)
     if value is None:
-        return '{}'
+        return "{}"
     try:
         return json.dumps(value, ensure_ascii=False, default=str)
     except Exception:
-        return json.dumps({'texto': str(value)}, ensure_ascii=False)
+        return json.dumps({"texto": str(value)}, ensure_ascii=False)
 
 
 def _extract_text_from_result(result):
     if isinstance(result, dict):
         return _serialize_json(result)
-    if hasattr(result, 'content'):
-        return result.content or ''
+    if hasattr(result, "content"):
+        return result.content or ""
     if result is None:
-        return ''
+        return ""
     return str(result)
 
 
@@ -1670,68 +2040,80 @@ def _build_empenho_diff(before_text: str, after_text: str) -> dict:
     after = _clean_value(after_text)
     if before == after:
         return {
-            'changed': False,
-            'before_len': len(before),
-            'after_len': len(after),
-            'summary': 'Sem alteracao',
-            'before_excerpt': before[:240],
-            'after_excerpt': after[:240],
+            "changed": False,
+            "before_len": len(before),
+            "after_len": len(after),
+            "summary": "Sem alteracao",
+            "before_excerpt": before[:240],
+            "after_excerpt": after[:240],
         }
 
     matcher = SequenceMatcher(None, before, after)
     segments = []
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == 'equal':
+        if tag == "equal":
             continue
-        segments.append({
-            'tag': tag,
-            'before': before[i1:i2],
-            'after': after[j1:j2],
-        })
+        segments.append(
+            {
+                "tag": tag,
+                "before": before[i1:i2],
+                "after": after[j1:j2],
+            }
+        )
 
-    first = segments[0] if segments else {'before': '', 'after': ''}
+    first = segments[0] if segments else {"before": "", "after": ""}
     return {
-        'changed': True,
-        'before_len': len(before),
-        'after_len': len(after),
-        'segments': segments[:6],
-        'summary': 'Texto revisado com ajustes pontuais.',
-        'before_excerpt': before[:240],
-        'after_excerpt': after[:240],
-        'first_change': {
-            'before': first.get('before', '')[:180],
-            'after': first.get('after', '')[:180],
+        "changed": True,
+        "before_len": len(before),
+        "after_len": len(after),
+        "segments": segments[:6],
+        "summary": "Texto revisado com ajustes pontuais.",
+        "before_excerpt": before[:240],
+        "after_excerpt": after[:240],
+        "first_change": {
+            "before": first.get("before", "")[:180],
+            "after": first.get("after", "")[:180],
         },
     }
 
 
-def _save_empenho_assistente_history(conn, action: str, payload: dict, result, meta: dict | None = None) -> int:
+def _save_empenho_assistente_history(
+    conn, action: str, payload: dict, result, meta: dict | None = None
+) -> int:
     meta = meta or {}
     extracted = {}
     checklist = {}
-    descricao_base = ''
-    descricao_melhorada = ''
+    descricao_base = ""
+    descricao_melhorada = ""
     diff = {}
 
-    if action == 'extract_fields' and isinstance(result, dict):
+    if action == "extract_fields" and isinstance(result, dict):
         extracted = result
-    elif action == 'checklist' and isinstance(result, dict):
+    elif action == "checklist" and isinstance(result, dict):
         checklist = result
-    elif action == 'generate_description':
+    elif action == "generate_description":
         descricao_base = _extract_text_from_result(result)
-    elif action == 'improve_description':
+    elif action == "improve_description":
         descricao_melhorada = _extract_text_from_result(result)
-    elif action == 'review_bundle' and isinstance(result, dict):
-        extracted = result.get('campos') if isinstance(result.get('campos'), dict) else {}
-        checklist = result.get('checklist') if isinstance(result.get('checklist'), dict) else {}
-        descricao_base = _clean_value(result.get('descricao_base'))
-        descricao_melhorada = _clean_value(result.get('descricao_melhorada'))
-        diff = result.get('diff') if isinstance(result.get('diff'), dict) else {}
+    elif action == "review_bundle" and isinstance(result, dict):
+        extracted = (
+            result.get("campos") if isinstance(result.get("campos"), dict) else {}
+        )
+        checklist = (
+            result.get("checklist") if isinstance(result.get("checklist"), dict) else {}
+        )
+        descricao_base = _clean_value(result.get("descricao_base"))
+        descricao_melhorada = _clean_value(result.get("descricao_melhorada"))
+        diff = result.get("diff") if isinstance(result.get("diff"), dict) else {}
 
     if not diff and (descricao_base or descricao_melhorada):
-        diff = _build_empenho_diff(descricao_base, descricao_melhorada or descricao_base)
+        diff = _build_empenho_diff(
+            descricao_base, descricao_melhorada or descricao_base
+        )
 
-    result_payload = serialize_task_result(result) if not isinstance(result, dict) else result
+    result_payload = (
+        serialize_task_result(result) if not isinstance(result, dict) else result
+    )
     cur = conn.cursor()
     cur.execute(
         """
@@ -1749,8 +2131,8 @@ def _save_empenho_assistente_history(conn, action: str, payload: dict, result, m
             descricao_base,
             descricao_melhorada,
             _serialize_json(diff),
-            _clean_value(meta.get('model')),
-            1 if meta.get('cached') else 0,
+            _clean_value(meta.get("model")),
+            1 if meta.get("cached") else 0,
         ),
     )
     conn.commit()
@@ -1759,25 +2141,26 @@ def _save_empenho_assistente_history(conn, action: str, payload: dict, result, m
 
 def _format_empenho_history_row(row):
     return {
-        'id': row['id'],
-        'action': row['action'],
-        'payload': json.loads(row['payload_json'] or '{}'),
-        'resultado': json.loads(row['resultado_json'] or '{}'),
-        'campos': json.loads(row['campos_json'] or '{}'),
-        'checklist': json.loads(row['checklist_json'] or '{}'),
-        'descricao_base': row['descricao_base'] or '',
-        'descricao_melhorada': row['descricao_melhorada'] or '',
-        'diff': json.loads(row['diff_json'] or '{}'),
-        'model': row['model'] or '',
-        'cached': bool(row['cached']),
-        'criado_em': row['criado_em'],
+        "id": row["id"],
+        "action": row["action"],
+        "payload": json.loads(row["payload_json"] or "{}"),
+        "resultado": json.loads(row["resultado_json"] or "{}"),
+        "campos": json.loads(row["campos_json"] or "{}"),
+        "checklist": json.loads(row["checklist_json"] or "{}"),
+        "descricao_base": row["descricao_base"] or "",
+        "descricao_melhorada": row["descricao_melhorada"] or "",
+        "diff": json.loads(row["diff_json"] or "{}"),
+        "model": row["model"] or "",
+        "cached": bool(row["cached"]),
+        "criado_em": row["criado_em"],
     }
 
+
 def _parse_autentique_keys(value: str) -> list[str]:
-    text = (value or '').replace('\r', '\n')
+    text = (value or "").replace("\r", "\n")
     raw_items = []
-    for chunk in text.split('\n'):
-        raw_items.extend(part.strip() for part in chunk.split(','))
+    for chunk in text.split("\n"):
+        raw_items.extend(part.strip() for part in chunk.split(","))
     keys = [item for item in raw_items if item]
     seen = set()
     unique = []
@@ -1788,27 +2171,28 @@ def _parse_autentique_keys(value: str) -> list[str]:
         unique.append(item)
     return unique
 
-def _get_autentique_config(conn, api_key_override: str = ''):
+
+def _get_autentique_config(conn, api_key_override: str = ""):
     rows = conn.execute(
         "SELECT chave, valor FROM configuracoes WHERE chave IN (?, ?)",
-        ('api_autentique_key', 'api_autentique_key_cursor')
+        ("api_autentique_key", "api_autentique_key_cursor"),
     ).fetchall()
-    cfg = {row['chave']: (row['valor'] or '').strip() for row in rows}
+    cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
     override_keys = _parse_autentique_keys(api_key_override)
     if override_keys:
         return override_keys[0]
 
-    configured_keys = _parse_autentique_keys(cfg.get('api_autentique_key', ''))
-    env_keys = _parse_autentique_keys(os.environ.get('AUTENTIQUE_API_KEY') or '')
+    configured_keys = _parse_autentique_keys(cfg.get("api_autentique_key", ""))
+    env_keys = _parse_autentique_keys(os.environ.get("AUTENTIQUE_API_KEY") or "")
     keys = configured_keys or env_keys
     if not keys:
-        return ''
+        return ""
 
     if len(keys) == 1:
         return keys[0]
 
     try:
-        cursor = int(cfg.get('api_autentique_key_cursor', '0') or '0')
+        cursor = int(cfg.get("api_autentique_key_cursor", "0") or "0")
     except ValueError:
         cursor = 0
     index = cursor % len(keys)
@@ -1817,416 +2201,499 @@ def _get_autentique_config(conn, api_key_override: str = ''):
         conn.execute(
             "INSERT INTO configuracoes (chave, valor, atualizado_em) VALUES (?,?,datetime('now','localtime')) "
             "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor, atualizado_em=excluded.atualizado_em",
-            ('api_autentique_key_cursor', str((index + 1) % len(keys)))
+            ("api_autentique_key_cursor", str((index + 1) % len(keys))),
         )
         conn.commit()
     except Exception:
         pass
     return selected
 
+
 def _normalize_phone_br(value: str) -> str:
-    digits = re.sub(r'\D+', '', value or '')
-    if digits.startswith('55') and len(digits) >= 12:
-        return '+' + digits
+    digits = re.sub(r"\D+", "", value or "")
+    if digits.startswith("55") and len(digits) >= 12:
+        return "+" + digits
     if len(digits) in {10, 11}:
-        return '+55' + digits
-    return ('+' + digits) if digits else ''
+        return "+55" + digits
+    return ("+" + digits) if digits else ""
+
 
 def _autentique_guess_status(*values) -> str:
-    text = ' '.join(str(v or '').strip().lower() for v in values if v)
-    if any(token in text for token in ('signed', 'assinado', 'completed', 'complete', 'finalizado', 'finished', 'concluido')):
-        return 'assinado'
-    if any(token in text for token in ('rejected', 'recusado', 'declined')):
-        return 'recusado'
-    if any(token in text for token in ('canceled', 'cancelado', 'cancelled')):
-        return 'cancelado'
-    if any(token in text for token in ('expired', 'expirado')):
-        return 'expirado'
-    return 'pendente'
+    text = " ".join(str(v or "").strip().lower() for v in values if v)
+    if any(
+        token in text
+        for token in (
+            "signed",
+            "assinado",
+            "completed",
+            "complete",
+            "finalizado",
+            "finished",
+            "concluido",
+        )
+    ):
+        return "assinado"
+    if any(token in text for token in ("rejected", "recusado", "declined")):
+        return "recusado"
+    if any(token in text for token in ("canceled", "cancelado", "cancelled")):
+        return "cancelado"
+    if any(token in text for token in ("expired", "expirado")):
+        return "expirado"
+    return "pendente"
 
-def _autentique_scan_payload(node, trail=''):
+
+def _autentique_scan_payload(node, trail=""):
     found = []
     if isinstance(node, dict):
         for key, value in node.items():
-            path = f'{trail}.{key}' if trail else str(key)
+            path = f"{trail}.{key}" if trail else str(key)
             found.extend(_autentique_scan_payload(value, path))
             if isinstance(value, (str, int, float, bool)) or value is None:
                 found.append((path.lower(), value))
     elif isinstance(node, list):
         for idx, value in enumerate(node):
-            path = f'{trail}[{idx}]' if trail else f'[{idx}]'
+            path = f"{trail}[{idx}]" if trail else f"[{idx}]"
             found.extend(_autentique_scan_payload(value, path))
     return found
 
+
 def _autentique_extract_webhook(payload: dict) -> dict:
     entries = _autentique_scan_payload(payload)
-    event_name = ''
-    document_id = ''
-    signature_public_id = ''
-    signature_link = ''
-    download_url = ''
-    signed_at = ''
-    delivery_method = ''
+    event_name = ""
+    document_id = ""
+    signature_public_id = ""
+    signature_link = ""
+    download_url = ""
+    signed_at = ""
+    delivery_method = ""
     status_values = []
 
     for path, value in entries:
-        text = '' if value is None else str(value).strip()
+        text = "" if value is None else str(value).strip()
         if not text:
             continue
         lower = text.lower()
-        if not event_name and path.endswith(('event', 'type', 'action', 'name')) and any(token in lower for token in ('sign', 'document', 'signature', 'webhook')):
+        if (
+            not event_name
+            and path.endswith(("event", "type", "action", "name"))
+            and any(
+                token in lower for token in ("sign", "document", "signature", "webhook")
+            )
+        ):
             event_name = text
-        if not document_id and any(token in path for token in ('document.id', 'document_id', 'createDocument.id', 'document.public_id')):
+        if not document_id and any(
+            token in path
+            for token in (
+                "document.id",
+                "document_id",
+                "createDocument.id",
+                "document.public_id",
+            )
+        ):
             document_id = text
-        if not signature_public_id and ('public_id' in path or 'signature_id' in path):
+        if not signature_public_id and ("public_id" in path or "signature_id" in path):
             signature_public_id = text
-        if not signature_link and 'link.short_link' in path:
+        if not signature_link and "link.short_link" in path:
             signature_link = text
-        if not signed_at and any(token in path for token in ('signed_at', 'completed_at', 'finished_at')):
+        if not signed_at and any(
+            token in path for token in ("signed_at", "completed_at", "finished_at")
+        ):
             signed_at = text
-        if not delivery_method and 'delivery_method' in path:
+        if not delivery_method and "delivery_method" in path:
             delivery_method = text
-        if ('status' in path) or path.endswith(('event', 'type', 'action')):
+        if ("status" in path) or path.endswith(("event", "type", "action")):
             status_values.append(text)
-        if text.startswith('http'):
-            key_hint = path.split('.')[-1]
-            if not download_url and any(token in key_hint for token in ('download', 'signed', 'file_url', 'original_file', 'arquivo')):
+        if text.startswith("http"):
+            key_hint = path.split(".")[-1]
+            if not download_url and any(
+                token in key_hint
+                for token in (
+                    "download",
+                    "signed",
+                    "file_url",
+                    "original_file",
+                    "arquivo",
+                )
+            ):
                 download_url = text
 
     status = _autentique_guess_status(event_name, signed_at, *status_values)
     return {
-        'event_name': event_name,
-        'document_id': document_id,
-        'signature_public_id': signature_public_id,
-        'signature_link': signature_link,
-        'download_url': download_url,
-        'signed_at': signed_at,
-        'delivery_method': delivery_method or 'DELIVERY_METHOD_WHATSAPP',
-        'status': status,
+        "event_name": event_name,
+        "document_id": document_id,
+        "signature_public_id": signature_public_id,
+        "signature_link": signature_link,
+        "download_url": download_url,
+        "signed_at": signed_at,
+        "delivery_method": delivery_method or "DELIVERY_METHOD_WHATSAPP",
+        "status": status,
     }
 
-def _autentique_save_signed_document(download_url: str, original_name: str, api_key: str):
+
+def _autentique_save_signed_document(
+    download_url: str, original_name: str, api_key: str
+):
     if not download_url:
         return None
-    headers = {'Authorization': f'Bearer {api_key}'} if api_key else {}
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
     resp = requests.get(download_url, headers=headers, timeout=90)
     if resp.status_code >= 400:
         resp = requests.get(download_url, timeout=90)
     resp.raise_for_status()
-    signed_name_root, _ = os.path.splitext(original_name or 'documento')
-    signed_name = f'{signed_name_root}-assinado.pdf'
+    signed_name_root, _ = os.path.splitext(original_name or "documento")
+    signed_name = f"{signed_name_root}-assinado.pdf"
     saved = _persist_document_file(
         signed_name,
         resp.content,
-        'assinados_autentique',
-        'assinatura-digital',
-        'Documento assinado recebido pela integração da Autentique',
-        resp.headers.get('Content-Type') or 'application/pdf'
+        "assinados_autentique",
+        "assinatura-digital",
+        "Documento assinado recebido pela integração da Autentique",
+        resp.headers.get("Content-Type") or "application/pdf",
     )
     return saved
 
+
 def _normalize_kanban_status(value: str) -> str:
-    value = (value or '').strip().lower()
+    value = (value or "").strip().lower()
     aliases = {
-        'todo': 'todo',
-        'a fazer': 'todo',
-        'afazer': 'todo',
-        'to do': 'todo',
-        'in-progress': 'in-progress',
-        'in progress': 'in-progress',
-        'em progresso': 'in-progress',
-        'progress': 'in-progress',
-        'done': 'done',
-        'concluido': 'done',
-        'concluído': 'done',
-        'finalizado': 'done',
+        "todo": "todo",
+        "a fazer": "todo",
+        "afazer": "todo",
+        "to do": "todo",
+        "in-progress": "in-progress",
+        "in progress": "in-progress",
+        "em progresso": "in-progress",
+        "progress": "in-progress",
+        "done": "done",
+        "concluido": "done",
+        "concluído": "done",
+        "finalizado": "done",
     }
-    return aliases.get(value, 'todo')
+    return aliases.get(value, "todo")
+
 
 def _normalize_kanban_priority(value: str) -> str:
-    value = (value or '').strip().lower()
+    value = (value or "").strip().lower()
     aliases = {
-        'high': 'high',
-        'alta': 'high',
-        'medium': 'medium',
-        'media': 'medium',
-        'média': 'medium',
-        'low': 'low',
-        'baixa': 'low',
+        "high": "high",
+        "alta": "high",
+        "medium": "medium",
+        "media": "medium",
+        "média": "medium",
+        "low": "low",
+        "baixa": "low",
     }
-    return aliases.get(value, 'medium')
+    return aliases.get(value, "medium")
+
 
 def _extract_openrouter_text(payload: dict) -> str:
-    choices = payload.get('choices') or []
+    choices = payload.get("choices") or []
     if not choices:
-        raise ValueError('A IA não retornou conteúdo')
-    message = choices[0].get('message') or {}
-    content = message.get('content')
+        raise ValueError("A IA não retornou conteúdo")
+    message = choices[0].get("message") or {}
+    content = message.get("content")
     if isinstance(content, list):
         parts = []
         for item in content:
-            if isinstance(item, dict) and item.get('type') == 'text':
-                parts.append(item.get('text', ''))
-        content = ''.join(parts)
-    content = (content or '').strip()
+            if isinstance(item, dict) and item.get("type") == "text":
+                parts.append(item.get("text", ""))
+        content = "".join(parts)
+    content = (content or "").strip()
     if not content:
-        raise ValueError('A IA retornou conteúdo vazio')
+        raise ValueError("A IA retornou conteúdo vazio")
     return content
 
+
 def _extract_json_block(text: str):
-    text = (text or '').strip()
+    text = (text or "").strip()
     try:
         return json.loads(text)
     except Exception:
         pass
-    match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL | re.IGNORECASE)
+    match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
     if match:
         return json.loads(match.group(1))
-    start_obj = text.find('{')
-    end_obj = text.rfind('}')
+    start_obj = text.find("{")
+    end_obj = text.rfind("}")
     if start_obj != -1 and end_obj != -1 and end_obj > start_obj:
-        snippet = text[start_obj:end_obj + 1]
+        snippet = text[start_obj : end_obj + 1]
         try:
             return json.loads(snippet)
         except Exception:
             pass
-    start_arr = text.find('[')
-    end_arr = text.rfind(']')
+    start_arr = text.find("[")
+    end_arr = text.rfind("]")
     if start_arr != -1 and end_arr != -1 and end_arr > start_arr:
-        snippet = text[start_arr:end_arr + 1]
+        snippet = text[start_arr : end_arr + 1]
         return json.loads(snippet)
-    raise ValueError('A IA retornou um formato inválido')
+    raise ValueError("A IA retornou um formato inválido")
+
 
 def _sanitize_kanban_task_payload(task: dict) -> dict:
     return {
-        'title': (task.get('title') or '').strip(),
-        'description': (task.get('description') or '').strip(),
-        'status': _normalize_kanban_status(task.get('status') or 'todo'),
-        'priority': _normalize_kanban_priority(task.get('priority') or 'medium'),
+        "title": (task.get("title") or "").strip(),
+        "description": (task.get("description") or "").strip(),
+        "status": _normalize_kanban_status(task.get("status") or "todo"),
+        "priority": _normalize_kanban_priority(task.get("priority") or "medium"),
     }
+
 
 def _sanitize_kanban_plan_payload(payload: dict) -> dict:
     if not isinstance(payload, dict):
         payload = {}
-    base_task = _sanitize_kanban_task_payload(payload.get('task') or {})
-    base_task['categoria'] = ((payload.get('task') or {}).get('categoria') or '').strip().upper()
-    base_task['data_vencimento'] = ((payload.get('task') or {}).get('data_vencimento') or '').strip()
-    base_task['responsavel'] = ((payload.get('task') or {}).get('responsavel') or '').strip()
+    base_task = _sanitize_kanban_task_payload(payload.get("task") or {})
+    base_task["categoria"] = (
+        ((payload.get("task") or {}).get("categoria") or "").strip().upper()
+    )
+    base_task["data_vencimento"] = (
+        (payload.get("task") or {}).get("data_vencimento") or ""
+    ).strip()
+    base_task["responsavel"] = (
+        (payload.get("task") or {}).get("responsavel") or ""
+    ).strip()
 
     subtarefas = []
-    for item in payload.get('subtarefas') or []:
+    for item in payload.get("subtarefas") or []:
         if not isinstance(item, dict):
             continue
         task_item = _sanitize_kanban_task_payload(item)
-        if task_item['title']:
+        if task_item["title"]:
             subtarefas.append(task_item)
 
     checklist = []
-    for item in payload.get('checklist') or []:
-        text = str(item or '').strip()
+    for item in payload.get("checklist") or []:
+        text = str(item or "").strip()
         if text:
             checklist.append(text)
 
-    next_action = str(payload.get('next_action') or '').strip()
-    resumo = str(payload.get('summary') or '').strip()
+    next_action = str(payload.get("next_action") or "").strip()
+    resumo = str(payload.get("summary") or "").strip()
 
     return {
-        'task': base_task,
-        'summary': resumo,
-        'next_action': next_action,
-        'checklist': checklist[:8],
-        'subtarefas': subtarefas[:6],
+        "task": base_task,
+        "summary": resumo,
+        "next_action": next_action,
+        "checklist": checklist[:8],
+        "subtarefas": subtarefas[:6],
     }
+
 
 def _sanitize_kanban_task_classification_payload(payload: dict) -> dict:
     if not isinstance(payload, dict):
         payload = {}
-    categoria = str(payload.get('categoria_ia') or payload.get('categoria') or '').strip().lower()
-    if categoria not in {'financeiro', 'documento', 'prazo', 'auditoria', 'protocolo'}:
-        categoria = 'documento'
-    justificativa = str(payload.get('justificativa') or '').strip()
-    confianca_raw = payload.get('confianca', 0)
+    categoria = (
+        str(payload.get("categoria_ia") or payload.get("categoria") or "")
+        .strip()
+        .lower()
+    )
+    if categoria not in {"financeiro", "documento", "prazo", "auditoria", "protocolo"}:
+        categoria = "documento"
+    justificativa = str(payload.get("justificativa") or "").strip()
+    confianca_raw = payload.get("confianca", 0)
     try:
         confianca = float(confianca_raw)
     except Exception:
         confianca = 0.0
     return {
-        'categoria_ia': categoria,
-        'justificativa': justificativa,
-        'confianca': max(0.0, min(1.0, confianca)),
+        "categoria_ia": categoria,
+        "justificativa": justificativa,
+        "confianca": max(0.0, min(1.0, confianca)),
     }
+
 
 def _sanitize_kanban_stale_payload(payload: dict) -> dict:
     if not isinstance(payload, dict):
         payload = {}
-    status = str(payload.get('status') or 'normal').strip().lower()
-    if status not in {'normal', 'atencao', 'parada'}:
-        status = 'normal'
-    dias = payload.get('dias_sem_atualizacao', 0)
+    status = str(payload.get("status") or "normal").strip().lower()
+    if status not in {"normal", "atencao", "parada"}:
+        status = "normal"
+    dias = payload.get("dias_sem_atualizacao", 0)
     try:
         dias = int(dias)
     except Exception:
         dias = 0
     sugestoes = []
-    for item in payload.get('sugestoes') or []:
-        text = str(item or '').strip()
+    for item in payload.get("sugestoes") or []:
+        text = str(item or "").strip()
         if text:
             sugestoes.append(text)
     return {
-        'status': status,
-        'dias_sem_atualizacao': max(0, dias),
-        'resumo': str(payload.get('resumo') or '').strip(),
-        'sugestoes': sugestoes[:4],
+        "status": status,
+        "dias_sem_atualizacao": max(0, dias),
+        "resumo": str(payload.get("resumo") or "").strip(),
+        "sugestoes": sugestoes[:4],
     }
 
-def _kanban_ai_completion(action: str, user_prompt: str, task: dict | None = None, api_key_override: str = '', model_override: str = '', status_hint: str = '', priority_hint: str = ''):
+
+def _kanban_ai_completion(
+    action: str,
+    user_prompt: str,
+    task: dict | None = None,
+    api_key_override: str = "",
+    model_override: str = "",
+    status_hint: str = "",
+    priority_hint: str = "",
+):
     conn = get_db()
-    api_key, model = _get_openrouter_config(conn, api_key_override=api_key_override, model_override=model_override)
+    api_key, model = _get_openrouter_config(
+        conn, api_key_override=api_key_override, model_override=model_override
+    )
     if not api_key:
-        return None, ('A IA do Kanban não encontrou a chave do OpenRouter. Salve a mesma chave usada nas outras abas em Configurações.', 400)
+        return None, (
+            "A IA do Kanban não encontrou a chave do OpenRouter. Salve a mesma chave usada nas outras abas em Configurações.",
+            400,
+        )
 
-    today = __import__('datetime').date.today().strftime('%d/%m/%Y')
+    today = __import__("datetime").date.today().strftime("%d/%m/%Y")
 
-    hints_create = ''
+    hints_create = ""
     if status_hint:
         hints_create += f' O status deve ser "{status_hint}".'
     if priority_hint:
         hints_create += f' A prioridade deve ser "{priority_hint}".'
 
     system_map = {
-        'create': (
-            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
-            f'Hoje é {today}. '
-            'Com base na descrição do usuário, crie uma tarefa bem estruturada. '
-            'Responda APENAS com JSON válido contendo as chaves: '
+        "create": (
+            f"Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. "
+            f"Hoje é {today}. "
+            "Com base na descrição do usuário, crie uma tarefa bem estruturada. "
+            "Responda APENAS com JSON válido contendo as chaves: "
             '"title" (título objetivo e claro, máx 80 chars), '
             '"description" (descrição detalhada com contexto, passos ou informações relevantes), '
             '"status" (um de: todo, in-progress, done), '
             '"priority" (um de: low, medium, high). '
-            'O título deve ser conciso e direto. A descrição deve ser útil e informativa. '
-            f'{hints_create} '
-            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
+            "O título deve ser conciso e direto. A descrição deve ser útil e informativa. "
+            f"{hints_create} "
+            "Escreva em português do Brasil. Não inclua texto fora do JSON."
         ),
-        'improve': (
-            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
-            f'Hoje é {today}. '
-            'Melhore a tarefa recebida conforme o pedido do usuário. '
-            'Responda APENAS com JSON válido contendo as chaves: '
+        "improve": (
+            f"Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. "
+            f"Hoje é {today}. "
+            "Melhore a tarefa recebida conforme o pedido do usuário. "
+            "Responda APENAS com JSON válido contendo as chaves: "
             '"title" (título melhorado, objetivo e claro, máx 80 chars), '
             '"description" (descrição aprimorada, detalhada e útil), '
             '"status" (um de: todo, in-progress, done), '
             '"priority" (um de: low, medium, high). '
-            'Preserve o status atual a menos que o usuário peça para mudar. '
-            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
+            "Preserve o status atual a menos que o usuário peça para mudar. "
+            "Escreva em português do Brasil. Não inclua texto fora do JSON."
         ),
-        'breakdown': (
-            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
-            f'Hoje é {today}. '
-            'Quebre a tarefa recebida em subtarefas práticas e acionáveis. '
-            'Responda APENAS com JSON válido no formato: '
+        "breakdown": (
+            f"Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. "
+            f"Hoje é {today}. "
+            "Quebre a tarefa recebida em subtarefas práticas e acionáveis. "
+            "Responda APENAS com JSON válido no formato: "
             '{"tasks":[{"title":"","description":"","status":"todo","priority":"medium"},...]}. '
-            'Gere entre 3 e 7 subtarefas. Cada subtarefa deve ter: '
+            "Gere entre 3 e 7 subtarefas. Cada subtarefa deve ter: "
             '"title" (objetivo e claro, máx 80 chars), '
             '"description" (passos ou detalhes práticos), '
             '"status" (sempre "todo" para novas subtarefas), '
             '"priority" (um de: low, medium, high — atribua conforme urgência). '
-            'As subtarefas devem ser ordenadas logicamente (do primeiro ao último passo). '
-            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
+            "As subtarefas devem ser ordenadas logicamente (do primeiro ao último passo). "
+            "Escreva em português do Brasil. Não inclua texto fora do JSON."
         ),
-        'plan': (
-            f'Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. '
-            f'Hoje é {today}. '
-            'Analise a tarefa recebida e gere um plano de ação prático para execução administrativa. '
-            'Responda APENAS com JSON válido no formato: '
+        "plan": (
+            f"Você é um assistente especializado em Kanban para a Prefeitura Municipal de Inajá. "
+            f"Hoje é {today}. "
+            "Analise a tarefa recebida e gere um plano de ação prático para execução administrativa. "
+            "Responda APENAS com JSON válido no formato: "
             '{"task":{"title":"","description":"","status":"todo","priority":"medium"},'
             '"summary":"","next_action":"","checklist":[""],'
             '"subtarefas":[{"title":"","description":"","status":"todo","priority":"medium"}]}. '
-            'Reescreva a tarefa principal de forma mais clara, profissional e objetiva. '
+            "Reescreva a tarefa principal de forma mais clara, profissional e objetiva. "
             'Em "summary", traga um resumo executivo curto com no máximo 220 caracteres. '
             'Em "next_action", informe a próxima ação mais recomendada em uma frase curta. '
             'Em "checklist", gere de 3 a 8 itens curtos e verificáveis. '
             'Em "subtarefas", gere de 2 a 6 passos práticos e ordenados logicamente. '
-            'Ajuste a prioridade para low, medium ou high conforme urgência e impacto. '
+            "Ajuste a prioridade para low, medium ou high conforme urgência e impacto. "
             'Preserve o status atual, a menos que haja motivo claro para mudar para "done". '
-            'Escreva em português do Brasil. Não inclua texto fora do JSON.'
+            "Escreva em português do Brasil. Não inclua texto fora do JSON."
         ),
-        'classify': (
-            f'Você é um assistente especializado em classificação de tarefas administrativas da Prefeitura Municipal de Inajá. '
-            f'Hoje é {today}. '
-            'Analise a tarefa recebida e classifique seu tipo principal. '
-            'Responda APENAS com JSON válido no formato: '
+        "classify": (
+            f"Você é um assistente especializado em classificação de tarefas administrativas da Prefeitura Municipal de Inajá. "
+            f"Hoje é {today}. "
+            "Analise a tarefa recebida e classifique seu tipo principal. "
+            "Responda APENAS com JSON válido no formato: "
             '{"categoria_ia":"financeiro|documento|prazo|auditoria|protocolo","confianca":0.0,"justificativa":""}. '
-            'Escolha apenas uma categoria principal. '
-            'A justificativa deve ser curta, objetiva e administrativa. '
-            'Não inclua texto fora do JSON.'
+            "Escolha apenas uma categoria principal. "
+            "A justificativa deve ser curta, objetiva e administrativa. "
+            "Não inclua texto fora do JSON."
         ),
-        'stale': (
-            f'Você é um assistente especializado em gestão de tarefas administrativas da Prefeitura Municipal de Inajá. '
-            f'Hoje é {today}. '
-            'Analise se a tarefa está parada ou sem atualização há tempo demais e sugira ações administrativas. '
-            'Responda APENAS com JSON válido no formato: '
+        "stale": (
+            f"Você é um assistente especializado em gestão de tarefas administrativas da Prefeitura Municipal de Inajá. "
+            f"Hoje é {today}. "
+            "Analise se a tarefa está parada ou sem atualização há tempo demais e sugira ações administrativas. "
+            "Responda APENAS com JSON válido no formato: "
             '{"status":"normal|atencao|parada","dias_sem_atualizacao":0,"resumo":"","sugestoes":[""]}. '
             'Em "status", use "normal", "atencao" ou "parada". '
             'Em "resumo", descreva a situação em uma frase curta. '
             'Em "sugestoes", inclua até 4 ações curtas dentre ideias como cobrar responsável, arquivar, redefinir prazo ou mover de coluna. '
-            'Não inclua texto fora do JSON.'
+            "Não inclua texto fora do JSON."
         ),
-        'professional_rewrite': (
-            f'Você é um redator técnico da administração pública municipal. '
-            f'Hoje é {today}. '
-            'Reescreva a tarefa para ficar mais objetiva, clara e profissional, mantendo fidelidade ao conteúdo. '
-            'Responda APENAS com JSON válido contendo as chaves: '
+        "professional_rewrite": (
+            f"Você é um redator técnico da administração pública municipal. "
+            f"Hoje é {today}. "
+            "Reescreva a tarefa para ficar mais objetiva, clara e profissional, mantendo fidelidade ao conteúdo. "
+            "Responda APENAS com JSON válido contendo as chaves: "
             '"title", "description", "status", "priority". '
-            'O texto deve soar administrativo, direto e bem organizado. '
-            'Preserve o status atual. Ajuste a prioridade apenas se houver motivo claro. '
-            'Não inclua texto fora do JSON.'
+            "O texto deve soar administrativo, direto e bem organizado. "
+            "Preserve o status atual. Ajuste a prioridade apenas se houver motivo claro. "
+            "Não inclua texto fora do JSON."
         ),
     }
-    messages = [{'role': 'system', 'content': system_map[action]}]
+    messages = [{"role": "system", "content": system_map[action]}]
     if task:
-        messages.append({
-            'role': 'user',
-            'content': (
-                f'Tarefa atual:\n{json.dumps(task, ensure_ascii=False)}\n\n'
-                f'Pedido do usuário:\n{user_prompt or "Melhore esta tarefa."}'
-            )
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"Tarefa atual:\n{json.dumps(task, ensure_ascii=False)}\n\n"
+                    f"Pedido do usuário:\n{user_prompt or 'Melhore esta tarefa.'}"
+                ),
+            }
+        )
     else:
-        messages.append({'role': 'user', 'content': user_prompt})
+        messages.append({"role": "user", "content": user_prompt})
     try:
         response = _build_ai_service(api_key, model).chat_by_task(
-            task_type='chat',
+            task_type="chat",
             messages=messages,
             temperature=0.4,
             max_tokens=900,
             use_cache=False,
-            metadata={'feature': 'kanban_ai', 'action': action},
+            metadata={"feature": "kanban_ai", "action": action},
         )
         return _extract_json_block(response.text), None
     except AIServiceError as err:
         return None, (err.user_message, err.status_code)
     except Exception as err:
-        app.logger.error('_kanban_ai_completion error (action=%s): %s', action, err)
+        app.logger.error("_kanban_ai_completion error (action=%s): %s", action, err)
         return None, (str(err), 500)
 
 
-@app.route('/api/extratos/modelos-openrouter', methods=['GET', 'POST'])
+@app.route("/api/extratos/modelos-openrouter", methods=["GET", "POST"])
 def extratos_modelos_openrouter():
     try:
         data = request.get_json(silent=True) or {}
         conn = get_db()
         api_key, selected_model = _get_openrouter_config(
             conn,
-            api_key_override=(data.get('api_key') or request.args.get('api_key') or '').strip(),
-            model_override=(data.get('model') or request.args.get('model') or '').strip()
+            api_key_override=(
+                data.get("api_key") or request.args.get("api_key") or ""
+            ).strip(),
+            model_override=(
+                data.get("model") or request.args.get("model") or ""
+            ).strip(),
         )
         if not api_key:
-            return jsonify({
-                'error': 'Nenhuma chave do OpenRouter foi encontrada. Use a mesma chave já configurada nas outras abas.',
-                'modelos': [],
-                'models': [],
-                'selected_model': selected_model,
-            }), 400
+            return jsonify(
+                {
+                    "error": "Nenhuma chave do OpenRouter foi encontrada. Use a mesma chave já configurada nas outras abas.",
+                    "modelos": [],
+                    "models": [],
+                    "selected_model": selected_model,
+                }
+            ), 400
         models = listar_modelos(
             api_key,
             timeout_seconds=settings.openrouter_timeout_seconds,
@@ -2237,112 +2704,143 @@ def extratos_modelos_openrouter():
         for model in models:
             if not isinstance(model, dict):
                 continue
-            pricing = model.get('pricing') or {}
-            prompt_price = str(pricing.get('prompt') or '').strip()
-            completion_price = str(pricing.get('completion') or '').strip()
-            if prompt_price != '0' or completion_price != '0':
+            pricing = model.get("pricing") or {}
+            prompt_price = str(pricing.get("prompt") or "").strip()
+            completion_price = str(pricing.get("completion") or "").strip()
+            if prompt_price != "0" or completion_price != "0":
                 continue
-            normalized.append({
-                'id': (model.get('id') or '').strip(),
-                'name': (model.get('name') or model.get('id') or '').strip(),
-                'context_length': model.get('context_length'),
-                'pricing': pricing,
-            })
-        return jsonify({
-            'modelos': normalized,
-            'models': normalized,
-            'selected_model': selected_model,
-        })
+            normalized.append(
+                {
+                    "id": (model.get("id") or "").strip(),
+                    "name": (model.get("name") or model.get("id") or "").strip(),
+                    "context_length": model.get("context_length"),
+                    "pricing": pricing,
+                }
+            )
+        return jsonify(
+            {
+                "modelos": normalized,
+                "models": normalized,
+                "selected_model": selected_model,
+            }
+        )
     except AIServiceError as err:
-        return jsonify({'error': err.user_message, 'modelos': [], 'models': []}), err.status_code
+        return jsonify(
+            {"error": err.user_message, "modelos": [], "models": []}
+        ), err.status_code
     except Exception as e:
-        app.logger.error('%s /api/extratos/modelos-openrouter: %s', request.method, e)
-        return jsonify({'error': str(e), 'modelos': [], 'models': []}), 500
+        app.logger.error("%s /api/extratos/modelos-openrouter: %s", request.method, e)
+        return jsonify({"error": str(e), "modelos": [], "models": []}), 500
 
 
-@app.route('/api/ia/chat', methods=['POST'])
+@app.route("/api/ia/chat", methods=["POST"])
 def proxy_ia_chat():
     try:
         data = request.get_json(force=True) or {}
         conn = get_db()
         api_key, model = _get_openrouter_config(
             conn,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if not api_key:
-            return jsonify({'error': 'Chave API OpenRouter não configurada. Configure na aba ADM.'}), 400
+            return jsonify(
+                {"error": "Chave API OpenRouter não configurada. Configure na aba ADM."}
+            ), 400
 
-        messages = data.get('messages', [])
-        temperature = data.get('temperature', 0.2)
-        max_tokens = data.get('max_tokens', 2000)
-        
+        messages = data.get("messages", [])
+        temperature = data.get("temperature", 0.2)
+        max_tokens = data.get("max_tokens", 2000)
+
         response = _build_ai_service(api_key, model).chat_by_task(
-            task_type='chat',
+            task_type="chat",
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
-            use_cache=bool(data.get('use_cache', False)),
-            response_format=data.get('response_format'),
-            stream=bool(data.get('stream', False)),
-            metadata={'feature': 'proxy_ia_chat'},
+            use_cache=bool(data.get("use_cache", False)),
+            response_format=data.get("response_format"),
+            stream=bool(data.get("stream", False)),
+            metadata={"feature": "proxy_ia_chat"},
         )
         return jsonify(response.payload)
     except AIServiceError as err:
         return jsonify(err.to_response()), err.status_code
     except Exception as e:
-        app.logger.error('POST /api/ia/chat: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/ia/chat: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/empenho-assistente', methods=['POST'])
+@app.route("/api/empenho-assistente", methods=["POST"])
 def empenho_assistente():
     data = request.get_json(silent=True) or {}
-    action = (data.get('action') or '').strip()
-    payload = _normalize_empenho_payload(data.get('payload') or {})
+    action = (data.get("action") or "").strip()
+    payload = _normalize_empenho_payload(data.get("payload") or {})
 
     conn = get_db()
     api_key, model = _get_openrouter_config(conn)
     if not api_key:
-        return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API.'}), 400
-    if action not in {'extract_fields', 'generate_description', 'checklist', 'improve_description', 'review_bundle'}:
-        return jsonify({'error': 'Acao invalida. Use: extract_fields, generate_description, checklist, improve_description, review_bundle.'}), 400
+        return jsonify(
+            {
+                "error": "Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API."
+            }
+        ), 400
+    if action not in {
+        "extract_fields",
+        "generate_description",
+        "checklist",
+        "improve_description",
+        "review_bundle",
+    }:
+        return jsonify(
+            {
+                "error": "Acao invalida. Use: extract_fields, generate_description, checklist, improve_description, review_bundle."
+            }
+        ), 400
     try:
         facade = _build_ai_facade(api_key, model)
         result = facade.gerar_texto_empenho(payload, acao=action)
-        meta = {'model': model, 'cached': False, 'usage': {}}
-        if hasattr(result, 'model'):
+        meta = {"model": model, "cached": False, "usage": {}}
+        if hasattr(result, "model"):
             meta = {
-                'model': result.model,
-                'cached': result.cached,
-                'usage': result.usage,
+                "model": result.model,
+                "cached": result.cached,
+                "usage": result.usage,
             }
 
-        history_id = _save_empenho_assistente_history(conn, action, payload, result, meta=meta)
+        history_id = _save_empenho_assistente_history(
+            conn, action, payload, result, meta=meta
+        )
         if isinstance(result, dict):
-            response = {'action': action, 'resultado': result, 'history_id': history_id, 'meta': meta}
+            response = {
+                "action": action,
+                "resultado": result,
+                "history_id": history_id,
+                "meta": meta,
+            }
             return jsonify(response)
-        return jsonify({
-            'action': action,
-            'resultado': result.content,
-            'history_id': history_id,
-            'meta': meta,
-        })
+        return jsonify(
+            {
+                "action": action,
+                "resultado": result.content,
+                "history_id": history_id,
+                "meta": meta,
+            }
+        )
     except ValueError as err:
-        return jsonify({'error': str(err)}), 400
+        return jsonify({"error": str(err)}), 400
     except AIServiceError as err:
         return jsonify(err.to_response()), err.status_code
     except Exception as err:
-        app.logger.error('POST /api/empenho-assistente: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("POST /api/empenho-assistente: %s", err)
+        return jsonify({"error": str(err)}), 500
 
 
-@app.route('/api/empenho-assistente/historico', methods=['GET'])
+@app.route("/api/empenho-assistente/historico", methods=["GET"])
 def empenho_assistente_historico():
     try:
         conn = get_db()
         try:
-            limit = int(request.args.get('limit', 12) or 12)
+            limit = int(request.args.get("limit", 12) or 12)
         except (TypeError, ValueError):
             limit = 12
         limit = min(max(limit, 1), 50)
@@ -2354,31 +2852,36 @@ def empenho_assistente_historico():
             ORDER BY id DESC
             LIMIT ?
             """,
-            (limit,)
+            (limit,),
         ).fetchall()
-        return jsonify({'items': [_format_empenho_history_row(row) for row in rows]})
+        return jsonify({"items": [_format_empenho_history_row(row) for row in rows]})
     except Exception as e:
-        app.logger.error('GET /api/empenho-assistente/historico: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/empenho-assistente/historico: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/classificador-despesa', methods=['POST'])
+
+@app.route("/api/classificador-despesa", methods=["POST"])
 def classificador_despesa():
     data = request.get_json(silent=True) or {}
-    item = (data.get('item') or '').strip()
+    item = (data.get("item") or "").strip()
     if not item:
-        return jsonify({'error': 'Informe o item ou serviço a ser classificado.'}), 400
+        return jsonify({"error": "Informe o item ou serviço a ser classificado."}), 400
     conn = get_db()
     api_key, model = _get_openrouter_config(conn)
     if not api_key:
-        return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API.'}), 400
+        return jsonify(
+            {
+                "error": "Chave do OpenRouter não configurada. Acesse ADM -> Configuracoes -> Chaves de API."
+            }
+        ), 400
     try:
         facade = _build_ai_facade(api_key, model)
         result = facade.classificar_despesa(item)
         used_model = model
         used_cached = False
         if isinstance(result, dict):
-            used_model = result.pop('_model', model)
-            used_cached = result.pop('_cached', False)
+            used_model = result.pop("_model", model)
+            used_cached = result.pop("_cached", False)
             # Salva no histórico
             try:
                 conn.execute(
@@ -2388,37 +2891,51 @@ def classificador_despesa():
                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (
                         item,
-                        result.get('codigo_completo', ''),
-                        result.get('grupo', ''),
-                        result.get('modalidade', ''),
-                        result.get('elemento', ''),
-                        f"{result.get('subelemento_codigo','')} - {result.get('subelemento_nome','')}".strip(' -'),
-                        result.get('justificativa', ''),
-                        result.get('ponto_atencao', ''),
-                        float(result.get('confianca', 0)),
+                        result.get("codigo_completo", ""),
+                        result.get("grupo", ""),
+                        result.get("modalidade", ""),
+                        result.get("elemento", ""),
+                        f"{result.get('subelemento_codigo', '')} - {result.get('subelemento_nome', '')}".strip(
+                            " -"
+                        ),
+                        result.get("justificativa", ""),
+                        result.get("ponto_atencao", ""),
+                        float(result.get("confianca", 0)),
                         json.dumps(result, ensure_ascii=False),
                         used_model,
                         1 if used_cached else 0,
-                    )
+                    ),
                 )
                 conn.commit()
             except Exception as e:
-                app.logger.warning('classificador_despesa: erro ao salvar histórico: %s', e)
-            return jsonify({'resultado': result, 'meta': {'model': used_model, 'cached': used_cached}})
-        return jsonify({'resultado': {'item_analisado': item, 'raw': result.content}, 'meta': {'model': result.model, 'cached': result.cached}})
+                app.logger.warning(
+                    "classificador_despesa: erro ao salvar histórico: %s", e
+                )
+            return jsonify(
+                {
+                    "resultado": result,
+                    "meta": {"model": used_model, "cached": used_cached},
+                }
+            )
+        return jsonify(
+            {
+                "resultado": {"item_analisado": item, "raw": result.content},
+                "meta": {"model": result.model, "cached": result.cached},
+            }
+        )
     except AIServiceError as err:
         return jsonify(err.to_response()), err.status_code
     except Exception as err:
-        app.logger.error('POST /api/classificador-despesa: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("POST /api/classificador-despesa: %s", err)
+        return jsonify({"error": str(err)}), 500
 
 
-@app.route('/api/classificador-despesa/historico', methods=['GET'])
+@app.route("/api/classificador-despesa/historico", methods=["GET"])
 def classificador_despesa_historico():
     try:
         conn = get_db()
         try:
-            limit = int(request.args.get('limit', 30) or 30)
+            limit = int(request.args.get("limit", 30) or 30)
         except (TypeError, ValueError):
             limit = 30
         limit = min(max(limit, 1), 100)
@@ -2427,569 +2944,692 @@ def classificador_despesa_historico():
                       justificativa, ponto_atencao, confianca, resultado_json, model, cached, criado_em
                FROM classificador_despesa_historico
                ORDER BY id DESC LIMIT ?""",
-            (limit,)
+            (limit,),
         ).fetchall()
         items = []
         for row in rows:
             try:
-                resultado = json.loads(row['resultado_json'] or '{}')
+                resultado = json.loads(row["resultado_json"] or "{}")
             except Exception:
                 resultado = {}
-            items.append({
-                'id': row['id'],
-                'item': row['item'],
-                'codigo_completo': row['codigo_completo'],
-                'grupo': row['grupo'],
-                'modalidade': row['modalidade'],
-                'elemento': row['elemento'],
-                'subelemento': row['subelemento'],
-                'justificativa': row['justificativa'],
-                'ponto_atencao': row['ponto_atencao'],
-                'confianca': row['confianca'],
-                'resultado': resultado,
-                'model': row['model'],
-                'cached': bool(row['cached']),
-                'criado_em': row['criado_em'],
-            })
-        return jsonify({'items': items})
+            items.append(
+                {
+                    "id": row["id"],
+                    "item": row["item"],
+                    "codigo_completo": row["codigo_completo"],
+                    "grupo": row["grupo"],
+                    "modalidade": row["modalidade"],
+                    "elemento": row["elemento"],
+                    "subelemento": row["subelemento"],
+                    "justificativa": row["justificativa"],
+                    "ponto_atencao": row["ponto_atencao"],
+                    "confianca": row["confianca"],
+                    "resultado": resultado,
+                    "model": row["model"],
+                    "cached": bool(row["cached"]),
+                    "criado_em": row["criado_em"],
+                }
+            )
+        return jsonify({"items": items})
     except Exception as e:
-        app.logger.error('GET /api/classificador-despesa/historico: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/classificador-despesa/historico: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/classificador-despesa/historico/<int:hid>', methods=['DELETE'])
+@app.route("/api/classificador-despesa/historico/<int:hid>", methods=["DELETE"])
 def classificador_despesa_historico_delete(hid):
     try:
         conn = get_db()
-        conn.execute('DELETE FROM classificador_despesa_historico WHERE id = ?', (hid,))
+        conn.execute("DELETE FROM classificador_despesa_historico WHERE id = ?", (hid,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('DELETE /api/classificador-despesa/historico/%s: %s', hid, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("DELETE /api/classificador-despesa/historico/%s: %s", hid, e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/kanban', methods=['GET'])
+@app.route("/api/kanban", methods=["GET"])
 def kanban_listar():
     try:
+        limit = max(1, min(request.args.get("limit", 200, type=int), 2000))
+        offset = max(0, request.args.get("offset", 0, type=int))
         conn = get_db()
+        total = conn.execute("SELECT COUNT(*) AS total FROM kanban_tasks").fetchone()[
+            "total"
+        ]
         rows = conn.execute(
-            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC"
+            "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC LIMIT ? OFFSET ?",
+            (limit, offset),
         ).fetchall()
         tasks = [row_to_dict(r) for r in rows]
-        attach_rows = conn.execute(
-            "SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments ORDER BY criado_em DESC, id DESC"
-        ).fetchall()
+        task_ids = [t["id"] for t in tasks]
         attachments_by_task: dict[str, list[dict]] = defaultdict(list)
-        for row in attach_rows:
-            payload = row_to_dict(row)
-            attachments_by_task[payload['task_id']].append(payload)
+        if task_ids:
+            placeholders = ",".join("?" for _ in task_ids)
+            attach_rows = conn.execute(
+                f"SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments WHERE task_id IN ({placeholders}) ORDER BY criado_em DESC, id DESC",
+                task_ids,
+            ).fetchall()
+            for row in attach_rows:
+                payload = row_to_dict(row)
+                attachments_by_task[payload["task_id"]].append(payload)
         for task in tasks:
-            task['attachments'] = attachments_by_task.get(task['id'], [])
-        return jsonify(tasks)
+            task["attachments"] = attachments_by_task.get(task["id"], [])
+        return jsonify(
+            {
+                "items": tasks,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
     except Exception as e:
-        app.logger.error('GET /api/kanban: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/kanban: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban', methods=['POST'])
+
+@app.route("/api/kanban", methods=["POST"])
 def kanban_criar():
     try:
         data = request.get_json(force=True) or {}
-        task_id = (data.get('id') or '').strip()
-        title = (data.get('title') or '').strip()
-        description = (data.get('description') or '').strip()
-        status = (data.get('status') or 'todo').strip()
-        priority = (data.get('priority') or 'medium').strip()
-        categoria = (data.get('categoria') or '').strip().upper()
-        data_vencimento = (data.get('data_vencimento') or '').strip()
-        responsavel = (data.get('responsavel') or '').strip()
-        concluido_em = ''
+        task_id = (data.get("id") or "").strip()
+        title = (data.get("title") or "").strip()
+        description = (data.get("description") or "").strip()
+        status = (data.get("status") or "todo").strip()
+        priority = (data.get("priority") or "medium").strip()
+        categoria = (data.get("categoria") or "").strip().upper()
+        data_vencimento = (data.get("data_vencimento") or "").strip()
+        responsavel = (data.get("responsavel") or "").strip()
+        concluido_em = ""
         if not task_id:
-            return jsonify({'error': 'id é obrigatório'}), 400
+            return jsonify({"error": "id é obrigatório"}), 400
         if not title:
-            return jsonify({'error': 'title é obrigatório'}), 400
-        if status not in {'todo', 'in-progress', 'done'}:
-            status = 'todo'
-        if priority not in {'low', 'medium', 'high'}:
-            priority = 'medium'
-        if status == 'done':
-            concluido_em = _time.strftime('%Y-%m-%d %H:%M:%S')
+            return jsonify({"error": "title é obrigatório"}), 400
+        if status not in {"todo", "in-progress", "done"}:
+            status = "todo"
+        if priority not in {"low", "medium", "high"}:
+            priority = "medium"
+        if status == "done":
+            concluido_em = _time.strftime("%Y-%m-%d %H:%M:%S")
         conn = get_db()
         conn.execute(
             "INSERT INTO kanban_tasks (id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em) VALUES (?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
-            (task_id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em)
+            (
+                task_id,
+                title,
+                description,
+                status,
+                priority,
+                categoria,
+                data_vencimento,
+                responsavel,
+                concluido_em,
+            ),
         )
         conn.commit()
         row = conn.execute(
             "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
-            (task_id,)
+            (task_id,),
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
     except sqlite3.IntegrityError:
-        return jsonify({'error': 'Já existe uma tarefa com esse id'}), 409
+        return jsonify({"error": "Já existe uma tarefa com esse id"}), 409
     except Exception as e:
-        app.logger.error('POST /api/kanban: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/<task_id>', methods=['PUT'])
+
+@app.route("/api/kanban/<task_id>", methods=["PUT"])
 def kanban_atualizar(task_id):
     try:
         data = request.get_json(force=True) or {}
-        title = (data.get('title') or '').strip()
-        description = (data.get('description') or '').strip()
-        status = (data.get('status') or 'todo').strip()
-        priority = (data.get('priority') or 'medium').strip()
-        categoria = (data.get('categoria') or '').strip().upper()
-        data_vencimento = (data.get('data_vencimento') or '').strip()
-        responsavel = (data.get('responsavel') or '').strip()
+        title = (data.get("title") or "").strip()
+        description = (data.get("description") or "").strip()
+        status = (data.get("status") or "todo").strip()
+        priority = (data.get("priority") or "medium").strip()
+        categoria = (data.get("categoria") or "").strip().upper()
+        data_vencimento = (data.get("data_vencimento") or "").strip()
+        responsavel = (data.get("responsavel") or "").strip()
         if not title:
-            return jsonify({'error': 'title é obrigatório'}), 400
-        if status not in {'todo', 'in-progress', 'done'}:
-            status = 'todo'
-        if priority not in {'low', 'medium', 'high'}:
-            priority = 'medium'
+            return jsonify({"error": "title é obrigatório"}), 400
+        if status not in {"todo", "in-progress", "done"}:
+            status = "todo"
+        if priority not in {"low", "medium", "high"}:
+            priority = "medium"
         conn = get_db()
-        current = conn.execute("SELECT status, concluido_em FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        current = conn.execute(
+            "SELECT status, concluido_em FROM kanban_tasks WHERE id=?", (task_id,)
+        ).fetchone()
         if not current:
-            return jsonify({'error': 'Tarefa não encontrada'}), 404
-        concluido_em = current['concluido_em'] or ''
-        if status == 'done' and current['status'] != 'done':
-            concluido_em = _time.strftime('%Y-%m-%d %H:%M:%S')
-        elif status != 'done':
-            concluido_em = ''
+            return jsonify({"error": "Tarefa não encontrada"}), 404
+        concluido_em = current["concluido_em"] or ""
+        if status == "done" and current["status"] != "done":
+            concluido_em = _time.strftime("%Y-%m-%d %H:%M:%S")
+        elif status != "done":
+            concluido_em = ""
         cur = conn.execute(
             "UPDATE kanban_tasks SET title=?, description=?, status=?, priority=?, categoria=?, data_vencimento=?, responsavel=?, concluido_em=?, atualizado_em=datetime('now','localtime') WHERE id=?",
-            (title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, task_id)
+            (
+                title,
+                description,
+                status,
+                priority,
+                categoria,
+                data_vencimento,
+                responsavel,
+                concluido_em,
+                task_id,
+            ),
         )
         conn.commit()
         row = conn.execute(
             "SELECT id, title, description, status, priority, categoria, data_vencimento, responsavel, concluido_em, criado_em, atualizado_em FROM kanban_tasks WHERE id=?",
-            (task_id,)
+            (task_id,),
         ).fetchone()
         return jsonify(row_to_dict(row))
     except Exception as e:
-        app.logger.error('PUT /api/kanban/%s: %s', task_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("PUT /api/kanban/%s: %s", task_id, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/<task_id>', methods=['DELETE'])
+
+@app.route("/api/kanban/<task_id>", methods=["DELETE"])
 def kanban_excluir(task_id):
     try:
         conn = get_db()
         cur = conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
         conn.commit()
         if cur.rowcount == 0:
-            return jsonify({'error': 'Tarefa não encontrada'}), 404
-        return jsonify({'ok': True})
+            return jsonify({"error": "Tarefa não encontrada"}), 404
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('DELETE /api/kanban/%s: %s', task_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("DELETE /api/kanban/%s: %s", task_id, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/create-from-text', methods=['POST'])
+
+@app.route("/api/kanban/ai/create-from-text", methods=["POST"])
 def kanban_ai_create_from_text():
     try:
         data = request.get_json(force=True) or {}
-        prompt = (data.get('prompt') or '').strip()
+        prompt = (data.get("prompt") or "").strip()
         if not prompt:
-            return jsonify({'error': 'Informe o texto para a IA gerar a tarefa'}), 400
+            return jsonify({"error": "Informe o texto para a IA gerar a tarefa"}), 400
         parsed, error = _kanban_ai_completion(
-            'create',
+            "create",
             prompt,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip(),
-            status_hint=(data.get('status_hint') or '').strip(),
-            priority_hint=(data.get('priority_hint') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
+            status_hint=(data.get("status_hint") or "").strip(),
+            priority_hint=(data.get("priority_hint") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
+            return jsonify({"error": error[0]}), error[1]
         task = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
-        if not task['title']:
-            return jsonify({'error': 'A IA não retornou um título válido para a tarefa'}), 502
+        if not task["title"]:
+            return jsonify(
+                {"error": "A IA não retornou um título válido para a tarefa"}
+            ), 502
         return jsonify(task)
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/create-from-text: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/create-from-text: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/improve-task', methods=['POST'])
+
+@app.route("/api/kanban/ai/improve-task", methods=["POST"])
 def kanban_ai_improve_task():
     try:
         data = request.get_json(force=True) or {}
-        task = data.get('task') or {}
-        prompt = (data.get('prompt') or '').strip()
-        if not isinstance(task, dict) or not (task.get('title') or '').strip():
-            return jsonify({'error': 'Envie uma tarefa válida para a IA melhorar'}), 400
+        task = data.get("task") or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not isinstance(task, dict) or not (task.get("title") or "").strip():
+            return jsonify({"error": "Envie uma tarefa válida para a IA melhorar"}), 400
         current_task = _sanitize_kanban_task_payload(task)
-        current_task['title'] = (task.get('title') or '').strip()
+        current_task["title"] = (task.get("title") or "").strip()
         parsed, error = _kanban_ai_completion(
-            'improve',
+            "improve",
             prompt,
             current_task,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
-        improved = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
-        if not improved['title']:
-            return jsonify({'error': 'A IA não retornou um título válido'}), 502
+            return jsonify({"error": error[0]}), error[1]
+        improved = _sanitize_kanban_task_payload(
+            parsed if isinstance(parsed, dict) else {}
+        )
+        if not improved["title"]:
+            return jsonify({"error": "A IA não retornou um título válido"}), 502
         return jsonify(improved)
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/improve-task: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/improve-task: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/breakdown-task', methods=['POST'])
+
+@app.route("/api/kanban/ai/breakdown-task", methods=["POST"])
 def kanban_ai_breakdown_task():
     try:
         data = request.get_json(force=True) or {}
-        task = data.get('task') or {}
-        prompt = (data.get('prompt') or '').strip()
-        if not isinstance(task, dict) or not (task.get('title') or '').strip():
-            return jsonify({'error': 'Envie uma tarefa válida para a IA quebrar em subtarefas'}), 400
+        task = data.get("task") or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not isinstance(task, dict) or not (task.get("title") or "").strip():
+            return jsonify(
+                {"error": "Envie uma tarefa válida para a IA quebrar em subtarefas"}
+            ), 400
         current_task = _sanitize_kanban_task_payload(task)
-        current_task['title'] = (task.get('title') or '').strip()
+        current_task["title"] = (task.get("title") or "").strip()
         parsed, error = _kanban_ai_completion(
-            'breakdown',
+            "breakdown",
             prompt,
             current_task,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
-        items = parsed.get('tasks') if isinstance(parsed, dict) else parsed
+            return jsonify({"error": error[0]}), error[1]
+        items = parsed.get("tasks") if isinstance(parsed, dict) else parsed
         if not isinstance(items, list):
-            return jsonify({'error': 'A IA não retornou uma lista válida de subtarefas'}), 502
+            return jsonify(
+                {"error": "A IA não retornou uma lista válida de subtarefas"}
+            ), 502
         tasks = []
         for item in items:
             if not isinstance(item, dict):
                 continue
             task_payload = _sanitize_kanban_task_payload(item)
-            if task_payload['title']:
+            if task_payload["title"]:
                 tasks.append(task_payload)
         if not tasks:
-            return jsonify({'error': 'A IA não gerou subtarefas válidas'}), 502
-        return jsonify({'tasks': tasks})
+            return jsonify({"error": "A IA não gerou subtarefas válidas"}), 502
+        return jsonify({"tasks": tasks})
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/breakdown-task: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/breakdown-task: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/plan-task', methods=['POST'])
+
+@app.route("/api/kanban/ai/plan-task", methods=["POST"])
 def kanban_ai_plan_task():
     try:
         data = request.get_json(force=True) or {}
-        task = data.get('task') or {}
-        prompt = (data.get('prompt') or '').strip()
-        if not isinstance(task, dict) or not (task.get('title') or '').strip():
-            return jsonify({'error': 'Envie uma tarefa válida para a IA planejar'}), 400
+        task = data.get("task") or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not isinstance(task, dict) or not (task.get("title") or "").strip():
+            return jsonify({"error": "Envie uma tarefa válida para a IA planejar"}), 400
         current_task = {
             **_sanitize_kanban_task_payload(task),
-            'title': (task.get('title') or '').strip(),
-            'categoria': (task.get('categoria') or '').strip().upper(),
-            'data_vencimento': (task.get('data_vencimento') or '').strip(),
-            'responsavel': (task.get('responsavel') or '').strip(),
+            "title": (task.get("title") or "").strip(),
+            "categoria": (task.get("categoria") or "").strip().upper(),
+            "data_vencimento": (task.get("data_vencimento") or "").strip(),
+            "responsavel": (task.get("responsavel") or "").strip(),
         }
         parsed, error = _kanban_ai_completion(
-            'plan',
+            "plan",
             prompt,
             current_task,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
+            return jsonify({"error": error[0]}), error[1]
         plan = _sanitize_kanban_plan_payload(parsed if isinstance(parsed, dict) else {})
-        if not plan['task']['title']:
-            return jsonify({'error': 'A IA não retornou uma tarefa principal válida'}), 502
-        if not plan['checklist']:
-            return jsonify({'error': 'A IA não retornou checklist válido para o planejamento'}), 502
+        if not plan["task"]["title"]:
+            return jsonify(
+                {"error": "A IA não retornou uma tarefa principal válida"}
+            ), 502
+        if not plan["checklist"]:
+            return jsonify(
+                {"error": "A IA não retornou checklist válido para o planejamento"}
+            ), 502
         return jsonify(plan)
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/plan-task: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/plan-task: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/classify-task', methods=['POST'])
+
+@app.route("/api/kanban/ai/classify-task", methods=["POST"])
 def kanban_ai_classify_task():
     try:
         data = request.get_json(force=True) or {}
-        task = data.get('task') or {}
-        prompt = (data.get('prompt') or '').strip()
-        if not isinstance(task, dict) or not (task.get('title') or '').strip():
-            return jsonify({'error': 'Envie uma tarefa válida para a IA classificar'}), 400
+        task = data.get("task") or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not isinstance(task, dict) or not (task.get("title") or "").strip():
+            return jsonify(
+                {"error": "Envie uma tarefa válida para a IA classificar"}
+            ), 400
         current_task = {
             **_sanitize_kanban_task_payload(task),
-            'title': (task.get('title') or '').strip(),
-            'categoria': (task.get('categoria') or '').strip().upper(),
-            'data_vencimento': (task.get('data_vencimento') or '').strip(),
-            'responsavel': (task.get('responsavel') or '').strip(),
+            "title": (task.get("title") or "").strip(),
+            "categoria": (task.get("categoria") or "").strip().upper(),
+            "data_vencimento": (task.get("data_vencimento") or "").strip(),
+            "responsavel": (task.get("responsavel") or "").strip(),
         }
         parsed, error = _kanban_ai_completion(
-            'classify',
-            prompt or 'Classifique o tipo principal desta tarefa.',
+            "classify",
+            prompt or "Classifique o tipo principal desta tarefa.",
             current_task,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
-        result = _sanitize_kanban_task_classification_payload(parsed if isinstance(parsed, dict) else {})
+            return jsonify({"error": error[0]}), error[1]
+        result = _sanitize_kanban_task_classification_payload(
+            parsed if isinstance(parsed, dict) else {}
+        )
         return jsonify(result)
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/classify-task: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/classify-task: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/stale-task', methods=['POST'])
+
+@app.route("/api/kanban/ai/stale-task", methods=["POST"])
 def kanban_ai_stale_task():
     try:
         data = request.get_json(force=True) or {}
-        task = data.get('task') or {}
-        prompt = (data.get('prompt') or '').strip()
-        if not isinstance(task, dict) or not (task.get('title') or '').strip():
-            return jsonify({'error': 'Envie uma tarefa válida para analisar parada'}), 400
+        task = data.get("task") or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not isinstance(task, dict) or not (task.get("title") or "").strip():
+            return jsonify(
+                {"error": "Envie uma tarefa válida para analisar parada"}
+            ), 400
         current_task = {
             **_sanitize_kanban_task_payload(task),
-            'title': (task.get('title') or '').strip(),
-            'categoria': (task.get('categoria') or '').strip().upper(),
-            'data_vencimento': (task.get('data_vencimento') or '').strip(),
-            'responsavel': (task.get('responsavel') or '').strip(),
-            'criado_em': (task.get('criado_em') or '').strip(),
-            'atualizado_em': (task.get('atualizado_em') or '').strip(),
+            "title": (task.get("title") or "").strip(),
+            "categoria": (task.get("categoria") or "").strip().upper(),
+            "data_vencimento": (task.get("data_vencimento") or "").strip(),
+            "responsavel": (task.get("responsavel") or "").strip(),
+            "criado_em": (task.get("criado_em") or "").strip(),
+            "atualizado_em": (task.get("atualizado_em") or "").strip(),
         }
         parsed, error = _kanban_ai_completion(
-            'stale',
-            prompt or 'Avalie se a tarefa está parada e sugira ações.',
+            "stale",
+            prompt or "Avalie se a tarefa está parada e sugira ações.",
             current_task,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
-        result = _sanitize_kanban_stale_payload(parsed if isinstance(parsed, dict) else {})
+            return jsonify({"error": error[0]}), error[1]
+        result = _sanitize_kanban_stale_payload(
+            parsed if isinstance(parsed, dict) else {}
+        )
         return jsonify(result)
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/stale-task: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/stale-task: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/kanban/ai/professional-rewrite', methods=['POST'])
+
+@app.route("/api/kanban/ai/professional-rewrite", methods=["POST"])
 def kanban_ai_professional_rewrite():
     try:
         data = request.get_json(force=True) or {}
-        task = data.get('task') or {}
-        prompt = (data.get('prompt') or '').strip()
-        if not isinstance(task, dict) or not (task.get('title') or '').strip():
-            return jsonify({'error': 'Envie uma tarefa válida para reescrita profissional'}), 400
+        task = data.get("task") or {}
+        prompt = (data.get("prompt") or "").strip()
+        if not isinstance(task, dict) or not (task.get("title") or "").strip():
+            return jsonify(
+                {"error": "Envie uma tarefa válida para reescrita profissional"}
+            ), 400
         current_task = _sanitize_kanban_task_payload(task)
-        current_task['title'] = (task.get('title') or '').strip()
+        current_task["title"] = (task.get("title") or "").strip()
         parsed, error = _kanban_ai_completion(
-            'professional_rewrite',
-            prompt or 'Reescreva a tarefa em tom profissional e administrativo.',
+            "professional_rewrite",
+            prompt or "Reescreva a tarefa em tom profissional e administrativo.",
             current_task,
-            api_key_override=(data.get('api_key') or '').strip(),
-            model_override=(data.get('model') or '').strip()
+            api_key_override=(data.get("api_key") or "").strip(),
+            model_override=(data.get("model") or "").strip(),
         )
         if error:
-            return jsonify({'error': error[0]}), error[1]
-        rewritten = _sanitize_kanban_task_payload(parsed if isinstance(parsed, dict) else {})
-        if not rewritten['title']:
-            return jsonify({'error': 'A IA não retornou um título válido para a reescrita'}), 502
+            return jsonify({"error": error[0]}), error[1]
+        rewritten = _sanitize_kanban_task_payload(
+            parsed if isinstance(parsed, dict) else {}
+        )
+        if not rewritten["title"]:
+            return jsonify(
+                {"error": "A IA não retornou um título válido para a reescrita"}
+            ), 502
         return jsonify(rewritten)
     except Exception as e:
-        app.logger.error('POST /api/kanban/ai/professional-rewrite: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/ai/professional-rewrite: %s", e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/kanban/<task_id>/attachments', methods=['GET'])
+@app.route("/api/kanban/<task_id>/attachments", methods=["GET"])
 def kanban_anexos_listar(task_id):
     try:
         conn = get_db()
-        task = conn.execute("SELECT id FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        task = conn.execute(
+            "SELECT id FROM kanban_tasks WHERE id=?", (task_id,)
+        ).fetchone()
         if not task:
-            return jsonify({'error': 'Tarefa não encontrada'}), 404
+            return jsonify({"error": "Tarefa não encontrada"}), 404
         rows = conn.execute(
             "SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments WHERE task_id=? ORDER BY criado_em DESC, id DESC",
-            (task_id,)
+            (task_id,),
         ).fetchall()
         return jsonify([row_to_dict(r) for r in rows])
     except Exception as e:
-        app.logger.error('GET /api/kanban/%s/attachments: %s', task_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/kanban/%s/attachments: %s", task_id, e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/kanban/<task_id>/attachments', methods=['POST'])
+@app.route("/api/kanban/<task_id>/attachments", methods=["POST"])
 def kanban_anexos_enviar(task_id):
-    file = request.files.get('arquivo')
+    file = request.files.get("arquivo")
     if not file or not file.filename:
-        return jsonify({'error': 'Arquivo é obrigatório'}), 400
+        return jsonify({"error": "Arquivo é obrigatório"}), 400
     try:
         content = file.read()
         if not content:
-            return jsonify({'error': 'Arquivo vazio'}), 400
+            return jsonify({"error": "Arquivo vazio"}), 400
         if len(content) > 10 * 1024 * 1024:
-            return jsonify({'error': 'Arquivo excede o limite de 10 MB'}), 413
+            return jsonify({"error": "Arquivo excede o limite de 10 MB"}), 413
         conn = get_db()
         task = conn.execute(
-            "SELECT id, title FROM kanban_tasks WHERE id=?",
-            (task_id,)
+            "SELECT id, title FROM kanban_tasks WHERE id=?", (task_id,)
         ).fetchone()
         if not task:
-            return jsonify({'error': 'Tarefa não encontrada'}), 404
+            return jsonify({"error": "Tarefa não encontrada"}), 404
         cur = conn.execute(
             "INSERT INTO kanban_attachments (task_id, file_name, mime_type, file_size, content, criado_em) VALUES (?,?,?,?,?,datetime('now','localtime'))",
-            (task_id, file.filename, file.mimetype or 'application/octet-stream', len(content), content)
+            (
+                task_id,
+                file.filename,
+                file.mimetype or "application/octet-stream",
+                len(content),
+                content,
+            ),
         )
         attachment_id = cur.lastrowid
         conn.commit()
         row = conn.execute(
             "SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments WHERE id=?",
-            (attachment_id,)
+            (attachment_id,),
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        app.logger.error('POST /api/kanban/%s/attachments: %s', task_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/kanban/%s/attachments: %s", task_id, e)
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/kanban/<task_id>/attachments/<int:attachment_id>/download', methods=['GET'])
+@app.route(
+    "/api/kanban/<task_id>/attachments/<int:attachment_id>/download", methods=["GET"]
+)
 def kanban_anexo_download(task_id, attachment_id):
     try:
         conn = get_db()
         row = conn.execute(
             "SELECT id, task_id, file_name, mime_type, content FROM kanban_attachments WHERE id=? AND task_id=?",
-            (attachment_id, task_id)
+            (attachment_id, task_id),
         ).fetchone()
         if not row:
-            return jsonify({'error': 'Anexo não encontrado'}), 404
+            return jsonify({"error": "Anexo não encontrado"}), 404
         return send_file(
-            _io.BytesIO(row['content']),
-            mimetype=row['mime_type'] or 'application/octet-stream',
+            _io.BytesIO(row["content"]),
+            mimetype=row["mime_type"] or "application/octet-stream",
             as_attachment=True,
-            download_name=row['file_name']
+            download_name=row["file_name"],
         )
     except Exception as e:
-        app.logger.error('GET /api/kanban/%s/attachments/%s/download: %s', task_id, attachment_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(
+            "GET /api/kanban/%s/attachments/%s/download: %s", task_id, attachment_id, e
+        )
+        return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/kanban/<task_id>/attachments/<int:attachment_id>', methods=['DELETE'])
+@app.route("/api/kanban/<task_id>/attachments/<int:attachment_id>", methods=["DELETE"])
 def kanban_anexo_excluir(task_id, attachment_id):
     try:
         conn = get_db()
         cur = conn.execute(
             "DELETE FROM kanban_attachments WHERE id=? AND task_id=?",
-            (attachment_id, task_id)
+            (attachment_id, task_id),
         )
         conn.commit()
         if cur.rowcount == 0:
-            return jsonify({'error': 'Anexo não encontrado'}), 404
-        return jsonify({'ok': True})
+            return jsonify({"error": "Anexo não encontrado"}), 404
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('DELETE /api/kanban/%s/attachments/%s: %s', task_id, attachment_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(
+            "DELETE /api/kanban/%s/attachments/%s: %s", task_id, attachment_id, e
+        )
+        return jsonify({"error": str(e)}), 500
+
 
 import urllib.request as _urllib_req
 import urllib.error as _urllib_err
 
+
 def _cnpj_so_numeros(cnpj: str) -> str:
     import re as _re2
-    return _re2.sub(r'\D', '', cnpj)
 
-def _buscar_cnpja(cnpj: str, api_key: str = '') -> dict:
+    return _re2.sub(r"\D", "", cnpj)
+
+
+def _buscar_cnpja(cnpj: str, api_key: str = "") -> dict:
     """Consulta API CNPJá (open.cnpja.com). Com api_key usa tier pago (sem limite de taxa)."""
     url = f"https://open.cnpja.com/office/{cnpj}"
-    headers = {'User-Agent': 'Mozilla/5.0'}
+    headers = {"User-Agent": "Mozilla/5.0"}
     if api_key:
-        headers['Authorization'] = f'Bearer {api_key}'
+        headers["Authorization"] = f"Bearer {api_key}"
     req = _urllib_req.Request(url, headers=headers)
     with _urllib_req.urlopen(req, timeout=15) as r:
         d = json.loads(r.read().decode())
 
     def fmt_moeda(v):
-        try: return f"R$ {float(v):,.2f}".replace(',','X').replace('.',',').replace('X','.')
-        except: return str(v) if v else ''
+        try:
+            return (
+                f"R$ {float(v):,.2f}".replace(",", "X")
+                .replace(".", ",")
+                .replace("X", ".")
+            )
+        except:
+            return str(v) if v else ""
 
-    end = d.get('address', {})
-    telefones = [f"({p.get('area','')}) {p.get('number','')} [{p.get('type','')}]"
-                 for p in d.get('phones', []) if p.get('number')]
-    emails = [f"{e.get('address','')} [{e.get('ownership','')}]"
-              for e in d.get('emails', []) if e.get('address')]
-    socios = [{'nome': m.get('person',{}).get('name',''),
-               'qualificacao': m.get('role',{}).get('text','')}
-              for m in d.get('company', {}).get('members', [])]
-    cnaes_sec = [a.get('text','') for a in d.get('sideActivities', [])]
+    end = d.get("address", {})
+    telefones = [
+        f"({p.get('area', '')}) {p.get('number', '')} [{p.get('type', '')}]"
+        for p in d.get("phones", [])
+        if p.get("number")
+    ]
+    emails = [
+        f"{e.get('address', '')} [{e.get('ownership', '')}]"
+        for e in d.get("emails", [])
+        if e.get("address")
+    ]
+    socios = [
+        {
+            "nome": m.get("person", {}).get("name", ""),
+            "qualificacao": m.get("role", {}).get("text", ""),
+        }
+        for m in d.get("company", {}).get("members", [])
+    ]
+    cnaes_sec = [a.get("text", "") for a in d.get("sideActivities", [])]
 
-    complemento = end.get('details', '')
-    end_str = f"{end.get('street','')} {end.get('number','')}".strip()
-    if complemento: end_str += f", {complemento}"
-    end_str += f" - {end.get('district','')} - {end.get('city','')}/{end.get('state','')} - CEP {end.get('zip','')}"
+    complemento = end.get("details", "")
+    end_str = f"{end.get('street', '')} {end.get('number', '')}".strip()
+    if complemento:
+        end_str += f", {complemento}"
+    end_str += f" - {end.get('district', '')} - {end.get('city', '')}/{end.get('state', '')} - CEP {end.get('zip', '')}"
 
     return {
-        'cnpj': cnpj,
-        'razao_social': d.get('company',{}).get('name',''),
-        'nome_fantasia': d.get('alias',''),
-        'situacao': d.get('status',{}).get('text',''),
-        'situacao_id': d.get('status',{}).get('id',''),
-        'data_situacao': d.get('statusDate',''),
-        'data_abertura': d.get('founded',''),
-        'natureza_juridica': d.get('company',{}).get('nature',{}).get('text',''),
-        'capital_social': fmt_moeda(d.get('company',{}).get('equity')),
-        'porte': d.get('company',{}).get('size',{}).get('text',''),
-        'simples': 'Sim' if d.get('company',{}).get('simples',{}).get('optant') else 'Não',
-        'mei': 'Sim' if d.get('company',{}).get('simei',{}).get('optant') else 'Não',
-        'matriz': 'Sim' if d.get('head') else 'Filial',
-        'endereco': end_str,
-        'cnae_principal': d.get('mainActivity',{}).get('text',''),
-        'cnaes_secundarios': cnaes_sec,
-        'socios': socios,
-        'telefones': telefones,
-        'emails': emails,
-        'fonte': 'CNPJá',
+        "cnpj": cnpj,
+        "razao_social": d.get("company", {}).get("name", ""),
+        "nome_fantasia": d.get("alias", ""),
+        "situacao": d.get("status", {}).get("text", ""),
+        "situacao_id": d.get("status", {}).get("id", ""),
+        "data_situacao": d.get("statusDate", ""),
+        "data_abertura": d.get("founded", ""),
+        "natureza_juridica": d.get("company", {}).get("nature", {}).get("text", ""),
+        "capital_social": fmt_moeda(d.get("company", {}).get("equity")),
+        "porte": d.get("company", {}).get("size", {}).get("text", ""),
+        "simples": "Sim"
+        if d.get("company", {}).get("simples", {}).get("optant")
+        else "Não",
+        "mei": "Sim" if d.get("company", {}).get("simei", {}).get("optant") else "Não",
+        "matriz": "Sim" if d.get("head") else "Filial",
+        "endereco": end_str,
+        "cnae_principal": d.get("mainActivity", {}).get("text", ""),
+        "cnaes_secundarios": cnaes_sec,
+        "socios": socios,
+        "telefones": telefones,
+        "emails": emails,
+        "fonte": "CNPJá",
     }
+
 
 def _buscar_receitaws(cnpj: str) -> dict:
     """Fallback para ReceitaWS."""
     url = f"https://www.receitaws.com.br/v1/cnpj/{cnpj}"
-    req = _urllib_req.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    req = _urllib_req.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     with _urllib_req.urlopen(req, timeout=10) as r:
         d = json.loads(r.read().decode())
-    if d.get('status') == 'ERROR':
-        raise Exception(d.get('message', 'CNPJ não encontrado'))
-    socios = [{'nome': s.get('nome',''), 'qualificacao': s.get('qual','')}
-              for s in d.get('qsa', [])]
+    if d.get("status") == "ERROR":
+        raise Exception(d.get("message", "CNPJ não encontrado"))
+    socios = [
+        {"nome": s.get("nome", ""), "qualificacao": s.get("qual", "")}
+        for s in d.get("qsa", [])
+    ]
     return {
-        'cnpj': cnpj,
-        'razao_social': d.get('nome',''),
-        'nome_fantasia': d.get('fantasia',''),
-        'situacao': d.get('situacao',''),
-        'situacao_id': d.get('situacao','').upper(),
-        'data_abertura': d.get('abertura',''),
-        'natureza_juridica': d.get('natureza_juridica',''),
-        'capital_social': d.get('capital_social',''),
-        'porte': d.get('porte',''),
-        'simples': d.get('simples',''),
-        'mei': d.get('mei',''),
-        'endereco': f"{d.get('logradouro','')} {d.get('numero','')}".strip(),
-        'cnae_principal': d.get('atividade_principal',[{}])[0].get('text','') if d.get('atividade_principal') else '',
-        'cnaes_secundarios': [a.get('text','') for a in d.get('atividades_secundarias', [])],
-        'socios': socios,
-        'telefones': [d.get('telefone','')] if d.get('telefone') else [],
-        'emails': [d.get('email','')] if d.get('email') else [],
-        'fonte': 'ReceitaWS',
+        "cnpj": cnpj,
+        "razao_social": d.get("nome", ""),
+        "nome_fantasia": d.get("fantasia", ""),
+        "situacao": d.get("situacao", ""),
+        "situacao_id": d.get("situacao", "").upper(),
+        "data_abertura": d.get("abertura", ""),
+        "natureza_juridica": d.get("natureza_juridica", ""),
+        "capital_social": d.get("capital_social", ""),
+        "porte": d.get("porte", ""),
+        "simples": d.get("simples", ""),
+        "mei": d.get("mei", ""),
+        "endereco": f"{d.get('logradouro', '')} {d.get('numero', '')}".strip(),
+        "cnae_principal": d.get("atividade_principal", [{}])[0].get("text", "")
+        if d.get("atividade_principal")
+        else "",
+        "cnaes_secundarios": [
+            a.get("text", "") for a in d.get("atividades_secundarias", [])
+        ],
+        "socios": socios,
+        "telefones": [d.get("telefone", "")] if d.get("telefone") else [],
+        "emails": [d.get("email", "")] if d.get("email") else [],
+        "fonte": "ReceitaWS",
     }
 
-@app.route('/api/cnpj/buscar', methods=['POST'])
+
+@app.route("/api/cnpj/buscar", methods=["POST"])
 def cnpj_buscar():
     """Consulta dados de empresa pelo CNPJ. Usa CNPJá com fallback ReceitaWS."""
     d = request.get_json()
-    cnpj = _cnpj_so_numeros(d.get('cnpj', ''))
-    api_key = d.get('api_key_cnpja', '').strip()
+    cnpj = _cnpj_so_numeros(d.get("cnpj", ""))
+    api_key = d.get("api_key_cnpja", "").strip()
     if len(cnpj) != 14:
-        return jsonify({'error': 'CNPJ deve ter 14 dígitos'}), 400
+        return jsonify({"error": "CNPJ deve ter 14 dígitos"}), 400
     if not _cnpj_valido(cnpj):
-        return jsonify({'error': 'CNPJ inválido'}), 400
+        return jsonify({"error": "CNPJ inválido"}), 400
     # Tenta CNPJá primeiro
     try:
         return jsonify(_buscar_cnpja(cnpj, api_key))
     except _urllib_err.HTTPError as e:
         if e.code == 429:
-            return jsonify({'error': 'Limite de consultas atingido (5/min). Aguarde 1 minuto.'}), 429
+            return jsonify(
+                {"error": "Limite de consultas atingido (5/min). Aguarde 1 minuto."}
+            ), 429
         if e.code == 404:
             pass  # Tenta fallback
         else:
@@ -3000,222 +3640,306 @@ def cnpj_buscar():
     try:
         return jsonify(_buscar_receitaws(cnpj))
     except Exception as e2:
-        return jsonify({'error': f'CNPJ não encontrado: {e2}'}), 404
+        return jsonify({"error": f"CNPJ não encontrado: {e2}"}), 404
 
-@app.route('/api/documentos', methods=['GET'])
+
+@app.route("/api/documentos", methods=["GET"])
 def documentos_listar():
     try:
-        categoria = (request.args.get('categoria') or '').strip()
-        referencia = (request.args.get('referencia') or '').strip()
+        limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
+        offset = max(0, request.args.get("offset", 0, type=int))
+        categoria = (request.args.get("categoria") or "").strip()
+        referencia = (request.args.get("referencia") or "").strip()
         conn = get_db()
         sql = "SELECT * FROM documentos_centro WHERE 1=1"
+        count_sql = "SELECT COUNT(*) AS total FROM documentos_centro WHERE 1=1"
         params = []
+        count_params = []
         if categoria:
             sql += " AND categoria=?"
+            count_sql += " AND categoria=?"
             params.append(categoria)
+            count_params.append(categoria)
         if referencia:
             sql += " AND referencia LIKE ?"
-            params.append(f"%{referencia}%")
-        sql += " ORDER BY criado_em DESC, id DESC"
-        rows = conn.execute(sql, tuple(params)).fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
+            count_sql += " AND referencia LIKE ?"
+            like = f"%{referencia}%"
+            params.append(like)
+            count_params.append(like)
+        total = conn.execute(count_sql, count_params).fetchone()["total"]
+        sql += " ORDER BY criado_em DESC, id DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(sql, params).fetchall()
+        return jsonify(
+            {
+                "items": [row_to_dict(r) for r in rows],
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
     except Exception as e:
-        app.logger.error('GET /api/documentos: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/documentos: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/documentos', methods=['POST'])
+
+@app.route("/api/documentos", methods=["POST"])
 def documentos_enviar():
-    file = request.files.get('arquivo')
-    categoria = (request.form.get('categoria') or 'geral').strip()
-    referencia = (request.form.get('referencia') or '').strip()
-    descricao = (request.form.get('descricao') or '').strip()
+    file = request.files.get("arquivo")
+    categoria = (request.form.get("categoria") or "geral").strip()
+    referencia = (request.form.get("referencia") or "").strip()
+    descricao = (request.form.get("descricao") or "").strip()
     if not file or not file.filename:
-        return jsonify({'error': 'Arquivo é obrigatório'}), 400
+        return jsonify({"error": "Arquivo é obrigatório"}), 400
     try:
-        nome_arquivo, relative_dir, abs_path = _build_document_storage(categoria, referencia, file.filename)
+        nome_arquivo, relative_dir, abs_path = _build_document_storage(
+            categoria, referencia, file.filename
+        )
         file.save(abs_path)
         tamanho = os.path.getsize(abs_path)
         extensao = os.path.splitext(file.filename)[1].lower()
-        caminho_relativo = f"{relative_dir}/{nome_arquivo}" if relative_dir else nome_arquivo
+        caminho_relativo = (
+            f"{relative_dir}/{nome_arquivo}" if relative_dir else nome_arquivo
+        )
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO documentos_centro (nome_original, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo) VALUES (?,?,?,?,?,?,?,?)",
-            (file.filename, nome_arquivo, categoria, referencia, descricao, tamanho, extensao, caminho_relativo)
+            (
+                file.filename,
+                nome_arquivo,
+                categoria,
+                referencia,
+                descricao,
+                tamanho,
+                extensao,
+                caminho_relativo,
+            ),
         )
         new_id = cur.lastrowid
         conn.commit()
-        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (new_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (new_id,)
+        ).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        app.logger.error('POST /api/documentos: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/documentos: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/documentos/conteudo', methods=['POST'])
+
+@app.route("/api/documentos/conteudo", methods=["POST"])
 def documentos_salvar_conteudo():
     try:
-        nome = (request.form.get('nome') or '').strip()
-        categoria = (request.form.get('categoria') or 'gerados').strip()
-        referencia = (request.form.get('referencia') or '').strip()
-        descricao = (request.form.get('descricao') or '').strip()
-        arquivo = request.files.get('arquivo')
+        nome = (request.form.get("nome") or "").strip()
+        categoria = (request.form.get("categoria") or "gerados").strip()
+        referencia = (request.form.get("referencia") or "").strip()
+        descricao = (request.form.get("descricao") or "").strip()
+        arquivo = request.files.get("arquivo")
         if not nome or not arquivo:
-            return jsonify({'error': 'nome e arquivo são obrigatórios'}), 400
-        saved = _persist_document_file(nome, arquivo.read(), categoria, referencia, descricao, arquivo.mimetype or '')
+            return jsonify({"error": "nome e arquivo são obrigatórios"}), 400
+        saved = _persist_document_file(
+            nome,
+            arquivo.read(),
+            categoria,
+            referencia,
+            descricao,
+            arquivo.mimetype or "",
+        )
         return jsonify(saved), 201
     except Exception as e:
-        app.logger.error('POST /api/documentos/conteudo: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/documentos/conteudo: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/documentos/<int:doc_id>/download', methods=['GET'])
+
+@app.route("/api/documentos/<int:doc_id>/download", methods=["GET"])
 def documentos_download(doc_id):
     try:
         conn = get_db()
-        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (doc_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Documento não encontrado'}), 404
-        abs_path = os.path.join(DOCUMENTS_DIR, row['caminho_relativo'].replace('/', os.sep))
+            return jsonify({"error": "Documento não encontrado"}), 404
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
         if not os.path.exists(abs_path):
-            return jsonify({'error': 'Arquivo físico não encontrado'}), 404
+            return jsonify({"error": "Arquivo físico não encontrado"}), 404
         mime, _ = mimetypes.guess_type(abs_path)
-        return send_file(abs_path, mimetype=mime or 'application/octet-stream', as_attachment=True, download_name=row['nome_original'])
+        return send_file(
+            abs_path,
+            mimetype=mime or "application/octet-stream",
+            as_attachment=True,
+            download_name=row["nome_original"],
+        )
     except Exception as e:
-        app.logger.error('GET /api/documentos/%s/download: %s', doc_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/documentos/%s/download: %s", doc_id, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/autentique/testar', methods=['POST'])
+
+@app.route("/api/autentique/testar", methods=["POST"])
 def autentique_testar():
     data = request.get_json(silent=True) or {}
     try:
         conn = get_db()
-        api_key = _get_autentique_config(conn, api_key_override=(data.get('api_key') or '').strip())
+        api_key = _get_autentique_config(
+            conn, api_key_override=(data.get("api_key") or "").strip()
+        )
         if not api_key:
-            return jsonify({'error': 'Chave da Autentique não configurada. Acesse ADM -> Chaves de API.'}), 400
+            return jsonify(
+                {
+                    "error": "Chave da Autentique não configurada. Acesse ADM -> Chaves de API."
+                }
+            ), 400
 
-        query = {
-            'query': 'query { me { id name email } }'
-        }
+        query = {"query": "query { me { id name email } }"}
         resp = requests.post(
-            'https://api.autentique.com.br/v2/graphql',
+            "https://api.autentique.com.br/v2/graphql",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json',
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json=query,
             timeout=35,
         )
         payload = resp.json()
-        if resp.status_code >= 400 or payload.get('errors'):
-            message = (payload.get('errors') or [{}])[0].get('message') or f'Erro HTTP {resp.status_code}'
-            return jsonify({'error': message}), resp.status_code or 502
-        user = ((payload.get('data') or {}).get('me') or {})
-        return jsonify({'ok': True, 'usuario': user})
+        if resp.status_code >= 400 or payload.get("errors"):
+            message = (payload.get("errors") or [{}])[0].get(
+                "message"
+            ) or f"Erro HTTP {resp.status_code}"
+            return jsonify({"error": message}), resp.status_code or 502
+        user = (payload.get("data") or {}).get("me") or {}
+        return jsonify({"ok": True, "usuario": user})
     except requests.RequestException as err:
-        return jsonify({'error': f'Falha de conexão com a Autentique: {err}'}), 502
+        return jsonify({"error": f"Falha de conexão com a Autentique: {err}"}), 502
     except Exception as err:
-        app.logger.error('POST /api/autentique/testar: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("POST /api/autentique/testar: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/saldo', methods=['GET'])
+
+@app.route("/api/autentique/saldo", methods=["GET"])
 def autentique_saldo():
     try:
         conn = get_db()
-        api_key = _get_autentique_config(conn, api_key_override=(request.args.get('api_key') or '').strip())
+        api_key = _get_autentique_config(
+            conn, api_key_override=(request.args.get("api_key") or "").strip()
+        )
         if not api_key:
-            return jsonify({'error': 'Chave da Autentique não configurada. Acesse ADM -> Chaves de API.'}), 400
+            return jsonify(
+                {
+                    "error": "Chave da Autentique não configurada. Acesse ADM -> Chaves de API."
+                }
+            ), 400
 
         query = {
-            'query': 'query { me { id name email subscription { documents credits } } }'
+            "query": "query { me { id name email subscription { documents credits } } }"
         }
         resp = requests.post(
-            'https://api.autentique.com.br/v2/graphql',
+            "https://api.autentique.com.br/v2/graphql",
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json',
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json=query,
             timeout=35,
         )
         payload = resp.json()
-        if resp.status_code >= 400 or payload.get('errors'):
-            message = (payload.get('errors') or [{}])[0].get('message') or f'Erro HTTP {resp.status_code}'
-            return jsonify({'error': message}), resp.status_code or 502
+        if resp.status_code >= 400 or payload.get("errors"):
+            message = (payload.get("errors") or [{}])[0].get(
+                "message"
+            ) or f"Erro HTTP {resp.status_code}"
+            return jsonify({"error": message}), resp.status_code or 502
 
-        me = ((payload.get('data') or {}).get('me') or {})
-        subscription = me.get('subscription') or {}
-        return jsonify({
-            'ok': True,
-            'usuario': {
-                'id': me.get('id'),
-                'name': me.get('name'),
-                'email': me.get('email'),
-            },
-            'subscription': {
-                'documents': subscription.get('documents'),
-                'credits': subscription.get('credits'),
-            },
-        })
+        me = (payload.get("data") or {}).get("me") or {}
+        subscription = me.get("subscription") or {}
+        return jsonify(
+            {
+                "ok": True,
+                "usuario": {
+                    "id": me.get("id"),
+                    "name": me.get("name"),
+                    "email": me.get("email"),
+                },
+                "subscription": {
+                    "documents": subscription.get("documents"),
+                    "credits": subscription.get("credits"),
+                },
+            }
+        )
     except requests.RequestException as err:
-        return jsonify({'error': f'Falha de conexão com a Autentique: {err}'}), 502
+        return jsonify({"error": f"Falha de conexão com a Autentique: {err}"}), 502
     except Exception as err:
-        app.logger.error('GET /api/autentique/saldo: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("GET /api/autentique/saldo: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/chaves', methods=['GET'])
+
+@app.route("/api/autentique/chaves", methods=["GET"])
 def autentique_listar_chaves():
     try:
         conn = get_db()
         rows = conn.execute(
-            "SELECT valor FROM configuracoes WHERE chave=?",
-            ('api_autentique_key',)
+            "SELECT valor FROM configuracoes WHERE chave=?", ("api_autentique_key",)
         ).fetchall()
-        raw = rows[0]['valor'] if rows else ''
+        raw = rows[0]["valor"] if rows else ""
         keys = _parse_autentique_keys(raw)
         items = []
         for idx, key in enumerate(keys):
-            masked = f'{key[:8]}...{key[-6:]}' if len(key) > 18 else key
-            items.append({
-                'id': idx + 1,
-                'label': f'Chave {idx + 1}',
-                'masked': masked,
-                'value': key,
-            })
+            masked = f"{key[:8]}...{key[-6:]}" if len(key) > 18 else key
+            items.append(
+                {
+                    "id": idx + 1,
+                    "label": f"Chave {idx + 1}",
+                    "masked": masked,
+                    "value": key,
+                }
+            )
         return jsonify(items)
     except Exception as err:
-        app.logger.error('GET /api/autentique/chaves: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("GET /api/autentique/chaves: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/enviar-whatsapp', methods=['POST'])
+
+@app.route("/api/autentique/enviar-whatsapp", methods=["POST"])
 def autentique_enviar_whatsapp():
     data = request.get_json(silent=True) or {}
-    doc_id = data.get('documento_id')
-    signer_name = (data.get('signer_name') or '').strip()
-    signer_phone_raw = (data.get('signer_phone') or '').strip()
+    doc_id = data.get("documento_id")
+    signer_name = (data.get("signer_name") or "").strip()
+    signer_phone_raw = (data.get("signer_phone") or "").strip()
 
     if not doc_id:
-        return jsonify({'error': 'documento_id é obrigatório'}), 400
+        return jsonify({"error": "documento_id é obrigatório"}), 400
     if not signer_name:
-        return jsonify({'error': 'Nome do signatário é obrigatório'}), 400
+        return jsonify({"error": "Nome do signatário é obrigatório"}), 400
     if not signer_phone_raw:
-        return jsonify({'error': 'Telefone/WhatsApp do signatário é obrigatório'}), 400
+        return jsonify({"error": "Telefone/WhatsApp do signatário é obrigatório"}), 400
 
     signer_phone = _normalize_phone_br(signer_phone_raw)
     if len(signer_phone) < 12:
-        return jsonify({'error': 'Telefone inválido. Informe DDD + número.'}), 400
+        return jsonify({"error": "Telefone inválido. Informe DDD + número."}), 400
 
     try:
         conn = get_db()
-        api_key = _get_autentique_config(conn, api_key_override=(data.get('api_key') or '').strip())
+        api_key = _get_autentique_config(
+            conn, api_key_override=(data.get("api_key") or "").strip()
+        )
         if not api_key:
-            return jsonify({'error': 'Chave da Autentique não configurada. Acesse ADM -> Chaves de API.'}), 400
+            return jsonify(
+                {
+                    "error": "Chave da Autentique não configurada. Acesse ADM -> Chaves de API."
+                }
+            ), 400
 
-        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (doc_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Documento não encontrado'}), 404
+            return jsonify({"error": "Documento não encontrado"}), 404
 
-        abs_path = os.path.join(DOCUMENTS_DIR, row['caminho_relativo'].replace('/', os.sep))
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
         if not os.path.exists(abs_path):
-            return jsonify({'error': 'Arquivo físico não encontrado'}), 404
+            return jsonify({"error": "Arquivo físico não encontrado"}), 404
 
         mutation = """
 mutation CreateDocument($document: DocumentInput!, $signers: [SignerInput!]!, $file: Upload!) {
@@ -3235,54 +3959,66 @@ mutation CreateDocument($document: DocumentInput!, $signers: [SignerInput!]!, $f
 """.strip()
 
         operations = {
-            'query': mutation,
-            'variables': {
-                'document': {
-                    'name': row['nome_original'] or f'documento-{doc_id}.pdf',
+            "query": mutation,
+            "variables": {
+                "document": {
+                    "name": row["nome_original"] or f"documento-{doc_id}.pdf",
                 },
-                'signers': [{
-                    'name': signer_name,
-                    'phone': signer_phone,
-                    'delivery_method': 'DELIVERY_METHOD_WHATSAPP',
-                    'action': 'SIGN',
-                }],
-                'file': None,
-            }
+                "signers": [
+                    {
+                        "name": signer_name,
+                        "phone": signer_phone,
+                        "delivery_method": "DELIVERY_METHOD_WHATSAPP",
+                        "action": "SIGN",
+                    }
+                ],
+                "file": None,
+            },
         }
-        file_map = {'0': ['variables.file']}
+        file_map = {"0": ["variables.file"]}
 
         mime, _ = mimetypes.guess_type(abs_path)
-        with open(abs_path, 'rb') as fh:
+        with open(abs_path, "rb") as fh:
             resp = requests.post(
-                'https://api.autentique.com.br/v2/graphql',
+                "https://api.autentique.com.br/v2/graphql",
                 headers={
-                    'Authorization': f'Bearer {api_key}',
+                    "Authorization": f"Bearer {api_key}",
                 },
                 data={
-                    'operations': json.dumps(operations, ensure_ascii=False),
-                    'map': json.dumps(file_map),
+                    "operations": json.dumps(operations, ensure_ascii=False),
+                    "map": json.dumps(file_map),
                 },
                 files={
-                    '0': (row['nome_original'] or os.path.basename(abs_path), fh, mime or 'application/pdf'),
+                    "0": (
+                        row["nome_original"] or os.path.basename(abs_path),
+                        fh,
+                        mime or "application/pdf",
+                    ),
                 },
                 timeout=60,
             )
 
         payload = resp.json()
-        if resp.status_code >= 400 or payload.get('errors'):
-            message = (payload.get('errors') or [{}])[0].get('message') or f'Erro HTTP {resp.status_code}'
-            return jsonify({
-                'error': (
-                    f'Falha ao criar documento na Autentique: {message}. '
-                    'Observação: esta integração usa a mutation createDocument da API v2; '
-                    'se sua conta tiver campos obrigatórios adicionais, podemos ajustar a payload.'
-                )
-            }), resp.status_code or 502
+        if resp.status_code >= 400 or payload.get("errors"):
+            message = (payload.get("errors") or [{}])[0].get(
+                "message"
+            ) or f"Erro HTTP {resp.status_code}"
+            return jsonify(
+                {
+                    "error": (
+                        f"Falha ao criar documento na Autentique: {message}. "
+                        "Observação: esta integração usa a mutation createDocument da API v2; "
+                        "se sua conta tiver campos obrigatórios adicionais, podemos ajustar a payload."
+                    )
+                }
+            ), resp.status_code or 502
 
-        document_data = ((payload.get('data') or {}).get('createDocument') or {})
-        signatures = document_data.get('signatures') or []
+        document_data = (payload.get("data") or {}).get("createDocument") or {}
+        signatures = document_data.get("signatures") or []
         first_signature = signatures[0] if signatures else {}
-        signature_link = ((first_signature.get('link') or {}).get('short_link') or '').strip()
+        signature_link = (
+            (first_signature.get("link") or {}).get("short_link") or ""
+        ).strip()
         cur = conn.cursor()
         cur.execute(
             """
@@ -3294,46 +4030,54 @@ mutation CreateDocument($document: DocumentInput!, $signers: [SignerInput!]!, $f
             """,
             (
                 doc_id,
-                document_data.get('id') or '',
-                first_signature.get('public_id') or '',
-                document_data.get('name') or row['nome_original'],
+                document_data.get("id") or "",
+                first_signature.get("public_id") or "",
+                document_data.get("name") or row["nome_original"],
                 signer_name,
                 signer_phone,
-                _autentique_guess_status(first_signature.get('status'), first_signature.get('created_at')),
-                first_signature.get('delivery_method') or 'DELIVERY_METHOD_WHATSAPP',
+                _autentique_guess_status(
+                    first_signature.get("status"), first_signature.get("created_at")
+                ),
+                first_signature.get("delivery_method") or "DELIVERY_METHOD_WHATSAPP",
                 signature_link,
-            )
+            ),
         )
         envio_id = cur.lastrowid
         conn.commit()
 
-        return jsonify({
-            'ok': True,
-            'envio_id': envio_id,
-            'documento': {
-                'id': document_data.get('id'),
-                'name': document_data.get('name') or row['nome_original'],
-            },
-            'assinatura': {
-                'public_id': first_signature.get('public_id'),
-                'name': first_signature.get('name') or signer_name,
-                'email': first_signature.get('email') or '',
-                'phone': first_signature.get('phone') or signer_phone,
-                'delivery_method': first_signature.get('delivery_method') or 'DELIVERY_METHOD_WHATSAPP',
-                'link': signature_link,
-            },
-            'whatsapp_enviado': True,
-            'phone_normalized': signer_phone,
-        })
+        return jsonify(
+            {
+                "ok": True,
+                "envio_id": envio_id,
+                "documento": {
+                    "id": document_data.get("id"),
+                    "name": document_data.get("name") or row["nome_original"],
+                },
+                "assinatura": {
+                    "public_id": first_signature.get("public_id"),
+                    "name": first_signature.get("name") or signer_name,
+                    "email": first_signature.get("email") or "",
+                    "phone": first_signature.get("phone") or signer_phone,
+                    "delivery_method": first_signature.get("delivery_method")
+                    or "DELIVERY_METHOD_WHATSAPP",
+                    "link": signature_link,
+                },
+                "whatsapp_enviado": True,
+                "phone_normalized": signer_phone,
+            }
+        )
     except requests.RequestException as err:
-        return jsonify({'error': f'Falha de conexão com a Autentique: {err}'}), 502
+        return jsonify({"error": f"Falha de conexão com a Autentique: {err}"}), 502
     except ValueError:
-        return jsonify({'error': 'A resposta da Autentique não veio em JSON válido.'}), 502
+        return jsonify(
+            {"error": "A resposta da Autentique não veio em JSON válido."}
+        ), 502
     except Exception as err:
-        app.logger.error('POST /api/autentique/enviar-whatsapp: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("POST /api/autentique/enviar-whatsapp: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/envios', methods=['GET'])
+
+@app.route("/api/autentique/envios", methods=["GET"])
 def autentique_listar_envios():
     try:
         conn = get_db()
@@ -3351,24 +4095,28 @@ def autentique_listar_envios():
         """).fetchall()
         return jsonify([row_to_dict(r) for r in rows])
     except Exception as err:
-        app.logger.error('GET /api/autentique/envios: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("GET /api/autentique/envios: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/envios/<int:envio_id>', methods=['DELETE'])
+
+@app.route("/api/autentique/envios/<int:envio_id>", methods=["DELETE"])
 def autentique_excluir_envio(envio_id):
     try:
         conn = get_db()
-        row = conn.execute("SELECT * FROM autentique_envios WHERE id=?", (envio_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM autentique_envios WHERE id=?", (envio_id,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Envio não encontrado'}), 404
+            return jsonify({"error": "Envio não encontrado"}), 404
         conn.execute("DELETE FROM autentique_envios WHERE id=?", (envio_id,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as err:
-        app.logger.error('DELETE /api/autentique/envios/%s: %s', envio_id, err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("DELETE /api/autentique/envios/%s: %s", envio_id, err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/contatos', methods=['GET'])
+
+@app.route("/api/autentique/contatos", methods=["GET"])
 def autentique_listar_contatos():
     try:
         conn = get_db()
@@ -3377,128 +4125,170 @@ def autentique_listar_contatos():
         ).fetchall()
         return jsonify([row_to_dict(r) for r in rows])
     except Exception as err:
-        app.logger.error('GET /api/autentique/contatos: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("GET /api/autentique/contatos: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/contatos', methods=['POST'])
+
+@app.route("/api/autentique/contatos", methods=["POST"])
 def autentique_salvar_contato():
     data = request.get_json(silent=True) or {}
-    nome = (data.get('nome') or '').strip()
-    phone_raw = (data.get('phone') or '').strip()
+    nome = (data.get("nome") or "").strip()
+    phone_raw = (data.get("phone") or "").strip()
 
     if not nome:
-        return jsonify({'error': 'Nome do contato é obrigatório'}), 400
+        return jsonify({"error": "Nome do contato é obrigatório"}), 400
     if not phone_raw:
-        return jsonify({'error': 'WhatsApp do contato é obrigatório'}), 400
+        return jsonify({"error": "WhatsApp do contato é obrigatório"}), 400
 
     phone = _normalize_phone_br(phone_raw)
-    if len(re.sub(r'\D+', '', phone)) < 12:
-        return jsonify({'error': 'WhatsApp inválido'}), 400
+    if len(re.sub(r"\D+", "", phone)) < 12:
+        return jsonify({"error": "WhatsApp inválido"}), 400
 
     try:
         conn = get_db()
         existing = conn.execute(
-            "SELECT * FROM autentique_contatos WHERE phone=?",
-            (phone,)
+            "SELECT * FROM autentique_contatos WHERE phone=?", (phone,)
         ).fetchone()
         if existing:
             conn.execute(
                 "UPDATE autentique_contatos SET nome=?, atualizado_em=datetime('now','localtime') WHERE id=?",
-                (nome, existing['id'])
+                (nome, existing["id"]),
             )
             conn.commit()
-            row = conn.execute("SELECT * FROM autentique_contatos WHERE id=?", (existing['id'],)).fetchone()
+            row = conn.execute(
+                "SELECT * FROM autentique_contatos WHERE id=?", (existing["id"],)
+            ).fetchone()
             return jsonify(row_to_dict(row))
 
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO autentique_contatos (nome, phone, criado_em, atualizado_em) VALUES (?, ?, datetime('now','localtime'), datetime('now','localtime'))",
-            (nome, phone)
+            (nome, phone),
         )
         new_id = cur.lastrowid
         conn.commit()
-        row = conn.execute("SELECT * FROM autentique_contatos WHERE id=?", (new_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM autentique_contatos WHERE id=?", (new_id,)
+        ).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as err:
-        app.logger.error('POST /api/autentique/contatos: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("POST /api/autentique/contatos: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/contatos/<int:contato_id>', methods=['DELETE'])
+
+@app.route("/api/autentique/contatos/<int:contato_id>", methods=["DELETE"])
 def autentique_excluir_contato(contato_id):
     try:
         conn = get_db()
-        row = conn.execute("SELECT * FROM autentique_contatos WHERE id=?", (contato_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM autentique_contatos WHERE id=?", (contato_id,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Contato não encontrado'}), 404
+            return jsonify({"error": "Contato não encontrado"}), 404
         conn.execute("DELETE FROM autentique_contatos WHERE id=?", (contato_id,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as err:
-        app.logger.error('DELETE /api/autentique/contatos/%s: %s', contato_id, err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("DELETE /api/autentique/contatos/%s: %s", contato_id, err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/envios/<int:envio_id>/download-assinado', methods=['GET'])
+
+@app.route("/api/autentique/envios/<int:envio_id>/download-assinado", methods=["GET"])
 def autentique_download_assinado(envio_id):
     try:
         conn = get_db()
-        row = conn.execute("""
+        row = conn.execute(
+            """
             SELECT e.assinado_doc_id, d.nome_original, d.caminho_relativo
             FROM autentique_envios e
             LEFT JOIN documentos_centro d ON d.id = e.assinado_doc_id
             WHERE e.id=?
-        """, (envio_id,)).fetchone()
+        """,
+            (envio_id,),
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Envio não encontrado'}), 404
-        if not row['assinado_doc_id'] or not row['caminho_relativo']:
-            return jsonify({'error': 'Documento assinado ainda não está disponível'}), 404
-        abs_path = os.path.join(DOCUMENTS_DIR, row['caminho_relativo'].replace('/', os.sep))
+            return jsonify({"error": "Envio não encontrado"}), 404
+        if not row["assinado_doc_id"] or not row["caminho_relativo"]:
+            return jsonify(
+                {"error": "Documento assinado ainda não está disponível"}
+            ), 404
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
         if not os.path.exists(abs_path):
-            return jsonify({'error': 'Arquivo assinado não encontrado no disco'}), 404
+            return jsonify({"error": "Arquivo assinado não encontrado no disco"}), 404
         mime, _ = mimetypes.guess_type(abs_path)
-        return send_file(abs_path, mimetype=mime or 'application/pdf', as_attachment=True, download_name=row['nome_original'])
+        return send_file(
+            abs_path,
+            mimetype=mime or "application/pdf",
+            as_attachment=True,
+            download_name=row["nome_original"],
+        )
     except Exception as err:
-        app.logger.error('GET /api/autentique/envios/%s/download-assinado: %s', envio_id, err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error(
+            "GET /api/autentique/envios/%s/download-assinado: %s", envio_id, err
+        )
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/autentique/webhook', methods=['POST'])
+
+@app.route("/api/autentique/webhook", methods=["POST"])
 def autentique_webhook():
     payload = request.get_json(silent=True) or {}
     extracted = _autentique_extract_webhook(payload)
-    if not extracted['document_id'] and not extracted['signature_public_id']:
-        return jsonify({'error': 'Payload sem identificador de documento/assinatura'}), 400
+    if not extracted["document_id"] and not extracted["signature_public_id"]:
+        return jsonify(
+            {"error": "Payload sem identificador de documento/assinatura"}
+        ), 400
 
     try:
         conn = get_db()
         params = []
         where = []
-        if extracted['signature_public_id']:
+        if extracted["signature_public_id"]:
             where.append("autentique_signature_public_id=?")
-            params.append(extracted['signature_public_id'])
-        if extracted['document_id']:
+            params.append(extracted["signature_public_id"])
+        if extracted["document_id"]:
             where.append("autentique_document_id=?")
-            params.append(extracted['document_id'])
+            params.append(extracted["document_id"])
         row = conn.execute(
             f"SELECT * FROM autentique_envios WHERE {' OR '.join(where)} ORDER BY id DESC LIMIT 1",
-            tuple(params)
+            tuple(params),
         ).fetchone()
         if not row:
-            return jsonify({'ok': True, 'matched': False, 'message': 'Webhook recebido, mas nenhum envio local correspondeu.'})
+            return jsonify(
+                {
+                    "ok": True,
+                    "matched": False,
+                    "message": "Webhook recebido, mas nenhum envio local correspondeu.",
+                }
+            )
 
         saved_doc = None
-        signed_doc_id = row['assinado_doc_id']
-        current_status = extracted['status'] if extracted['status'] != 'pendente' else (row['status'] or 'pendente')
+        signed_doc_id = row["assinado_doc_id"]
+        current_status = (
+            extracted["status"]
+            if extracted["status"] != "pendente"
+            else (row["status"] or "pendente")
+        )
         api_key = _get_autentique_config(conn)
 
-        if current_status == 'assinado' and not signed_doc_id and extracted['download_url']:
+        if (
+            current_status == "assinado"
+            and not signed_doc_id
+            and extracted["download_url"]
+        ):
             try:
                 saved_doc = _autentique_save_signed_document(
-                    extracted['download_url'],
-                    row['documento_nome'] or 'documento',
+                    extracted["download_url"],
+                    row["documento_nome"] or "documento",
                     api_key,
                 )
-                signed_doc_id = saved_doc['id']
+                signed_doc_id = saved_doc["id"]
             except Exception as download_err:
-                app.logger.warning('Autentique webhook: falha ao baixar documento assinado: %s', download_err)
+                app.logger.warning(
+                    "Autentique webhook: falha ao baixar documento assinado: %s",
+                    download_err,
+                )
 
         conn.execute(
             """
@@ -3519,354 +4309,457 @@ def autentique_webhook():
             """,
             (
                 current_status,
-                extracted['delivery_method'] or row['delivery_method'] or 'DELIVERY_METHOD_WHATSAPP',
-                extracted['signature_link'] or '',
-                extracted['event_name'] or '',
+                extracted["delivery_method"]
+                or row["delivery_method"]
+                or "DELIVERY_METHOD_WHATSAPP",
+                extracted["signature_link"] or "",
+                extracted["event_name"] or "",
                 json.dumps(payload, ensure_ascii=False),
                 signed_doc_id,
-                extracted['signed_at'] or '',
-                extracted['signed_at'] or '',
+                extracted["signed_at"] or "",
+                extracted["signed_at"] or "",
                 current_status,
-                row['id'],
-            )
+                row["id"],
+            ),
         )
         conn.commit()
-        return jsonify({
-            'ok': True,
-            'matched': True,
-            'envio_id': row['id'],
-            'status': current_status,
-            'assinado_doc_id': signed_doc_id,
-            'download_salvo': bool(saved_doc),
-        })
+        return jsonify(
+            {
+                "ok": True,
+                "matched": True,
+                "envio_id": row["id"],
+                "status": current_status,
+                "assinado_doc_id": signed_doc_id,
+                "download_salvo": bool(saved_doc),
+            }
+        )
     except Exception as err:
-        app.logger.error('POST /api/autentique/webhook: %s', err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("POST /api/autentique/webhook: %s", err)
+        return jsonify({"error": str(err)}), 500
 
-@app.route('/api/documentos/<int:doc_id>', methods=['DELETE'])
+
+@app.route("/api/documentos/<int:doc_id>", methods=["DELETE"])
 def documentos_excluir(doc_id):
     try:
         conn = get_db()
-        row = conn.execute("SELECT * FROM documentos_centro WHERE id=?", (doc_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
         if not row:
-            return jsonify({'error': 'Documento não encontrado'}), 404
-        abs_path = os.path.join(DOCUMENTS_DIR, row['caminho_relativo'].replace('/', os.sep))
+            return jsonify({"error": "Documento não encontrado"}), 404
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
         conn.execute("DELETE FROM documentos_centro WHERE id=?", (doc_id,))
         conn.commit()
         if os.path.exists(abs_path):
             try:
                 os.remove(abs_path)
             except OSError as file_err:
-                app.logger.warning('Arquivo de documento não removido imediatamente %s: %s', abs_path, file_err)
-                return jsonify({'ok': True, 'file_removed': False})
-        return jsonify({'ok': True, 'file_removed': True})
+                app.logger.warning(
+                    "Arquivo de documento não removido imediatamente %s: %s",
+                    abs_path,
+                    file_err,
+                )
+                return jsonify({"ok": True, "file_removed": False})
+        return jsonify({"ok": True, "file_removed": True})
     except Exception as e:
-        app.logger.error('DELETE /api/documentos/%s: %s', doc_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("DELETE /api/documentos/%s: %s", doc_id, e)
+        return jsonify({"error": str(e)}), 500
+
 
 # ────────────────────────────────────────────────────────────
 # PRAZOS – Cadastro e acompanhamento de prazos críticos
 # ────────────────────────────────────────────────────────────
 
-@app.route('/api/prazos', methods=['GET'])
+
+@app.route("/api/prazos", methods=["GET"])
 def prazos_listar():
     try:
         conn = get_db()
-        status_f = request.args.get('status', 'ativos')  # 'ativos' | 'resolvidos' | 'todos'
-        categoria = request.args.get('categoria', '')
+        status_f = request.args.get(
+            "status", "ativos"
+        )  # 'ativos' | 'resolvidos' | 'todos'
+        categoria = request.args.get("categoria", "")
         clauses = []
         params = []
-        if status_f == 'ativos':
-            clauses.append('resolvido=0')
-        elif status_f == 'resolvidos':
-            clauses.append('resolvido=1')
+        if status_f == "ativos":
+            clauses.append("resolvido=0")
+        elif status_f == "resolvidos":
+            clauses.append("resolvido=1")
         if categoria:
-            clauses.append('categoria=?')
+            clauses.append("categoria=?")
             params.append(categoria)
-        where = ('WHERE ' + ' AND '.join(clauses)) if clauses else ''
-        rows = conn.execute(f'SELECT * FROM prazos {where} ORDER BY data_limite ASC', params).fetchall()
+        where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        rows = conn.execute(
+            f"SELECT * FROM prazos {where} ORDER BY data_limite ASC", params
+        ).fetchall()
         return jsonify([dict(r) for r in rows])
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/prazos/resumo', methods=['GET'])
+
+@app.route("/api/prazos/resumo", methods=["GET"])
 def prazos_resumo():
     try:
         conn = get_db()
-        hoje = _time.strftime('%Y-%m-%d')
-        em7 = _time.strftime('%Y-%m-%d', _time.localtime(_time.time() + 7*86400))
-        em30 = _time.strftime('%Y-%m-%d', _time.localtime(_time.time() + 30*86400))
-        vencidos = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite < ?", (hoje,)).fetchone()[0]
-        urgentes = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite >= ? AND data_limite <= ?", (hoje, em7)).fetchone()[0]
-        atencao  = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite > ? AND data_limite <= ?", (em7, em30)).fetchone()[0]
-        ok       = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite > ?", (em30,)).fetchone()[0]
-        total    = conn.execute("SELECT COUNT(*) FROM prazos WHERE resolvido=0").fetchone()[0]
-        return jsonify({'vencidos': vencidos, 'urgentes': urgentes, 'atencao': atencao, 'ok': ok, 'total': total})
+        hoje = _time.strftime("%Y-%m-%d")
+        em7 = _time.strftime("%Y-%m-%d", _time.localtime(_time.time() + 7 * 86400))
+        em30 = _time.strftime("%Y-%m-%d", _time.localtime(_time.time() + 30 * 86400))
+        vencidos = conn.execute(
+            "SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite < ?", (hoje,)
+        ).fetchone()[0]
+        urgentes = conn.execute(
+            "SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite >= ? AND data_limite <= ?",
+            (hoje, em7),
+        ).fetchone()[0]
+        atencao = conn.execute(
+            "SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite > ? AND data_limite <= ?",
+            (em7, em30),
+        ).fetchone()[0]
+        ok = conn.execute(
+            "SELECT COUNT(*) FROM prazos WHERE resolvido=0 AND data_limite > ?", (em30,)
+        ).fetchone()[0]
+        total = conn.execute(
+            "SELECT COUNT(*) FROM prazos WHERE resolvido=0"
+        ).fetchone()[0]
+        return jsonify(
+            {
+                "vencidos": vencidos,
+                "urgentes": urgentes,
+                "atencao": atencao,
+                "ok": ok,
+                "total": total,
+            }
+        )
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/prazos', methods=['POST'])
+
+@app.route("/api/prazos", methods=["POST"])
 def prazos_criar():
     try:
         data = request.get_json(force=True) or {}
-        titulo = (data.get('titulo') or '').strip()
-        data_limite = (data.get('data_limite') or '').strip()
+        titulo = (data.get("titulo") or "").strip()
+        data_limite = (data.get("data_limite") or "").strip()
         if not titulo:
-            return jsonify({'error': 'Campo "titulo" é obrigatório'}), 400
+            return jsonify({"error": 'Campo "titulo" é obrigatório'}), 400
         if not data_limite:
-            return jsonify({'error': 'Campo "data_limite" é obrigatório'}), 400
+            return jsonify({"error": 'Campo "data_limite" é obrigatório'}), 400
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO prazos (titulo, descricao, data_limite, categoria) VALUES (?,?,?,?)",
-            (titulo, (data.get('descricao') or '').strip(), data_limite, (data.get('categoria') or 'geral').strip())
+            (
+                titulo,
+                (data.get("descricao") or "").strip(),
+                data_limite,
+                (data.get("categoria") or "geral").strip(),
+            ),
         )
         conn.commit()
-        row = conn.execute("SELECT * FROM prazos WHERE id=?", (cur.lastrowid,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM prazos WHERE id=?", (cur.lastrowid,)
+        ).fetchone()
         return jsonify(dict(row)), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/prazos/<int:prazo_id>', methods=['PUT'])
+
+@app.route("/api/prazos/<int:prazo_id>", methods=["PUT"])
 def prazos_atualizar(prazo_id):
     try:
         data = request.get_json(force=True) or {}
         conn = get_db()
         row = conn.execute("SELECT * FROM prazos WHERE id=?", (prazo_id,)).fetchone()
         if not row:
-            return jsonify({'error': 'Prazo não encontrado'}), 404
+            return jsonify({"error": "Prazo não encontrado"}), 404
         fields = {}
-        for k in ('titulo', 'descricao', 'data_limite', 'categoria'):
+        for k in ("titulo", "descricao", "data_limite", "categoria"):
             if k in data:
-                fields[k] = (data[k] or '').strip()
-        if 'resolvido' in data:
-            fields['resolvido'] = 1 if data['resolvido'] else 0
+                fields[k] = (data[k] or "").strip()
+        if "resolvido" in data:
+            fields["resolvido"] = 1 if data["resolvido"] else 0
         if not fields:
             return jsonify(dict(row))
-        set_clause = ', '.join(f'{k}=?' for k in fields)
-        conn.execute(f'UPDATE prazos SET {set_clause} WHERE id=?', list(fields.values()) + [prazo_id])
+        set_clause = ", ".join(f"{k}=?" for k in fields)
+        conn.execute(
+            f"UPDATE prazos SET {set_clause} WHERE id=?",
+            list(fields.values()) + [prazo_id],
+        )
         conn.commit()
         row = conn.execute("SELECT * FROM prazos WHERE id=?", (prazo_id,)).fetchone()
         return jsonify(dict(row))
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/prazos/<int:prazo_id>', methods=['DELETE'])
+
+@app.route("/api/prazos/<int:prazo_id>", methods=["DELETE"])
 def prazos_excluir(prazo_id):
     try:
         conn = get_db()
         r = conn.execute("SELECT id FROM prazos WHERE id=?", (prazo_id,)).fetchone()
         if not r:
-            return jsonify({'error': 'Prazo não encontrado'}), 404
+            return jsonify({"error": "Prazo não encontrado"}), 404
         conn.execute("DELETE FROM prazos WHERE id=?", (prazo_id,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+
 
 # ────────────────────────────────────────────────────────────
 # PROTOCOLO – Controle de ofícios, memorandos e documentos
 # ────────────────────────────────────────────────────────────
 
+
 def _proximo_numero_protocolo(conn):
-    ano = _time.strftime('%Y')
+    ano = _time.strftime("%Y")
     ultimo = conn.execute(
         "SELECT numero FROM protocolos WHERE numero LIKE ? ORDER BY id DESC LIMIT 1",
-        (f'PROT-{ano}-%',)
+        (f"PROT-{ano}-%",),
     ).fetchone()
     if ultimo:
         try:
-            seq = int(ultimo['numero'].split('-')[-1]) + 1
+            seq = int(ultimo["numero"].split("-")[-1]) + 1
         except Exception:
             seq = 1
     else:
         seq = 1
-    return f'PROT-{ano}-{seq:04d}'
+    return f"PROT-{ano}-{seq:04d}"
 
-@app.route('/api/protocolos/proximo-numero', methods=['GET'])
+
+@app.route("/api/protocolos/proximo-numero", methods=["GET"])
 def protocolo_proximo_numero():
     try:
         conn = get_db()
-        return jsonify({'numero': _proximo_numero_protocolo(conn)})
+        return jsonify({"numero": _proximo_numero_protocolo(conn)})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos', methods=['GET'])
+
+@app.route("/api/protocolos", methods=["GET"])
 def protocolos_listar():
     try:
         conn = get_db()
-        tipo = request.args.get('tipo', '')
-        status_f = request.args.get('status', '')
-        direcao = request.args.get('direcao', '')
-        busca = request.args.get('busca', '').strip()
+        tipo = request.args.get("tipo", "")
+        status_f = request.args.get("status", "")
+        direcao = request.args.get("direcao", "")
+        busca = request.args.get("busca", "").strip()
         clauses, params = [], []
         if tipo:
-            clauses.append('tipo=?'); params.append(tipo)
+            clauses.append("tipo=?")
+            params.append(tipo)
         if status_f:
-            clauses.append('status=?'); params.append(status_f)
+            clauses.append("status=?")
+            params.append(status_f)
         if direcao:
-            clauses.append('direcao=?'); params.append(direcao)
+            clauses.append("direcao=?")
+            params.append(direcao)
         if busca:
-            clauses.append("(LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? OR numero LIKE ?)")
-            like = f'%{busca.lower()}%'
+            clauses.append(
+                "(LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? OR numero LIKE ?)"
+            )
+            like = f"%{busca.lower()}%"
             params.extend([like, like, like])
-        where = ('WHERE ' + ' AND '.join(clauses)) if clauses else ''
+        where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
         rows = conn.execute(
-            f'SELECT * FROM protocolos {where} ORDER BY id DESC', params
+            f"SELECT * FROM protocolos {where} ORDER BY id DESC", params
         ).fetchall()
         return jsonify([dict(r) for r in rows])
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos', methods=['POST'])
+
+@app.route("/api/protocolos", methods=["POST"])
 def protocolos_criar():
     try:
         data = request.get_json(force=True) or {}
         conn = get_db()
-        assunto = (data.get('assunto') or '').strip()
-        tipo = (data.get('tipo') or '').strip()
-        data_protocolo = (data.get('data_protocolo') or '').strip()
+        assunto = (data.get("assunto") or "").strip()
+        tipo = (data.get("tipo") or "").strip()
+        data_protocolo = (data.get("data_protocolo") or "").strip()
         if not assunto:
-            return jsonify({'error': 'Campo "assunto" é obrigatório'}), 400
+            return jsonify({"error": 'Campo "assunto" é obrigatório'}), 400
         if not tipo:
-            return jsonify({'error': 'Campo "tipo" é obrigatório'}), 400
+            return jsonify({"error": 'Campo "tipo" é obrigatório'}), 400
         if not data_protocolo:
-            return jsonify({'error': 'Campo "data_protocolo" é obrigatório'}), 400
-        numero = data.get('numero') or _proximo_numero_protocolo(conn)
+            return jsonify({"error": 'Campo "data_protocolo" é obrigatório'}), 400
+        numero = data.get("numero") or _proximo_numero_protocolo(conn)
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO protocolos
               (numero, tipo, direcao, origem_destino, assunto, data_protocolo, prazo_resposta, status, observacoes)
             VALUES (?,?,?,?,?,?,?,?,?)
-        """, (
-            numero, tipo,
-            (data.get('direcao') or 'recebido').strip(),
-            (data.get('origem_destino') or '').strip(),
-            assunto, data_protocolo,
-            (data.get('prazo_resposta') or '').strip(),
-            (data.get('status') or 'recebido').strip(),
-            (data.get('observacoes') or '').strip(),
-        ))
+        """,
+            (
+                numero,
+                tipo,
+                (data.get("direcao") or "recebido").strip(),
+                (data.get("origem_destino") or "").strip(),
+                assunto,
+                data_protocolo,
+                (data.get("prazo_resposta") or "").strip(),
+                (data.get("status") or "recebido").strip(),
+                (data.get("observacoes") or "").strip(),
+            ),
+        )
         conn.commit()
-        row = conn.execute("SELECT * FROM protocolos WHERE id=?", (cur.lastrowid,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM protocolos WHERE id=?", (cur.lastrowid,)
+        ).fetchone()
         return jsonify(dict(row)), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos/<int:prot_id>', methods=['PUT'])
+
+@app.route("/api/protocolos/<int:prot_id>", methods=["PUT"])
 def protocolos_atualizar(prot_id):
     try:
         data = request.get_json(force=True) or {}
         conn = get_db()
         row = conn.execute("SELECT * FROM protocolos WHERE id=?", (prot_id,)).fetchone()
         if not row:
-            return jsonify({'error': 'Protocolo não encontrado'}), 404
+            return jsonify({"error": "Protocolo não encontrado"}), 404
         fields = {}
-        for k in ('tipo', 'direcao', 'origem_destino', 'assunto', 'data_protocolo', 'prazo_resposta', 'status', 'observacoes'):
+        for k in (
+            "tipo",
+            "direcao",
+            "origem_destino",
+            "assunto",
+            "data_protocolo",
+            "prazo_resposta",
+            "status",
+            "observacoes",
+        ):
             if k in data:
-                fields[k] = (data[k] or '').strip()
+                fields[k] = (data[k] or "").strip()
         if not fields:
             return jsonify(dict(row))
-        set_clause = ', '.join(f'{k}=?' for k in fields)
-        conn.execute(f'UPDATE protocolos SET {set_clause} WHERE id=?', list(fields.values()) + [prot_id])
+        set_clause = ", ".join(f"{k}=?" for k in fields)
+        conn.execute(
+            f"UPDATE protocolos SET {set_clause} WHERE id=?",
+            list(fields.values()) + [prot_id],
+        )
         conn.commit()
         row = conn.execute("SELECT * FROM protocolos WHERE id=?", (prot_id,)).fetchone()
         return jsonify(dict(row))
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos/<int:prot_id>', methods=['DELETE'])
+
+@app.route("/api/protocolos/<int:prot_id>", methods=["DELETE"])
 def protocolos_excluir(prot_id):
     try:
         conn = get_db()
         r = conn.execute("SELECT id FROM protocolos WHERE id=?", (prot_id,)).fetchone()
         if not r:
-            return jsonify({'error': 'Protocolo não encontrado'}), 404
+            return jsonify({"error": "Protocolo não encontrado"}), 404
         conn.execute("DELETE FROM protocolos WHERE id=?", (prot_id,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+
 
 # ────────────────────────────────────────────────────────────
 # PROTOCOLO – Anexos (BLOB no banco, igual ao Kanban)
 # ────────────────────────────────────────────────────────────
 
-@app.route('/api/protocolos/<int:prot_id>/anexos', methods=['GET'])
+
+@app.route("/api/protocolos/<int:prot_id>/anexos", methods=["GET"])
 def protocolo_anexos_listar(prot_id):
     try:
         conn = get_db()
         rows = conn.execute(
             "SELECT id, protocolo_id, file_name, mime_type, file_size, criado_em FROM protocolo_anexos WHERE protocolo_id=? ORDER BY id",
-            (prot_id,)
+            (prot_id,),
         ).fetchall()
         return jsonify([dict(r) for r in rows])
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos/<int:prot_id>/anexos', methods=['POST'])
+
+@app.route("/api/protocolos/<int:prot_id>/anexos", methods=["POST"])
 def protocolo_anexos_upload(prot_id):
     try:
         conn = get_db()
-        prot = conn.execute("SELECT id FROM protocolos WHERE id=?", (prot_id,)).fetchone()
+        prot = conn.execute(
+            "SELECT id FROM protocolos WHERE id=?", (prot_id,)
+        ).fetchone()
         if not prot:
-            return jsonify({'error': 'Protocolo não encontrado'}), 404
-        if 'arquivo' not in request.files:
-            return jsonify({'error': 'Nenhum arquivo enviado'}), 400
-        file = request.files['arquivo']
+            return jsonify({"error": "Protocolo não encontrado"}), 404
+        if "arquivo" not in request.files:
+            return jsonify({"error": "Nenhum arquivo enviado"}), 400
+        file = request.files["arquivo"]
         content = file.read()
         if not content:
-            return jsonify({'error': 'Arquivo vazio'}), 400
+            return jsonify({"error": "Arquivo vazio"}), 400
         if len(content) > 20 * 1024 * 1024:
-            return jsonify({'error': 'Arquivo excede o limite de 20 MB'}), 413
+            return jsonify({"error": "Arquivo excede o limite de 20 MB"}), 413
         cur = conn.execute(
             "INSERT INTO protocolo_anexos (protocolo_id, file_name, mime_type, file_size, content) VALUES (?,?,?,?,?)",
-            (prot_id, file.filename, file.mimetype or 'application/octet-stream', len(content), content)
+            (
+                prot_id,
+                file.filename,
+                file.mimetype or "application/octet-stream",
+                len(content),
+                content,
+            ),
         )
         conn.commit()
         row = conn.execute(
             "SELECT id, protocolo_id, file_name, mime_type, file_size, criado_em FROM protocolo_anexos WHERE id=?",
-            (cur.lastrowid,)
+            (cur.lastrowid,),
         ).fetchone()
         return jsonify(dict(row)), 201
     except Exception as e:
-        app.logger.error('POST /api/protocolos/%s/anexos: %s', prot_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/protocolos/%s/anexos: %s", prot_id, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>/download', methods=['GET'])
+
+@app.route(
+    "/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>/download", methods=["GET"]
+)
 def protocolo_anexo_download(prot_id, anexo_id):
     try:
         conn = get_db()
         row = conn.execute(
             "SELECT file_name, mime_type, content FROM protocolo_anexos WHERE id=? AND protocolo_id=?",
-            (anexo_id, prot_id)
+            (anexo_id, prot_id),
         ).fetchone()
         if not row:
-            return jsonify({'error': 'Anexo não encontrado'}), 404
+            return jsonify({"error": "Anexo não encontrado"}), 404
         return send_file(
-            _io.BytesIO(row['content']),
-            mimetype=row['mime_type'] or 'application/octet-stream',
+            _io.BytesIO(row["content"]),
+            mimetype=row["mime_type"] or "application/octet-stream",
             as_attachment=True,
-            download_name=row['file_name']
+            download_name=row["file_name"],
         )
     except Exception as e:
-        app.logger.error('GET /api/protocolos/%s/anexos/%s/download: %s', prot_id, anexo_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(
+            "GET /api/protocolos/%s/anexos/%s/download: %s", prot_id, anexo_id, e
+        )
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>', methods=['DELETE'])
+
+@app.route("/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>", methods=["DELETE"])
 def protocolo_anexo_excluir(prot_id, anexo_id):
     try:
         conn = get_db()
         r = conn.execute(
-            "SELECT id FROM protocolo_anexos WHERE id=? AND protocolo_id=?", (anexo_id, prot_id)
+            "SELECT id FROM protocolo_anexos WHERE id=? AND protocolo_id=?",
+            (anexo_id, prot_id),
         ).fetchone()
         if not r:
-            return jsonify({'error': 'Anexo não encontrado'}), 404
+            return jsonify({"error": "Anexo não encontrado"}), 404
         conn.execute("DELETE FROM protocolo_anexos WHERE id=?", (anexo_id,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+
 
 # ────────────────────────────────────────────────────────────
 # PDF – Mesclar / Dividir / Proteger
@@ -3875,11 +4768,12 @@ import io as _io
 import zipfile as _zipfile
 from PyPDF2 import PdfReader as _PdfReader, PdfWriter as _PdfWriter
 
-@app.route('/api/pdf/mesclar', methods=['POST'])
+
+@app.route("/api/pdf/mesclar", methods=["POST"])
 def pdf_mesclar():
-    files = request.files.getlist('pdfs')
+    files = request.files.getlist("pdfs")
     if len(files) < 2:
-        return 'Envie ao menos 2 arquivos', 400
+        return "Envie ao menos 2 arquivos", 400
     writer = _PdfWriter()
     for f in files:
         reader = _PdfReader(f)
@@ -3888,27 +4782,39 @@ def pdf_mesclar():
     buf = _io.BytesIO()
     writer.write(buf)
     buf.seek(0)
-    _persist_document_file('mesclado.pdf', buf.getvalue(), 'gerados_pdf', 'mesclar', 'PDF gerado automaticamente pelo módulo de mesclagem', 'application/pdf')
+    _persist_document_file(
+        "mesclado.pdf",
+        buf.getvalue(),
+        "gerados_pdf",
+        "mesclar",
+        "PDF gerado automaticamente pelo módulo de mesclagem",
+        "application/pdf",
+    )
     buf.seek(0)
-    return send_file(buf, mimetype='application/pdf', as_attachment=True,
-                     download_name='mesclado.pdf')
+    return send_file(
+        buf,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="mesclado.pdf",
+    )
 
-@app.route('/api/pdf/dividir', methods=['POST'])
+
+@app.route("/api/pdf/dividir", methods=["POST"])
 def pdf_dividir():
-    f = request.files.get('pdf')
-    ranges_str = request.form.get('ranges', '').strip()
+    f = request.files.get("pdf")
+    ranges_str = request.form.get("ranges", "").strip()
     if not f or not ranges_str:
-        return 'Parâmetros inválidos', 400
+        return "Parâmetros inválidos", 400
     pdf_bytes = f.read()
     reader = _PdfReader(_io.BytesIO(pdf_bytes))
     total = len(reader.pages)
     groups = []
-    for part in ranges_str.split(','):
+    for part in ranges_str.split(","):
         part = part.strip()
         if not part:
             continue
-        if '-' in part:
-            a, b = part.split('-', 1)
+        if "-" in part:
+            a, b = part.split("-", 1)
             a_i = max(0, int(a.strip()) - 1)
             b_i = min(total - 1, int(b.strip()) - 1)
             pgs = list(range(a_i, b_i + 1))
@@ -3920,7 +4826,7 @@ def pdf_dividir():
         if pgs:
             groups.append((name, pgs))
     if not groups:
-        return 'Nenhuma página válida nos intervalos informados', 400
+        return "Nenhuma página válida nos intervalos informados", 400
     if len(groups) == 1:
         writer = _PdfWriter()
         for p in groups[0][1]:
@@ -3928,12 +4834,23 @@ def pdf_dividir():
         buf = _io.BytesIO()
         writer.write(buf)
         buf.seek(0)
-        _persist_document_file(groups[0][0], buf.getvalue(), 'gerados_pdf', 'dividir', 'PDF gerado automaticamente pelo módulo de divisão', 'application/pdf')
+        _persist_document_file(
+            groups[0][0],
+            buf.getvalue(),
+            "gerados_pdf",
+            "dividir",
+            "PDF gerado automaticamente pelo módulo de divisão",
+            "application/pdf",
+        )
         buf.seek(0)
-        return send_file(buf, mimetype='application/pdf', as_attachment=True,
-                         download_name=groups[0][0])
+        return send_file(
+            buf,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=groups[0][0],
+        )
     zip_buf = _io.BytesIO()
-    with _zipfile.ZipFile(zip_buf, 'w', _zipfile.ZIP_DEFLATED) as zf:
+    with _zipfile.ZipFile(zip_buf, "w", _zipfile.ZIP_DEFLATED) as zf:
         for name, pgs in groups:
             writer = _PdfWriter()
             for p in pgs:
@@ -3942,17 +4859,29 @@ def pdf_dividir():
             writer.write(pdf_buf)
             zf.writestr(name, pdf_buf.getvalue())
     zip_buf.seek(0)
-    _persist_document_file('dividido.zip', zip_buf.getvalue(), 'gerados_pdf', 'dividir', 'ZIP gerado automaticamente pelo módulo de divisão de PDF', 'application/zip')
+    _persist_document_file(
+        "dividido.zip",
+        zip_buf.getvalue(),
+        "gerados_pdf",
+        "dividir",
+        "ZIP gerado automaticamente pelo módulo de divisão de PDF",
+        "application/zip",
+    )
     zip_buf.seek(0)
-    return send_file(zip_buf, mimetype='application/zip', as_attachment=True,
-                     download_name='dividido.zip')
+    return send_file(
+        zip_buf,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name="dividido.zip",
+    )
 
-@app.route('/api/pdf/proteger', methods=['POST'])
+
+@app.route("/api/pdf/proteger", methods=["POST"])
 def pdf_proteger():
-    f = request.files.get('pdf')
-    senha = request.form.get('senha', '')
+    f = request.files.get("pdf")
+    senha = request.form.get("senha", "")
     if not f or not senha:
-        return 'Parâmetros inválidos', 400
+        return "Parâmetros inválidos", 400
     reader = _PdfReader(f)
     writer = _PdfWriter()
     for page in reader.pages:
@@ -3961,16 +4890,29 @@ def pdf_proteger():
     buf = _io.BytesIO()
     writer.write(buf)
     buf.seek(0)
-    _persist_document_file('protegido.pdf', buf.getvalue(), 'gerados_pdf', 'proteger', 'PDF protegido gerado automaticamente', 'application/pdf')
+    _persist_document_file(
+        "protegido.pdf",
+        buf.getvalue(),
+        "gerados_pdf",
+        "proteger",
+        "PDF protegido gerado automaticamente",
+        "application/pdf",
+    )
     buf.seek(0)
-    return send_file(buf, mimetype='application/pdf', as_attachment=True,
-                     download_name='protegido.pdf')
+    return send_file(
+        buf,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="protegido.pdf",
+    )
+
 
 # ────────────────────────────────────────────────────────────
 # API – Despesas da Prefeitura (histórico CSV → BD)
 # ────────────────────────────────────────────────────────────
 
-@app.route('/api/despesas/importacoes', methods=['GET'])
+
+@app.route("/api/despesas/importacoes", methods=["GET"])
 def despesas_listar_importacoes():
     """Lista todas as importações de despesas salvas no banco."""
     conn = get_db()
@@ -3981,74 +4923,85 @@ def despesas_listar_importacoes():
 
     return jsonify([row_to_dict(r) for r in rows])
 
-@app.route('/api/despesas/importar', methods=['POST'])
+
+@app.route("/api/despesas/importar", methods=["POST"])
 def despesas_importar():
     """Salva um CSV de despesas no banco de dados com período e descrição."""
     try:
         d = request.get_json(force=True)
         if not d:
-            return jsonify({'error': 'JSON inválido ou vazio'}), 400
-        periodo  = (d.get('periodo') or '').strip()
-        descricao = (d.get('descricao') or '').strip()
-        arquivo  = (d.get('arquivo') or '').strip()
-        linhas   = d.get('linhas', [])   # lista de objetos {coluna: valor}
-        colunas  = d.get('colunas', [])  # lista de strings
+            return jsonify({"error": "JSON inválido ou vazio"}), 400
+        periodo = (d.get("periodo") or "").strip()
+        descricao = (d.get("descricao") or "").strip()
+        arquivo = (d.get("arquivo") or "").strip()
+        linhas = d.get("linhas", [])  # lista de objetos {coluna: valor}
+        colunas = d.get("colunas", [])  # lista de strings
 
         if not periodo:
-            return jsonify({'error': 'Período obrigatório'}), 400
+            return jsonify({"error": "Período obrigatório"}), 400
         if not linhas:
-            return jsonify({'error': 'Nenhuma linha recebida'}), 400
+            return jsonify({"error": "Nenhuma linha recebida"}), 400
 
         from datetime import datetime as _dt_now
-        now = _dt_now.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        now = _dt_now.now().strftime("%Y-%m-%d %H:%M:%S")
 
         conn = get_db()
-        cur  = conn.cursor()
+        cur = conn.cursor()
         cur.execute(
             "INSERT INTO despesas_importacoes (periodo, descricao, arquivo, total_rows, colunas, importado_em) "
             "VALUES (?,?,?,?,?,?)",
-            (periodo, descricao, arquivo, len(linhas), json.dumps(colunas, ensure_ascii=False), now)
+            (
+                periodo,
+                descricao,
+                arquivo,
+                len(linhas),
+                json.dumps(colunas, ensure_ascii=False),
+                now,
+            ),
         )
         imp_id = cur.lastrowid
 
         cur.executemany(
             "INSERT INTO despesas_linhas (importacao_id, dados) VALUES (?,?)",
-            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas]
+            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
         )
 
         conn.commit()
         row = conn.execute(
             "SELECT id, periodo, descricao, arquivo, total_rows, importado_em "
-            "FROM despesas_importacoes WHERE id=?", (imp_id,)
+            "FROM despesas_importacoes WHERE id=?",
+            (imp_id,),
         ).fetchone()
 
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        return jsonify({'error': 'Erro ao salvar no banco', 'detail': str(e)}), 500
+        return jsonify({"error": "Erro ao salvar no banco", "detail": str(e)}), 500
 
-@app.route('/api/despesas/importacoes/<int:imp_id>', methods=['GET'])
+
+@app.route("/api/despesas/importacoes/<int:imp_id>", methods=["GET"])
 def despesas_carregar(imp_id):
     """Retorna os dados completos de uma importação."""
     conn = get_db()
     imp = conn.execute(
         "SELECT id, periodo, descricao, arquivo, total_rows, colunas, importado_em "
-        "FROM despesas_importacoes WHERE id=?", (imp_id,)
+        "FROM despesas_importacoes WHERE id=?",
+        (imp_id,),
     ).fetchone()
     if not imp:
-
-        return jsonify({'error': 'Importação não encontrada'}), 404
+        return jsonify({"error": "Importação não encontrada"}), 404
 
     linhas_rows = conn.execute(
-        "SELECT dados FROM despesas_linhas WHERE importacao_id=? ORDER BY id",
-        (imp_id,)
+        "SELECT dados FROM despesas_linhas WHERE importacao_id=? ORDER BY id", (imp_id,)
     ).fetchall()
 
     imp_dict = row_to_dict(imp)
-    imp_dict['colunas'] = json.loads(imp_dict['colunas'] or '[]')
-    linhas = [json.loads(r['dados']) for r in linhas_rows]
-    return jsonify({'importacao': imp_dict, 'linhas': linhas})
+    imp_dict["colunas"] = json.loads(imp_dict["colunas"] or "[]")
+    linhas = [json.loads(r["dados"]) for r in linhas_rows]
+    return jsonify({"importacao": imp_dict, "linhas": linhas})
 
-@app.route('/api/despesas/importacoes/<int:imp_id>', methods=['DELETE'])
+
+@app.route("/api/despesas/importacoes/<int:imp_id>", methods=["DELETE"])
 def despesas_excluir(imp_id):
     """Exclui uma importação e todas as suas linhas."""
     conn = get_db()
@@ -4056,291 +5009,344 @@ def despesas_excluir(imp_id):
     conn.execute("DELETE FROM despesas_importacoes WHERE id=?", (imp_id,))
     conn.commit()
 
-    return jsonify({'ok': True})
+    return jsonify({"ok": True})
 
-@app.route('/api/despesas/importacoes/<int:imp_id>/resumo', methods=['GET'])
+
+@app.route("/api/despesas/importacoes/<int:imp_id>/resumo", methods=["GET"])
 def despesas_resumo(imp_id):
     """Retorna totais e agrupamentos de uma importação (sem retornar todas as linhas)."""
     conn = get_db()
     imp = conn.execute(
         "SELECT id, periodo, descricao, arquivo, total_rows, colunas, importado_em "
-        "FROM despesas_importacoes WHERE id=?", (imp_id,)
+        "FROM despesas_importacoes WHERE id=?",
+        (imp_id,),
     ).fetchone()
     if not imp:
-
-        return jsonify({'error': 'Importação não encontrada'}), 404
+        return jsonify({"error": "Importação não encontrada"}), 404
 
     linhas_rows = conn.execute(
         "SELECT dados FROM despesas_linhas WHERE importacao_id=?", (imp_id,)
     ).fetchall()
 
-    colunas = json.loads(imp['colunas'] or '[]')
-    linhas = [json.loads(r['dados']) for r in linhas_rows]
+    colunas = json.loads(imp["colunas"] or "[]")
+    linhas = [json.loads(r["dados"]) for r in linhas_rows]
 
     def parse_val(v):
         if not v:
             return 0.0
-        s = str(v).replace('.', '').replace(',', '.').strip()
+        s = str(v).replace(".", "").replace(",", ".").strip()
         try:
             return float(s)
         except Exception:
             return 0.0
 
     # Detecta colunas de valor
-    val_cols = [c for c in colunas if any(k in c.lower() for k in ['saldo', 'valor', 'empenhado', 'liquidado', 'pago'])]
+    val_cols = [
+        c
+        for c in colunas
+        if any(
+            k in c.lower() for k in ["saldo", "valor", "empenhado", "liquidado", "pago"]
+        )
+    ]
     totais = {c: sum(parse_val(r.get(c, 0)) for r in linhas) for c in val_cols}
 
     # Agrupamentos
     def agrupar(col_key):
         grupos = {}
         for r in linhas:
-            k = r.get(col_key) or '(Sem valor)'
+            k = r.get(col_key) or "(Sem valor)"
             grupos[k] = grupos.get(k, 0) + 1
         return dict(sorted(grupos.items(), key=lambda x: -x[1])[:20])
 
-    secretaria_col = next((c for c in colunas if 'organograma' in c.lower()), None)
-    funcao_col     = next((c for c in colunas if 'função' in c.lower() or 'funcao' in c.lower()), None)
-    natureza_col   = next((c for c in colunas if 'natureza' in c.lower() and 'descrição' not in c.lower() and 'descricao' not in c.lower()), None)
-    recurso_col    = next((c for c in colunas if 'recurso' in c.lower() and 'descrição' not in c.lower()), None)
+    secretaria_col = next((c for c in colunas if "organograma" in c.lower()), None)
+    funcao_col = next(
+        (c for c in colunas if "função" in c.lower() or "funcao" in c.lower()), None
+    )
+    natureza_col = next(
+        (
+            c
+            for c in colunas
+            if "natureza" in c.lower()
+            and "descrição" not in c.lower()
+            and "descricao" not in c.lower()
+        ),
+        None,
+    )
+    recurso_col = next(
+        (c for c in colunas if "recurso" in c.lower() and "descrição" not in c.lower()),
+        None,
+    )
 
     # Totais por agrupamento de valor (top secretaria por soma de saldo)
-    saldo_col = next((c for c in colunas if 'saldo' in c.lower()), None)
+    saldo_col = next((c for c in colunas if "saldo" in c.lower()), None)
     por_secretaria_valor = {}
     if secretaria_col and saldo_col:
         for r in linhas:
-            k = r.get(secretaria_col) or '(Sem valor)'
-            por_secretaria_valor[k] = por_secretaria_valor.get(k, 0) + parse_val(r.get(saldo_col, 0))
-        por_secretaria_valor = dict(sorted(por_secretaria_valor.items(), key=lambda x: -x[1])[:15])
+            k = r.get(secretaria_col) or "(Sem valor)"
+            por_secretaria_valor[k] = por_secretaria_valor.get(k, 0) + parse_val(
+                r.get(saldo_col, 0)
+            )
+        por_secretaria_valor = dict(
+            sorted(por_secretaria_valor.items(), key=lambda x: -x[1])[:15]
+        )
 
-    return jsonify({
-        'importacao': {
-            'id': imp['id'],
-            'periodo': imp['periodo'],
-            'descricao': imp['descricao'],
-            'arquivo': imp['arquivo'],
-            'total_rows': imp['total_rows'],
-            'importado_em': imp['importado_em'],
-        },
-        'totais': totais,
-        'por_secretaria_contagem': agrupar(secretaria_col) if secretaria_col else {},
-        'por_secretaria_valor': por_secretaria_valor,
-        'por_funcao': agrupar(funcao_col) if funcao_col else {},
-        'por_natureza': agrupar(natureza_col) if natureza_col else {},
-        'por_recurso': agrupar(recurso_col) if recurso_col else {},
-        'saldo_col': saldo_col,
-        'colunas': colunas,
-    })
+    return jsonify(
+        {
+            "importacao": {
+                "id": imp["id"],
+                "periodo": imp["periodo"],
+                "descricao": imp["descricao"],
+                "arquivo": imp["arquivo"],
+                "total_rows": imp["total_rows"],
+                "importado_em": imp["importado_em"],
+            },
+            "totais": totais,
+            "por_secretaria_contagem": agrupar(secretaria_col)
+            if secretaria_col
+            else {},
+            "por_secretaria_valor": por_secretaria_valor,
+            "por_funcao": agrupar(funcao_col) if funcao_col else {},
+            "por_natureza": agrupar(natureza_col) if natureza_col else {},
+            "por_recurso": agrupar(recurso_col) if recurso_col else {},
+            "saldo_col": saldo_col,
+            "colunas": colunas,
+        }
+    )
+
 
 # ────────────────────────────────────────────────────────────
 # API – Dotações Orçamentárias · IA (OpenRouter)
 # ────────────────────────────────────────────────────────────
 
-@app.route('/api/despesas/ia', methods=['POST'])
+
+@app.route("/api/despesas/ia", methods=["POST"])
 def despesas_ia():
     """Assistente de IA para análise de dotações orçamentárias."""
     data = request.get_json(silent=True) or {}
-    action   = (data.get('action') or '').strip()
-    contexto = data.get('contexto') or {}
-    pergunta = (data.get('pergunta') or '').strip()
+    action = (data.get("action") or "").strip()
+    contexto = data.get("contexto") or {}
+    pergunta = (data.get("pergunta") or "").strip()
 
     conn = get_db()
     api_key, model = _get_openrouter_config(conn)
     if not api_key:
-        return jsonify({'error': 'Chave do OpenRouter não configurada. Acesse ADM → Configurações → Chaves de API.'}), 400
+        return jsonify(
+            {
+                "error": "Chave do OpenRouter não configurada. Acesse ADM → Configurações → Chaves de API."
+            }
+        ), 400
 
-    today = __import__('datetime').date.today().strftime('%d/%m/%Y')
+    today = __import__("datetime").date.today().strftime("%d/%m/%Y")
 
     def _fmt_brl(v):
         try:
-            return f"R$ {float(v):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            return (
+                f"R$ {float(v):,.2f}".replace(",", "X")
+                .replace(".", ",")
+                .replace("X", ".")
+            )
         except Exception:
             return str(v)
 
     def _build_ctx_text(ctx):
         lines = [
-            '=== DADOS DE DOTAÇÕES ORÇAMENTÁRIAS ===',
-            f'Prefeitura Municipal de Inajá – PE',
-            f'Período: {ctx.get("periodo", "?")} | Total de dotações: {ctx.get("total_rows", "?")}',
+            "=== DADOS DE DOTAÇÕES ORÇAMENTÁRIAS ===",
+            f"Prefeitura Municipal de Inajá – PE",
+            f"Período: {ctx.get('periodo', '?')} | Total de dotações: {ctx.get('total_rows', '?')}",
         ]
-        totais = ctx.get('totais') or {}
+        totais = ctx.get("totais") or {}
         if totais:
-            lines.append('\nTotais Financeiros:')
+            lines.append("\nTotais Financeiros:")
             for k, v in totais.items():
-                lines.append(f'  {k}: {_fmt_brl(v)}')
-        sec = ctx.get('por_secretaria') or {}
+                lines.append(f"  {k}: {_fmt_brl(v)}")
+        sec = ctx.get("por_secretaria") or {}
         if sec:
-            lines.append('\nSaldo por Secretaria/Órgão (top 12):')
+            lines.append("\nSaldo por Secretaria/Órgão (top 12):")
             for k, v in list(sec.items())[:12]:
-                lines.append(f'  {k}: {_fmt_brl(v)}')
-        nat = ctx.get('por_natureza') or {}
+                lines.append(f"  {k}: {_fmt_brl(v)}")
+        nat = ctx.get("por_natureza") or {}
         if nat:
-            lines.append('\nDistribuição por Natureza de Despesa (top 10):')
+            lines.append("\nDistribuição por Natureza de Despesa (top 10):")
             for k, v in list(nat.items())[:10]:
-                lines.append(f'  {k}: {v} dotações')
-        func = ctx.get('por_funcao') or {}
+                lines.append(f"  {k}: {v} dotações")
+        func = ctx.get("por_funcao") or {}
         if func:
-            lines.append('\nDistribuição por Função (top 8):')
+            lines.append("\nDistribuição por Função (top 8):")
             for k, v in list(func.items())[:8]:
-                lines.append(f'  {k}: {v} dotações')
-        criticos = ctx.get('criticos') or []
+                lines.append(f"  {k}: {v} dotações")
+        criticos = ctx.get("criticos") or []
         if criticos:
-            limite = ctx.get('limite_critico', 1000)
-            lines.append(f'\nDotações com saldo crítico (abaixo de {_fmt_brl(limite)}): {len(criticos)}')
+            limite = ctx.get("limite_critico", 1000)
+            lines.append(
+                f"\nDotações com saldo crítico (abaixo de {_fmt_brl(limite)}): {len(criticos)}"
+            )
             for it in criticos[:8]:
-                lines.append(f'  Nº {it.get("num","?")} – {it.get("desc","?")} → Saldo: {it.get("saldo","?")}')
-        return '\n'.join(lines)
+                lines.append(
+                    f"  Nº {it.get('num', '?')} – {it.get('desc', '?')} → Saldo: {it.get('saldo', '?')}"
+                )
+        return "\n".join(lines)
 
     system_prompts = {
-        'analisar': (
-            f'Você é um analista financeiro especializado em orçamento público municipal. Hoje é {today}. '
-            'Com base nos dados de dotações orçamentárias da Prefeitura Municipal de Inajá/PE, '
-            'faça uma análise completa e objetiva. Estruture sua resposta com: '
-            '1) **Resumo Executivo** (2-3 frases objetivas), '
-            '2) **Pontos de Atenção** (dotações críticas, riscos, alertas), '
-            '3) **Destaques por Secretaria** (maiores e menores saldos), '
-            '4) **Recomendações Práticas** (3-5 ações concretas e viáveis). '
-            'Use linguagem formal adequada à gestão pública. Escreva em português do Brasil.'
+        "analisar": (
+            f"Você é um analista financeiro especializado em orçamento público municipal. Hoje é {today}. "
+            "Com base nos dados de dotações orçamentárias da Prefeitura Municipal de Inajá/PE, "
+            "faça uma análise completa e objetiva. Estruture sua resposta com: "
+            "1) **Resumo Executivo** (2-3 frases objetivas), "
+            "2) **Pontos de Atenção** (dotações críticas, riscos, alertas), "
+            "3) **Destaques por Secretaria** (maiores e menores saldos), "
+            "4) **Recomendações Práticas** (3-5 ações concretas e viáveis). "
+            "Use linguagem formal adequada à gestão pública. Escreva em português do Brasil."
         ),
-        'chat': (
-            f'Você é um assistente especializado em orçamento público da Prefeitura Municipal de Inajá/PE. Hoje é {today}. '
-            'Responda perguntas sobre os dados de dotações orçamentárias fornecidos de forma objetiva e precisa. '
-            'Use os dados concretos disponíveis. Se a informação não estiver nos dados, diga claramente. '
-            'Escreva em português do Brasil.'
+        "chat": (
+            f"Você é um assistente especializado em orçamento público da Prefeitura Municipal de Inajá/PE. Hoje é {today}. "
+            "Responda perguntas sobre os dados de dotações orçamentárias fornecidos de forma objetiva e precisa. "
+            "Use os dados concretos disponíveis. Se a informação não estiver nos dados, diga claramente. "
+            "Escreva em português do Brasil."
         ),
-        'anomalias': (
-            f'Você é um auditor de contas públicas municipais. Hoje é {today}. '
-            'Analise os dados de dotações orçamentárias e identifique anomalias, inconsistências ou situações que merecem investigação. '
-            'Para cada anomalia identificada, informe: **o que é**, **por que é suspeito** e **o que verificar**. '
-            'Seja específico com nomes de secretarias e valores quando possível. '
-            'Numere cada anomalia. Se não houver anomalias evidentes, diga que os dados parecem regulares. '
-            'Escreva em português do Brasil.'
+        "anomalias": (
+            f"Você é um auditor de contas públicas municipais. Hoje é {today}. "
+            "Analise os dados de dotações orçamentárias e identifique anomalias, inconsistências ou situações que merecem investigação. "
+            "Para cada anomalia identificada, informe: **o que é**, **por que é suspeito** e **o que verificar**. "
+            "Seja específico com nomes de secretarias e valores quando possível. "
+            "Numere cada anomalia. Se não houver anomalias evidentes, diga que os dados parecem regulares. "
+            "Escreva em português do Brasil."
         ),
-        'relatorio': (
-            f'Você é um assessor técnico de finanças públicas. Hoje é {today}. '
-            'Gere um relatório formal de execução orçamentária para a Prefeitura Municipal de Inajá/PE. '
-            'Estruture o relatório com: '
-            '1) Identificação (período, município, secretaria responsável), '
-            '2) Síntese da Execução Orçamentária (totais, percentuais), '
-            '3) Análise por Secretaria/Órgão, '
-            '4) Dotações em Situação Crítica, '
-            '5) Considerações Finais e Recomendações. '
-            'Use linguagem formal de prestação de contas. Escreva em português do Brasil.'
+        "relatorio": (
+            f"Você é um assessor técnico de finanças públicas. Hoje é {today}. "
+            "Gere um relatório formal de execução orçamentária para a Prefeitura Municipal de Inajá/PE. "
+            "Estruture o relatório com: "
+            "1) Identificação (período, município, secretaria responsável), "
+            "2) Síntese da Execução Orçamentária (totais, percentuais), "
+            "3) Análise por Secretaria/Órgão, "
+            "4) Dotações em Situação Crítica, "
+            "5) Considerações Finais e Recomendações. "
+            "Use linguagem formal de prestação de contas. Escreva em português do Brasil."
         ),
-        'remanejamento': (
-            f'Você é um especialista em gestão orçamentária municipal. Hoje é {today}. '
-            'Com base nos saldos disponíveis, sugira remanejamentos orçamentários estratégicos. '
-            'Para cada sugestão indique: '
-            '**Dotação de origem** (com saldo excedente), '
-            '**Dotação de destino** (com saldo insuficiente ou necessidade identificada), '
-            '**Valor sugerido para remanejamento** (estimado), '
-            '**Justificativa técnica**. '
-            'Priorize pessoal, saúde e serviços essenciais. '
-            'Apresente como lista numerada com no máximo 6 sugestões. '
-            'Escreva em português do Brasil.'
+        "remanejamento": (
+            f"Você é um especialista em gestão orçamentária municipal. Hoje é {today}. "
+            "Com base nos saldos disponíveis, sugira remanejamentos orçamentários estratégicos. "
+            "Para cada sugestão indique: "
+            "**Dotação de origem** (com saldo excedente), "
+            "**Dotação de destino** (com saldo insuficiente ou necessidade identificada), "
+            "**Valor sugerido para remanejamento** (estimado), "
+            "**Justificativa técnica**. "
+            "Priorize pessoal, saúde e serviços essenciais. "
+            "Apresente como lista numerada com no máximo 6 sugestões. "
+            "Escreva em português do Brasil."
         ),
-        'prioridades': (
-            f'Você é um consultor de planejamento e execução orçamentária municipal. Hoje é {today}. '
-            'Com base nas dotações, identifique as prioridades orçamentárias mais urgentes para reforço, proteção ou monitoramento intensivo. '
-            'Estruture a resposta com: '
-            '1) **Prioridades imediatas** (itens críticos), '
-            '2) **Áreas que merecem reforço** (por secretaria, programa ou ação), '
-            '3) **Riscos de descontinuidade** se nada for feito, '
-            '4) **Plano de ação em 30 dias** com medidas objetivas. '
-            'Use linguagem executiva, prática e voltada à gestão pública. Escreva em português do Brasil.'
+        "prioridades": (
+            f"Você é um consultor de planejamento e execução orçamentária municipal. Hoje é {today}. "
+            "Com base nas dotações, identifique as prioridades orçamentárias mais urgentes para reforço, proteção ou monitoramento intensivo. "
+            "Estruture a resposta com: "
+            "1) **Prioridades imediatas** (itens críticos), "
+            "2) **Áreas que merecem reforço** (por secretaria, programa ou ação), "
+            "3) **Riscos de descontinuidade** se nada for feito, "
+            "4) **Plano de ação em 30 dias** com medidas objetivas. "
+            "Use linguagem executiva, prática e voltada à gestão pública. Escreva em português do Brasil."
         ),
-        'cortes': (
-            f'Você é um analista de eficiência do gasto público municipal. Hoje é {today}. '
-            'Com base nos dados de dotações, identifique onde pode haver espaço para contenção, postergação, revisão ou realocação de recursos sem comprometer serviços essenciais. '
-            'Estruture a resposta com: '
-            '1) **Possíveis áreas de corte ou contenção**, '
-            '2) **Justificativa técnica de cada oportunidade**, '
-            '3) **Risco operacional do corte** (baixo, médio ou alto), '
-            '4) **Recomendação final** separando o que pode ser cortado, revisto ou preservado. '
-            'Não sugira cortes em áreas essenciais sem alertar claramente o risco. Escreva em português do Brasil.'
+        "cortes": (
+            f"Você é um analista de eficiência do gasto público municipal. Hoje é {today}. "
+            "Com base nos dados de dotações, identifique onde pode haver espaço para contenção, postergação, revisão ou realocação de recursos sem comprometer serviços essenciais. "
+            "Estruture a resposta com: "
+            "1) **Possíveis áreas de corte ou contenção**, "
+            "2) **Justificativa técnica de cada oportunidade**, "
+            "3) **Risco operacional do corte** (baixo, médio ou alto), "
+            "4) **Recomendação final** separando o que pode ser cortado, revisto ou preservado. "
+            "Não sugira cortes em áreas essenciais sem alertar claramente o risco. Escreva em português do Brasil."
         ),
     }
 
     if action not in system_prompts:
-        return jsonify({'error': f'Ação "{action}" não reconhecida. Use: analisar, chat, anomalias, relatorio, remanejamento, prioridades, cortes.'}), 400
+        return jsonify(
+            {
+                "error": f'Ação "{action}" não reconhecida. Use: analisar, chat, anomalias, relatorio, remanejamento, prioridades, cortes.'
+            }
+        ), 400
 
     ctx_text = _build_ctx_text(contexto)
     user_content = ctx_text
     if pergunta:
-        user_content += f'\n\nPergunta: {pergunta}'
+        user_content += f"\n\nPergunta: {pergunta}"
 
     messages = [
-        {'role': 'system', 'content': system_prompts[action]},
-        {'role': 'user',   'content': user_content},
+        {"role": "system", "content": system_prompts[action]},
+        {"role": "user", "content": user_content},
     ]
 
     try:
         response = _build_ai_service(api_key, model).chat_by_task(
-            task_type='auditoria_documento',
+            task_type="auditoria_documento",
             messages=messages,
             temperature=0.5,
             max_tokens=1800,
             use_cache=False,
-            metadata={'feature': 'despesas_ia', 'action': action},
+            metadata={"feature": "despesas_ia", "action": action},
         )
-        return jsonify({
-            'resultado': response.text,
-            'action': action,
-            'meta': {
-                'model': response.model,
-                'cached': response.cached,
-                'usage': response.usage,
+        return jsonify(
+            {
+                "resultado": response.text,
+                "action": action,
+                "meta": {
+                    "model": response.model,
+                    "cached": response.cached,
+                    "usage": response.usage,
+                },
             }
-        })
+        )
     except AIServiceError as err:
         return jsonify(err.to_response()), err.status_code
     except Exception as err:
-        app.logger.error('despesas_ia error (action=%s): %s', action, err)
-        return jsonify({'error': str(err)}), 500
+        app.logger.error("despesas_ia error (action=%s): %s", action, err)
+        return jsonify({"error": str(err)}), 500
 
 
 # ────────────────────────────────────────────────────────────
 # API – Empenhos CSV (Visualizador de Empenhos → BD)
 # ────────────────────────────────────────────────────────────
 
-@app.route('/api/empenhos-csv/importar', methods=['POST'])
+
+@app.route("/api/empenhos-csv/importar", methods=["POST"])
 def empenhos_csv_importar():
     """Salva dados de empenhos (CSV do visualizador) no banco."""
     try:
         d = request.get_json(force=True)
         if not d:
-            return jsonify({'error': 'JSON inválido'}), 400
-        periodo  = (d.get('periodo') or '').strip()
-        descricao = (d.get('descricao') or '').strip()
-        arquivo  = (d.get('arquivo') or '').strip()
-        linhas   = d.get('linhas', [])
+            return jsonify({"error": "JSON inválido"}), 400
+        periodo = (d.get("periodo") or "").strip()
+        descricao = (d.get("descricao") or "").strip()
+        arquivo = (d.get("arquivo") or "").strip()
+        linhas = d.get("linhas", [])
 
         if not periodo:
-            return jsonify({'error': 'Período obrigatório'}), 400
+            return jsonify({"error": "Período obrigatório"}), 400
         if not linhas:
-            return jsonify({'error': 'Nenhuma linha recebida'}), 400
+            return jsonify({"error": "Nenhuma linha recebida"}), 400
 
         from datetime import datetime as _dt
-        now = _dt.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        now = _dt.now().strftime("%Y-%m-%d %H:%M:%S")
         conn = get_db()
-        cur  = conn.cursor()
+        cur = conn.cursor()
         cur.execute(
             "INSERT INTO empenhos_importacoes (periodo, descricao, arquivo, total_rows, importado_em) VALUES (?,?,?,?,?)",
-            (periodo, descricao, arquivo, len(linhas), now)
+            (periodo, descricao, arquivo, len(linhas), now),
         )
         imp_id = cur.lastrowid
         cur.executemany(
             "INSERT INTO empenhos_linhas (importacao_id, dados) VALUES (?,?)",
-            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas]
+            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
         )
         conn.commit()
         row = conn.execute(
-            "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes WHERE id=?", (imp_id,)
+            "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes WHERE id=?",
+            (imp_id,),
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        return jsonify({'error': 'Erro ao salvar', 'detail': str(e)}), 500
+        return jsonify({"error": "Erro ao salvar", "detail": str(e)}), 500
 
-@app.route('/api/empenhos-csv/importacoes', methods=['GET'])
+
+@app.route("/api/empenhos-csv/importacoes", methods=["GET"])
 def empenhos_csv_listar():
     conn = get_db()
     rows = conn.execute(
@@ -4348,75 +5354,99 @@ def empenhos_csv_listar():
     ).fetchall()
     return jsonify([row_to_dict(r) for r in rows])
 
-@app.route('/api/empenhos-csv/importacoes/<int:imp_id>', methods=['GET'])
+
+@app.route("/api/empenhos-csv/importacoes/<int:imp_id>", methods=["GET"])
 def empenhos_csv_carregar(imp_id):
     conn = get_db()
     imp = conn.execute(
-        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes WHERE id=?", (imp_id,)
+        "SELECT id, periodo, descricao, arquivo, total_rows, importado_em FROM empenhos_importacoes WHERE id=?",
+        (imp_id,),
     ).fetchone()
     if not imp:
-        return jsonify({'error': 'Importação não encontrada'}), 404
+        return jsonify({"error": "Importação não encontrada"}), 404
     linhas_rows = conn.execute(
         "SELECT dados FROM empenhos_linhas WHERE importacao_id=? ORDER BY id", (imp_id,)
     ).fetchall()
-    linhas = [json.loads(r['dados']) for r in linhas_rows]
-    return jsonify({'importacao': row_to_dict(imp), 'linhas': linhas})
+    linhas = [json.loads(r["dados"]) for r in linhas_rows]
+    return jsonify({"importacao": row_to_dict(imp), "linhas": linhas})
 
-@app.route('/api/empenhos-csv/importacoes/<int:imp_id>', methods=['DELETE'])
+
+@app.route("/api/empenhos-csv/importacoes/<int:imp_id>", methods=["DELETE"])
 def empenhos_csv_excluir(imp_id):
     conn = get_db()
     conn.execute("DELETE FROM empenhos_linhas WHERE importacao_id=?", (imp_id,))
     conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
     conn.commit()
-    return jsonify({'ok': True})
+    return jsonify({"ok": True})
+
 
 # ── Logs ─────────────────────────────────────────────────────
 
-@app.route('/api/logs', methods=['GET'])
+
+@app.route("/api/logs", methods=["GET"])
 def get_logs():
     try:
         conn = get_db()
-        limit  = min(int(request.args.get('limit',  50)), 200)
-        offset = int(request.args.get('offset', 0))
-        acao   = (request.args.get('acao') or '').strip()
+        limit = min(int(request.args.get("limit", 50)), 200)
+        offset = int(request.args.get("offset", 0))
+        acao = (request.args.get("acao") or "").strip()
         if acao:
-            total = conn.execute("SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)).fetchone()[0]
-            rows  = conn.execute(
+            total = conn.execute(
+                "SELECT COUNT(*) FROM logs WHERE acao=?", (acao,)
+            ).fetchone()[0]
+            rows = conn.execute(
                 "SELECT id,acao,credor_id,credor_nome,detalhes,data FROM logs "
                 "WHERE acao=? ORDER BY data DESC LIMIT ? OFFSET ?",
-                (acao, limit, offset)
+                (acao, limit, offset),
             ).fetchall()
         else:
             total = conn.execute("SELECT COUNT(*) FROM logs").fetchone()[0]
-            rows  = conn.execute(
+            rows = conn.execute(
                 "SELECT id,acao,credor_id,credor_nome,detalhes,data FROM logs "
                 "ORDER BY data DESC LIMIT ? OFFSET ?",
-                (limit, offset)
+                (limit, offset),
             ).fetchall()
-        return jsonify({'logs': [row_to_dict(r) for r in rows], 'total': total})
+        return jsonify({"logs": [row_to_dict(r) for r in rows], "total": total})
     except Exception as e:
-        app.logger.error('GET /api/logs: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/logs: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 
 # ── RPAs ──────────────────────────────────────────────────────
 
-@app.route('/api/rpas', methods=['GET'])
+
+@app.route("/api/rpas", methods=["GET"])
 def get_rpas():
     try:
+        limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
+        offset = max(0, request.args.get("offset", 0, type=int))
         conn = get_db()
-        rows = conn.execute("SELECT * FROM rpas ORDER BY criado_em DESC").fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
+        total = conn.execute("SELECT COUNT(*) AS total FROM rpas").fetchone()["total"]
+        rows = conn.execute(
+            "SELECT * FROM rpas ORDER BY criado_em DESC LIMIT ? OFFSET ?",
+            (limit, offset),
+        ).fetchall()
+        return jsonify(
+            {
+                "items": [row_to_dict(r) for r in rows],
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+            }
+        )
     except Exception as e:
-        app.logger.error('GET /api/rpas: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/rpas: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/rpas', methods=['POST'])
+
+@app.route("/api/rpas", methods=["POST"])
 def create_rpa():
     try:
         data = request.get_json() or {}
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("""
+        cur.execute(
+            """
             INSERT INTO rpas (
                 numero_rpa, nome_prestador, cpf_prestador, endereco_prestador,
                 descricao_servico, periodo_referencia, carga_horaria, local_execucao,
@@ -4424,30 +5454,46 @@ def create_rpa():
                 deducao_dependentes, base_calculo_irrf, aliquota_irrf,
                 parcela_deduzir_irrf, ir, valor_liquido, observacoes, data_emissao
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (
-            data.get('numeroRPA'), data.get('nomePrestador', ''), data.get('cpfPrestador'),
-            data.get('enderecoPrestador'), data.get('descricaoServico'), data.get('periodoReferencia'),
-            data.get('cargaHoraria'), data.get('localExecucao'),
-            data.get('valorBruto', 0), data.get('numDependentes', 0),
-            data.get('pensaoAlimenticia', 0), data.get('inss', 0), data.get('iss', 0),
-            data.get('deducaoDependentes', 0), data.get('baseCalculoIRRF', 0),
-            data.get('aliquotaIRRF', 0), data.get('parcelaDeduzirIRRF', 0),
-            data.get('ir', 0), data.get('valorLiquido', 0),
-            data.get('observacoes'), data.get('dataEmissao')
-        ))
+        """,
+            (
+                data.get("numeroRPA"),
+                data.get("nomePrestador", ""),
+                data.get("cpfPrestador"),
+                data.get("enderecoPrestador"),
+                data.get("descricaoServico"),
+                data.get("periodoReferencia"),
+                data.get("cargaHoraria"),
+                data.get("localExecucao"),
+                data.get("valorBruto", 0),
+                data.get("numDependentes", 0),
+                data.get("pensaoAlimenticia", 0),
+                data.get("inss", 0),
+                data.get("iss", 0),
+                data.get("deducaoDependentes", 0),
+                data.get("baseCalculoIRRF", 0),
+                data.get("aliquotaIRRF", 0),
+                data.get("parcelaDeduzirIRRF", 0),
+                data.get("ir", 0),
+                data.get("valorLiquido", 0),
+                data.get("observacoes"),
+                data.get("dataEmissao"),
+            ),
+        )
         conn.commit()
         row = conn.execute("SELECT * FROM rpas WHERE id=?", (cur.lastrowid,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
-        app.logger.error('POST /api/rpas: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/rpas: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/rpas/<int:rpa_id>', methods=['PUT'])
+
+@app.route("/api/rpas/<int:rpa_id>", methods=["PUT"])
 def update_rpa(rpa_id):
     try:
         data = request.get_json() or {}
         conn = get_db()
-        conn.execute("""
+        conn.execute(
+            """
             UPDATE rpas SET
                 numero_rpa=?, nome_prestador=?, cpf_prestador=?, endereco_prestador=?,
                 descricao_servico=?, periodo_referencia=?, carga_horaria=?, local_execucao=?,
@@ -4455,139 +5501,168 @@ def update_rpa(rpa_id):
                 deducao_dependentes=?, base_calculo_irrf=?, aliquota_irrf=?,
                 parcela_deduzir_irrf=?, ir=?, valor_liquido=?, observacoes=?, data_emissao=?
             WHERE id=?
-        """, (
-            data.get('numeroRPA'), data.get('nomePrestador', ''), data.get('cpfPrestador'),
-            data.get('enderecoPrestador'), data.get('descricaoServico'), data.get('periodoReferencia'),
-            data.get('cargaHoraria'), data.get('localExecucao'),
-            data.get('valorBruto', 0), data.get('numDependentes', 0),
-            data.get('pensaoAlimenticia', 0), data.get('inss', 0), data.get('iss', 0),
-            data.get('deducaoDependentes', 0), data.get('baseCalculoIRRF', 0),
-            data.get('aliquotaIRRF', 0), data.get('parcelaDeduzirIRRF', 0),
-            data.get('ir', 0), data.get('valorLiquido', 0),
-            data.get('observacoes'), data.get('dataEmissao'),
-            rpa_id
-        ))
+        """,
+            (
+                data.get("numeroRPA"),
+                data.get("nomePrestador", ""),
+                data.get("cpfPrestador"),
+                data.get("enderecoPrestador"),
+                data.get("descricaoServico"),
+                data.get("periodoReferencia"),
+                data.get("cargaHoraria"),
+                data.get("localExecucao"),
+                data.get("valorBruto", 0),
+                data.get("numDependentes", 0),
+                data.get("pensaoAlimenticia", 0),
+                data.get("inss", 0),
+                data.get("iss", 0),
+                data.get("deducaoDependentes", 0),
+                data.get("baseCalculoIRRF", 0),
+                data.get("aliquotaIRRF", 0),
+                data.get("parcelaDeduzirIRRF", 0),
+                data.get("ir", 0),
+                data.get("valorLiquido", 0),
+                data.get("observacoes"),
+                data.get("dataEmissao"),
+                rpa_id,
+            ),
+        )
         conn.commit()
         row = conn.execute("SELECT * FROM rpas WHERE id=?", (rpa_id,)).fetchone()
         if not row:
-            return jsonify({'error': 'RPA não encontrado'}), 404
+            return jsonify({"error": "RPA não encontrado"}), 404
         return jsonify(row_to_dict(row))
     except Exception as e:
-        app.logger.error('PUT /api/rpas/%s: %s', rpa_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("PUT /api/rpas/%s: %s", rpa_id, e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/rpas/<int:rpa_id>', methods=['DELETE'])
+
+@app.route("/api/rpas/<int:rpa_id>", methods=["DELETE"])
 def delete_rpa(rpa_id):
     try:
         conn = get_db()
         conn.execute("DELETE FROM rpas WHERE id=?", (rpa_id,))
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('DELETE /api/rpas/%s: %s', rpa_id, e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("DELETE /api/rpas/%s: %s", rpa_id, e)
+        return jsonify({"error": str(e)}), 500
+
 
 # ── Fornecimento / Dados ──────────────────────────────────────
 
-@app.route('/api/fornecimento/dados', methods=['GET'])
+
+@app.route("/api/fornecimento/dados", methods=["GET"])
 def get_fornecimento_dados():
     try:
         conn = get_db()
         rows = conn.execute(
             "SELECT tipo, valor FROM fornecimento_dados ORDER BY valor ASC"
         ).fetchall()
-        result: dict = {'solicitantes': [], 'empresas': [], 'observacoes': []}
+        result: dict = {"solicitantes": [], "empresas": [], "observacoes": []}
         for row in rows:
-            if row['tipo'] in result:
-                result[row['tipo']].append(row['valor'])
+            if row["tipo"] in result:
+                result[row["tipo"]].append(row["valor"])
         return jsonify(result)
     except Exception as e:
-        app.logger.error('GET /api/fornecimento/dados: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("GET /api/fornecimento/dados: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/fornecimento/dados', methods=['POST'])
+
+@app.route("/api/fornecimento/dados", methods=["POST"])
 def add_fornecimento_dado():
     try:
-        data  = request.get_json() or {}
-        tipo  = (data.get('tipo')  or '').strip()
-        valor = (data.get('valor') or '').strip()
+        data = request.get_json() or {}
+        tipo = (data.get("tipo") or "").strip()
+        valor = (data.get("valor") or "").strip()
         if not tipo or not valor:
-            return jsonify({'error': 'tipo e valor são obrigatórios'}), 400
+            return jsonify({"error": "tipo e valor são obrigatórios"}), 400
         conn = get_db()
         conn.execute(
             "INSERT OR IGNORE INTO fornecimento_dados (tipo, valor) VALUES (?,?)",
-            (tipo, valor)
+            (tipo, valor),
         )
         conn.commit()
-        return jsonify({'ok': True}), 201
+        return jsonify({"ok": True}), 201
     except Exception as e:
-        app.logger.error('POST /api/fornecimento/dados: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("POST /api/fornecimento/dados: %s", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/fornecimento/dados', methods=['DELETE'])
+
+@app.route("/api/fornecimento/dados", methods=["DELETE"])
 def del_fornecimento_dado():
     try:
-        data  = request.get_json() or {}
-        tipo  = (data.get('tipo')  or '').strip()
-        valor = (data.get('valor') or '').strip()
+        data = request.get_json() or {}
+        tipo = (data.get("tipo") or "").strip()
+        valor = (data.get("valor") or "").strip()
         if not tipo or not valor:
-            return jsonify({'error': 'tipo e valor são obrigatórios'}), 400
+            return jsonify({"error": "tipo e valor são obrigatórios"}), 400
         conn = get_db()
         conn.execute(
-            "DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?",
-            (tipo, valor)
+            "DELETE FROM fornecimento_dados WHERE tipo=? AND valor=?", (tipo, valor)
         )
         conn.commit()
-        return jsonify({'ok': True})
+        return jsonify({"ok": True})
     except Exception as e:
-        app.logger.error('DELETE /api/fornecimento/dados: %s', e)
-        return jsonify({'error': str(e)}), 500
+        app.logger.error("DELETE /api/fornecimento/dados: %s", e)
+        return jsonify({"error": str(e)}), 500
+
 
 # ─────────────────────────────────────────────────────────────
-
-init_db()
-migrate_db()
 
 # ────────────────────────────────────────────────────────────
 # MAIN
 # ────────────────────────────────────────────────────────────
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import socket
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
     boot_started_at = _time.perf_counter()
-    _terminal_section('Sistema de Empenhos – Prefeitura Municipal de Inajá')
-    _terminal_log('BOOT', 'Iniciando servidor Flask...', 'cyan')
+    _terminal_section("Sistema de Empenhos – Prefeitura Municipal de Inajá")
+    _terminal_log("BOOT", "Iniciando servidor Flask...", "cyan")
     init_db()
-    _terminal_log('BOOT', 'Estrutura principal do banco verificada', 'green')
+    _terminal_log("BOOT", "Estrutura principal do banco verificada", "green")
     migrate_db()
-    _terminal_log('BOOT', 'Migrações do banco aplicadas', 'green')
-    _preload_static_files()   # carrega todos os arquivos estáticos em RAM
+    _terminal_log("BOOT", "Migrações do banco aplicadas", "green")
+    _preload_static_files()  # carrega todos os arquivos estáticos em RAM
 
     # ── Fix de performance: Werkzeug faz reverse-DNS lookup em cada requisição
     #    via socket.getfqdn(), o que trava ~2s no Windows. Desabilitamos isso.
     #    Também habilitamos HTTP/1.1 para keep-alive (reutiliza conexão TCP).
     try:
         from werkzeug.serving import WSGIRequestHandler
+
         WSGIRequestHandler.address_string = lambda self: self.client_address[0]
-        WSGIRequestHandler.protocol_version = 'HTTP/1.1'
+        WSGIRequestHandler.protocol_version = "HTTP/1.1"
     except Exception:
         pass
 
     # Detecta o IP local da máquina
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 80))
+        s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
         s.close()
     except OSError:
-        local_ip = '127.0.0.1'
+        local_ip = "127.0.0.1"
     boot_elapsed_ms = (_time.perf_counter() - boot_started_at) * 1000
-    _terminal_section('Servidor pronto')
-    _terminal_log('LOCAL', f'http://localhost:{settings.port}', 'green')
-    _terminal_log('REDE', f'http://{local_ip}:{settings.port}', 'green')
-    _terminal_log('INFO', f'Modo debug: {"ligado" if settings.debug else "desligado"} | Host: {settings.host}', 'yellow')
-    _terminal_log('TIME', f'Startup concluído em {boot_elapsed_ms:.1f} ms', 'magenta')
-    _terminal_log('INFO', 'Para encerrar: feche esta janela ou pressione Ctrl+C', 'cyan')
-    app.run(host=settings.host, port=settings.port, debug=settings.debug,
-            use_reloader=settings.reloader, threaded=True)
+    _terminal_section("Servidor pronto")
+    _terminal_log("LOCAL", f"http://localhost:{settings.port}", "green")
+    _terminal_log("REDE", f"http://{local_ip}:{settings.port}", "green")
+    _terminal_log(
+        "INFO",
+        f"Modo debug: {'ligado' if settings.debug else 'desligado'} | Host: {settings.host}",
+        "yellow",
+    )
+    _terminal_log("TIME", f"Startup concluído em {boot_elapsed_ms:.1f} ms", "magenta")
+    _terminal_log(
+        "INFO", "Para encerrar: feche esta janela ou pressione Ctrl+C", "cyan"
+    )
+    app.run(
+        host=settings.host,
+        port=settings.port,
+        debug=settings.debug,
+        use_reloader=settings.reloader,
+        threaded=True,
+    )
