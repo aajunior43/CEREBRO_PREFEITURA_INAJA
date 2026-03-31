@@ -199,7 +199,8 @@ class AITaskFacade:
         )
 
     def _validate_classificacao(self, item: str, result: dict) -> dict:
-        """Validação pós-processamento para detectar erros óbvios da IA."""
+        """Validação e normalização pós-processamento."""
+        result = self._normalize_fields(result)
         item_lower = item.lower()
         subel = result.get("subelemento_codigo", "") or ""
         grupo = (result.get("grupo", "") or "").lower()
@@ -296,6 +297,74 @@ class AITaskFacade:
             )
             result["confianca"] = 0.95
             result["_auto_corrected"] = True
+
+        return result
+
+    def _normalize_fields(self, result: dict) -> dict:
+        """Normaliza campos que a IA pode ter trocado."""
+        subel = result.get("subelemento_codigo", "") or ""
+        elemento = (result.get("elemento", "") or "").strip()
+        grupo = (result.get("grupo", "") or "").strip()
+        modalidade = (result.get("modalidade", "") or "").strip()
+
+        # Mapa de subelemento -> valores corretos
+        subel_map = {
+            "3.3.90.30": {
+                "grupo": "Custeio",
+                "modalidade": "Aplicação Direta",
+                "elemento": "30",
+                "subelemento_nome": "Material de Consumo",
+            },
+            "3.3.90.36": {
+                "grupo": "Custeio",
+                "modalidade": "Aplicação Direta",
+                "elemento": "36",
+                "subelemento_nome": "Pessoa Física",
+            },
+            "3.3.90.39": {
+                "grupo": "Custeio",
+                "modalidade": "Aplicação Direta",
+                "elemento": "39",
+                "subelemento_nome": "Pessoa Jurídica",
+            },
+            "4.4.90.51": {
+                "grupo": "Investimento",
+                "modalidade": "Aplicação Direta",
+                "elemento": "51",
+                "subelemento_nome": "Obras e Instalações",
+            },
+            "4.4.90.52": {
+                "grupo": "Investimento",
+                "modalidade": "Aplicação Direta",
+                "elemento": "52",
+                "subelemento_nome": "Equipamentos e Material Permanente",
+            },
+        }
+
+        # Se o subelemento está correto mas os outros campos estão trocados, normaliza
+        if subel in subel_map:
+            expected = subel_map[subel]
+            # Verifica se os campos estão errados (ex: grupo="4", modalidade="4.4")
+            if grupo in ("3", "4", "3.3", "4.4") or modalidade in (
+                "3.3",
+                "4.4",
+                "3",
+                "4",
+            ):
+                result["grupo"] = expected["grupo"]
+                result["modalidade"] = expected["modalidade"]
+                result["elemento"] = expected["elemento"]
+                result["subelemento_nome"] = expected["subelemento_nome"]
+
+        # Garante que codigo_completo == subelemento_codigo
+        if subel and result.get("codigo_completo") != subel:
+            result["codigo_completo"] = subel
+
+        # Normaliza elemento para apenas 2 dígitos
+        if elemento and len(elemento) > 2 and "." in elemento:
+            parts = elemento.split(".")
+            if len(parts) >= 4:
+                result["elemento"] = parts[3]
 
         return result
 

@@ -115,6 +115,13 @@ PROMPT_TEMPLATES = {
             '{{"item_analisado":"...","codigo_completo":"...","grupo":"...","modalidade":"...","elemento":"...",'
             '"subelemento_codigo":"...","subelemento_nome":"...","justificativa":"...","ponto_atencao":"...",'
             '"confianca":0.0,"alternativas":[]}} '
+            "IMPORTANTE — significado exato de cada campo:\n"
+            '- "grupo": GND por extenso. Ex: "Investimento", "Custeio", "Inversões Financeiras"\n'
+            '- "modalidade": Sempre "Aplicação Direta" (não use códigos numéricos)\n'
+            '- "elemento": APENAS o número de 2 dígitos. Ex: "30", "36", "39", "51", "52"\n'
+            '- "subelemento_codigo": O código completo com pontos. Ex: "3.3.90.30", "4.4.90.52"\n'
+            '- "subelemento_nome": Nome do subelemento por extenso. Ex: "Material de Consumo", "Equipamentos e Material Permanente"\n'
+            '- "codigo_completo": Igual ao subelemento_codigo. Ex: "3.3.90.30", "4.4.90.52"\n'
             "onde confianca é de 0.0 a 1.0 e ponto_atencao é string vazia se não houver exceção. "
             'O campo "alternativas" deve ser um array vazio [] quando confianca >= 0.70. '
             'Quando confianca < 0.70, preencha "alternativas" com 2 ou 3 objetos no formato: '
