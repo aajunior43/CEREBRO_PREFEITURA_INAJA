@@ -5,7 +5,7 @@ app/routes/cnpj.py — Rotas de consulta CNPJ
 import requests
 from flask import Blueprint, request, jsonify
 from app.utils.db import get_db
-from app.utils.helpers import normalizar_cnpj
+from app.utils.helpers import normalizar_cnpj, cnpj_valido
 
 bp = Blueprint('cnpj', __name__)
 
@@ -23,6 +23,8 @@ def buscar_cnpj():
     
     if len(cnpj) != 14:
         return jsonify({'error': 'CNPJ deve ter 14 dígitos'}), 400
+    if not cnpj_valido(cnpj):
+        return jsonify({'error': 'CNPJ inválido'}), 400
     
     try:
         conn = get_db()

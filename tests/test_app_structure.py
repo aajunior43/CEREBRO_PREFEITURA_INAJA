@@ -94,13 +94,19 @@ def test_helpers():
     _safe_print("=" * 60)
 
     from app.utils.helpers import (
-        normalizar_cnpj, parse_bool, slugify, normalize_phone_br
+        normalizar_cnpj, cnpj_valido, parse_bool, slugify, normalize_phone_br
     )
 
     assert normalizar_cnpj("12.345.678/0001-99") == "12345678000199"
     assert normalizar_cnpj("12345678000199") == "12345678000199"
     assert normalizar_cnpj("") == ""
     _safe_print("[OK] normalizar_cnpj")
+
+    assert cnpj_valido("12.345.678/0001-95") is True
+    assert cnpj_valido("12345678000195") is True
+    assert cnpj_valido("11.111.111/1111-11") is False
+    assert cnpj_valido("12.345.678/0001-99") is False
+    _safe_print("[OK] cnpj_valido")
 
     assert parse_bool(True) is True
     assert parse_bool("true") is True

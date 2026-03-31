@@ -19,6 +19,29 @@ def normalizar_cnpj(cnpj: str) -> str:
     return re.sub(r'\D', '', (cnpj or '').strip())
 
 
+def cnpj_valido(cnpj: str) -> bool:
+    """Valida um CNPJ pelos dígitos verificadores."""
+    digits = normalizar_cnpj(cnpj)
+    if len(digits) != 14:
+        return False
+    if digits == digits[0] * 14:
+        return False
+
+    base = [int(ch) for ch in digits]
+    weights_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    soma_1 = sum(base[i] * weights_1[i] for i in range(12))
+    resto_1 = soma_1 % 11
+    digito_1 = 0 if resto_1 < 2 else 11 - resto_1
+    if base[12] != digito_1:
+        return False
+
+    weights_2 = [6] + weights_1
+    soma_2 = sum(base[i] * weights_2[i] for i in range(12)) + digito_1 * weights_2[12]
+    resto_2 = soma_2 % 11
+    digito_2 = 0 if resto_2 < 2 else 11 - resto_2
+    return base[13] == digito_2
+
+
 def parse_bool(value) -> bool:
     """Converte valor para booleano."""
     return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on', 'sim'}

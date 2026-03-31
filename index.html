@@ -538,6 +538,15 @@
         </svg>
         Empenhar Todos
       </button>
+      <button class="btn btn-secondary" id="btn-lixeira" title="Credores excluídos" data-tooltip="Ver credores excluídos e restaurar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Lixeira
+      </button>
       <button class="btn btn-primary" id="btn-add-credor" title="Adicionar credor" data-tooltip="Adicionar novo credor fixo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -567,6 +576,11 @@
         <path d="M8 12h8M12 8v8" />
       </svg>
       <p>Nenhum credor encontrado.</p>
+    </div>
+    <div class="pagination-bar" id="credores-pagination" style="display:none;align-items:center;justify-content:center;gap:12px;margin:18px 0 4px;padding:10px 0;">
+      <button type="button" class="btn btn-ghost" id="btn-page-prev">Anterior</button>
+      <span id="credores-page-info" class="pagination-info">Página 1 de 1</span>
+      <button type="button" class="btn btn-ghost" id="btn-page-next">Próxima</button>
     </div>
   </main>
 
@@ -650,6 +664,48 @@
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Confirmar Exclusão -->
+  <div class="modal-overlay" id="delete-confirm-overlay" style="display:none;">
+    <div class="modal" style="max-width: 520px;">
+      <div class="modal-header">
+        <h2>Confirmar exclusão</h2>
+        <button class="modal-close" id="delete-confirm-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="delete-confirm-message" style="margin: 0 0 12px; font-size: 1rem; line-height: 1.5;">
+          Confirmar exclusão deste credor?
+        </p>
+        <p style="margin: 0; color: var(--text-muted, #9aa4b2); font-size: 0.92rem; line-height: 1.5;">
+          O credor será movido para a lixeira e poderá ser restaurado depois pelo botão <strong>Lixeira</strong>.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <div></div>
+        <div class="modal-footer-right">
+          <button type="button" class="btn btn-ghost" id="btn-delete-confirm-cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btn-delete-confirm-ok">Confirmar exclusão</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Lixeira de Credores -->
+  <div class="modal-overlay" id="lixeira-overlay" style="display:none;">
+    <div class="modal" style="max-width: 720px;">
+      <div class="modal-header">
+        <h2>🗑️ Lixeira <span id="lixeira-count" style="font-size:13px;font-weight:500;color:var(--text-3);margin-left:6px;"></span></h2>
+        <button class="modal-close" id="lixeira-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 0;">
+        <div id="lixeira-empty" style="display:none; text-align:center; padding:48px 24px; color:var(--text-3);">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.4;display:block;margin-left:auto;margin-right:auto;"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <p style="margin:0;font-size:14px;">Nenhum credor excluído</p>
+        </div>
+        <div id="lixeira-list" style="max-height: 420px; overflow-y: auto;"></div>
+      </div>
     </div>
   </div>
 

@@ -783,6 +783,28 @@ def _normalizar_cnpj(cnpj: str) -> str:
     return re.sub(r'\D', '', (cnpj or '').strip())
 
 
+def _cnpj_valido(cnpj: str) -> bool:
+    digits = _normalizar_cnpj(cnpj)
+    if len(digits) != 14:
+        return False
+    if digits == digits[0] * 14:
+        return False
+
+    nums = [int(ch) for ch in digits]
+    pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+    soma1 = sum(nums[i] * pesos1[i] for i in range(12))
+    resto1 = soma1 % 11
+    dv1 = 0 if resto1 < 2 else 11 - resto1
+    if nums[12] != dv1:
+        return False
+
+    pesos2 = [6] + pesos1
+    soma2 = sum(nums[i] * pesos2[i] for i in range(12)) + dv1 * pesos2[12]
+    resto2 = soma2 % 11
+    dv2 = 0 if resto2 < 2 else 11 - resto2
+    return nums[13] == dv2
+
+
 def _parse_bool(value) -> bool:
     return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on', 'sim'}
 
@@ -827,8 +849,11 @@ def _credor_payload(data: dict, *, partial: bool = False) -> tuple[dict, list[st
 
     if not partial or has_value('cnpj'):
         cnpj = _normalizar_cnpj(data.get('cnpj', ''))
-        if cnpj and len(cnpj) != 14:
-            errors.append('Campo "cnpj" deve conter 14 dígitos')
+        if cnpj:
+            if len(cnpj) != 14:
+                errors.append('Campo "cnpj" deve conter 14 dígitos')
+            elif not _cnpj_valido(cnpj):
+                errors.append('Campo "cnpj" inválido')
         payload['cnpj'] = cnpj
 
     if not partial or has_value('email'):
@@ -879,6 +904,9 @@ def _montar_filtros_credores(args):
     status_cadastro = (args.get('status_cadastro') or '').strip().lower()
     somente_vencidos = _parse_bool(args.get('somente_vencidos'))
     vencendo_dias = args.get('vencendo_dias', type=int)
+    status = (args.get('status') or '').strip().lower()
+    ano = args.get('ano', type=int)
+    mes = args.get('mes', type=int)
 
     clauses = ["ativo=1"]
     params: list = []
@@ -913,6 +941,14 @@ def _montar_filtros_credores(args):
     elif vencendo_dias is not None and vencendo_dias >= 0:
         clauses.append("COALESCE(validade, '')<>'' AND date(validade) >= date('now','localtime') AND date(validade) <= date('now','localtime', ?)")
         params.append(f'+{vencendo_dias} day')
+
+    if status in {'empenhado', 'pendente'} and ano and mes:
+        exists_sql = (
+            "EXISTS (SELECT 1 FROM empenhos e "
+            "WHERE e.credor_id = credores.id AND e.ano=? AND e.mes=?)"
+        )
+        clauses.append(exists_sql if status == 'empenhado' else f'NOT {exists_sql}')
+        params.extend([ano, mes])
 
     return clauses, params
 
@@ -1102,7 +1138,7 @@ def _should_include_credores_summary(args) -> bool:
 @app.route('/api/credores', methods=['GET'])
 def get_credores():
     try:
-        limit = max(1, min(request.args.get('limit', 1000, type=int), 1000))
+        limit = max(1, min(request.args.get('limit', 50, type=int), 1000))
         offset = request.args.get('offset', 0, type=int)
         sort_col = (request.args.get('sort_col') or 'departamento').strip().lower()
         sort_dir = (request.args.get('sort_dir') or 'asc').strip().lower()
@@ -1280,6 +1316,49 @@ def delete_credor(cid):
     except Exception as e:
         app.logger.error('DELETE /api/credores/%s: %s', cid, e)
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/credores/deletados', methods=['GET'])
+def listar_credores_deletados():
+    """Retorna todos os credores com ativo=0 (excluídos), ordenados pelo mais recente."""
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT * FROM credores WHERE ativo=0 ORDER BY atualizado_em DESC"
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    except Exception as e:
+        app.logger.error('GET /api/credores/deletados: %s', e)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/credores/<int:cid>/restaurar', methods=['PUT'])
+def restaurar_credor(cid):
+    """Restaura um credor excluído (ativo=0 → ativo=1)."""
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT * FROM credores WHERE id=? AND ativo=0", (cid,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Credor não encontrado na lixeira'}), 404
+        # Verifica conflito de nome com credores ativos
+        conflito = conn.execute(
+            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=UPPER(?)", (row['nome'],)
+        ).fetchone()
+        if conflito:
+            return jsonify({'error': f'Já existe um credor ativo com o nome "{row["nome"]}"'}), 409
+        conn.execute(
+            "UPDATE credores SET ativo=1, atualizado_em=datetime('now','localtime') WHERE id=?", (cid,)
+        )
+        conn.execute(
+            "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?,?,?,?)",
+            ('RESTAURAR', cid, row['nome'], row['departamento'] or 'Restaurado da lixeira')
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+        return jsonify({'ok': True, 'credor': row_to_dict(row)})
+    except Exception as e:
+        app.logger.error('PUT /api/credores/%s/restaurar: %s', cid, e)
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/credores/<int:cid>/duplicate', methods=['POST'])
 def duplicate_credor(cid):
@@ -2903,6 +2982,8 @@ def cnpj_buscar():
     api_key = d.get('api_key_cnpja', '').strip()
     if len(cnpj) != 14:
         return jsonify({'error': 'CNPJ deve ter 14 dígitos'}), 400
+    if not _cnpj_valido(cnpj):
+        return jsonify({'error': 'CNPJ inválido'}), 400
     # Tenta CNPJá primeiro
     try:
         return jsonify(_buscar_cnpja(cnpj, api_key))

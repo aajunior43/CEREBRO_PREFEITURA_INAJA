@@ -13,9 +13,11 @@ const MESES = [
 ];
 
 // ── Estado ──────────────────────────────────────────────────
+const CREDORES_PAGE_SIZE = 50;
 let state = {
   year: new Date().getFullYear(),
   month: new Date().getMonth(),
+  page: 1,
   searchTerm: '',
   filterDept: '',
   filterStatus: '',
@@ -27,6 +29,7 @@ let state = {
   empenhados: {},
   sort: { col: 'nome', dir: 'asc' },
   totalCredores: 0,
+  totalPages: 1,
   summary: null,
 };
 
@@ -44,20 +47,14 @@ function invalidateFilterCache() {
 }
 
 function getFilterCacheKey() {
-  const empenhoKeys = Object.keys(state.empenhados).sort().join(',');
   return JSON.stringify({
     year: state.year,
     month: state.month,
-    search: state.searchTerm,
-    dept: state.filterDept,
-    status: state.filterStatus,
-    tipo: state.filterTipo,
-    cadastro: state.filterCadastro,
-    vencimento: state.filterVencimento,
     sortCol: state.sort.col,
     sortDir: state.sort.dir,
+    page: state.page,
+    pageSize: CREDORES_PAGE_SIZE,
     credoresLen: state.credores.length,
-    empenhos: empenhoKeys,
   });
 }
 
@@ -143,15 +140,18 @@ async function ensureBrasaoB64() {
   return _brasaoB64Promise;
 }
 
-async function loadCredores() {
+function buildCredoresQueryParams({ page = state.page, limit = CREDORES_PAGE_SIZE, includeSummary = false } = {}) {
   const params = new URLSearchParams({
-    limit: '1000',
-    offset: '0',
+    limit: String(limit),
+    offset: String(Math.max(0, (page - 1) * limit)),
     sort_col: state.sort.col,
     sort_dir: state.sort.dir,
+    ano: String(state.year),
+    mes: String(state.month + 1),
   });
   if (state.searchTerm) params.set('search', state.searchTerm);
   if (state.filterDept) params.set('departamento', state.filterDept);
+  if (state.filterStatus) params.set('status', state.filterStatus);
   if (state.filterTipo) params.set('tipo', state.filterTipo);
   if (state.filterCadastro) params.set('status_cadastro', state.filterCadastro);
   if (state.filterVencimento === 'vencidos') {
@@ -159,18 +159,55 @@ async function loadCredores() {
   } else if (state.filterVencimento === '30') {
     params.set('vencendo_dias', '30');
   }
-  if (shouldRequestSummary()) {
-    params.set('include_summary', '1');
-  }
+  if (includeSummary) params.set('include_summary', '1');
+  return params;
+}
+
+async function loadCredores() {
+  const params = buildCredoresQueryParams({
+    page: state.page,
+    limit: CREDORES_PAGE_SIZE,
+    includeSummary: shouldRequestSummary(),
+  });
   const res = await apiGet(`/credores?${params.toString()}`);
   const items = Array.isArray(res)
     ? res
     : (Array.isArray(res?.items) ? res.items : []);
   state.credores = items;
   state.totalCredores = Array.isArray(res) ? items.length : (Number(res?.total) || items.length);
+  state.totalPages = Math.max(1, Math.ceil(state.totalCredores / CREDORES_PAGE_SIZE));
+  if (state.totalCredores === 0 && state.page !== 1) {
+    state.page = 1;
+  }
+  if (state.page > state.totalPages && state.totalCredores > 0) {
+    state.page = state.totalPages;
+    return loadCredores();
+  }
   state.summary = Array.isArray(res) ? null : (res?.summary || null);
   invalidateFilterCache();
   return res;
+}
+
+async function loadAllCredoresForCurrentFilters() {
+  const all = [];
+  let page = 1;
+  let total = 0;
+
+  while (true) {
+    const params = buildCredoresQueryParams({ page, limit: CREDORES_PAGE_SIZE, includeSummary: false });
+    const res = await apiGet(`/credores?${params.toString()}`);
+    const items = Array.isArray(res)
+      ? res
+      : (Array.isArray(res?.items) ? res.items : []);
+    if (page === 1) {
+      total = Array.isArray(res) ? items.length : (Number(res?.total) || items.length);
+    }
+    all.push(...items);
+    if (!items.length || all.length >= total) break;
+    page += 1;
+  }
+
+  return all;
 }
 
 // ── Carregar dados do mês ────────────────────────────────────
@@ -209,6 +246,7 @@ function render() {
     renderMonthNav();
     renderCards();
     renderStats();
+    renderPagination();
   });
 }
 
@@ -266,20 +304,7 @@ function renderMonthNav() {
 }
 
 function filteredCredores() {
-  const cacheKey = getFilterCacheKey();
-  if (_filterCacheKey === cacheKey) return _filterCacheResult;
-  const credores = Array.isArray(state.credores) ? state.credores : [];
-  const list = credores.filter(c => {
-    if (state.filterStatus) {
-      const done = !!state.empenhados[c.id];
-      if (state.filterStatus === 'empenhado' && !done) return false;
-      if (state.filterStatus === 'pendente' && done) return false;
-    }
-    return true;
-  });
-  _filterCacheKey = cacheKey;
-  _filterCacheResult = list;
-  return list;
+  return Array.isArray(state.credores) ? state.credores : [];
 }
 
 function renderCards() {
@@ -508,6 +533,23 @@ function renderStats() {
   }
 }
 
+function renderPagination() {
+  const bar = document.getElementById('credores-pagination');
+  const info = document.getElementById('credores-page-info');
+  const prev = document.getElementById('btn-page-prev');
+  const next = document.getElementById('btn-page-next');
+  if (!bar || !info || !prev || !next) return;
+
+  const totalPages = Math.max(1, state.totalPages || 1);
+  const currentPage = Math.min(Math.max(1, state.page || 1), totalPages);
+  const total = state.totalCredores || 0;
+
+  bar.style.display = totalPages > 1 ? 'flex' : 'none';
+  info.textContent = `Página ${currentPage} de ${totalPages} · ${total} credores`;
+  prev.disabled = currentPage <= 1;
+  next.disabled = currentPage >= totalPages;
+}
+
 // ── Template CSS compartilhado (print) ───────────────────────
 function _printCSS() {
   return `
@@ -695,7 +737,7 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
 
 // ── Exportar CSV ───────────────────────────────────────────────
 async function exportCSV() {
-  const lista = filteredCredores();
+  const lista = await loadAllCredoresForCurrentFilters();
   if (!lista.length) { showToast('Nenhum credor para exportar', 'error'); return; }
   const mesNome = MESES[state.month];
   const ano = state.year;
@@ -726,7 +768,7 @@ async function exportCSV() {
 
 // ── Empenhar em Lote ───────────────────────────────────────────
 async function batchEmpenhar() {
-  const pending = filteredCredores().filter(c => !state.empenhados[c.id]);
+  const pending = (await loadAllCredoresForCurrentFilters()).filter(c => !state.empenhados[c.id]);
   if (pending.length === 0) { showToast('Nenhum credor pendente na lista atual', 'info'); return; }
   if (!confirm(`Empenhar ${pending.length} credor(es) pendente(s) de ${MESES[state.month]}/${state.year}?`)) return;
   setLoading(true);
@@ -786,7 +828,7 @@ async function printCredor(c) {
 
 // ── Imprimir em Lote ─────────────────────────────────────────
 async function printLote() {
-  const lista = filteredCredores();
+  const lista = await loadAllCredoresForCurrentFilters();
   if (lista.length === 0) { showToast('Nenhum credor para imprimir', 'error'); return; }
   try { await ensureBrasaoB64(); } catch (_) {}
 
@@ -852,9 +894,45 @@ async function onToggle(id, nome) {
 
 // ── Modal: Adicionar / Editar Credor ─────────────────────────
 let editingId = null;
+let pendingDeleteCredorId = null;
+
+function getCurrentCredorName() {
+  const inputName = document.getElementById('form-nome').value.trim();
+  if (inputName) return inputName;
+  if (editingId !== null) {
+    const credor = state.credores.find(x => x.id === editingId);
+    if (credor && credor.nome) return credor.nome;
+  }
+  if (pendingDeleteCredorId !== null) {
+    const credor = state.credores.find(x => x.id === pendingDeleteCredorId);
+    if (credor && credor.nome) return credor.nome;
+  }
+  return 'este credor';
+}
+
+function openDeleteConfirmModal(credorId = null) {
+  const idVal = credorId !== null ? credorId : parseInt(document.getElementById('form-id').value, 10);
+  if (!idVal) return;
+
+  const credor = state.credores.find(x => x.id === idVal);
+  const nome = credor?.nome || getCurrentCredorName();
+
+  pendingDeleteCredorId = idVal;
+  document.getElementById('delete-confirm-message').textContent = `Confirmar exclusão de ${nome}?`;
+
+  const modal = document.getElementById('delete-confirm-overlay');
+  modal.style.display = '';
+  modal.classList.add('open');
+}
+
+function closeDeleteConfirmModal() {
+  document.getElementById('delete-confirm-overlay').classList.remove('open');
+  pendingDeleteCredorId = null;
+}
 
 function openModal(id = null) {
   editingId = id;
+  closeDeleteConfirmModal();
   document.getElementById('credor-form').reset();
   document.getElementById('form-id').value = '';
 
@@ -889,6 +967,7 @@ function openModal(id = null) {
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
+  closeDeleteConfirmModal();
   editingId = null;
 }
 
@@ -904,6 +983,18 @@ async function onFormSubmit(e) {
   if (valorRaw && isNaN(parseFloat(valorRaw))) {
     showToast('Valor deve ser numérico', 'error'); return;
   }
+  const cnpjRaw = document.getElementById('form-cnpj').value.trim();
+  const cnpjDigits = cnpjRaw.replace(/\D+/g, '');
+  if (cnpjDigits) {
+    if (cnpjDigits.length !== 14) {
+      showToast('CNPJ deve ter 14 dígitos', 'error');
+      return;
+    }
+    if (!isValidCnpj(cnpjDigits)) {
+      showToast('CNPJ inválido', 'error');
+      return;
+    }
+  }
 
   const payload = {
     nome,
@@ -911,7 +1002,7 @@ async function onFormSubmit(e) {
     valor: parseFloat(document.getElementById('form-valor').value) || 0,
     tipo_valor: document.getElementById('form-tipo').value,
     descricao: document.getElementById('form-descricao').value.trim(),
-    cnpj: document.getElementById('form-cnpj').value.trim(),
+    cnpj: cnpjDigits,
     email: document.getElementById('form-email').value.trim(),
     pagamento: document.getElementById('form-pagamento').value.trim(),
     validade: document.getElementById('form-validade').value,
@@ -947,14 +1038,15 @@ async function onFormSubmit(e) {
   }
 }
 
-async function onDeleteCredor() {
-  const idVal = parseInt(document.getElementById('form-id').value);
-  if (!idVal) return;
+async function onDeleteCredor(idVal = null) {
+  const parsedId = idVal !== null ? idVal : parseInt(document.getElementById('form-id').value, 10);
+  const effectiveId = Number.isNaN(parsedId) ? pendingDeleteCredorId : parsedId;
+  if (!effectiveId) return;
   try {
     setLoading(true);
-    await apiDelete(`/credores/${idVal}`);
+    await apiDelete(`/credores/${effectiveId}`);
     await loadCredores();
-    delete state.empenhados[idVal];
+    delete state.empenhados[effectiveId];
     invalidateFilterCache();
     closeModal();
     render();
@@ -963,6 +1055,7 @@ async function onDeleteCredor() {
     showToast(err.message || 'Erro ao remover', 'error');
   } finally {
     setLoading(false);
+    pendingDeleteCredorId = null;
   }
 }
 
@@ -987,6 +1080,25 @@ Você poderá editar a cópia em seguida.`)) return;
 }
 
 // ── Loading Overlay ───────────────────────────────────────────
+function isValidCnpj(value) {
+  const digits = String(value || '').replace(/\D+/g, '');
+  if (digits.length !== 14) return false;
+  if (/^(\d)\1{13}$/.test(digits)) return false;
+
+  const nums = digits.split('').map(Number);
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const sum1 = nums.slice(0, 12).reduce((acc, n, i) => acc + n * weights1[i], 0);
+  const rem1 = sum1 % 11;
+  const dv1 = rem1 < 2 ? 0 : 11 - rem1;
+  if (nums[12] !== dv1) return false;
+
+  const weights2 = [6].concat(weights1);
+  const sum2 = nums.slice(0, 12).reduce((acc, n, i) => acc + n * weights2[i], 0) + dv1 * weights2[12];
+  const rem2 = sum2 % 11;
+  const dv2 = rem2 < 2 ? 0 : 11 - rem2;
+  return nums[13] === dv2;
+}
+
 function setLoading(on) {
   document.getElementById('loading-overlay').style.display = on ? 'flex' : 'none';
 }
@@ -1032,9 +1144,10 @@ function attachEvents() {
   document.getElementById('btn-prev-month').addEventListener('click', async () => {
     if (state.month === 0) { state.month = 11; state.year--; }
     else state.month--;
+    state.page = 1;
     setLoading(true);
     await loadMonth();
-    invalidateFilterCache();
+    await loadCredores();
     setLoading(false);
     render();
   });
@@ -1042,9 +1155,10 @@ function attachEvents() {
   document.getElementById('btn-next-month').addEventListener('click', async () => {
     if (state.month === 11) { state.month = 0; state.year++; }
     else state.month++;
+    state.page = 1;
     setLoading(true);
     await loadMonth();
-    invalidateFilterCache();
+    await loadCredores();
     setLoading(false);
     render();
   });
@@ -1054,6 +1168,7 @@ function attachEvents() {
     clearTimeout(_searchDebounceTimer);
     _searchDebounceTimer = setTimeout(async () => {
       state.searchTerm = nextValue;
+      state.page = 1;
       setLoading(true);
       try {
         await loadCredores();
@@ -1079,6 +1194,7 @@ function attachEvents() {
 
   document.getElementById('filter-dept').addEventListener('change', e => {
     state.filterDept = e.target.value;
+    state.page = 1;
     const deptBtns = document.querySelectorAll('.dept-stat-btn');
     deptBtns.forEach(b => b.classList.remove('active-dept'));
     if (state.filterDept) {
@@ -1090,22 +1206,25 @@ function attachEvents() {
 
   document.getElementById('filter-status').addEventListener('change', e => {
     state.filterStatus = e.target.value;
-    invalidateFilterCache();
-    render();
+    state.page = 1;
+    debouncedLoadCredores();
   });
 
   document.getElementById('filter-tipo').addEventListener('change', e => {
     state.filterTipo = e.target.value;
+    state.page = 1;
     debouncedLoadCredores();
   });
 
   document.getElementById('filter-cadastro').addEventListener('change', e => {
     state.filterCadastro = e.target.value;
+    state.page = 1;
     debouncedLoadCredores();
   });
 
   document.getElementById('filter-vencimento').addEventListener('change', e => {
     state.filterVencimento = e.target.value;
+    state.page = 1;
     debouncedLoadCredores();
   });
 
@@ -1132,6 +1251,8 @@ function attachEvents() {
   document.getElementById('credor-form').addEventListener('submit', onFormSubmit);
 
   document.getElementById('btn-delete-credor').addEventListener('click', () => {
+    openDeleteConfirmModal();
+    return;
     if (confirm('Tem certeza que deseja remover este credor?')) {
       const password = prompt('Digite a senha de administrador para confirmar a exclusão:');
       if (password === '1999') {
@@ -1142,8 +1263,31 @@ function attachEvents() {
     }
   });
 
+  document.getElementById('delete-confirm-close').addEventListener('click', closeDeleteConfirmModal);
+  document.getElementById('btn-delete-confirm-cancel').addEventListener('click', closeDeleteConfirmModal);
+  document.getElementById('delete-confirm-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('delete-confirm-overlay')) closeDeleteConfirmModal();
+  });
+  document.getElementById('btn-delete-confirm-ok').addEventListener('click', async () => {
+    if (pendingDeleteCredorId === null) return;
+    const credor = state.credores.find(x => x.id === pendingDeleteCredorId);
+    const nomeCredor = credor?.nome || getCurrentCredorName();
+    const deleteId = pendingDeleteCredorId;
+    closeDeleteConfirmModal();
+    const password = prompt(`Digite a senha de administrador para confirmar a exclusão de ${nomeCredor}:`);
+    if (password === '1999') {
+      await onDeleteCredor(deleteId);
+    } else if (password !== null) {
+      showToast('Senha incorreta', 'error');
+    }
+  });
+
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
+    if (e.key === 'Escape') {
+      const deleteModal = document.getElementById('delete-confirm-overlay');
+      if (deleteModal.classList.contains('open')) closeDeleteConfirmModal();
+      else closeModal();
+    }
   });
 
   // Logs modal
@@ -1276,7 +1420,7 @@ function attachEvents() {
         state.sort.col = col;
         state.sort.dir = 'asc';
       }
-      invalidateFilterCache();
+      state.page = 1;
       document.querySelectorAll('.sort-btn').forEach(b => {
         b.classList.remove('active');
         b.querySelector('.sort-arrow').textContent = '';
@@ -1293,10 +1437,113 @@ function attachEvents() {
     });
   });
 
+  document.getElementById('btn-page-prev').addEventListener('click', async () => {
+    if (state.page <= 1) return;
+    state.page -= 1;
+    setLoading(true);
+    try {
+      await loadCredores();
+      render();
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  document.getElementById('btn-page-next').addEventListener('click', async () => {
+    if (state.page >= state.totalPages) return;
+    state.page += 1;
+    setLoading(true);
+    try {
+      await loadCredores();
+      render();
+    } finally {
+      setLoading(false);
+    }
+  });
+
   document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
   document.getElementById('btn-empenhar-todos').addEventListener('click', batchEmpenhar);
 
+  // Lixeira
+  document.getElementById('btn-lixeira').addEventListener('click', openLixeira);
+  document.getElementById('lixeira-close').addEventListener('click', closeLixeira);
+  document.getElementById('lixeira-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('lixeira-overlay')) closeLixeira();
+  });
+
 } // fim de attachEvents
+
+// ── Lixeira de Credores ───────────────────────────────────────
+function closeLixeira() {
+  const el = document.getElementById('lixeira-overlay');
+  el.classList.remove('open');
+}
+
+async function openLixeira() {
+  const overlay = document.getElementById('lixeira-overlay');
+  overlay.style.display = 'flex';
+  overlay.classList.add('open');
+  await loadLixeira();
+}
+
+async function loadLixeira() {
+  const list = document.getElementById('lixeira-list');
+  const empty = document.getElementById('lixeira-empty');
+  const countEl = document.getElementById('lixeira-count');
+  list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">Carregando...</div>';
+  empty.style.display = 'none';
+  try {
+    const rows = await apiGet('/credores/deletados');
+    countEl.textContent = rows.length ? `(${rows.length})` : '';
+    if (!rows.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    list.innerHTML = rows.map(c => {
+      const dept = c.departamento || '—';
+      const valor = c.valor ? formatBRL(c.valor) : '—';
+      const deletadoEm = c.atualizado_em ? new Date(c.atualizado_em).toLocaleDateString('pt-BR') : '—';
+      return `
+        <div class="lixeira-item" data-id="${c.id}" style="
+          display:flex; align-items:center; gap:14px; padding:14px 20px;
+          border-bottom:1px solid var(--border); font-size:13px;
+        ">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.nome}</div>
+            <div style="color:var(--text-3); font-size:11px; margin-top:2px;">${dept} · ${valor} · Excluído em ${deletadoEm}</div>
+            ${c.cnpj ? `<div style="color:var(--text-3);font-size:11px;">${c.cnpj}</div>` : ''}
+          </div>
+          <button onclick="restaurarCredor(${c.id}, this)" style="
+            flex-shrink:0; padding:6px 14px; border-radius:var(--radius-sm);
+            border:none; background:var(--green-bg); color:var(--green-dark);
+            font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;
+            transition:opacity 0.15s;
+          ">↩ Restaurar</button>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--red);font-size:13px;">${err.message}</div>`;
+  }
+}
+
+async function restaurarCredor(id, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    const res = await fetch(API + `/credores/${id}/restaurar`, { method: 'PUT' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao restaurar');
+    showToast(`✓ ${data.credor.nome} restaurado`, 'success');
+    await loadLixeira();
+    await loadCredores();
+    render();
+  } catch (err) {
+    showToast(err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '↩ Restaurar';
+  }
+}
 
 // ── Init ──────────────────────────────────────────────────────
 async function init() {
