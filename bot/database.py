@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 
 from bot.config import DB_PATH, logger
 
+
 # ==============================================================================
 # DB HELPER
 # ==============================================================================
@@ -16,9 +17,11 @@ def _db_connect() -> sqlite3.Connection:
     conn.execute("PRAGMA synchronous=NORMAL")
     return conn
 
+
 async def run_db(func, *args, **kwargs):
     """Executa a chamada síncrona do banco em uma thread separada para não bloquear o async event loop."""
     return await asyncio.to_thread(func, *args, **kwargs)
+
 
 # ==============================================================================
 # QUERIES SÍNCRONAS - KANBAN E GERAIS
@@ -26,7 +29,7 @@ async def run_db(func, *args, **kwargs):
 def _init_users_table():
     conn = _db_connect()
     try:
-        conn.execute('''
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS telegram_users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 telegram_id TEXT UNIQUE NOT NULL,
@@ -34,36 +37,49 @@ def _init_users_table():
                 status TEXT NOT NULL DEFAULT 'pending', 
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        ''')
+        """)
         conn.commit()
     finally:
         conn.close()
+
 
 def _get_user(telegram_id: str) -> Optional[Dict[str, Any]]:
     conn = _db_connect()
     try:
-        row = conn.execute("SELECT * FROM telegram_users WHERE telegram_id=?", (telegram_id,)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM telegram_users WHERE telegram_id=?", (telegram_id,)
+        ).fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
 
+
 def _add_user(telegram_id: str, name: str) -> None:
     conn = _db_connect()
     try:
-        conn.execute("INSERT OR IGNORE INTO telegram_users (telegram_id, name, status) VALUES (?, ?, 'pending')", (telegram_id, name))
+        conn.execute(
+            "INSERT OR IGNORE INTO telegram_users (telegram_id, name, status) VALUES (?, ?, 'pending')",
+            (telegram_id, name),
+        )
         conn.commit()
     finally:
         conn.close()
+
 
 def _update_user_status(telegram_id: str, status: str) -> None:
     conn = _db_connect()
     try:
-        conn.execute("UPDATE telegram_users SET status=? WHERE telegram_id=?", (status, telegram_id))
+        conn.execute(
+            "UPDATE telegram_users SET status=? WHERE telegram_id=?",
+            (status, telegram_id),
+        )
         conn.commit()
     finally:
         conn.close()
 
-PRIO_ORDER = {'high': 0, 'medium': 1, 'low': 2}
+
+PRIO_ORDER = {"high": 0, "medium": 1, "low": 2}
+
 
 def _listar_tarefas(status_filter: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = _db_connect()
@@ -72,7 +88,7 @@ def _listar_tarefas(status_filter: Optional[str] = None) -> List[Dict[str, Any]]
             rows = conn.execute(
                 "SELECT id, title, description, status, priority, criado_em "
                 "FROM kanban_tasks WHERE status=? ORDER BY criado_em DESC LIMIT 50",
-                (status_filter,)
+                (status_filter,),
             ).fetchall()
         else:
             rows = conn.execute(
@@ -80,70 +96,77 @@ def _listar_tarefas(status_filter: Optional[str] = None) -> List[Dict[str, Any]]
                 "FROM kanban_tasks ORDER BY criado_em DESC LIMIT 50"
             ).fetchall()
         tasks = [dict(r) for r in rows]
-        tasks.sort(key=lambda t: PRIO_ORDER.get(t.get('priority', 'medium'), 1))
+        tasks.sort(key=lambda t: PRIO_ORDER.get(t.get("priority", "medium"), 1))
         return tasks
     finally:
         conn.close()
 
-def _criar_tarefa(title: str, description: str, status: str, priority: str) -> Dict[str, Any]:
+
+def _criar_tarefa(
+    title: str, description: str, status: str, priority: str
+) -> Dict[str, Any]:
     task_id = str(uuid.uuid4())
     conn = _db_connect()
     try:
         conn.execute(
             "INSERT INTO kanban_tasks (id, title, description, status, priority, "
             "criado_em, atualizado_em) VALUES (?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
-            (task_id, title, description, status, priority)
+            (task_id, title, description, status, priority),
         )
         conn.commit()
         row = conn.execute(
             "SELECT id, title, description, status, priority, criado_em FROM kanban_tasks WHERE id=?",
-            (task_id,)
+            (task_id,),
         ).fetchone()
         return dict(row)
     finally:
         conn.close()
 
+
 def _buscar_tarefas(termo: str) -> List[Dict[str, Any]]:
     conn = _db_connect()
     try:
-        like = f'%{termo}%'
+        like = f"%{termo}%"
         rows = conn.execute(
             "SELECT id, title, description, status, priority, criado_em "
             "FROM kanban_tasks WHERE title LIKE ? OR description LIKE ? "
             "ORDER BY criado_em DESC LIMIT 20",
-            (like, like)
+            (like, like),
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
+
 
 def _buscar_protocolos(termo: str) -> List[Dict[str, Any]]:
     conn = _db_connect()
     try:
-        like = f'%{termo.lower()}%'
+        like = f"%{termo.lower()}%"
         rows = conn.execute(
             "SELECT id, numero, tipo, direcao, origem_destino, assunto, data_protocolo, status "
             "FROM protocolos WHERE LOWER(numero) LIKE ? OR LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? "
             "ORDER BY id DESC LIMIT 20",
-            (like, like, like)
+            (like, like, like),
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
 
+
 def _buscar_despesas(termo: str) -> List[Dict[str, Any]]:
     conn = _db_connect()
     try:
-        like = f'%{termo.lower()}%'
+        like = f"%{termo.lower()}%"
         rows = conn.execute(
             "SELECT id, importacao_id, dados "
             "FROM despesas_linhas WHERE LOWER(dados) LIKE ? "
             "ORDER BY id DESC LIMIT 20",
-            (like,)
+            (like,),
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
+
 
 def _analise_financeira(ano: int, mes: int) -> Dict[str, Any]:
     conn = _db_connect()
@@ -155,9 +178,9 @@ def _analise_financeira(ano: int, mes: int) -> Dict[str, Any]:
 
         emp_rows = conn.execute(
             "SELECT credor_id FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
-            (ano, mes)
+            (ano, mes),
         ).fetchall()
-        empenhados_ids = {r['credor_id'] for r in emp_rows}
+        empenhados_ids = {r["credor_id"] for r in emp_rows}
 
         lista_emp = []
         lista_pend = []
@@ -165,135 +188,191 @@ def _analise_financeira(ano: int, mes: int) -> Dict[str, Any]:
         total_empenhado = 0.0
 
         for c in credores:
-            v = float(c['valor'] or 0)
+            v = float(c["valor"] or 0)
             total_previsto += v
-            if c['id'] in empenhados_ids:
+            if c["id"] in empenhados_ids:
                 total_empenhado += v
-                lista_emp.append({'nome': c['nome'], 'valor': v})
+                lista_emp.append({"nome": c["nome"], "valor": v})
             else:
-                lista_pend.append({'nome': c['nome'], 'valor': v})
+                lista_pend.append({"nome": c["nome"], "valor": v})
 
         total_pendente = total_previsto - total_empenhado
         pct = (total_empenhado / total_previsto * 100) if total_previsto > 0 else 0.0
 
-        top5 = sorted(credores, key=lambda x: float(x['valor'] or 0), reverse=True)[:5]
+        top5 = sorted(credores, key=lambda x: float(x["valor"] or 0), reverse=True)[:5]
 
-        mes_str_a = f'{mes:02d}/{ano}'
-        mes_str_b = f'{ano}-{mes:02d}'
+        mes_str_a = f"{mes:02d}/{ano}"
+        mes_str_b = f"{ano}-{mes:02d}"
         rpas = conn.execute(
             "SELECT COUNT(*) AS qtd, COALESCE(SUM(valor_bruto), 0) AS total_bruto "
             "FROM rpas WHERE periodo_referencia LIKE ? OR periodo_referencia LIKE ?",
-            (f'%{mes_str_a}%', f'%{mes_str_b}%')
+            (f"%{mes_str_a}%", f"%{mes_str_b}%"),
         ).fetchone()
-        rpas_qtd = rpas['qtd'] if rpas else 0
-        rpas_total = float(rpas['total_bruto'] if rpas else 0)
+        rpas_qtd = rpas["qtd"] if rpas else 0
+        rpas_total = float(rpas["total_bruto"] if rpas else 0)
 
         mes_ant = mes - 1 if mes > 1 else 12
         ano_ant = ano if mes > 1 else ano - 1
         emp_ant = conn.execute(
             "SELECT COUNT(*) AS qtd FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
-            (ano_ant, mes_ant)
+            (ano_ant, mes_ant),
         ).fetchone()
-        qtd_ant = emp_ant['qtd'] if emp_ant else 0
-        
-        ids_ant = {r['credor_id'] for r in conn.execute(
-            "SELECT credor_id FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
-            (ano_ant, mes_ant)
-        ).fetchall()}
-        val_ant = sum(float(c['valor'] or 0) for c in credores if c['id'] in ids_ant)
+        qtd_ant = emp_ant["qtd"] if emp_ant else 0
+
+        ids_ant = {
+            r["credor_id"]
+            for r in conn.execute(
+                "SELECT credor_id FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
+                (ano_ant, mes_ant),
+            ).fetchall()
+        }
+        val_ant = sum(float(c["valor"] or 0) for c in credores if c["id"] in ids_ant)
 
         return {
-            'ano': ano, 'mes': mes,
-            'total_credores': len(credores),
-            'total_previsto': total_previsto,
-            'total_empenhado': total_empenhado,
-            'total_pendente': total_pendente,
-            'pct_empenhado': pct,
-            'qtd_empenhados': len(lista_emp),
-            'qtd_pendentes': len(lista_pend),
-            'empenhados': sorted(lista_emp, key=lambda x: x['valor'], reverse=True),
-            'pendentes': sorted(lista_pend, key=lambda x: x['valor'], reverse=True),
-            'top5_valores': [{'nome': c['nome'], 'valor': float(c['valor'] or 0)} for c in top5],
-            'rpas_qtd': rpas_qtd,
-            'rpas_total': rpas_total,
-            'mes_anterior': {
-                'mes': mes_ant, 'ano': ano_ant,
-                'qtd_empenhados': qtd_ant,
-                'total_empenhado': val_ant,
+            "ano": ano,
+            "mes": mes,
+            "total_credores": len(credores),
+            "total_previsto": total_previsto,
+            "total_empenhado": total_empenhado,
+            "total_pendente": total_pendente,
+            "pct_empenhado": pct,
+            "qtd_empenhados": len(lista_emp),
+            "qtd_pendentes": len(lista_pend),
+            "empenhados": sorted(lista_emp, key=lambda x: x["valor"], reverse=True),
+            "pendentes": sorted(lista_pend, key=lambda x: x["valor"], reverse=True),
+            "top5_valores": [
+                {"nome": c["nome"], "valor": float(c["valor"] or 0)} for c in top5
+            ],
+            "rpas_qtd": rpas_qtd,
+            "rpas_total": rpas_total,
+            "mes_anterior": {
+                "mes": mes_ant,
+                "ano": ano_ant,
+                "qtd_empenhados": qtd_ant,
+                "total_empenhado": val_ant,
             },
         }
     finally:
         conn.close()
 
+
 # ==============================================================================
 # WRAPPERS ASSÍNCRONOS
 # ==============================================================================
 
+
 async def db_listar_tarefas(status_filter: Optional[str] = None):
     return await run_db(_listar_tarefas, status_filter)
+
 
 async def db_criar_tarefa(title: str, description: str, status: str, priority: str):
     return await run_db(_criar_tarefa, title, description, status, priority)
 
+
 async def db_buscar_tarefas(termo: str):
     return await run_db(_buscar_tarefas, termo)
+
 
 async def db_buscar_protocolos(termo: str):
     return await run_db(_buscar_protocolos, termo)
 
+
 async def db_buscar_despesas(termo: str):
     return await run_db(_buscar_despesas, termo)
 
+
 async def db_analise_financeira(ano: int, mes: int):
     return await run_db(_analise_financeira, ano, mes)
+
 
 def _atualizar_status_tarefa(task_id: str, novo_status: str):
     conn = _db_connect()
     try:
         conn.execute(
             "UPDATE kanban_tasks SET status=?, atualizado_em=datetime('now','localtime') WHERE id=?",
-            (novo_status, task_id)
+            (novo_status, task_id),
         )
         conn.commit()
         row = conn.execute(
             "SELECT id, title, status, priority FROM kanban_tasks WHERE id=?",
-            (task_id,)
+            (task_id,),
         ).fetchone()
         return dict(row) if row else None
     finally:
         conn.close()
 
+
 def _contar_credores():
     conn = _db_connect()
     try:
-        ativos = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=1").fetchone()[0]
-        inativos = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=0").fetchone()[0]
-        return {'ativos': ativos, 'inativos': inativos, 'total': ativos + inativos}
+        ativos = conn.execute("SELECT COUNT(*) FROM credores WHERE ativo=1").fetchone()[
+            0
+        ]
+        inativos = conn.execute(
+            "SELECT COUNT(*) FROM credores WHERE ativo=0"
+        ).fetchone()[0]
+        return {"ativos": ativos, "inativos": inativos, "total": ativos + inativos}
     finally:
         conn.close()
+
 
 def _logs_recentes(limite: int = 10):
     conn = _db_connect()
     try:
         rows = conn.execute(
             "SELECT acao, credor_nome, detalhes, data FROM logs ORDER BY data DESC LIMIT ?",
-            (limite,)
+            (limite,),
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
         conn.close()
 
+
+def _tarefas_proximas_vencimento(dias: int = 7):
+    conn = _db_connect()
+    try:
+        hoje = date.today()
+        limite = hoje + timedelta(days=dias)
+        rows = conn.execute(
+            "SELECT id, title, description, status, priority, data_vencimento "
+            "FROM kanban_tasks "
+            "WHERE data_vencimento != '' AND data_vencimento IS NOT NULL "
+            "AND data_vencimento <= ? AND status != 'done' "
+            "ORDER BY data_vencimento ASC",
+            (limite.isoformat(),),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+async def db_tarefas_proximas_vencimento(dias: int = 7):
+    return await run_db(_tarefas_proximas_vencimento, dias)
+
+
 async def db_atualizar_status_tarefa(task_id: str, novo_status: str):
     return await run_db(_atualizar_status_tarefa, task_id, novo_status)
+
 
 async def db_contar_credores():
     return await run_db(_contar_credores)
 
+
 async def db_logs_recentes(limite: int = 10):
     return await run_db(_logs_recentes, limite)
 
-async def db_init_users_table(): return await run_db(_init_users_table)
-async def db_get_user(telegram_id: str): return await run_db(_get_user, telegram_id)
-async def db_add_user(telegram_id: str, name: str): return await run_db(_add_user, telegram_id, name)
-async def db_update_user_status(telegram_id: str, status: str): return await run_db(_update_user_status, telegram_id, status)
 
+async def db_init_users_table():
+    return await run_db(_init_users_table)
+
+
+async def db_get_user(telegram_id: str):
+    return await run_db(_get_user, telegram_id)
+
+
+async def db_add_user(telegram_id: str, name: str):
+    return await run_db(_add_user, telegram_id, name)
+
+
+async def db_update_user_status(telegram_id: str, status: str):
+    return await run_db(_update_user_status, telegram_id, status)
