@@ -1876,95 +1876,179 @@ def enviar_credor_telegram(cid):
             ("Observações", credor.get("obs")),
         ]
         campos = [(l, v) for l, v in campos if v and str(v).strip()]
-        table_rows = "".join(f"<tr><th>{l}</th><td>{v}</td></tr>" for l, v in campos)
 
-        # Brasão em base64
-        brasao_path = Path(BASE_DIR) / "static" / "img" / "brasao.png"
-        brasao_src = "/static/img/brasao.png"
-        if brasao_path.exists():
-            b64 = base64.b64encode(brasao_path.read_bytes()).decode()
-            brasao_src = f"data:image/png;base64,{b64}"
+        # ── Gerar PDF com FPDF2 recriando o layout oficial ──
+        from fpdf import FPDF
 
-        done = False  # Sempre sem marca d'água ao enviar
-        watermark = '<div class="watermark-done">EMPENHADO</div>' if done else ""
+        class DocPDF(FPDF):
+            def __init__(self):
+                super().__init__()
+                self.brason_path = None
 
-        # HTML igual ao gerado pelo JS (_buildDocPage + _printCSS)
-        html = f"""<!DOCTYPE html>
-<html lang="pt-BR">
-<head><meta charset="UTF-8">
-<style>
-@page {{ margin: 12mm 15mm; size: A4 portrait; }}
-* {{ margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
-body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; }}
-.doc-header {{ display: flex; align-items: center; border: 2px solid #000; padding: 10px; margin-bottom: 20px; border-radius: 4px; }}
-.doc-header-brasao {{ width: 70px; height: auto; object-fit: contain; margin-right: 15px; }}
-.doc-header-text {{ flex: 1; text-align: center; }}
-.doc-header-text h1 {{ font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }}
-.doc-header-text h2 {{ font-size: 11pt; font-weight: normal; margin-bottom: 4px; }}
-.doc-header-text h3 {{ font-size: 12pt; font-weight: bold; text-transform: uppercase; border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }}
-.doc-header-right {{ text-align: right; font-size: 9pt; padding-left: 15px; border-left: 1px solid #ccc; }}
-.doc-ref {{ font-weight: bold; font-size: 11pt; margin-top: 4px; }}
-.doc-body {{ margin-bottom: 25px; position: relative; }}
-.watermark-done {{ position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80pt; font-weight: bold; color: rgba(58, 170, 110, 0.15); border: 8px solid rgba(58, 170, 110, 0.15); padding: 10px 40px; border-radius: 20px; user-select: none; pointer-events: none; z-index: 0; }}
-table.doc-table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; position: relative; z-index: 1; }}
-table.doc-table th, table.doc-table td {{ border: 1px solid #000; padding: 8px; vertical-align: middle; }}
-table.doc-table th {{ background: #f0f0f0; text-transform: uppercase; font-size: 9pt; width: 30%; text-align: left; }}
-table.doc-table td {{ font-size: 10pt; font-weight: 500; }}
-.valor-box {{ border: 2px solid #000; background: #fdfdfd; padding: 12px; text-align: center; margin-bottom: 30px; border-radius: 4px; }}
-.vb-label {{ font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }}
-.vb-value {{ font-size: 18pt; font-weight: bold; }}
-.sign-date {{ text-align: right; margin-bottom: 40px; font-size: 11pt; }}
-.sign-section {{ display: flex; justify-content: space-around; margin-top: 50px; }}
-.sign-block {{ text-align: center; width: 40%; }}
-.sign-line-top {{ border-bottom: 1px solid #000; margin-bottom: 8px; height: 40px; }}
-.sign-label {{ font-size: 10pt; font-weight: bold; text-transform: uppercase; }}
-.sign-sub {{ font-size: 9pt; margin-top: 2px; }}
-.doc-footer {{ text-align: center; font-size: 8pt; color: #555; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 5px; }}
-</style></head>
-<body>
-<div style="position: relative;">
-  <div class="doc-header">
-    <img class="doc-header-brasao" src="{brasao_src}" alt="Brasão" />
-    <div class="doc-header-text">
-      <h1>Estado do Paraná</h1>
-      <h2>Prefeitura Municipal de Inajá</h2>
-      <h3>Solicitação de Empenho de Despesa Fixa / Contínua</h3>
-    </div>
-    <div class="doc-header-right">
-      <div>Referência</div>
-      <div class="doc-ref">{mes_label} / {ano}</div>
-    </div>
-  </div>
-  <div class="doc-body">
-    {watermark}
-    <table class="doc-table">{table_rows}</table>
-    <div class="valor-box">
-      <div class="vb-label">Valor do Empenho</div>
-      <div class="vb-value">{valor_str}</div>
-    </div>
-    <div class="sign-date">
-      Inajá / PR, _____ de ___________________ de {ano}.
-    </div>
-    <div class="sign-section">
-      <div class="sign-block" style="width: 50%;">
-         <div class="sign-line-top"></div>
-         <div class="sign-label">Ordenador de Despesa</div>
-         <div class="sign-sub">Prefeitura Municipal de Inajá</div>
-      </div>
-    </div>
-    <div class="doc-footer">
-       Documento gerado eletronicamente pelo módulo de Controle de Despesas Fixas.
-    </div>
-  </div>
-</div>
-</body></html>"""
+            def header(self):
+                # Borda externa do cabeçalho
+                self.set_draw_color(0, 0, 0)
+                self.set_line_width(0.8)
+                self.rect(12, 8, 187, 32, style="")
 
-        # Converter HTML para PDF com WeasyPrint
-        from weasyprint import HTML
+                # Brasão (se disponível)
+                brasao_path = Path(BASE_DIR) / "static" / "img" / "brasao.png"
+                if brasao_path.exists():
+                    try:
+                        self.image(str(brasao_path), x=15, y=10, w=18)
+                    except Exception:
+                        pass
 
-        pdf_bytes = HTML(string=html).write_pdf()
+                # Texto centralizado
+                self.set_xy(35, 10)
+                self.set_font("Helvetica", "B", 12)
+                self.cell(
+                    120, 6, "Estado do Parana", align="C", new_x="LMARGIN", new_y="NEXT"
+                )
+                self.set_font("Helvetica", "", 10)
+                self.cell(
+                    120,
+                    5,
+                    "Prefeitura Municipal de Inaja",
+                    align="C",
+                    new_x="LMARGIN",
+                    new_y="NEXT",
+                )
 
-        # Enviar PDF pelo Telegram
+                # Linha separadora
+                self.set_xy(35, self.get_y())
+                self.set_line_width(0.3)
+                self.cell(120, 0, "", border="T", new_x="LMARGIN", new_y="NEXT")
+
+                self.set_font("Helvetica", "B", 10)
+                self.cell(
+                    120,
+                    5,
+                    "Solicitacao de Empenho de Despesa Fixa / Continua",
+                    align="C",
+                    new_x="LMARGIN",
+                    new_y="NEXT",
+                )
+
+                # Lado direito - Referência
+                self.set_xy(155, 12)
+                self.set_line_width(0.3)
+                self.set_draw_color(200, 200, 200)
+                self.cell(0, 0, "", border="L", new_x="LMARGIN", new_y="NEXT")
+                self.set_xy(158, 14)
+                self.set_font("Helvetica", "", 8)
+                self.cell(38, 4, "Referencia", align="C", new_x="LMARGIN", new_y="NEXT")
+                self.set_font("Helvetica", "B", 10)
+                self.cell(
+                    38,
+                    6,
+                    f"{mes_label} / {ano}",
+                    align="C",
+                    new_x="LMARGIN",
+                    new_y="NEXT",
+                )
+
+                self.ln(34)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_draw_color(200, 200, 200)
+                self.set_line_width(0.2)
+                self.line(15, self.get_y(), 195, self.get_y())
+                self.set_font("Helvetica", "I", 7)
+                self.set_text_color(85, 85, 85)
+                self.cell(
+                    0,
+                    10,
+                    "Documento gerado eletronicamente pelo modulo de Controle de Despesas Fixas.",
+                    align="C",
+                )
+
+        pdf = DocPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=20)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(0, 0, 0)
+
+        # Tabela de dados
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_line_width(0.3)
+        col_label_w = 60
+        col_value_w = 130
+        row_h = 9
+
+        for label, value in campos:
+            x_start = pdf.get_x()
+            y_start = pdf.get_y()
+
+            # Label cell
+            pdf.set_fill_color(240, 240, 240)
+            pdf.rect(x_start, y_start, col_label_w, row_h, "DF")
+            pdf.set_xy(x_start + 2, y_start + 2)
+            pdf.set_font("Helvetica", "B", 8)
+            pdf.cell(col_label_w - 4, 5, label.upper())
+
+            # Value cell
+            pdf.rect(x_start + col_label_w, y_start, col_value_w, row_h, "D")
+            pdf.set_xy(x_start + col_label_w + 2, y_start + 2)
+            pdf.set_font("Helvetica", "", 9)
+            pdf.cell(col_value_w - 4, 5, str(value)[:120])
+
+            pdf.set_xy(x_start, y_start + row_h)
+
+        pdf.ln(5)
+
+        # Caixa de valor
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_line_width(0.6)
+        val_box_h = 16
+        val_box_w = 190
+        val_box_x = (210 - val_box_w) / 2
+        val_box_y = pdf.get_y()
+        pdf.rect(val_box_x, val_box_y, val_box_w, val_box_h, "D")
+        pdf.set_xy(val_box_x, val_box_y + 2)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(
+            val_box_w, 5, "VALOR DO EMPENHO", align="C", new_x="LMARGIN", new_y="NEXT"
+        )
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(val_box_w, 8, valor_str, align="C", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.ln(12)
+
+        # Data
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_x(120)
+        pdf.cell(75, 6, f"Inaja / PR, _____ de ___________________ de {ano}.")
+
+        pdf.ln(20)
+
+        # Assinatura
+        sign_x = 55
+        sign_w = 100
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_line_width(0.3)
+        pdf.line(sign_x, pdf.get_y(), sign_x + sign_w, pdf.get_y())
+        pdf.ln(2)
+        pdf.set_x(sign_x)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(
+            sign_w, 5, "Ordenador de Despesa", align="C", new_x="LMARGIN", new_y="NEXT"
+        )
+        pdf.set_x(sign_x)
+        pdf.set_font("Helvetica", "", 8)
+        pdf.cell(
+            sign_w,
+            4,
+            "Prefeitura Municipal de Inaja",
+            align="C",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
+
+        pdf_bytes = pdf.output()
+
+        # ── Enviar PDF pelo Telegram ──
         sent = 0
         errors = []
         filename = (
