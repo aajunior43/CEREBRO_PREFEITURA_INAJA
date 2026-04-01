@@ -1852,7 +1852,7 @@ def enviar_credor_telegram(cid):
         ano = int(_time.strftime("%Y"))
         hoje = _time.strftime("%d/%m/%Y")
 
-        is_var = (credor.get("tipo_valor") or "").upper().includes("VAR")
+        is_var = "VAR" in (credor.get("tipo_valor") or "").upper()
         valor_raw = credor.get("valor") or 0
         try:
             valor_f = float(valor_raw)
