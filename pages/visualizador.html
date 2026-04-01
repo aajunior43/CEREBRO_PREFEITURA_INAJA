@@ -356,6 +356,77 @@
     .viz-app .detail-item { break-inside: avoid; page-break-inside: avoid; }
     .viz-app .detail-item.full-width { grid-column: 1 / -1; }
   }
+
+  /* ===== RESPONSIVE MOBILE ===== */
+  @media (max-width: 900px) {
+    .viz-app .app-container { flex-direction: column; overflow: visible; }
+    .viz-app .sidebar {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--viz-border);
+      max-height: none;
+      overflow-y: visible;
+      padding: 1rem;
+    }
+    .viz-app .main-content { padding: 0.5rem; overflow: visible; }
+    .viz-app .dashboard-grid { grid-template-columns: 1fr; }
+    .viz-app .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    .viz-app .detail-grid { grid-template-columns: 1fr; }
+    .viz-app .detail-item.full-width { grid-column: span 1; }
+    .viz-header { padding: 1rem; }
+    .viz-header .logo-area h1 { font-size: 1.2rem; }
+    .viz-header .logo-area p { font-size: 0.8rem; }
+  }
+
+  @media (max-width: 600px) {
+    .viz-app { min-height: auto; }
+    .viz-header { flex-direction: column; gap: 10px; align-items: flex-start; padding: 12px; }
+    .viz-header .actions { flex-direction: row; width: 100%; }
+    .viz-header .actions > div { flex-wrap: wrap; width: 100%; }
+    .viz-app .vbtn { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+    .viz-app .vbtn-sm { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
+    .viz-app .vbtn-xs { padding: 0.15rem 0.3rem; font-size: 0.65rem; }
+    .viz-app .sidebar { padding: 0.75rem; gap: 1rem; }
+    .viz-app .sidebar-header h3 { font-size: 1rem; }
+    .viz-app .filter-group input,
+    .viz-app .filter-group select { padding: 0.6rem; font-size: 16px; }
+    .viz-app .range-inputs { flex-direction: column; align-items: stretch; }
+    .viz-app .range-inputs span { text-align: center; }
+    .viz-app .date-shortcuts { grid-template-columns: 1fr; }
+    .viz-app .month-pills-grid { grid-template-columns: repeat(3, 1fr); }
+    .viz-app .main-content { padding: 0.25rem; }
+    .viz-app .stats-bar { flex-direction: column; gap: 4px; font-size: 0.8rem; padding: 0.5rem; }
+    .viz-app .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .viz-app table { font-size: 0.8rem; }
+    .viz-app th, .viz-app td { padding: 0.5rem 0.75rem; }
+    .viz-app .summary-cards { grid-template-columns: 1fr; }
+    .viz-app .summary-card { padding: 1rem; }
+    .viz-app .summary-icon { width: 40px; height: 40px; }
+    .viz-app .summary-icon svg { width: 20px; height: 20px; }
+    .viz-app .summary-label { font-size: 0.75rem; }
+    .viz-app .summary-value { font-size: 1.1rem; }
+    .viz-app .chart-container { height: 220px; }
+    .viz-app .flowchart { flex-direction: column; gap: 12px; align-items: center; }
+    .viz-app .flowchart::before { display: none; }
+    .viz-app .flow-step { width: 100%; flex-direction: row; justify-content: center; gap: 10px; }
+    .viz-app .step-circle { width: 40px; height: 40px; border-width: 3px; }
+    .viz-app .status-pills-wrap { gap: 4px; }
+    .viz-app .status-pill { padding: 3px 8px; font-size: 0.7rem; }
+    .viz-app .pagination { flex-wrap: wrap; gap: 0.15rem; }
+    .viz-app .page-btn { padding: 0.4rem 0.5rem; font-size: 0.75rem; min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
+    .viz-app .viz-modal-content { width: 95%; margin: 10% auto; }
+    .viz-app .viz-modal-header { padding: 1rem; }
+    .viz-app .viz-modal-body { padding: 1rem; }
+    .viz-app .viz-modal-footer { padding: 0.75rem 1rem; }
+    .viz-app .close-modal { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
+    .viz-app .active-filters-container { padding: 0.4rem 0.5rem; gap: 0.3rem; }
+    .viz-app .filter-chip { padding: 0.2rem 0.5rem; font-size: 0.75rem; }
+    #viz-historico-painel { padding: 12px !important; }
+    #viz-historico-painel > div { flex-direction: column; gap: 8px; }
+    #viz-historico-painel h3 { font-size: 13px; }
+    .viz-app .dashboard-card { padding: 0.75rem; }
+    .viz-app .dashboard-card h3 { font-size: 0.95rem; padding-bottom: 0.3rem; }
+  }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>

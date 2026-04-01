@@ -2342,8 +2342,32 @@ body {
     min-width: calc(50% - 5px);
   }
 
+  /* Month nav compact mode on mobile */
   .month-nav {
-    display: none;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--neo-sm);
+  }
+  .month-nav .month-display {
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
+  }
+  .month-nav .month-name {
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .month-nav .month-year {
+    font-size: 10px;
+  }
+  .month-nav .nav-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    font-size: 16px;
+    padding: 0;
   }
 
   .header-title h1 {
@@ -2368,8 +2392,8 @@ body {
     to   { transform: translateY(0);   opacity: 1; }
   }
 
-  /* Padding for bottom nav */
-  body { padding-bottom: 64px; }
+  /* Padding for bottom nav with safe area */
+  body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 
   /* Toast position on mobile */
   .toast {
@@ -2492,6 +2516,23 @@ body {
 @media (max-width: 860px) {
   .bottom-nav {
     display: flex;
+  }
+  .bottom-nav-item {
+    min-height: 44px;
+  }
+  .nav-group-item {
+    min-height: 44px;
+  }
+  .sort-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .log-filter-btn {
+    min-height: 44px;
+  }
+  .modal-close-btn {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 

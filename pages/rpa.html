@@ -79,6 +79,56 @@
     .modelo-item strong { display:block; font-size:13px; color:var(--text); }
     .modelo-item small { font-size:11px; color:var(--text-3); }
     @media print { .rpa-tabs, .rpa-actions, header, .main-content { display: none !important; } }
+
+    @media (max-width: 900px) {
+      .rpa-wrap { padding: 0 16px; }
+      .rpa-card { padding: 18px; }
+      .form-grid-2,
+      .form-grid-3 { grid-template-columns: 1fr; }
+      .rpa-list-item {
+        grid-template-columns: 50px 1fr 100px 100px;
+        font-size: 12px;
+        padding: 12px 14px;
+      }
+      .rpa-list-item > :nth-child(4),
+      .rpa-list-item > :nth-child(5) { display: none; }
+      .rpa-list-header {
+        grid-template-columns: 50px 1fr 100px 100px;
+        font-size: 10px;
+      }
+      .rpa-list-header > :nth-child(4),
+      .rpa-list-header > :nth-child(5) { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .rpa-wrap { padding: 0 12px; margin: 16px auto 80px; }
+      .rpa-card { padding: 14px; border-radius: var(--radius-sm); }
+      .rpa-card h3 { font-size: 14px; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .rpa-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .rpa-tab { padding: 8px 16px; font-size: 12px; white-space: nowrap; }
+      .rpa-list-header { display: none; }
+      .rpa-list-item {
+        grid-template-columns: 1fr;
+        gap: 6px;
+        padding: 12px;
+        border-bottom: 2px solid var(--line);
+      }
+      .rpa-list-item > :not(:first-child):not(:nth-child(2)) {
+        font-size: 11px;
+        color: var(--text-3);
+      }
+      .rpa-num { font-size: 14px; }
+      .rpa-name { font-size: 13px; }
+      .rpa-actions { flex-direction: column; }
+      .rpa-actions .btn-rpa { width: 100%; justify-content: center; min-height: 44px; }
+      .btn-rpa { min-height: 44px; padding: 12px 16px; font-size: 14px; }
+      .form-group input,
+      .form-group select,
+      .form-group textarea { padding: 12px; font-size: 16px; }
+      .faixa-row { grid-template-columns: 1fr; gap: 6px; }
+      .settings-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .modelos-dropdown { min-width: 260px; left: 0; right: 0; }
+    }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>

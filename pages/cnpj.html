@@ -60,14 +60,23 @@
       .lista-box { box-shadow: none !important; border: 1px solid #ccc; }
       .print-header { display: flex !important; }
     }
-    .print-header { display: none; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 11px; color: #666; border-bottom: 1px solid #ccc; padding-bottom: 8px; }
 
-    /* Loading */
-    .loading-wrap { text-align: center; padding: 48px 24px; color: var(--text-3); }
-    .spinner-cnpj { width: 36px; height: 36px; border: 3px solid rgba(79,128,200,.2); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .error-box { background: var(--red-bg); border-radius: var(--radius-sm); padding: 16px 20px; color: var(--red); font-size: 13px; font-weight: 600; }
+    @media (max-width: 600px) {
+      .cnpj-wrap { padding: 0 12px; margin: 16px auto 80px; }
+      .cnpj-card { padding: 16px; }
+      .cnpj-card h3 { font-size: 14px; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .cnpj-input-row { flex-direction: column; }
+      .cnpj-input { font-size: 16px; padding: 14px; }
+      .btn-cnpj { width: 100%; justify-content: center; min-height: 44px; padding: 14px 20px; }
+      .info-grid { grid-template-columns: 1fr; gap: 10px; }
+      .info-item { padding: 12px; }
+      .result-header { flex-direction: column; gap: 10px; }
+      .result-empresa h2 { font-size: 18px; }
+      .lista-item { padding: 10px 12px; font-size: 12px; }
+      .contact-row { padding: 8px 12px; font-size: 12px; }
+      .section-title { font-size: 11px; margin: 16px 0 8px; }
+      .btn-imprimir { width: 100%; justify-content: center; min-height: 44px; }
+    }
   </style>
   <script defer src="/static/js/shared-header.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>
