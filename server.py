@@ -1791,10 +1791,12 @@ def get_historico_credor(cid):
 
 @app.route("/api/credores/<int:cid>/enviar-telegram", methods=["POST"])
 def enviar_credor_telegram(cid):
-    """Envia solicitação de empenho do credor para o admin via Telegram."""
+    """Envia solicitação de empenho do credor para o admin via Telegram como PDF."""
     try:
         import os
+        import io as _io
         from pathlib import Path
+        from datetime import datetime
 
         # Ler token e chat IDs
         env_file = Path(BASE_DIR) / ".env"
@@ -1812,7 +1814,6 @@ def enviar_credor_telegram(cid):
                         if val:
                             chat_ids.append(val)
 
-        # Fallback: ler telegram_chat_ids.txt
         targets_file = Path(BASE_DIR) / "telegram_chat_ids.txt"
         if targets_file.exists():
             raw = targets_file.read_text(encoding="utf-8").strip()
@@ -1834,7 +1835,23 @@ def enviar_credor_telegram(cid):
 
         credor = dict(credor)
         hoje = _time.strftime("%d/%m/%Y")
-        mes_atual = _time.strftime("%m/%Y")
+        mes_atual = _time.strftime("%B/%Y")
+        mes_nome = [
+            "Janeiro",
+            "Fevereiro",
+            "Março",
+            "Abril",
+            "Maio",
+            "Junho",
+            "Julho",
+            "Agosto",
+            "Setembro",
+            "Outubro",
+            "Novembro",
+            "Dezembro",
+        ]
+        mes_label = mes_nome[int(_time.strftime("%m")) - 1]
+        ano = _time.strftime("%Y")
 
         valor_str = "—"
         if credor.get("valor"):
@@ -1847,38 +1864,131 @@ def enviar_credor_telegram(cid):
             except Exception:
                 valor_str = str(credor.get("valor", "—"))
 
-        message = (
-            f"📋 <b>Solicitação de Empenho</b>\n\n"
-            f"🏢 <b>Credor:</b> {credor['nome']}\n"
-            f"💰 <b>Valor:</b> {valor_str}\n"
-            f"📂 <b>Departamento:</b> {credor.get('departamento') or '—'}\n"
-            f"📅 <b>Data:</b> {hoje}\n"
-            f"📆 <b>Referência:</b> {mes_atual}\n"
-        )
+        # ── Gerar PDF com FPDF2 ──
+        from fpdf import FPDF
+
+        class SolicitacaoPDF(FPDF):
+            def header(self):
+                self.set_font("Helvetica", "B", 10)
+                self.cell(
+                    0,
+                    6,
+                    "PREFEITURA MUNICIPAL DE INAJA",
+                    align="C",
+                    new_x="LMARGIN",
+                    new_y="NEXT",
+                )
+                self.set_font("Helvetica", "", 8)
+                self.cell(
+                    0,
+                    5,
+                    f"Solicitacao de Empenho - {mes_label}/{ano}",
+                    align="C",
+                    new_x="LMARGIN",
+                    new_y="NEXT",
+                )
+                self.line(15, self.get_y(), 195, self.get_y())
+                self.ln(4)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_font("Helvetica", "I", 7)
+                self.cell(0, 10, f"Gerado em {hoje} - Sistema de Empenhos", align="C")
+
+        pdf = SolicitacaoPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=20)
+
+        # Dados do credor
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(30, 8, "Credor:", new_x="RIGHT", new_y="TOP")
+        pdf.set_font("Helvetica", "", 11)
+        pdf.cell(0, 8, credor.get("nome", ""), new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(30, 8, "Valor:", new_x="RIGHT", new_y="TOP")
+        pdf.set_font("Helvetica", "", 11)
+        pdf.cell(0, 8, valor_str, new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(30, 8, "Departamento:", new_x="RIGHT", new_y="TOP")
+        pdf.set_font("Helvetica", "", 11)
+        pdf.cell(0, 8, credor.get("departamento") or "—", new_x="LMARGIN", new_y="NEXT")
 
         if credor.get("cnpj"):
-            message += f"🔢 <b>CNPJ:</b> <code>{credor['cnpj']}</code>\n"
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(30, 8, "CNPJ:", new_x="RIGHT", new_y="TOP")
+            pdf.set_font("Helvetica", "", 11)
+            pdf.cell(0, 8, credor["cnpj"], new_x="LMARGIN", new_y="NEXT")
+
         if credor.get("descricao"):
-            message += f"📝 <b>Objeto:</b> {credor['descricao']}\n"
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 8, "Objeto:", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 10)
+            pdf.multi_cell(0, 6, credor["descricao"])
+
         if credor.get("solicitacao"):
-            message += f"📌 <b>Solicitação:</b> {credor['solicitacao']}\n"
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 8, "Solicitacao:", new_x="LMARGIN", new_y="NEXT")
+            pdf.set_font("Helvetica", "", 10)
+            pdf.multi_cell(0, 6, credor["solicitacao"])
 
-        message += f"\n<i>Enviado pelo Sistema de Empenhos — Prefeitura de Inajá</i>"
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "I", 9)
+        pdf.cell(
+            0,
+            8,
+            f"Referencia: {mes_label}/{ano}  |  Data: {hoje}",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
 
+        # Linha de assinatura
+        pdf.ln(15)
+        y_sign = pdf.get_y()
+        pdf.line(40, y_sign, 120, y_sign)
+        pdf.set_xy(40, y_sign)
+        pdf.set_font("Helvetica", "", 9)
+        pdf.cell(
+            80,
+            5,
+            "Responsavel pela Solicitacao",
+            align="C",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
+
+        pdf_bytes = pdf.output()
+
+        # ── Enviar PDF pelo Telegram ──
         sent = 0
         errors = []
+        filename = (
+            f"solicitacao_{credor['nome'].replace(' ', '_')}_{mes_label}_{ano}.pdf"
+        )
+
         for chat_id in chat_ids:
             try:
-                url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
-                resp = requests.post(
-                    url,
-                    json={
-                        "chat_id": chat_id,
-                        "text": message,
-                        "parse_mode": "HTML",
-                    },
-                    timeout=15,
-                )
+                url = f"https://api.telegram.org/bot{telegram_token}/sendDocument"
+                files = {
+                    "document": (filename, _io.BytesIO(pdf_bytes), "application/pdf"),
+                }
+                data = {
+                    "chat_id": chat_id,
+                    "caption": (
+                        f"📋 *Solicitacao de Empenho*\n\n"
+                        f"🏢 *Credor:* {credor['nome']}\n"
+                        f"💰 *Valor:* {valor_str}\n"
+                        f"📂 *Departamento:* {credor.get('departamento') or '—'}\n"
+                        f"📅 *Data:* {hoje}\n"
+                        f"📆 *Referencia:* {mes_label}/{ano}\n\n"
+                        f"_Enviado pelo Sistema de Empenhos — Prefeitura de Inajá_"
+                    ),
+                    "parse_mode": "Markdown",
+                }
+                resp = requests.post(url, data=data, files=files, timeout=30)
                 if resp.ok:
                     sent += 1
                 else:
@@ -1893,7 +2003,7 @@ def enviar_credor_telegram(cid):
                     "TELEGRAM_ENVIO",
                     cid,
                     credor["nome"],
-                    f"Enviado para {sent} chat(s) - {hoje}",
+                    f"PDF enviado para {sent} chat(s) - {hoje}",
                 ),
             )
             conn.commit()
