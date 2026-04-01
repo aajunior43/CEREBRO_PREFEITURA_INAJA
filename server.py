@@ -1791,12 +1791,12 @@ def get_historico_credor(cid):
 
 @app.route("/api/credores/<int:cid>/enviar-telegram", methods=["POST"])
 def enviar_credor_telegram(cid):
-    """Envia solicitação de empenho do credor para o admin via Telegram como PDF."""
+    """Envia solicitação de empenho do credor para o admin via Telegram como PDF (mesmo formato do sistema)."""
     try:
         import os
         import io as _io
+        import base64
         from pathlib import Path
-        from datetime import datetime
 
         # Ler token e chat IDs
         env_file = Path(BASE_DIR) / ".env"
@@ -1834,8 +1834,6 @@ def enviar_credor_telegram(cid):
             return jsonify({"error": "Credor não encontrado"}), 404
 
         credor = dict(credor)
-        hoje = _time.strftime("%d/%m/%Y")
-        mes_atual = _time.strftime("%B/%Y")
         mes_nome = [
             "Janeiro",
             "Fevereiro",
@@ -1851,118 +1849,122 @@ def enviar_credor_telegram(cid):
             "Dezembro",
         ]
         mes_label = mes_nome[int(_time.strftime("%m")) - 1]
-        ano = _time.strftime("%Y")
+        ano = int(_time.strftime("%Y"))
+        hoje = _time.strftime("%d/%m/%Y")
 
-        valor_str = "—"
-        if credor.get("valor"):
-            try:
-                valor_str = (
-                    f"R$ {float(credor['valor']):,.2f}".replace(",", "X")
-                    .replace(".", ",")
-                    .replace("X", ".")
-                )
-            except Exception:
-                valor_str = str(credor.get("valor", "—"))
-
-        # ── Gerar PDF com FPDF2 ──
-        from fpdf import FPDF
-
-        class SolicitacaoPDF(FPDF):
-            def header(self):
-                self.set_font("Helvetica", "B", 10)
-                self.cell(
-                    0,
-                    6,
-                    "PREFEITURA MUNICIPAL DE INAJA",
-                    align="C",
-                    new_x="LMARGIN",
-                    new_y="NEXT",
-                )
-                self.set_font("Helvetica", "", 8)
-                self.cell(
-                    0,
-                    5,
-                    f"Solicitacao de Empenho - {mes_label}/{ano}",
-                    align="C",
-                    new_x="LMARGIN",
-                    new_y="NEXT",
-                )
-                self.line(15, self.get_y(), 195, self.get_y())
-                self.ln(4)
-
-            def footer(self):
-                self.set_y(-15)
-                self.set_font("Helvetica", "I", 7)
-                self.cell(0, 10, f"Gerado em {hoje} - Sistema de Empenhos", align="C")
-
-        pdf = SolicitacaoPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=20)
-
-        # Dados do credor
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(30, 8, "Credor:", new_x="RIGHT", new_y="TOP")
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 8, credor.get("nome", ""), new_x="LMARGIN", new_y="NEXT")
-
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(30, 8, "Valor:", new_x="RIGHT", new_y="TOP")
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 8, valor_str, new_x="LMARGIN", new_y="NEXT")
-
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(30, 8, "Departamento:", new_x="RIGHT", new_y="TOP")
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 8, credor.get("departamento") or "—", new_x="LMARGIN", new_y="NEXT")
-
-        if credor.get("cnpj"):
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(30, 8, "CNPJ:", new_x="RIGHT", new_y="TOP")
-            pdf.set_font("Helvetica", "", 11)
-            pdf.cell(0, 8, credor["cnpj"], new_x="LMARGIN", new_y="NEXT")
-
-        if credor.get("descricao"):
-            pdf.ln(2)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 8, "Objeto:", new_x="LMARGIN", new_y="NEXT")
-            pdf.set_font("Helvetica", "", 10)
-            pdf.multi_cell(0, 6, credor["descricao"])
-
-        if credor.get("solicitacao"):
-            pdf.ln(2)
-            pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 8, "Solicitacao:", new_x="LMARGIN", new_y="NEXT")
-            pdf.set_font("Helvetica", "", 10)
-            pdf.multi_cell(0, 6, credor["solicitacao"])
-
-        pdf.ln(4)
-        pdf.set_font("Helvetica", "I", 9)
-        pdf.cell(
-            0,
-            8,
-            f"Referencia: {mes_label}/{ano}  |  Data: {hoje}",
-            new_x="LMARGIN",
-            new_y="NEXT",
+        is_var = (credor.get("tipo_valor") or "").upper().includes("VAR")
+        valor_raw = credor.get("valor") or 0
+        try:
+            valor_f = float(valor_raw)
+        except Exception:
+            valor_f = 0.0
+        valor_str = (
+            "Valor variável"
+            if (is_var and not valor_f)
+            else f"R$ {valor_f:,.2f}".replace(",", "X")
+            .replace(".", ",")
+            .replace("X", ".")
         )
 
-        # Linha de assinatura
-        pdf.ln(15)
-        y_sign = pdf.get_y()
-        pdf.line(40, y_sign, 120, y_sign)
-        pdf.set_xy(40, y_sign)
-        pdf.set_font("Helvetica", "", 9)
-        pdf.cell(
-            80,
-            5,
-            "Responsavel pela Solicitacao",
-            align="C",
-            new_x="LMARGIN",
-            new_y="NEXT",
-        )
+        # Campos da tabela (igual ao _buildDocPage do JS)
+        campos = [
+            ("Departamento Solicitante", credor.get("departamento")),
+            ("Credor / Fornecedor", credor.get("nome")),
+            ("CNPJ / CPF", credor.get("cnpj")),
+            ("Descrição do Objeto / Serviço", credor.get("descricao")),
+            ("Tipo de Valor", credor.get("tipo_valor")),
+            ("Observações", credor.get("obs")),
+        ]
+        campos = [(l, v) for l, v in campos if v and str(v).strip()]
+        table_rows = "".join(f"<tr><th>{l}</th><td>{v}</td></tr>" for l, v in campos)
 
-        pdf_bytes = pdf.output()
+        # Brasão em base64
+        brasao_path = Path(BASE_DIR) / "static" / "img" / "brasao.png"
+        brasao_src = "/static/img/brasao.png"
+        if brasao_path.exists():
+            b64 = base64.b64encode(brasao_path.read_bytes()).decode()
+            brasao_src = f"data:image/png;base64,{b64}"
 
-        # ── Enviar PDF pelo Telegram ──
+        done = False  # Sempre sem marca d'água ao enviar
+        watermark = '<div class="watermark-done">EMPENHADO</div>' if done else ""
+
+        # HTML igual ao gerado pelo JS (_buildDocPage + _printCSS)
+        html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8">
+<style>
+@page {{ margin: 12mm 15mm; size: A4 portrait; }}
+* {{ margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }}
+body {{ font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11pt; color: #000; background: #fff; }}
+.doc-header {{ display: flex; align-items: center; border: 2px solid #000; padding: 10px; margin-bottom: 20px; border-radius: 4px; }}
+.doc-header-brasao {{ width: 70px; height: auto; object-fit: contain; margin-right: 15px; }}
+.doc-header-text {{ flex: 1; text-align: center; }}
+.doc-header-text h1 {{ font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }}
+.doc-header-text h2 {{ font-size: 11pt; font-weight: normal; margin-bottom: 4px; }}
+.doc-header-text h3 {{ font-size: 12pt; font-weight: bold; text-transform: uppercase; border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }}
+.doc-header-right {{ text-align: right; font-size: 9pt; padding-left: 15px; border-left: 1px solid #ccc; }}
+.doc-ref {{ font-weight: bold; font-size: 11pt; margin-top: 4px; }}
+.doc-body {{ margin-bottom: 25px; position: relative; }}
+.watermark-done {{ position: absolute; top: 30%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80pt; font-weight: bold; color: rgba(58, 170, 110, 0.15); border: 8px solid rgba(58, 170, 110, 0.15); padding: 10px 40px; border-radius: 20px; user-select: none; pointer-events: none; z-index: 0; }}
+table.doc-table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; position: relative; z-index: 1; }}
+table.doc-table th, table.doc-table td {{ border: 1px solid #000; padding: 8px; vertical-align: middle; }}
+table.doc-table th {{ background: #f0f0f0; text-transform: uppercase; font-size: 9pt; width: 30%; text-align: left; }}
+table.doc-table td {{ font-size: 10pt; font-weight: 500; }}
+.valor-box {{ border: 2px solid #000; background: #fdfdfd; padding: 12px; text-align: center; margin-bottom: 30px; border-radius: 4px; }}
+.vb-label {{ font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }}
+.vb-value {{ font-size: 18pt; font-weight: bold; }}
+.sign-date {{ text-align: right; margin-bottom: 40px; font-size: 11pt; }}
+.sign-section {{ display: flex; justify-content: space-around; margin-top: 50px; }}
+.sign-block {{ text-align: center; width: 40%; }}
+.sign-line-top {{ border-bottom: 1px solid #000; margin-bottom: 8px; height: 40px; }}
+.sign-label {{ font-size: 10pt; font-weight: bold; text-transform: uppercase; }}
+.sign-sub {{ font-size: 9pt; margin-top: 2px; }}
+.doc-footer {{ text-align: center; font-size: 8pt; color: #555; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 5px; }}
+</style></head>
+<body>
+<div style="position: relative;">
+  <div class="doc-header">
+    <img class="doc-header-brasao" src="{brasao_src}" alt="Brasão" />
+    <div class="doc-header-text">
+      <h1>Estado do Paraná</h1>
+      <h2>Prefeitura Municipal de Inajá</h2>
+      <h3>Solicitação de Empenho de Despesa Fixa / Contínua</h3>
+    </div>
+    <div class="doc-header-right">
+      <div>Referência</div>
+      <div class="doc-ref">{mes_label} / {ano}</div>
+    </div>
+  </div>
+  <div class="doc-body">
+    {watermark}
+    <table class="doc-table">{table_rows}</table>
+    <div class="valor-box">
+      <div class="vb-label">Valor do Empenho</div>
+      <div class="vb-value">{valor_str}</div>
+    </div>
+    <div class="sign-date">
+      Inajá / PR, _____ de ___________________ de {ano}.
+    </div>
+    <div class="sign-section">
+      <div class="sign-block" style="width: 50%;">
+         <div class="sign-line-top"></div>
+         <div class="sign-label">Ordenador de Despesa</div>
+         <div class="sign-sub">Prefeitura Municipal de Inajá</div>
+      </div>
+    </div>
+    <div class="doc-footer">
+       Documento gerado eletronicamente pelo módulo de Controle de Despesas Fixas.
+    </div>
+  </div>
+</div>
+</body></html>"""
+
+        # Converter HTML para PDF com WeasyPrint
+        from weasyprint import HTML
+
+        pdf_bytes = HTML(string=html).write_pdf()
+
+        # Enviar PDF pelo Telegram
         sent = 0
         errors = []
         filename = (
