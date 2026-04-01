@@ -122,3 +122,64 @@ async def generate_empenho_text(text: str) -> str:
 
 async def call_local_ai(prompt: str) -> str:
     return await run_async(_call_local_ai, prompt)
+
+
+def _call_local_ai_vision(prompt: str, image_base64: str) -> str:
+    """Chama a IA local com imagem (base64) para análise visual."""
+    resp = requests.post(
+        f"{SERVER_URL}/api/ia/chat",
+        json={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            },
+                        },
+                    ],
+                }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 2000,
+        },
+        timeout=90,
+    )
+    if not resp.ok:
+        try:
+            data = resp.json()
+            err = data.get("error") or data
+            raise ValueError(str(err))
+        except Exception:
+            raise ValueError(resp.text)
+    data = resp.json()
+    return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+
+async def call_local_ai_with_vision(
+    prompt: str, image_base64: str, max_retries: int = 2
+) -> dict:
+    """Chama IA com imagem e retorna JSON parseado, com retry automático."""
+    last_error = None
+    for attempt in range(max_retries + 1):
+        try:
+            raw = await run_async(_call_local_ai_vision, prompt, image_base64)
+            return _extract_json(raw)
+        except json.JSONDecodeError as e:
+            last_error = e
+            logger.warning(
+                f"JSON inválido da IA visual (tentativa {attempt + 1}/{max_retries + 1}): {e}"
+            )
+            if attempt < max_retries:
+                await asyncio.sleep(1)
+        except Exception as e:
+            last_error = e
+            logger.warning(
+                f"IA visual falhou (tentativa {attempt + 1}/{max_retries + 1}): {e}"
+            )
+            if attempt < max_retries:
+                await asyncio.sleep(2)
+    raise last_error
