@@ -1791,12 +1791,18 @@ def get_historico_credor(cid):
 
 @app.route("/api/credores/<int:cid>/enviar-telegram", methods=["POST"])
 def enviar_credor_telegram(cid):
-    """Envia solicitação de empenho do credor para o admin via Telegram como PDF (mesmo formato do sistema)."""
+    """Recebe HTML do frontend, converte para PDF e envia pelo Telegram."""
     try:
         import os
         import io as _io
-        import base64
+        import subprocess
+        import tempfile
         from pathlib import Path
+
+        data = request.get_json(silent=True) or {}
+        html = data.get("html", "")
+        if not html:
+            return jsonify({"error": "HTML não fornecido"}), 400
 
         # Ler token e chat IDs
         env_file = Path(BASE_DIR) / ".env"
@@ -1834,6 +1840,67 @@ def enviar_credor_telegram(cid):
             return jsonify({"error": "Credor não encontrado"}), 404
 
         credor = dict(credor)
+
+        # Salvar HTML temporário
+        fd_html, tmp_html = tempfile.mkstemp(suffix=".html")
+        fd_pdf, tmp_pdf = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd_html)
+        os.close(fd_pdf)
+
+        try:
+            with open(tmp_html, "w", encoding="utf-8") as f:
+                f.write(html)
+
+            # Converter HTML → PDF usando Edge --print-to-pdf
+            edge_paths = [
+                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+            ]
+            edge_exe = None
+            for p in edge_paths:
+                if os.path.exists(p):
+                    edge_exe = p
+                    break
+
+            if not edge_exe:
+                return jsonify({"error": "Microsoft Edge não encontrado"}), 500
+
+            pdf_url = f"file:///{tmp_html.replace(os.sep, '/')}"
+            result = subprocess.run(
+                [
+                    edge_exe,
+                    "--headless",
+                    "--disable-gpu",
+                    "--no-margins",
+                    f"--print-to-pdf={tmp_pdf}",
+                    pdf_url,
+                ],
+                capture_output=True,
+                timeout=30,
+            )
+
+            if not os.path.exists(tmp_pdf) or os.path.getsize(tmp_pdf) == 0:
+                app.logger.error(
+                    "Edge PDF output vazio: %s", result.stderr.decode(errors="replace")
+                )
+                return jsonify({"error": "Falha ao gerar PDF"}), 500
+
+            with open(tmp_pdf, "rb") as f:
+                pdf_bytes = f.read()
+
+        finally:
+            try:
+                os.unlink(tmp_html)
+            except Exception:
+                pass
+            try:
+                os.unlink(tmp_pdf)
+            except Exception:
+                pass
+
+        # Enviar PDF pelo Telegram
+        sent = 0
+        errors = []
         mes_nome = [
             "Janeiro",
             "Fevereiro",
@@ -1849,208 +1916,8 @@ def enviar_credor_telegram(cid):
             "Dezembro",
         ]
         mes_label = mes_nome[int(_time.strftime("%m")) - 1]
-        ano = int(_time.strftime("%Y"))
+        ano = _time.strftime("%Y")
         hoje = _time.strftime("%d/%m/%Y")
-
-        is_var = "VAR" in (credor.get("tipo_valor") or "").upper()
-        valor_raw = credor.get("valor") or 0
-        try:
-            valor_f = float(valor_raw)
-        except Exception:
-            valor_f = 0.0
-        valor_str = (
-            "Valor variável"
-            if (is_var and not valor_f)
-            else f"R$ {valor_f:,.2f}".replace(",", "X")
-            .replace(".", ",")
-            .replace("X", ".")
-        )
-
-        # Campos da tabela (igual ao _buildDocPage do JS)
-        campos = [
-            ("Departamento Solicitante", credor.get("departamento")),
-            ("Credor / Fornecedor", credor.get("nome")),
-            ("CNPJ / CPF", credor.get("cnpj")),
-            ("Descrição do Objeto / Serviço", credor.get("descricao")),
-            ("Tipo de Valor", credor.get("tipo_valor")),
-            ("Observações", credor.get("obs")),
-        ]
-        campos = [(l, v) for l, v in campos if v and str(v).strip()]
-
-        # ── Gerar PDF com FPDF2 recriando o layout oficial ──
-        from fpdf import FPDF
-
-        class DocPDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.brason_path = None
-
-            def header(self):
-                # Borda externa do cabeçalho
-                self.set_draw_color(0, 0, 0)
-                self.set_line_width(0.8)
-                self.rect(12, 8, 187, 32, style="")
-
-                # Brasão (se disponível)
-                brasao_path = Path(BASE_DIR) / "static" / "img" / "brasao.png"
-                if brasao_path.exists():
-                    try:
-                        self.image(str(brasao_path), x=15, y=10, w=18)
-                    except Exception:
-                        pass
-
-                # Texto centralizado
-                self.set_xy(35, 10)
-                self.set_font("Helvetica", "B", 12)
-                self.cell(
-                    120, 6, "Estado do Parana", align="C", new_x="LMARGIN", new_y="NEXT"
-                )
-                self.set_font("Helvetica", "", 10)
-                self.cell(
-                    120,
-                    5,
-                    "Prefeitura Municipal de Inaja",
-                    align="C",
-                    new_x="LMARGIN",
-                    new_y="NEXT",
-                )
-
-                # Linha separadora
-                self.set_xy(35, self.get_y())
-                self.set_line_width(0.3)
-                self.cell(120, 0, "", border="T", new_x="LMARGIN", new_y="NEXT")
-
-                self.set_font("Helvetica", "B", 10)
-                self.cell(
-                    120,
-                    5,
-                    "Solicitacao de Empenho de Despesa Fixa / Continua",
-                    align="C",
-                    new_x="LMARGIN",
-                    new_y="NEXT",
-                )
-
-                # Lado direito - Referência
-                self.set_xy(155, 12)
-                self.set_line_width(0.3)
-                self.set_draw_color(200, 200, 200)
-                self.cell(0, 0, "", border="L", new_x="LMARGIN", new_y="NEXT")
-                self.set_xy(158, 14)
-                self.set_font("Helvetica", "", 8)
-                self.cell(38, 4, "Referencia", align="C", new_x="LMARGIN", new_y="NEXT")
-                self.set_font("Helvetica", "B", 10)
-                self.cell(
-                    38,
-                    6,
-                    f"{mes_label} / {ano}",
-                    align="C",
-                    new_x="LMARGIN",
-                    new_y="NEXT",
-                )
-
-                self.ln(34)
-
-            def footer(self):
-                self.set_y(-15)
-                self.set_draw_color(200, 200, 200)
-                self.set_line_width(0.2)
-                self.line(15, self.get_y(), 195, self.get_y())
-                self.set_font("Helvetica", "I", 7)
-                self.set_text_color(85, 85, 85)
-                self.cell(
-                    0,
-                    10,
-                    "Documento gerado eletronicamente pelo modulo de Controle de Despesas Fixas.",
-                    align="C",
-                )
-
-        pdf = DocPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=20)
-        pdf.set_font("Helvetica", "", 10)
-        pdf.set_text_color(0, 0, 0)
-
-        # Tabela de dados
-        pdf.set_draw_color(0, 0, 0)
-        pdf.set_line_width(0.3)
-        col_label_w = 60
-        col_value_w = 130
-        row_h = 9
-
-        for label, value in campos:
-            x_start = pdf.get_x()
-            y_start = pdf.get_y()
-
-            # Label cell
-            pdf.set_fill_color(240, 240, 240)
-            pdf.rect(x_start, y_start, col_label_w, row_h, "DF")
-            pdf.set_xy(x_start + 2, y_start + 2)
-            pdf.set_font("Helvetica", "B", 8)
-            pdf.cell(col_label_w - 4, 5, label.upper())
-
-            # Value cell
-            pdf.rect(x_start + col_label_w, y_start, col_value_w, row_h, "D")
-            pdf.set_xy(x_start + col_label_w + 2, y_start + 2)
-            pdf.set_font("Helvetica", "", 9)
-            pdf.cell(col_value_w - 4, 5, str(value)[:120])
-
-            pdf.set_xy(x_start, y_start + row_h)
-
-        pdf.ln(5)
-
-        # Caixa de valor
-        pdf.set_draw_color(0, 0, 0)
-        pdf.set_line_width(0.6)
-        val_box_h = 16
-        val_box_w = 190
-        val_box_x = (210 - val_box_w) / 2
-        val_box_y = pdf.get_y()
-        pdf.rect(val_box_x, val_box_y, val_box_w, val_box_h, "D")
-        pdf.set_xy(val_box_x, val_box_y + 2)
-        pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(
-            val_box_w, 5, "VALOR DO EMPENHO", align="C", new_x="LMARGIN", new_y="NEXT"
-        )
-        pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(val_box_w, 8, valor_str, align="C", new_x="LMARGIN", new_y="NEXT")
-
-        pdf.ln(12)
-
-        # Data
-        pdf.set_font("Helvetica", "", 10)
-        pdf.set_x(120)
-        pdf.cell(75, 6, f"Inaja / PR, _____ de ___________________ de {ano}.")
-
-        pdf.ln(20)
-
-        # Assinatura
-        sign_x = 55
-        sign_w = 100
-        pdf.set_draw_color(0, 0, 0)
-        pdf.set_line_width(0.3)
-        pdf.line(sign_x, pdf.get_y(), sign_x + sign_w, pdf.get_y())
-        pdf.ln(2)
-        pdf.set_x(sign_x)
-        pdf.set_font("Helvetica", "B", 9)
-        pdf.cell(
-            sign_w, 5, "Ordenador de Despesa", align="C", new_x="LMARGIN", new_y="NEXT"
-        )
-        pdf.set_x(sign_x)
-        pdf.set_font("Helvetica", "", 8)
-        pdf.cell(
-            sign_w,
-            4,
-            "Prefeitura Municipal de Inaja",
-            align="C",
-            new_x="LMARGIN",
-            new_y="NEXT",
-        )
-
-        pdf_bytes = pdf.output()
-
-        # ── Enviar PDF pelo Telegram ──
-        sent = 0
-        errors = []
         filename = (
             f"solicitacao_{credor['nome'].replace(' ', '_')}_{mes_label}_{ano}.pdf"
         )
@@ -2066,7 +1933,7 @@ def enviar_credor_telegram(cid):
                     "caption": (
                         f"📋 *Solicitacao de Empenho*\n\n"
                         f"🏢 *Credor:* {credor['nome']}\n"
-                        f"💰 *Valor:* {valor_str}\n"
+                        f"💰 *Valor:* R$ {float(credor.get('valor') or 0):,.2f}\n"
                         f"📂 *Departamento:* {credor.get('departamento') or '—'}\n"
                         f"📅 *Data:* {hoje}\n"
                         f"📆 *Referencia:* {mes_label}/{ano}\n\n"

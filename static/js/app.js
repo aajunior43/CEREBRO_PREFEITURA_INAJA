@@ -897,15 +897,34 @@ async function onToggle(id, nome) {
 
 // ── Enviar Credor pelo Telegram ──────────────────────────────
 async function sendToTelegram(credor) {
+  let btn = null;
   try {
-    const btn = document.querySelector(`.empenho-card[data-id="${credor.id}"] .btn-telegram`);
+    btn = document.querySelector(`.empenho-card[data-id="${credor.id}"] .btn-telegram`);
     if (btn) {
       btn.style.opacity = '0.5';
       btn.style.pointerEvents = 'none';
     }
-    const res = await apiPost(`/credores/${credor.id}/enviar-telegram`, {});
+
+    const done = !!state.empenhados[credor.id];
+    const mesNome = MESES[state.month];
+    const ano = state.year;
+
+    try { await ensureBrasaoB64(); } catch (_) {}
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Solicitacao - ${credor.nome}</title>
+  <style>${_printCSS()}</style>
+</head>
+<body>
+  ${_buildDocPage(credor, done, mesNome, ano, true)}
+</body></html>`;
+
+    const res = await apiPost(`/credores/${credor.id}/enviar-telegram`, { html });
     if (res.ok) {
-      showToast(`📤 Enviado para ${res.sent} chat(s) no Telegram`, 'success');
+      showToast(`📤 PDF enviado para ${res.sent} chat(s) no Telegram`, 'success');
     } else {
       showToast(res.error || 'Erro ao enviar', 'error');
     }
