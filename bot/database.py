@@ -328,22 +328,76 @@ def _logs_recentes(limite: int = 10):
         conn.close()
 
 
-def _tarefas_proximas_vencimento(dias: int = 7):
+def _toggle_empenho(credor_id: int, ano: int, mes: int) -> dict:
+    """Marca/desmarca empenho de um credor. Retorna {action: 'created'|'removed', credor_nome}."""
     conn = _db_connect()
     try:
-        hoje = date.today()
-        limite = hoje + timedelta(days=dias)
-        rows = conn.execute(
-            "SELECT id, title, description, status, priority, data_vencimento "
-            "FROM kanban_tasks "
-            "WHERE data_vencimento != '' AND data_vencimento IS NOT NULL "
-            "AND data_vencimento <= ? AND status != 'done' "
-            "ORDER BY data_vencimento ASC",
-            (limite.isoformat(),),
-        ).fetchall()
-        return [dict(r) for r in rows]
+        existing = conn.execute(
+            "SELECT * FROM empenhos WHERE credor_id=? AND ano=? AND mes=?",
+            (credor_id, ano, mes),
+        ).fetchone()
+
+        credor = conn.execute(
+            "SELECT nome FROM credores WHERE id=?", (credor_id,)
+        ).fetchone()
+        nome = credor["nome"] if credor else str(credor_id)
+
+        if existing:
+            conn.execute("DELETE FROM empenhos WHERE id=?", (existing["id"],))
+            conn.execute(
+                "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?, ?, ?, ?)",
+                ("EMPENHO_REMOVE", credor_id, nome, f"Removido empenho {ano}/{mes}"),
+            )
+            conn.commit()
+            return {"action": "removed", "credor_nome": nome}
+        else:
+            conn.execute(
+                "INSERT INTO empenhos (credor_id, ano, mes, empenhado, timestamp) VALUES (?, ?, ?, 1, datetime('now', 'localtime'))",
+                (credor_id, ano, mes),
+            )
+            conn.execute(
+                "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?, ?, ?, ?)",
+                ("EMPENHO_CREATE", credor_id, nome, f"Empenhado {ano}/{mes}"),
+            )
+            conn.commit()
+            return {"action": "created", "credor_nome": nome}
     finally:
         conn.close()
+
+
+def _listar_pendentes_com_id(ano: int, mes: int) -> list:
+    """Lista credores pendentes com seus IDs para ação rápida."""
+    conn = _db_connect()
+    try:
+        credores = conn.execute(
+            "SELECT id, nome, valor, tipo_valor FROM credores WHERE ativo=1 ORDER BY valor DESC"
+        ).fetchall()
+        credores = [dict(c) for c in credores]
+
+        emp_rows = conn.execute(
+            "SELECT credor_id FROM empenhos WHERE ano=? AND mes=? AND empenhado=1",
+            (ano, mes),
+        ).fetchall()
+        empenhados_ids = {r["credor_id"] for r in emp_rows}
+
+        pendentes = []
+        for c in credores:
+            if c["id"] not in empenhados_ids:
+                pendentes.append(
+                    {"id": c["id"], "nome": c["nome"], "valor": float(c["valor"] or 0)}
+                )
+
+        return pendentes[:20]
+    finally:
+        conn.close()
+
+
+async def db_toggle_empenho(credor_id: int, ano: int, mes: int) -> dict:
+    return await run_db(_toggle_empenho, credor_id, ano, mes)
+
+
+async def db_listar_pendentes_com_id(ano: int, mes: int) -> list:
+    return await run_db(_listar_pendentes_com_id, ano, mes)
 
 
 async def db_tarefas_proximas_vencimento(dias: int = 7):

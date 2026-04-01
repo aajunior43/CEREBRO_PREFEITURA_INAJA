@@ -21,6 +21,8 @@ from bot.database import (
     db_buscar_despesas,
     db_analise_financeira,
     db_logs_recentes,
+    db_toggle_empenho,
+    db_listar_pendentes_com_id,
 )
 from bot.config import SERVER_URL, logger, remember_chat_id
 from bot.features.auth import (
@@ -228,6 +230,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("status_update_"):
         await handle_task_status_update(update, context)
         return
+    if data.startswith("emp_quick_"):
+        parts = data.split("_")
+        credor_id = int(parts[2])
+        ano = int(parts[3])
+        mes = int(parts[4])
+        result = await db_toggle_empenho(credor_id, ano, mes)
+        action_label = (
+            "✅ Empenhado" if result["action"] == "created" else "❌ Removido"
+        )
+        await safe_edit_message_text(
+            query,
+            f"{action_label}\n\n<b>{_safe_html(result['credor_nome'])}</b> — {mes:02d}/{ano}",
+            parse_mode="HTML",
+        )
+        return
     if (
         data in {"prio_high", "prio_medium", "prio_low"}
         and context.user_data.get("step") == "task_new_priority"
@@ -276,9 +293,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
             if _p[1] == "pend":
                 ano, mes = int(_p[2]), int(_p[3])
-                resumo = await db_analise_financeira(ano, mes)
-                todos = resumo.get("pendentes", [])
-                if not todos:
+                pendentes = await db_listar_pendentes_com_id(ano, mes)
+                if not pendentes:
                     await query.message.reply_text(
                         f"⏳ <b>Pendentes {mes:02d}/{ano}</b>\n\nNenhum credor pendente.",
                         parse_mode="HTML",
@@ -286,11 +302,32 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     return
                 linhas = [f"⏳ <b>Pendentes {mes:02d}/{ano}</b>\n"]
-                for item in todos[:20]:
+                kb_pend = []
+                for item in pendentes:
                     linhas.append(
                         f"• {_safe_html(item.get('nome', '-'))} - <b>{_fmt_currency(item.get('valor'))}</b>"
                     )
+                    cid = item.get("id")
+                    short = item.get("nome", "?")[:20]
+                    kb_pend.append(
+                        [
+                            InlineKeyboardButton(
+                                f"⚡ {short}",
+                                callback_data=f"emp_quick_{cid}_{ano}_{mes}",
+                            )
+                        ]
+                    )
+                kb_pend.append(
+                    [
+                        InlineKeyboardButton(
+                            "🔙 Voltar", callback_data=f"fin_{ano}_{mes}"
+                        )
+                    ]
+                )
                 await _reply_chunks(query.message, "\n".join(linhas), parse_mode="HTML")
+                await query.message.reply_text(
+                    "Toque para empenhar:", reply_markup=InlineKeyboardMarkup(kb_pend)
+                )
                 return
             ano, mes = int(_p[1]), int(_p[2])
             resumo = await db_analise_financeira(ano, mes)
