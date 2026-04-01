@@ -1832,6 +1832,7 @@ def enviar_credor_telegram(cid):
         if not credor:
             return jsonify({"error": "Credor não encontrado"}), 404
 
+        credor = dict(credor)
         hoje = _time.strftime("%d/%m/%Y")
         mes_atual = _time.strftime("%m/%Y")
 
