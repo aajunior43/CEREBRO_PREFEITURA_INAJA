@@ -1789,6 +1789,122 @@ def get_historico_credor(cid):
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/credores/<int:cid>/enviar-telegram", methods=["POST"])
+def enviar_credor_telegram(cid):
+    """Envia solicitação de empenho do credor para o admin via Telegram."""
+    try:
+        import os
+        from pathlib import Path
+
+        # Ler token e chat IDs
+        env_file = Path(BASE_DIR) / ".env"
+        telegram_token = ""
+        chat_ids = []
+
+        if env_file.exists():
+            with open(env_file, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("TELEGRAM_TOKEN="):
+                        telegram_token = line.split("=", 1)[1].strip()
+                    elif line.startswith("TELEGRAM_CHAT_ID="):
+                        val = line.split("=", 1)[1].strip()
+                        if val:
+                            chat_ids.append(val)
+
+        # Fallback: ler telegram_chat_ids.txt
+        targets_file = Path(BASE_DIR) / "telegram_chat_ids.txt"
+        if targets_file.exists():
+            raw = targets_file.read_text(encoding="utf-8").strip()
+            for chunk in raw.replace("\n", ",").split(","):
+                chunk = chunk.strip()
+                if chunk and chunk not in chat_ids:
+                    chat_ids.append(chunk)
+
+        if not telegram_token:
+            return jsonify({"error": "TELEGRAM_TOKEN não configurado no .env"}), 500
+
+        if not chat_ids:
+            return jsonify({"error": "Nenhum chat_id configurado"}), 500
+
+        conn = get_db()
+        credor = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+        if not credor:
+            return jsonify({"error": "Credor não encontrado"}), 404
+
+        hoje = _time.strftime("%d/%m/%Y")
+        mes_atual = _time.strftime("%m/%Y")
+
+        valor_str = "—"
+        if credor.get("valor"):
+            try:
+                valor_str = (
+                    f"R$ {float(credor['valor']):,.2f}".replace(",", "X")
+                    .replace(".", ",")
+                    .replace("X", ".")
+                )
+            except Exception:
+                valor_str = str(credor.get("valor", "—"))
+
+        message = (
+            f"📋 <b>Solicitação de Empenho</b>\n\n"
+            f"🏢 <b>Credor:</b> {credor['nome']}\n"
+            f"💰 <b>Valor:</b> {valor_str}\n"
+            f"📂 <b>Departamento:</b> {credor.get('departamento') or '—'}\n"
+            f"📅 <b>Data:</b> {hoje}\n"
+            f"📆 <b>Referência:</b> {mes_atual}\n"
+        )
+
+        if credor.get("cnpj"):
+            message += f"🔢 <b>CNPJ:</b> <code>{credor['cnpj']}</code>\n"
+        if credor.get("descricao"):
+            message += f"📝 <b>Objeto:</b> {credor['descricao']}\n"
+        if credor.get("solicitacao"):
+            message += f"📌 <b>Solicitação:</b> {credor['solicitacao']}\n"
+
+        message += f"\n<i>Enviado pelo Sistema de Empenhos — Prefeitura de Inajá</i>"
+
+        sent = 0
+        errors = []
+        for chat_id in chat_ids:
+            try:
+                url = f"https://api.telegram.org/bot{telegram_token}/sendMessage"
+                resp = requests.post(
+                    url,
+                    json={
+                        "chat_id": chat_id,
+                        "text": message,
+                        "parse_mode": "HTML",
+                    },
+                    timeout=15,
+                )
+                if resp.ok:
+                    sent += 1
+                else:
+                    errors.append(f"Chat {chat_id}: {resp.text}")
+            except Exception as e:
+                errors.append(f"Chat {chat_id}: {str(e)}")
+
+        if sent > 0:
+            conn.execute(
+                "INSERT INTO logs (acao, credor_id, credor_nome, detalhes) VALUES (?, ?, ?, ?)",
+                (
+                    "TELEGRAM_ENVIO",
+                    cid,
+                    credor["nome"],
+                    f"Enviado para {sent} chat(s) - {hoje}",
+                ),
+            )
+            conn.commit()
+            return jsonify({"ok": True, "sent": sent, "errors": errors})
+        else:
+            return jsonify({"error": "Falha ao enviar", "details": errors}), 500
+
+    except Exception as e:
+        app.logger.error("POST /api/credores/%s/enviar-telegram: %s", cid, e)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/config", methods=["GET"])
 def config_get():
     try:

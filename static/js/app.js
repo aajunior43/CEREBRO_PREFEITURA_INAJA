@@ -381,6 +381,9 @@ function buildCard(c, done, idx) {
         <button class="btn-expand" data-action="expand" title="Ver detalhes">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
         </button>
+        <button class="btn-telegram" data-action="telegram" title="Enviar solicitação pelo Telegram">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.484-.429-.008-1.252-.242-1.865-.442-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.12.098.153.23.168.332.016.101.036.332.02.512z"/></svg>
+        </button>
         <button class="btn-edit" data-action="edit" title="Editar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
@@ -892,6 +895,31 @@ async function onToggle(id, nome) {
   }
 }
 
+// ── Enviar Credor pelo Telegram ──────────────────────────────
+async function sendToTelegram(credor) {
+  try {
+    const btn = document.querySelector(`.empenho-card[data-id="${credor.id}"] .btn-telegram`);
+    if (btn) {
+      btn.style.opacity = '0.5';
+      btn.style.pointerEvents = 'none';
+    }
+    const res = await apiPost(`/credores/${credor.id}/enviar-telegram`, {});
+    if (res.ok) {
+      showToast(`📤 Enviado para ${res.sent} chat(s) no Telegram`, 'success');
+    } else {
+      showToast(res.error || 'Erro ao enviar', 'error');
+    }
+  } catch (e) {
+    showToast('Erro ao enviar pelo Telegram', 'error');
+    console.error(e);
+  } finally {
+    if (btn) {
+      btn.style.opacity = '';
+      btn.style.pointerEvents = '';
+    }
+  }
+}
+
 // ── Modal: Adicionar / Editar Credor ─────────────────────────
 let editingId = null;
 let pendingDeleteCredorId = null;
@@ -1139,6 +1167,7 @@ function attachEvents() {
     else if (action === 'edit') openModal(credor.id);
     else if (action === 'print') printCredor(credor);
     else if (action === 'duplicate') duplicateCredor(credor);
+    else if (action === 'telegram') sendToTelegram(credor);
   });
 
   document.getElementById('btn-prev-month').addEventListener('click', async () => {

@@ -1383,7 +1383,7 @@ body {
 /* Linha principal */
 .card-row {
   display: grid;
-  grid-template-columns: 1fr 165px 135px 130px 290px;
+  grid-template-columns: 1fr 165px 135px 130px auto 290px;
   align-items: center;
   gap: 12px;
   padding: 16px 18px;
@@ -1643,9 +1643,40 @@ body {
   color: var(--green);
 }
 
+.btn-telegram {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: #2AABEE;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-telegram:hover {
+  border-color: #2AABEE;
+  color: #229ED9;
+  background: rgba(42, 171, 238, 0.08);
+  box-shadow: 0 0 12px rgba(42, 171, 238, 0.15);
+}
+
+.btn-telegram:active {
+  transform: scale(0.9);
+}
+
+[data-theme="dark"] .btn-telegram:hover {
+  background: rgba(42, 171, 238, 0.12);
+}
+
 .btn-expand svg,
 .btn-edit svg,
-.btn-print svg {
+.btn-print svg,
+.btn-telegram svg {
   width: 13px;
   height: 13px;
   pointer-events: none;
