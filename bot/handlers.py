@@ -7,7 +7,13 @@ import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
-from bot.ui import keyboard_main, menu_text, keyboard_priority, keyboard_financeiro, keyboard_skip_or_cancel
+from bot.ui import (
+    keyboard_main,
+    menu_text,
+    keyboard_priority,
+    keyboard_financeiro,
+    keyboard_skip_or_cancel,
+)
 from bot.database import (
     db_listar_tarefas,
     db_criar_tarefa,
@@ -17,7 +23,11 @@ from bot.database import (
     db_logs_recentes,
 )
 from bot.config import SERVER_URL, logger, remember_chat_id
-from bot.features.auth import is_authorized_async, handle_login_request, handle_auth_callback
+from bot.features.auth import (
+    is_authorized_async,
+    handle_login_request,
+    handle_auth_callback,
+)
 from bot.telegram_safe import safe_answer_callback, safe_edit_message_text
 
 
@@ -31,10 +41,7 @@ def _remember_update_chat(update: Update):
 
 def _safe_html(text: str) -> str:
     return (
-        str(text or "")
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
+        str(text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     )
 
 
@@ -60,6 +67,7 @@ def _finance_message(resumo: dict, ano: int, mes: int) -> str:
 def _public_link(path: str) -> str:
     try:
         from bot.main import get_public_base_url
+
         base = get_public_base_url()
     except Exception:
         base = "http://localhost:5000"
@@ -68,13 +76,14 @@ def _public_link(path: str) -> str:
 
 async def _send_feature_link(query, title: str, path: str, details: str = ""):
     text = (
-        f"🔗 <b>{title}</b>\n\n"
-        f"<a href=\"{_public_link(path)}\">Abrir {title.lower()}</a>"
+        f'🔗 <b>{title}</b>\n\n<a href="{_public_link(path)}">Abrir {title.lower()}</a>'
     )
     if details:
         text += f"\n\n{details}"
     text += "\n\n<i>Se estiver fora da rede local, abra pelo link externo gerado no dev.bat.</i>"
-    await query.message.reply_text(text, parse_mode="HTML", disable_web_page_preview=True)
+    await query.message.reply_text(
+        text, parse_mode="HTML", disable_web_page_preview=True
+    )
 
 
 async def _reply_chunks(message, text: str, parse_mode: str = "HTML"):
@@ -94,7 +103,9 @@ async def _reply_chunks(message, text: str, parse_mode: str = "HTML"):
     if current:
         chunks.append("\n".join(current))
     for chunk in chunks:
-        await message.reply_text(chunk, parse_mode=parse_mode, disable_web_page_preview=True)
+        await message.reply_text(
+            chunk, parse_mode=parse_mode, disable_web_page_preview=True
+        )
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -133,7 +144,7 @@ async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if url:
         message = (
             f"🌐 <b>Link de Acesso Externo</b>\n\n"
-            f"🔗 <a href=\"{url}\">{url}</a>\n\n"
+            f'🔗 <a href="{url}">{url}</a>\n\n'
             f"📋 <b>Funcionalidades disponíveis:</b>\n"
             f"• Kanban de Tarefas\n"
             f"• Auditor de Notas Fiscais\n"
@@ -142,7 +153,9 @@ async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"• E muito mais...\n\n"
             f"⚠️ <i>Este link é temporário e será válido enquanto o servidor estiver rodando.</i>"
         )
-        await update.message.reply_text(message, parse_mode="HTML", disable_web_page_preview=True)
+        await update.message.reply_text(
+            message, parse_mode="HTML", disable_web_page_preview=True
+        )
     else:
         await update.message.reply_text(
             "ℹ️ Nenhum link de acesso externo disponível.\n\n"
@@ -190,7 +203,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Callback received: {data}")
 
     from bot.features.auditor import start_auditor_flow, generate_empenho_from_auditor
-    from bot.features.kanban import cmd_ver_tarefas, handle_pagination_callback
+    from bot.features.kanban import (
+        cmd_ver_tarefas,
+        handle_pagination_callback,
+        handle_task_move,
+        handle_task_status_update,
+    )
 
     if data == "cmd_auditor_nf":
         await start_auditor_flow(update, context)
@@ -204,19 +222,32 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("page_tarefas_"):
         await handle_pagination_callback(update, context)
         return
-    if data in {"prio_high", "prio_medium", "prio_low"} and context.user_data.get("step") == "task_new_priority":
-        priority = {"prio_high": "high", "prio_medium": "medium", "prio_low": "low"}[data]
+    if data.startswith("move_"):
+        await handle_task_move(update, context)
+        return
+    if data.startswith("status_update_"):
+        await handle_task_status_update(update, context)
+        return
+    if (
+        data in {"prio_high", "prio_medium", "prio_low"}
+        and context.user_data.get("step") == "task_new_priority"
+    ):
+        priority = {"prio_high": "high", "prio_medium": "medium", "prio_low": "low"}[
+            data
+        ]
         title = context.user_data.get("new_task_title", "").strip()
         desc = context.user_data.get("new_task_description", "").strip()
         if not title:
             context.user_data.clear()
-            await query.message.reply_text("⚠️ O título da tarefa expirou. Inicie novamente em /start.")
+            await query.message.reply_text(
+                "⚠️ O título da tarefa expirou. Inicie novamente em /start."
+            )
             return
         task = await db_criar_tarefa(title, desc, "todo", priority)
         context.user_data.clear()
         await query.message.reply_text(
             f"✅ <b>Tarefa criada</b>\n\n"
-            f"📝 { _safe_html(task.get('title')) }\n"
+            f"📝 {_safe_html(task.get('title'))}\n"
             f"⚡ Prioridade: {_safe_html(priority)}",
             parse_mode="HTML",
             reply_markup=keyboard_main(),
@@ -238,7 +269,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return
                 linhas = [f"📋 <b>Empenhados {mes:02d}/{ano}</b>\n"]
                 for item in todos[:20]:
-                    linhas.append(f"• {_safe_html(item.get('nome','-'))} - <b>{_fmt_currency(item.get('valor'))}</b>")
+                    linhas.append(
+                        f"• {_safe_html(item.get('nome', '-'))} - <b>{_fmt_currency(item.get('valor'))}</b>"
+                    )
                 await _reply_chunks(query.message, "\n".join(linhas), parse_mode="HTML")
                 return
             if _p[1] == "pend":
@@ -254,7 +287,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return
                 linhas = [f"⏳ <b>Pendentes {mes:02d}/{ano}</b>\n"]
                 for item in todos[:20]:
-                    linhas.append(f"• {_safe_html(item.get('nome','-'))} - <b>{_fmt_currency(item.get('valor'))}</b>")
+                    linhas.append(
+                        f"• {_safe_html(item.get('nome', '-'))} - <b>{_fmt_currency(item.get('valor'))}</b>"
+                    )
                 await _reply_chunks(query.message, "\n".join(linhas), parse_mode="HTML")
                 return
             ano, mes = int(_p[1]), int(_p[2])
@@ -276,7 +311,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "➕ <b>Nova Tarefa</b>\n\nEnvie o <b>título</b> da tarefa.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]),
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]
+            ),
         )
         return
 
@@ -296,7 +333,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "🔎 <b>Buscar Despesas</b>\n\nEnvie um termo para pesquisar nas despesas.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]),
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]
+            ),
         )
         return
 
@@ -306,7 +345,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "🔎 <b>Buscar Protocolo / Ofício</b>\n\nEnvie um termo para pesquisa.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]),
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]
+            ),
         )
         return
 
@@ -325,7 +366,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "cmd_log":
         logs = await db_logs_recentes(10)
         if not logs:
-            await query.message.reply_text("🗒 <b>Logs recentes</b>\n\nNenhum log encontrado.", parse_mode="HTML")
+            await query.message.reply_text(
+                "🗒 <b>Logs recentes</b>\n\nNenhum log encontrado.", parse_mode="HTML"
+            )
             return
         lines = ["🗒 <b>Logs recentes</b>\n"]
         for log in logs:
@@ -333,7 +376,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             nome = _safe_html(log.get("credor_nome", "-"))
             data_log = _safe_html(log.get("data", "-"))
             detalhes = _safe_html(log.get("detalhes", ""))
-            lines.append(f"• <b>{acao}</b> - {nome}\n  <code>{data_log}</code>\n  {detalhes}")
+            lines.append(
+                f"• <b>{acao}</b> - {nome}\n  <code>{data_log}</code>\n  {detalhes}"
+            )
         await _reply_chunks(query.message, "\n\n".join(lines), parse_mode="HTML")
         return
 
@@ -343,7 +388,9 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             "🏢 <b>Consulta de CNPJ</b>\n\nEnvie o CNPJ com 14 dígitos.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]),
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("❌ Cancelar", callback_data="cmd_cancelar")]]
+            ),
         )
         return
 
@@ -486,7 +533,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if step == "task_new_desc":
-        context.user_data["new_task_description"] = "" if text.strip() == "-" else text.strip()
+        context.user_data["new_task_description"] = (
+            "" if text.strip() == "-" else text.strip()
+        )
         context.user_data["step"] = "task_new_priority"
         await update.message.reply_text(
             "Descrição registrada. Agora selecione a <b>prioridade</b> da tarefa:",
@@ -510,7 +559,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data.clear()
         await update.message.reply_text(
             f"✅ <b>Tarefa criada</b>\n\n"
-            f"📝 { _safe_html(task.get('title')) }\n"
+            f"📝 {_safe_html(task.get('title'))}\n"
             f"⚡ Prioridade: {_safe_html(prio)}",
             parse_mode="HTML",
             reply_markup=keyboard_main(),
@@ -521,7 +570,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rows = await db_buscar_despesas(text.strip())
         context.user_data.clear()
         if not rows:
-            await update.message.reply_text("Nenhuma despesa encontrada para esse termo.")
+            await update.message.reply_text(
+                "Nenhuma despesa encontrada para esse termo."
+            )
             return
         lines = ["🔎 <b>Resultados em Despesas</b>\n"]
         for row in rows[:10]:
@@ -534,7 +585,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         rows = await db_buscar_protocolos(text.strip())
         context.user_data.clear()
         if not rows:
-            await update.message.reply_text("Nenhum protocolo encontrado para esse termo.")
+            await update.message.reply_text(
+                "Nenhum protocolo encontrado para esse termo."
+            )
             return
         lines = ["🔎 <b>Resultados em Protocolos</b>\n"]
         for row in rows[:10]:
@@ -561,7 +614,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             data = resp.json()
             if not resp.ok:
-                await update.message.reply_text(f"⚠️ {data.get('error', 'Erro ao consultar CNPJ')}")
+                await update.message.reply_text(
+                    f"⚠️ {data.get('error', 'Erro ao consultar CNPJ')}"
+                )
                 return
             msg = (
                 f"🏢 <b>{_safe_html(data.get('razao_social') or data.get('nome') or 'CNPJ consultado')}</b>\n\n"
@@ -577,7 +632,9 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not step:
-        await update.message.reply_text("Escolha uma opção no menu ou digite /start para reiniciar.")
+        await update.message.reply_text(
+            "Escolha uma opção no menu ou digite /start para reiniciar."
+        )
         return
 
     await update.message.reply_text(
@@ -601,6 +658,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_chat_action(action="typing")
     if step == "up_auditor_arquivo":
         from bot.features.auditor import process_auditor_file
+
         await process_auditor_file(update, context)
         return
 
@@ -617,4 +675,5 @@ async def handle_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_authorized_async(update.effective_user.id):
         return
     from bot.features.voice import process_voice_note
+
     await process_voice_note(update, context)
