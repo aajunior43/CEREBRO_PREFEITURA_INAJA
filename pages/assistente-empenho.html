@@ -676,38 +676,14 @@
 </head>
 <body>
   <div class="ea-page ea-shell">
-    <section class="ea-hero">
+    <section class="ea-hero" style="grid-template-columns: 1fr; padding-bottom: 24px;">
       <div>
         <span class="ea-hero-badge">Assistente com IA</span>
-        <h1>Assistente de Empenho</h1>
-        <p>Texto ou arquivo. Descricao pronta.</p>
-        <div class="ea-hero-meta">
-          <div class="ea-meta-card">
-            <strong>1</strong>
-            <span>enviar ou colar</span>
-          </div>
-          <div class="ea-meta-card">
-            <strong>2</strong>
-            <span>extrair</span>
-          </div>
-          <div class="ea-meta-card">
-            <strong>3</strong>
-            <span>gerar</span>
-          </div>
-        </div>
+        <h1>Gerador de Empenho</h1>
+        <p>Envie o arquivo ou cole o texto base para o assistente gerar a descrição da nota de empenho.</p>
         <div class="ea-hero-actions">
-          <a class="ea-chip-link" href="/pages/documentos.html">Centro de documentos</a>
+          <a class="ea-chip-link" href="/pages/documentos.html">← Ir para Centro de Documentos</a>
         </div>
-      </div>
-      <div class="ea-hero-side">
-        <article class="ea-side-card">
-          <span class="ea-side-label">Entrada</span>
-          <strong>Texto, imagem ou PDF.</strong>
-        </article>
-        <article class="ea-side-card">
-          <span class="ea-side-label">Saida</span>
-          <strong>Descricao em caixa alta.</strong>
-        </article>
       </div>
     </section>
 
@@ -722,8 +698,7 @@
             <div class="ea-form-sections">
               <section class="ea-block">
                 <div class="ea-block-title">
-                  <strong>Arquivo ou scanner</strong>
-                  <span>opcional</span>
+                  <strong>Arquivo ou Scanner</strong>
                 </div>
                 <div class="ea-upload-box">
                   <label class="ea-upload-dropzone" id="ea-upload-dropzone">
@@ -735,9 +710,7 @@
                         <line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
                     </div>
-                    <div class="ea-upload-title" id="ea-upload-title">Clique ou arraste um arquivo</div>
-                    <div class="ea-upload-subtitle">Imagem ou PDF.</div>
-                    <div class="ea-upload-meta">aceita pdf, jpg, jpeg, png, webp e scanner</div>
+                    <div class="ea-upload-title" id="ea-upload-title">Clique ou arraste um PDF ou Imagem</div>
                   </label>
                   <div class="ea-file-row" id="ea-file-row">
                     <div class="ea-file-info">
@@ -752,8 +725,7 @@
 
               <section class="ea-block">
                 <div class="ea-block-title">
-                  <strong>Texto base</strong>
-                  <span>obrigatório se não houver arquivo</span>
+                  <strong>Texto Base</strong>
                 </div>
                 <label class="ea-field ea-field-full">
                   <span class="ea-label">Texto colado ou conteúdo extraído</span>
@@ -764,8 +736,7 @@
 
               <section class="ea-block">
                 <div class="ea-block-title">
-                  <strong>Dados complementares</strong>
-                  <span>preenchimento manual</span>
+                  <strong>Dados Complementares</strong>
                 </div>
                 <div class="ea-grid">
                   <label class="ea-field">
@@ -837,8 +808,7 @@
 
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Descricao da Nota de Empenho</h2>
-            <p>Resultado.</p>
+            <h2>Descrição da Nota de Empenho</h2>
           </div>
           <div class="ea-card-body">
             <div class="ea-result-header">
@@ -854,8 +824,7 @@
 
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Historico recente</h2>
-            <p>Ultimas execucoes do assistente.</p>
+            <h2>Histórico Recente</h2>
           </div>
           <div class="ea-card-body">
             <div class="ea-mini-list" id="historico_lista">
@@ -870,28 +839,7 @@
       <aside class="ea-stack">
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Como usar</h2>
-            <p>3 passos.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-mini-list">
-              <div class="ea-mini-item">
-                <strong>1. Envie ou cole</strong>
-              </div>
-              <div class="ea-mini-item">
-                <strong>2. Ler arquivo</strong>
-              </div>
-              <div class="ea-mini-item">
-                <strong>3. Gerar descricao</strong>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Campos extraidos</h2>
-            <p>Resultado da leitura estruturada do documento.</p>
+            <h2>Campos Extraídos</h2>
           </div>
           <div class="ea-card-body">
             <div class="ea-mini-list" id="painel_campos">
@@ -905,7 +853,6 @@
         <article class="ea-card">
           <div class="ea-card-head">
             <h2>Checklist</h2>
-            <p>O que falta conferir antes de finalizar.</p>
           </div>
           <div class="ea-card-body">
             <div class="ea-mini-list" id="painel_checklist">
@@ -918,8 +865,7 @@
 
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Comparacao</h2>
-            <p>Mostra a diferenca entre a descricao base e a revisada.</p>
+            <h2>Comparação</h2>
           </div>
           <div class="ea-card-body">
             <div class="ea-mini-list" id="painel_diff">

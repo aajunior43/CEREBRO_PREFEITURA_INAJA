@@ -5,6 +5,15 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 
+env_path = BASE_DIR / ".env"
+if env_path.exists():
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip())
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -27,7 +36,7 @@ class Settings:
         "yes",
         "on",
     }
-    admin_password: str = os.environ.get("ADM_PASSWORD", "")
+    admin_password: str = os.environ.get("ADM_PASSWORD", "1999")
     openrouter_default_model: str = os.environ.get(
         "OPENROUTER_DEFAULT_MODEL", "openai/gpt-4o-mini"
     )

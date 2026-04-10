@@ -167,7 +167,7 @@ function Start-FlaskJob {
         param($py, $app, $wd)
         Set-Location $wd
         $env:APP_DEBUG    = '1'
-        $env:APP_RELOADER = '0'
+        $env:APP_RELOADER = '1'
         & $py $app 2>&1
     } -ArgumentList $PythonCmd, $AppFile, $WorkDir
 

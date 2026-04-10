@@ -1,5 +1,6 @@
 """Blueprints: Prazos, Protocolos, RPAs, Fornecimento, PDF, Despesas, CNPJ, IA, Config, Logs, Auth, Extratos, Empenho Assistente, Classificador"""
 
+import hashlib
 import json
 import os
 import re
@@ -8,6 +9,8 @@ from io import BytesIO as _io
 from flask import Blueprint, request, jsonify, send_file
 
 from config import settings
+
+BytesIO = _io
 
 bp_prazos = Blueprint("prazos", __name__)
 bp_protocolos = Blueprint("protocolos", __name__)
@@ -33,6 +36,86 @@ def get_db():
 
 def row_to_dict(row):
     return dict(row)
+
+
+def _fornecimento_parse_number(value):
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    if not text:
+        return 0.0
+    text = text.replace("R$", "").replace(" ", "")
+    if "," in text:
+        text = text.replace(".", "").replace(",", ".")
+    try:
+        return float(text)
+    except ValueError:
+        return 0.0
+
+
+def _sanitize_fornecimento_payload(data):
+    payload = data or {}
+    solicitante = str(payload.get("solicitante") or "").strip()
+    empresa = str(payload.get("empresa") or "").strip()
+    data_ref = str(payload.get("data") or "").strip()
+    obs = str(payload.get("obs") or "").strip()
+    raw_items = payload.get("items") or []
+
+    if not solicitante:
+        raise ValueError("Informe o solicitante.")
+    if not isinstance(raw_items, list):
+        raise ValueError("Lista de itens invÃ¡lida.")
+
+    items = []
+    valor_total = 0.0
+    for raw_item in raw_items:
+        if not isinstance(raw_item, dict):
+            continue
+        item = {
+            "nome": str(raw_item.get("nome") or "").strip(),
+            "desc": str(raw_item.get("desc") or "").strip(),
+            "qtd": str(raw_item.get("qtd") or "").strip(),
+            "preco": str(raw_item.get("preco") or "").strip(),
+        }
+        if not any(item.values()):
+            continue
+        items.append(item)
+        valor_total += _fornecimento_parse_number(item["qtd"]) * _fornecimento_parse_number(
+            item["preco"]
+        )
+
+    if not items:
+        raise ValueError("Adicione pelo menos um item.")
+
+    return {
+        "solicitante": solicitante,
+        "empresa": empresa,
+        "data": data_ref,
+        "obs": obs,
+        "items": items,
+        "total_itens": len(items),
+        "valor_total": round(valor_total, 2),
+    }
+
+
+def _serialize_fornecimento_row(row):
+    data = row_to_dict(row)
+    try:
+        data["items"] = json.loads(data.pop("items_json", "[]") or "[]")
+    except Exception:
+        data["items"] = []
+        data.pop("items_json", None)
+    return data
+
+
+def _get_fornecimento_solicitacao(conn, solicitacao_id):
+    row = conn.execute(
+        "SELECT * FROM fornecimento_solicitacoes WHERE id=?",
+        (solicitacao_id,),
+    ).fetchone()
+    return _serialize_fornecimento_row(row) if row else None
 
 
 def _get_openrouter_config(conn, api_key_override: str = "", model_override: str = ""):
@@ -661,6 +744,141 @@ def del_fornecimento_dado():
 
 
 # ── PDF ──────────────────────────────────────────────────────
+@bp_fornecimento.route("/api/fornecimento/solicitacoes", methods=["GET"])
+def listar_fornecimento_solicitacoes():
+    try:
+        conn = get_db()
+        q = (request.args.get("q") or "").strip()
+        params = []
+        where = ""
+        if q:
+            like = f"%{q}%"
+            where = "WHERE solicitante LIKE ? OR empresa LIKE ? OR obs LIKE ?"
+            params.extend([like, like, like])
+        rows = conn.execute(
+            f"""
+            SELECT * FROM fornecimento_solicitacoes
+            {where}
+            ORDER BY datetime(atualizado_em) DESC, id DESC
+            """,
+            params,
+        ).fetchall()
+        return jsonify([_serialize_fornecimento_row(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp_fornecimento.route("/api/fornecimento/solicitacoes", methods=["POST"])
+def criar_fornecimento_solicitacao():
+    try:
+        payload = _sanitize_fornecimento_payload(request.get_json() or {})
+        conn = get_db()
+        cur = conn.execute(
+            """
+            INSERT INTO fornecimento_solicitacoes
+            (solicitante, empresa, data, obs, items_json, total_itens, valor_total, criado_em, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+            """,
+            (
+                payload["solicitante"],
+                payload["empresa"],
+                payload["data"],
+                payload["obs"],
+                json.dumps(payload["items"], ensure_ascii=False),
+                payload["total_itens"],
+                payload["valor_total"],
+            ),
+        )
+        conn.commit()
+        saved = _get_fornecimento_solicitacao(conn, cur.lastrowid)
+        return jsonify(saved), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp_fornecimento.route("/api/fornecimento/solicitacoes/<int:solicitacao_id>", methods=["PUT"])
+def atualizar_fornecimento_solicitacao(solicitacao_id):
+    try:
+        payload = _sanitize_fornecimento_payload(request.get_json() or {})
+        conn = get_db()
+        cur = conn.execute(
+            """
+            UPDATE fornecimento_solicitacoes
+            SET solicitante=?, empresa=?, data=?, obs=?, items_json=?, total_itens=?, valor_total=?,
+                atualizado_em=datetime('now', 'localtime')
+            WHERE id=?
+            """,
+            (
+                payload["solicitante"],
+                payload["empresa"],
+                payload["data"],
+                payload["obs"],
+                json.dumps(payload["items"], ensure_ascii=False),
+                payload["total_itens"],
+                payload["valor_total"],
+                solicitacao_id,
+            ),
+        )
+        conn.commit()
+        if cur.rowcount == 0:
+            return jsonify({"error": "SolicitaÃ§Ã£o nÃ£o encontrada"}), 404
+        return jsonify(_get_fornecimento_solicitacao(conn, solicitacao_id))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp_fornecimento.route(
+    "/api/fornecimento/solicitacoes/<int:solicitacao_id>/duplicate",
+    methods=["POST"],
+)
+def duplicar_fornecimento_solicitacao(solicitacao_id):
+    try:
+        conn = get_db()
+        original = _get_fornecimento_solicitacao(conn, solicitacao_id)
+        if not original:
+            return jsonify({"error": "SolicitaÃ§Ã£o nÃ£o encontrada"}), 404
+        cur = conn.execute(
+            """
+            INSERT INTO fornecimento_solicitacoes
+            (solicitante, empresa, data, obs, items_json, total_itens, valor_total, criado_em, atualizado_em)
+            VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'))
+            """,
+            (
+                original["solicitante"],
+                original["empresa"],
+                original["data"],
+                original["obs"],
+                json.dumps(original["items"], ensure_ascii=False),
+                original["total_itens"],
+                original["valor_total"],
+            ),
+        )
+        conn.commit()
+        return jsonify(_get_fornecimento_solicitacao(conn, cur.lastrowid)), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp_fornecimento.route("/api/fornecimento/solicitacoes/<int:solicitacao_id>", methods=["DELETE"])
+def excluir_fornecimento_solicitacao(solicitacao_id):
+    try:
+        conn = get_db()
+        cur = conn.execute(
+            "DELETE FROM fornecimento_solicitacoes WHERE id=?",
+            (solicitacao_id,),
+        )
+        conn.commit()
+        if cur.rowcount == 0:
+            return jsonify({"error": "SolicitaÃ§Ã£o nÃ£o encontrada"}), 404
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp_pdf.route("/api/pdf/mesclar", methods=["POST"])
 def pdf_mesclar():
     from PyPDF2 import PdfReader as _PdfReader, PdfWriter as _PdfWriter
@@ -670,9 +888,11 @@ def pdf_mesclar():
         return "Envie ao menos 2 arquivos", 400
     writer = _PdfWriter()
     for f in files:
-        for page in _PdfReader(f).pages:
+        # Save uploaded file to temporary location or read its stream
+        pdf_reader = _PdfReader(f.stream)
+        for page in pdf_reader.pages:
             writer.add_page(page)
-    buf = _io.BytesIO()
+    buf = BytesIO()
     writer.write(buf)
     buf.seek(0)
     return send_file(
@@ -692,7 +912,7 @@ def pdf_dividir():
     ranges_str = request.form.get("ranges", "").strip()
     if not f or not ranges_str:
         return "Parâmetros inválidos", 400
-    reader = _PdfReader(_io.BytesIO(f.read()))
+    reader = _PdfReader(BytesIO(f.read()))
     total = len(reader.pages)
     groups = []
     for part in ranges_str.split(","):
@@ -715,7 +935,7 @@ def pdf_dividir():
         writer = _PdfWriter()
         for p in groups[0][1]:
             writer.add_page(reader.pages[p])
-        buf = _io.BytesIO()
+        buf = BytesIO()
         writer.write(buf)
         buf.seek(0)
         return send_file(
@@ -724,13 +944,13 @@ def pdf_dividir():
             as_attachment=True,
             download_name=groups[0][0],
         )
-    zip_buf = _io.BytesIO()
+    zip_buf = BytesIO()
     with _zipfile.ZipFile(zip_buf, "w", _zipfile.ZIP_DEFLATED) as zf:
         for name, pgs in groups:
             writer = _PdfWriter()
             for p in pgs:
                 writer.add_page(reader.pages[p])
-            pdf_buf = _io.BytesIO()
+            pdf_buf = BytesIO()
             writer.write(pdf_buf)
             zf.writestr(name, pdf_buf.getvalue())
     zip_buf.seek(0)

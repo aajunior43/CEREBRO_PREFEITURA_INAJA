@@ -169,21 +169,21 @@
     .dp-header-center p { font-size: 10px; color: rgba(255,255,255,.7); margin: 3px 0 0; }
     .dp-separator { border: none; border-top: 3px solid #1e3a5f; margin: 0 20px 16px; }
     .dp-doc-title { text-align: center; padding: 14px 20px 0; font-size: 14px; font-weight: 900; color: #1e3a5f; text-transform: uppercase; letter-spacing: 2px; }
-    .dp-info-box { margin: 12px 20px; background: #f0f5ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 10px 16px; display: flex; gap: 24px; font-size: 12px; flex-wrap: wrap; }
-    .dp-info-box span { color: #4a5568; } .dp-info-box strong { color: #1e3a5f; }
+    .dp-info-box { margin: 12px 20px; background: #fafbfd; border: 1px solid #d9e1ea; border-radius: 6px; padding: 10px 16px; display: flex; gap: 24px; font-size: 12px; flex-wrap: wrap; }
+    .dp-info-box span { color: #4a5568; } .dp-info-box strong { color: #243447; }
     .dp-table-wrap { padding: 0 20px 12px; }
     .dp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .dp-table thead tr { background: #1e3a5f; }
     .dp-table th { color: #fff; padding: 8px 10px; font-size: 11px; text-align: left; font-weight: 700; }
     .dp-table tbody tr:nth-child(even) { background: #edf2ff; }
     .dp-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; color: #2d3748; }
-    .dp-total-row { margin: 0 20px 12px; background: #1e3a5f; color: #fff; padding: 8px 14px; border-radius: 4px; text-align: right; font-weight: 700; font-size: 14px; }
+    .dp-total-row { margin: 0 20px 12px; background: #f7f9fc; color: #243447; padding: 8px 14px; border: 1px solid #d9e1ea; border-radius: 4px; text-align: right; font-weight: 700; font-size: 14px; }
     .dp-obs-row { margin: 0 20px 16px; font-size: 11px; color: #718096; }
-    .dp-sign-row { margin: 0 20px 20px; text-align: center; }
-    .dp-sign-line { width: 280px; border-top: 1px solid #2d3748; margin: 0 auto 6px; padding-top: 4px; }
+    .dp-sign-row { margin: 24px 20px 24px; display: flex; justify-content: space-between; gap: 28px; align-items: flex-end; }
+    .dp-sign-block { flex: 1; text-align: center; }
+    .dp-sign-line { width: 100%; border-top: 1px solid #2d3748; margin: 0 auto 6px; padding-top: 4px; }
     .dp-sign-name { font-size: 12px; font-weight: 700; color: #2d3748; }
     .dp-sign-sub { font-size: 10px; color: #718096; }
-    .dp-footer { background: #f7fafc; border-top: 2px solid #1e3a5f; padding: 8px 20px; font-size: 10px; color: #a0aec0; text-align: center; }
     .dp-empty { padding: 40px; text-align: center; color: #a0aec0; font-size: 13px; }
 
     /* ── QUEUE / BATCH MANUAL ── */
@@ -333,7 +333,6 @@
           <div class="dp-total-row" id="dp-total"></div>
           <div class="dp-obs-row" id="dp-obs-preview"></div>
           <div class="dp-sign-row" id="dp-sign"></div>
-          <div class="dp-footer">Prefeitura Municipal de Inajá – Documento gerado eletronicamente</div>
         </div>
       </div>
     </div>
@@ -653,8 +652,7 @@ function updatePreview() {
   // Info
   document.getElementById('dp-info').innerHTML =
     `<span><strong>Solicitante:</strong> ${esc($sol.value) || '—'}</span>` +
-    `<span><strong>Empresa:</strong> ${esc($emp.value) || '—'}</span>` +
-    `<span><strong>Data:</strong> ${esc($dat.value) || '—'}</span>`;
+    `<span><strong>Empresa:</strong> ${esc($emp.value) || '—'}</span>`;
 
   // Table
   document.getElementById('dp-tbody').innerHTML = items.map((i, idx) => {
@@ -665,11 +663,18 @@ function updatePreview() {
   document.getElementById('dp-total').textContent = items.length ? 'TOTAL: ' + fmtMoney(getGrandTotal()) : '';
   document.getElementById('dp-obs-preview').textContent = $obs.value ? '📝 ' + $obs.value : '';
 
-  // Signature
-  document.getElementById('dp-sign').innerHTML = $sol.value.trim() ? `
-    <div class="dp-sign-line"></div>
-    <div class="dp-sign-name">${esc($sol.value)}</div>
-    <div class="dp-sign-sub">Assinatura do Solicitante</div>` : '';
+  // Signature and manual date
+  document.getElementById('dp-sign').innerHTML = `
+    <div class="dp-sign-block">
+      <div class="dp-sign-line"></div>
+      <div class="dp-sign-name">${$sol.value.trim() ? esc($sol.value) : '&nbsp;'}</div>
+      <div class="dp-sign-sub">Assinatura do Solicitante</div>
+    </div>
+    <div class="dp-sign-block" style="max-width:220px;">
+      <div class="dp-sign-line"></div>
+      <div class="dp-sign-name">____/____/________</div>
+      <div class="dp-sign-sub">Data</div>
+    </div>`;
 }
 
 function getRequestPayload() {
@@ -939,25 +944,16 @@ function generatePDF(req) {
     doc.setFillColor(...C.gold);
     doc.rect(0, 40, W, 2.2, 'F');
 
-    // Brasão
-    let bW = 0;
+    // Brasão centralizado
     if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
       try {
         const p = doc.getImageProperties(BRASAO_B64);
         const bH = 33;
-        bW = bH * (p.width / p.height);
-        doc.addImage(BRASAO_B64, 'PNG', M, 3.5, bW, bH);
+        const bW = bH * (p.width / p.height);
+        const x = (W - bW) / 2;
+        doc.addImage(BRASAO_B64, 'PNG', x, 3.5, bW, bH);
       } catch(e) {}
     }
-
-    const cX = M + bW + (bW > 0 ? 6 : 0);
-    const cCenter = (cX + W - M) / 2;
-    doc.setFontSize(14.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
-    doc.text('PREFEITURA MUNICIPAL DE INAJÁ', cCenter, 15, { align: 'center' });
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(195, 215, 255);
-    doc.text('Estado do Paraná', cCenter, 22, { align: 'center' });
-    doc.setFontSize(7.5); doc.setTextColor(160, 190, 240);
-    doc.text('Gabinete do Prefeito – Setor de Compras e Suprimentos', cCenter, 28.5, { align: 'center' });
   }
 
   function stampFooters() {
@@ -969,7 +965,6 @@ function generatePDF(req) {
       doc.setFillColor(...C.gold);
       doc.rect(0, 285, W, 1.5, 'F');
       doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.white);
-      doc.text(`Documento gerado eletronicamente em ${new Date().toLocaleDateString('pt-BR')}`, M, 291.5);
       doc.text(`Página ${i} de ${total}`, W - M, 291.5, { align: 'right' });
     }
   }
@@ -998,9 +993,7 @@ function generatePDF(req) {
   doc.rect(M + 2.5, y, 1.5, infoH, 'F');
 
   // Divisores internos
-  const mid = M + pw * 0.5;
   doc.setDrawColor(...C.grLt); doc.setLineWidth(0.25);
-  doc.line(mid, y + 5, mid, y + infoH - 5);
   doc.line(M + 7, y + infoH / 2, M + pw - 5, y + infoH / 2);
 
   const iLbl = (t, x, yy) => {
@@ -1010,14 +1003,13 @@ function generatePDF(req) {
   const iVal = (t, x, yy) => {
     doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
     // Truncate se ultrapassar a coluna
-    const safe = doc.splitTextToSize(t || '—', mid - x - 4)[0];
+    const safe = doc.splitTextToSize(t || '—', pw - 18)[0];
     doc.text(safe, x, yy);
   };
 
-  const c1 = M + 8, c2 = mid + 6;
+  const c1 = M + 8;
   const row1y = y + 12, row2y = y + 27;
   iLbl('SOLICITANTE', c1, row1y - 5);     iVal(req.solicitante || '—', c1, row1y);
-  iLbl('DATA DA SOLICITAÇÃO', c2, row1y - 5); iVal(req.data || '—', c2, row1y);
   iLbl('EMPRESA / FORNECEDOR', c1, row2y - 5);
   const empSafe = doc.splitTextToSize(req.empresa || '—', pw * 0.9)[0];
   doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
@@ -1116,14 +1108,30 @@ function generatePDF(req) {
     y += obsH + 12;
   }
 
-  /* ── LOCAL E DATA ── */
-  if (y + 30 > 278) { doc.addPage(); drawPageHeader(); y = 48; }
-  y = Math.max(y, 252);
-  doc.setDrawColor(...C.grLt); doc.setLineWidth(0.4);
-  doc.line(M, y, M + pw, y);
-  y += 8;
-  doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(...C.gray);
-  doc.text(`Inajá – PR, ${req.data || '_____ / _____ / __________'}`, W / 2, y, { align: 'center' });
+  /* ── ASSINATURA E DATA MANUAL ── */
+  if (y + 34 > 278) { doc.addPage(); drawPageHeader(); y = 48; }
+  y = Math.max(y, 244);
+  const signW = 92;
+  const dateW = 56;
+  const gap = 16;
+  const signX = M + ((pw - (signW + dateW + gap)) / 2);
+  const dateX = signX + signW + gap;
+
+  doc.setDrawColor(...C.grLt); doc.setLineWidth(0.45);
+  doc.line(signX, y, signX + signW, y);
+  doc.line(dateX, y, dateX + dateW, y);
+  y += 7;
+
+  doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+  if (req.solicitante && req.solicitante.trim()) {
+    doc.text(doc.splitTextToSize(req.solicitante.trim(), signW)[0], signX + signW / 2, y, { align: 'center' });
+  }
+  doc.text('____/____/________', dateX + dateW / 2, y, { align: 'center' });
+  y += 5;
+
+  doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.gray);
+  doc.text('Assinatura do Solicitante', signX + signW / 2, y, { align: 'center' });
+  doc.text('Data', dateX + dateW / 2, y, { align: 'center' });
 
   /* ── RODAPÉ EM TODAS AS PÁGINAS ── */
   stampFooters();

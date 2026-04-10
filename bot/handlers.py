@@ -539,6 +539,173 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    if data == "cmd_pdf_empenho":
+        context.user_data.clear()
+        context.user_data["pdf_step"] = "select_credor"
+        context.user_data["pdf_page"] = 1
+        from bot.database import db_listar_credores_ativos
+        from bot.ui import keyboard_credores_pagina
+
+        credores = await db_listar_credores_ativos()
+        if not credores:
+            await query.message.reply_text("⚠️ Nenhum credor ativo encontrado.")
+            return
+        por_pagina = 8
+        total_paginas = (len(credores) + por_pagina - 1) // por_pagina
+        pagina = 1
+        inicio = (pagina - 1) * por_pagina
+        fim = inicio + por_pagina
+        await query.message.reply_text(
+            "📤 <b>Solicitar PDF de Empenho</b>\n\n"
+            "Selecione o <b>credor</b> para gerar o PDF:",
+            parse_mode="HTML",
+            reply_markup=keyboard_credores_pagina(
+                credores[inicio:fim], pagina, total_paginas
+            ),
+        )
+        return
+
+    if data.startswith("pdf_credores_pg_"):
+        pagina = int(data.split("_")[-1])
+        from bot.database import db_listar_credores_ativos
+        from bot.ui import keyboard_credores_pagina
+
+        credores = await db_listar_credores_ativos()
+        por_pagina = 8
+        total_paginas = (len(credores) + por_pagina - 1) // por_pagina
+        inicio = (pagina - 1) * por_pagina
+        fim = inicio + por_pagina
+        await safe_edit_message_text(
+            query,
+            "📤 <b>Solicitar PDF de Empenho</b>\n\n"
+            f"Página {pagina}/{total_paginas} — Selecione o <b>credor</b>:",
+            parse_mode="HTML",
+            reply_markup=keyboard_credores_pagina(
+                credores[inicio:fim], pagina, total_paginas
+            ),
+        )
+        return
+
+    if data.startswith("pdf_credor_"):
+        credor_id = int(data.split("_")[-1])
+        context.user_data["pdf_credor_id"] = credor_id
+        from bot.database import db_listar_credores_ativos
+        from bot.ui import keyboard_mes_ano
+
+        credores = await db_listar_credores_ativos()
+        credor = next((c for c in credores if c["id"] == credor_id), None)
+        if not credor:
+            await query.message.reply_text("⚠️ Credor não encontrado.")
+            return
+        import datetime as _dt2
+
+        hoje = _dt2.date.today()
+        await safe_edit_message_text(
+            query,
+            f"📤 <b>PDF de Empenho</b>\n\n"
+            f"🏢 <b>Credor:</b> {_safe_html(credor['nome'])}\n"
+            f"💰 <b>Valor:</b> {_fmt_currency(credor['valor'])}\n"
+            f"📂 <b>Departamento:</b> {_safe_html(credor.get('departamento') or '—')}\n\n"
+            f"Selecione o <b>mês de referência</b> e envie o PDF:",
+            parse_mode="HTML",
+            reply_markup=keyboard_mes_ano(credor_id, hoje.year, hoje.month),
+        )
+        return
+
+    if data.startswith("pdf_mes_"):
+        parts = data.split("_")
+        credor_id = int(parts[2])
+        ano = int(parts[3])
+        mes = int(parts[4])
+        from bot.database import db_listar_credores_ativos
+        from bot.ui import keyboard_mes_ano
+
+        credores = await db_listar_credores_ativos()
+        credor = next((c for c in credores if c["id"] == credor_id), None)
+        if not credor:
+            await query.message.reply_text("⚠️ Credor não encontrado.")
+            return
+        await safe_edit_message_text(
+            query,
+            f"📤 <b>PDF de Empenho</b>\n\n"
+            f"🏢 <b>Credor:</b> {_safe_html(credor['nome'])}\n"
+            f"💰 <b>Valor:</b> {_fmt_currency(credor['valor'])}\n"
+            f"📆 <b>Referência:</b> {mes:02d}/{ano}\n\n"
+            f"Selecione o <b>mês de referência</b> e envie o PDF:",
+            parse_mode="HTML",
+            reply_markup=keyboard_mes_ano(credor_id, ano, mes),
+        )
+        return
+
+    if data.startswith("pdf_gerar_"):
+        parts = data.split("_")
+        credor_id = int(parts[2])
+        ano = int(parts[3])
+        mes = int(parts[4])
+        from bot.database import db_listar_credores_ativos
+
+        credores = await db_listar_credores_ativos()
+        credor = next((c for c in credores if c["id"] == credor_id), None)
+        if not credor:
+            await query.message.reply_text("⚠️ Credor não encontrado.")
+            return
+        await safe_edit_message_text(
+            query,
+            f"⏳ <b>Gerando PDF...</b>\n\n"
+            f"🏢 {_safe_html(credor['nome'])}\n"
+            f"📆 {mes:02d}/{ano}\n\n"
+            f"Aguarde enquanto o PDF é gerado e enviado...",
+            parse_mode="HTML",
+        )
+        try:
+            resp = await asyncio.to_thread(
+                requests.post,
+                f"{SERVER_URL}/api/credores/{credor_id}/pdf-telegram",
+                json={"mes": mes, "ano": ano},
+                timeout=60,
+            )
+            result = resp.json()
+            if resp.ok and result.get("ok"):
+                mes_nomes = [
+                    "Janeiro",
+                    "Fevereiro",
+                    "Março",
+                    "Abril",
+                    "Maio",
+                    "Junho",
+                    "Julho",
+                    "Agosto",
+                    "Setembro",
+                    "Outubro",
+                    "Novembro",
+                    "Dezembro",
+                ]
+                await query.message.reply_text(
+                    f"✅ <b>PDF enviado com sucesso!</b>\n\n"
+                    f"🏢 {_safe_html(credor['nome'])}\n"
+                    f"📆 {mes_nomes[mes - 1]}/{ano}\n"
+                    f"📤 Enviado para {result['sent']} chat(s)",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "🔙 Voltar aos credores",
+                                    callback_data="pdf_credores_pg_1",
+                                )
+                            ],
+                        ]
+                    ),
+                )
+            else:
+                await query.message.reply_text(
+                    f"⚠️ Erro ao enviar PDF: {result.get('error', 'Erro desconhecido')}",
+                    parse_mode="HTML",
+                )
+        except Exception as e:
+            await query.message.reply_text(f"⚠️ Falha ao gerar PDF: {e}")
+        return
+
     try:
         await query.message.reply_text(
             f"ℹ️ O botão <b>{data}</b> foi recebido, mas não tem ação direta no chat.\n\n"

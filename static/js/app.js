@@ -576,7 +576,7 @@ function _printCSS() {
       margin-bottom: 20px;
       border-radius: 4px;
     }
-    .doc-header-brasao { width: 70px; height: auto; object-fit: contain; margin-right: 15px; }
+    .doc-header-brasao { width: 100px; height: auto; object-fit: contain; margin-right: 15px; }
     .doc-header-text { flex: 1; text-align: center; }
     .doc-header-text h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
     .doc-header-text h2 { font-size: 11pt; font-weight: normal; margin-bottom: 4px; }
@@ -700,13 +700,8 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
       <div class="doc-header">
         <img class="doc-header-brasao" src="${typeof BRASAO_B64 !== 'undefined' && BRASAO_B64 ? BRASAO_B64 : '/static/img/brasao.png'}" alt="Brasão" />
         <div class="doc-header-text">
-          <h1>Estado do Paraná</h1>
           <h2>Prefeitura Municipal de Inajá</h2>
-          <h3>Solicitação de Empenho de Despesa Fixa / Contínua</h3>
-        </div>
-        <div class="doc-header-right">
-          <div>Referência</div>
-          <div class="doc-ref">${mesNome} / ${ano}</div>
+          <h3>Solicitação de Empenho</h3>
         </div>
       </div>
 
@@ -729,10 +724,6 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
              <div class="sign-label">Ordenador de Despesa</div>
              <div class="sign-sub">Prefeitura Municipal de Inajá</div>
           </div>
-        </div>
-        
-        <div class="doc-footer">
-           Documento gerado eletronicamente pelo módulo de Controle de Despesas Fixas.
         </div>
       </div>
     </div>`;

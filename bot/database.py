@@ -408,6 +408,21 @@ async def db_atualizar_status_tarefa(task_id: str, novo_status: str):
     return await run_db(_atualizar_status_tarefa, task_id, novo_status)
 
 
+def _listar_credores_ativos():
+    conn = _db_connect()
+    try:
+        rows = conn.execute(
+            "SELECT id, nome, valor, departamento FROM credores WHERE ativo=1 ORDER BY nome"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+async def db_listar_credores_ativos():
+    return await run_db(_listar_credores_ativos)
+
+
 async def db_contar_credores():
     return await run_db(_contar_credores)
 
