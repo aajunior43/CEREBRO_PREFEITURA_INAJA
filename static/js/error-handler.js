@@ -1,52 +1,62 @@
 // Error Handler - Tratamento centralizado de erros
+// Integrado com Toast Notifications
 
 class ErrorHandler {
   static handle(error, context = '') {
     const errorInfo = this.parseError(error);
-    
+
     // Log do erro
     this.log(errorInfo, context);
-    
+
+    // Mostrar toast com erro
+    if (window.Toast) {
+      Toast.handleHttpError({
+        status: errorInfo.status || 0,
+        message: errorInfo.message
+      }, context);
+    }
+
     // Retornar mensagem amigável
     return this.getUserMessage(errorInfo);
   }
 
   static parseError(error) {
     if (typeof error === 'string') {
-      return { type: 'generic', message: error };
+      return { type: 'generic', message: error, status: 0 };
     }
 
-    const message = error.message || 'Erro desconhecido';
+    const status = error.status || error.response?.status || 0;
+    const message = error.message || error.error?.message || 'Erro desconhecido';
 
     // Erros de API
-    if (message.includes('401') || message.includes('Unauthorized')) {
-      return { type: 'auth', message: 'Chave API inválida ou expirada' };
+    if (status === 401 || message.includes('401') || message.includes('Unauthorized')) {
+      return { type: 'auth', message: 'Chave API inválida ou expirada', status: 401 };
     }
-    if (message.includes('429') || message.includes('rate limit')) {
-      return { type: 'rate_limit', message: 'Limite de requisições atingido. Aguarde alguns minutos.' };
+    if (status === 429 || message.includes('429') || message.includes('rate limit')) {
+      return { type: 'rate_limit', message: 'Limite de requisições atingido. Aguarde alguns minutos.', status: 429 };
     }
-    if (message.includes('402') || message.includes('credits')) {
-      return { type: 'credits', message: 'Créditos insuficientes na conta OpenRouter' };
+    if (status === 402 || message.includes('402') || message.includes('credits')) {
+      return { type: 'credits', message: 'Créditos insuficientes na conta OpenRouter', status: 402 };
     }
-    if (message.includes('400') || message.includes('Bad Request')) {
-      return { type: 'bad_request', message: 'Requisição inválida. Verifique o modelo selecionado.' };
+    if (status === 400 || message.includes('400') || message.includes('Bad Request')) {
+      return { type: 'bad_request', message: 'Requisição inválida. Verifique o modelo selecionado.', status: 400 };
     }
-    if (message.includes('500') || message.includes('503')) {
-      return { type: 'server', message: 'Servidor temporariamente indisponível. Tente novamente.' };
+    if (status === 500 || status === 503 || message.includes('500') || message.includes('503')) {
+      return { type: 'server', message: 'Servidor temporariamente indisponível. Tente novamente.', status: status || 500 };
     }
 
     // Erros de rede
     if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
-      return { type: 'network', message: 'Erro de conexão. Verifique sua internet.' };
+      return { type: 'network', message: 'Erro de conexão. Verifique sua internet.', status: 0 };
     }
 
     // Erros de OCR
     if (message.includes('OCR') || message.includes('extrair texto')) {
-      return { type: 'ocr', message: 'Não foi possível ler o documento. Tente com melhor qualidade.' };
+      return { type: 'ocr', message: 'Não foi possível ler o documento. Tente com melhor qualidade.', status: 0 };
     }
 
     // Erro genérico
-    return { type: 'generic', message };
+    return { type: 'generic', message, status };
   }
 
   static getUserMessage(errorInfo) {

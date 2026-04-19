@@ -1,19 +1,81 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-*.egg-info/
-dist/
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Banco de dados auxiliares temporários
-empenhos.db-shm
-empenhos.db-wal
+# Virtual Environment
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
 
-# Logs temporários
+# Banco de dados
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# IMPORTANTE: Manter backup do banco principal
+!empenhos.db
+
+# Logs
+logs/
 *.log
+
+# Backups
+backups/
+
+# Ambiente e Segurança
+.env
+.env.local
+.env.*.local
+
+# IMPORTANTE: Manter exemplo
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Documentos sensíveis
+documentos_centro/
+DADOS/
+
+# Temporários
+*.tmp
+*.temp
+*.cache
+nul
 
 # Excel temporário
 *.xlsx
@@ -22,23 +84,21 @@ empenhos.db-wal
 # Pastas de trabalho / staging
 PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL/
 
-# Ambientes virtuais
-venv/
-.venv/
-env/
+# Migrations (manter estrutura, ignorar cache)
+migrations/__pycache__/
+migrations/versions/__pycache__/
 
-# OS
-.DS_Store
-Thumbs.db
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+*.cover
 
-# IDEs
-.vscode/
-.idea/
-
-# Refatoração (nova estrutura modular)
-app/routes/__pycache__/
-app/utils/__pycache__/
-app/models/__pycache__/
+# Claude/AI
+.claude/
+.qwen/
 
 # Arquivos de backup do servidor
 server_monolitico.py

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l C:UsersUsuárioDesktopCREDORES_FIXOS_MENSAIRapproutes*.py)",
+      "Bash(python -c \":*)",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Bash(timeout 5 python server.py)",
+      "Bash(timeout 8 python server.py)",
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(grep -r \"from routes\\\\.\\\\|import routes\\\\.\" C:UsersUsuárioDesktopCREDORES_FIXOS_MENSAIR --include=*.py)",
+      "Bash(cd:*)"
+    ]
+  }
+}

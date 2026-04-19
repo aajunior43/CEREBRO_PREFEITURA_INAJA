@@ -6,6 +6,7 @@ import re
 from flask import Blueprint, request, jsonify
 from app.utils.db import get_db
 from app.utils.helpers import row_to_dict, normalizar_cnpj, cnpj_valido
+from app.utils.pagination import paginate
 
 bp = Blueprint('credores', __name__)
 
@@ -209,13 +210,21 @@ def listar_credores():
                 """
             ).fetchone()
 
-        return jsonify({
-            'items': [row_to_dict(r) for r in rows],
-            'total': total,
-            'limit': limit,
-            'offset': offset,
-            'summary': row_to_dict(resumo) if resumo else None,
-        })
+        items = [row_to_dict(r) for r in rows]
+        
+        # Usar wrapper de paginação
+        result = paginate(
+            items=items,
+            page=(offset // limit) + 1,
+            per_page=limit,
+            total=total
+        )
+        
+        # Adicionar resumo se solicitado
+        if resumo:
+            result["summary"] = row_to_dict(resumo)
+        
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

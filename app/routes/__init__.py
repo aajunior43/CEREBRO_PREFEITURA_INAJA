@@ -14,6 +14,11 @@ from app.routes.cnpj import bp as cnpj_bp
 from app.routes.pdf import bp as pdf_bp
 from app.routes.auth import bp as auth_bp
 from app.routes.config import bp as config_bp
+from app.routes.fornecimento import bp as fornecimento_bp
+from app.routes.despesas import bp as despesas_bp
+from app.routes.empenho_assistente import bp as empenho_assistente_bp
+from app.routes.classificador import bp as classificador_bp
+from app.routes.logs import bp as logs_bp
 
 __all__ = [
     'credores_bp',
@@ -30,4 +35,9 @@ __all__ = [
     'pdf_bp',
     'auth_bp',
     'config_bp',
+    'fornecimento_bp',
+    'despesas_bp',
+    'empenho_assistente_bp',
+    'classificador_bp',
+    'logs_bp',
 ]

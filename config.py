@@ -37,6 +37,9 @@ class Settings:
         "on",
     }
     admin_password: str = os.environ.get("ADM_PASSWORD", "1999")
+    # OpenRouter settings
+    OPENROUTER_API_KEY: str = os.environ.get("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL: str = os.environ.get("OPENROUTER_MODEL", "")
     openrouter_default_model: str = os.environ.get(
         "OPENROUTER_DEFAULT_MODEL", "openai/gpt-4o-mini"
     )

@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__click",
+      "Bash(wc -l app/__init__.py server.py app/routes/*.py)",
+      "Bash(sqlite3:*)",
+      "Bash(find static:*)",
+      "Bash(find pages:*)",
+      "Bash(chmod:*)",
+      "Bash(ls -1 *.md add_critical_indexes.py instalar_melhorias.* app/routes/health.py .env.example)",
+      "Bash(python:*)"
     ]
   }
 }
