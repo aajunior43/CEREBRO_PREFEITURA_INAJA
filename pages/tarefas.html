@@ -237,7 +237,8 @@
             border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            min-height: 520px;
+            height: calc(100vh - 270px); /* Internal scrolling height */
+            min-height: 480px;
             backdrop-filter: blur(10px)
         }
 
@@ -283,8 +284,16 @@
             flex-direction: column;
             gap: 14px;
             min-height: 80px;
+            overflow-y: auto;
+            overflow-x: hidden;
             background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 16%, transparent), color-mix(in srgb, var(--surface-2) 10%, transparent))
         }
+
+        /* Customize scrollbar for kanban internal scrolling */
+        .kb-col-body::-webkit-scrollbar { width: 6px; }
+        .kb-col-body::-webkit-scrollbar-track { background: transparent; }
+        .kb-col-body::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-3) 40%, transparent); border-radius: 4px; }
+        .kb-col-body::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 
         .kb-col-body.drag-over {
             background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 12%, transparent), color-mix(in srgb, var(--purple) 10%, transparent))
@@ -305,7 +314,7 @@
         .kb-card {
             background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, transparent), color-mix(in srgb, var(--surface-2) 94%, transparent));
             border-radius: 18px;
-            padding: 15px;
+            padding: 15px 15px 15px 22px; /* Extra left padding for drag handle */
             border-left: 4px solid transparent;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
@@ -313,6 +322,28 @@
             transition: all .18s ease;
             user-select: none;
             position: relative
+        }
+
+        /* Drag Grip Indicator */
+        .kb-card::before {
+            content: '⋮⋮';
+            position: absolute;
+            left: 7px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-3);
+            font-size: 14px;
+            font-weight: 800;
+            opacity: 0.2;
+            transition: opacity .2s;
+            pointer-events: none;
+            letter-spacing: -1px;
+            line-height: 0.8;
+        }
+
+        .kb-card:hover::before {
+            opacity: 0.7;
+            color: var(--blue);
         }
 
         .kb-card:hover {
@@ -812,20 +843,6 @@
         .kb-quick-move-done { border-color: color-mix(in srgb, var(--green) 45%, var(--border)); color: var(--green-dark); }
         .kb-quick-move-done:hover { background: color-mix(in srgb, var(--green) 12%, transparent); }
 
-
-        .kb-toolbar2 {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            max-width: 1680px;
-            padding: 14px 16px;
-            border-radius: 18px;
-            background: rgba(255,255,255,.68);
-            border: 1px solid rgba(148, 163, 184, .14);
-            box-shadow: 0 14px 36px rgba(15, 23, 42, .06);
-        }
         .kb-search-wrap {
             display: flex;
             align-items: center;
@@ -1509,54 +1526,47 @@
         </div>
 
         <!-- Toolbar -->
-        <div class="kb-toolbar">
-            <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
-            <button class="kb-btn kb-btn-violet" onclick="openAiCreate()">✨ Criar com IA</button>
-            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="printKanban()">🖨️ Imprimir PDF</button>
-            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="exportCSV()">📥 Exportar CSV</button>
-            <div class="kb-stats">
-                <div class="kb-stat">
-                    <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
-                    <div class="kb-stat-l">A Fazer</div>
+        <div class="kb-toolbar" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; flex: 1;">
+                <div class="kb-search-wrap" style="margin: 0; min-width: 240px; max-width: 400px; flex: 1;">
+                    <span>🔍</span>
+                    <input class="kb-search-input" id="kb-search" type="text" placeholder="Buscar tarefas…" oninput="onSearch()" />
                 </div>
-
-                <div class="kb-stat">
-                    <div class="kb-stat-v" id="st-progress" style="color:var(--orange)">0</div>
-                    <div class="kb-stat-l">Em andamento</div>
+                <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
+                <button class="kb-btn kb-btn-violet" onclick="openAiCreate()">✨ Criar com IA</button>
+                <div class="kb-stats" style="margin-left: auto;">
+                    <div class="kb-stat"><div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div><div class="kb-stat-l">A Fazer</div></div>
+                    <div class="kb-stat"><div class="kb-stat-v" id="st-progress" style="color:var(--orange)">0</div><div class="kb-stat-l">Em andamento</div></div>
+                    <div class="kb-stat"><div class="kb-stat-v" id="st-done" style="color:#10b981">0</div><div class="kb-stat-l">Concluídas</div></div>
                 </div>
-
-                <div class="kb-stat">
-                    <div class="kb-stat-v" id="st-done" style="color:#10b981">0</div>
-                    <div class="kb-stat-l">Concluídas</div>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="kb-btn kb-btn-ghost" onclick="printKanban()" title="Imprimir PDF" style="padding: 0 12px; min-height: 38px;">🖨️ PDF</button>
+                <button class="kb-btn kb-btn-ghost" onclick="exportCSV()" title="Exportar CSV" style="padding: 0 12px; min-height: 38px;">📥 CSV</button>
+                <div class="kb-view-toggle">
+                    <button class="kb-view-btn active" id="btn-view-kanban" onclick="setView('kanban')" title="Visão Kanban">⬛⬛</button>
+                    <button class="kb-view-btn" id="btn-view-list" onclick="setView('list')" title="Visão Lista">☰</button>
                 </div>
             </div>
         </div>
-        
-        <div class="kb-cat-filter">
-            <span class="kb-cat-filter-label">🔖 Filtrar:</span>
-            <button class="kb-cat-filter-btn kb-cat-filter-all active" onclick="setCatFilter('')">Todas <span id="cnt-cat-all"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-empenhar" onclick="setCatFilter('EMPENHAR')">EMPENHAR <span id="cnt-cat-empenhar"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-liquidar"  onclick="setCatFilter('LIQUIDAR')">LIQUIDAR <span id="cnt-cat-liquidar"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-pagar"     onclick="setCatFilter('PAGAR')">PAGAR <span id="cnt-cat-pagar"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-obs"       onclick="setCatFilter('OBS')">OBS <span id="cnt-cat-obs"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-resolver"  onclick="setCatFilter('RESOLVER')">RESOLVER <span id="cnt-cat-resolver"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-outros"    onclick="setCatFilter('OUTROS')">OUTROS <span id="cnt-cat-outros"></span></button>
-        </div>
-        <div class="kb-toolbar2">
-            <div class="kb-search-wrap">
-                <span>🔍</span>
-                <input class="kb-search-input" id="kb-search" type="text" placeholder="Buscar tarefas…" oninput="onSearch()" />
+
+        <div class="kb-cat-filter" style="margin-bottom: 20px; display: flex; justify-content: space-between; padding: 10px 16px; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <span class="kb-cat-filter-label" style="margin: 0;">🔖 Filtrar:</span>
+                <button class="kb-cat-filter-btn kb-cat-filter-all active" onclick="setCatFilter('')">Todas <span id="cnt-cat-all"></span></button>
+                <button class="kb-cat-filter-btn kb-cat-f-empenhar" onclick="setCatFilter('EMPENHAR')">EMPENHAR <span id="cnt-cat-empenhar"></span></button>
+                <button class="kb-cat-filter-btn kb-cat-f-liquidar"  onclick="setCatFilter('LIQUIDAR')">LIQUIDAR <span id="cnt-cat-liquidar"></span></button>
+                <button class="kb-cat-filter-btn kb-cat-f-pagar"     onclick="setCatFilter('PAGAR')">PAGAR <span id="cnt-cat-pagar"></span></button>
+                <button class="kb-cat-filter-btn kb-cat-f-obs"       onclick="setCatFilter('OBS')">OBS <span id="cnt-cat-obs"></span></button>
+                <button class="kb-cat-filter-btn kb-cat-f-resolver"  onclick="setCatFilter('RESOLVER')">RESOLVER <span id="cnt-cat-resolver"></span></button>
+                <button class="kb-cat-filter-btn kb-cat-f-outros"    onclick="setCatFilter('OUTROS')">OUTROS <span id="cnt-cat-outros"></span></button>
             </div>
-            <select class="kb-sort-select" id="kb-sort" onchange="renderBoard()">
+            <select class="kb-sort-select" id="kb-sort" onchange="renderBoard()" style="margin: 0; min-width: 140px; padding: 7px 12px; height: 34px;">
                 <option value="priority">↑ Prioridade</option>
                 <option value="due">📅 Vencimento</option>
                 <option value="created">🕐 Criação</option>
                 <option value="title">🔤 Título</option>
             </select>
-            <div class="kb-view-toggle">
-                <button class="kb-view-btn active" id="btn-view-kanban" onclick="setView('kanban')" title="Visão Kanban">⬛⬛</button>
-                <button class="kb-view-btn" id="btn-view-list" onclick="setView('list')" title="Visão Lista">☰</button>
-            </div>
         </div>
 
         <!-- Visão Lista -->

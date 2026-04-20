@@ -4,37 +4,76 @@ app/utils/db.py — Gerenciamento de conexão com banco de dados
 
 import sqlite3
 import threading
+from flask import g
 from config import settings
 
 
 DB_PATH = str(settings.db_path)
 
-# Conexão thread-local
+# Conexão thread-local (fallback para chamadas fora do request context)
 _db_local = threading.local()
 
 
 def get_db():
     """
-    Retorna conexão SQLite persistente por thread.
+    Retorna conexão SQLite persistente por thread/request.
     PRAGMAs de performance aplicados em toda nova conexão.
+
+    Prioriza o contexto do Flask request (g._db_conn);
+    fallback para thread-local em chamadas fora de request.
     """
+    # Tenta obter do contexto do request primeiro
+    db = getattr(g, '_db_conn', None)
+    if db is not None:
+        return db
+
+    # Fallback: thread-local
     db = getattr(_db_local, 'conn', None)
     if db is None:
-        db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
-        db.row_factory = sqlite3.Row
-        
-        # PRAGMAs de performance
-        db.execute("PRAGMA foreign_keys=ON")
-        db.execute("PRAGMA journal_mode=DELETE")
-        db.execute("PRAGMA synchronous=NORMAL")
-        db.execute("PRAGMA cache_size=-8000")
-        db.execute("PRAGMA temp_store=MEMORY")
-        db.execute("PRAGMA mmap_size=0")
-        db.execute("PRAGMA auto_vacuum=INCREMENTAL")
-        
+        db = _create_connection()
         _db_local.conn = db
-    
+
     return db
+
+
+def _create_connection() -> sqlite3.Connection:
+    """Cria nova conexão SQLite com PRAGMAs otimizados."""
+    db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
+    db.row_factory = sqlite3.Row
+
+    # PRAGMAs de performance
+    db.execute("PRAGMA foreign_keys=ON")
+    db.execute("PRAGMA journal_mode=DELETE")
+    db.execute("PRAGMA synchronous=NORMAL")
+    db.execute("PRAGMA cache_size=-8000")
+    db.execute("PRAGMA temp_store=MEMORY")
+    db.execute("PRAGMA mmap_size=0")
+    db.execute("PRAGMA auto_vacuum=INCREMENTAL")
+
+    return db
+
+
+def init_db_context_connection(app):
+    """Registra hook para gerenciar conexão no ciclo de request.
+
+    Deve ser chamado após a criação do app Flask.
+    """
+    @app.before_request
+    def open_db_connection():
+        g._db_conn = _create_connection()
+
+    @app.teardown_appcontext
+    def close_db_connection(exception):
+        db = getattr(g, '_db_conn', None)
+        if db is not None:
+            try:
+                if exception:
+                    db.rollback()
+                db.close()
+            except Exception:
+                pass
+            finally:
+                g.pop('_db_conn', None)
 
 
 def init_db():

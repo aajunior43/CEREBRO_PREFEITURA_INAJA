@@ -291,9 +291,29 @@ def clean_value(value):
     return str(value).strip()
 
 
-def api_error(message: str, status: int = 400, details: dict = None):
-    """Resposta JSON de erro padronizada."""
-    body = {"error": message}
+def api_error(message: str, status: int = 400, code: str = None, details: dict = None):
+    """Resposta JSON de erro padronizada.
+
+    Formato consistente:
+        {"error": {"code": "...", "message": "...", "details": {...}}}
+    """
+    error_code = code or {
+        400: "BAD_REQUEST",
+        401: "UNAUTHORIZED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        409: "CONFLICT",
+        422: "UNPROCESSABLE_ENTITY",
+        429: "TOO_MANY_REQUESTS",
+        500: "INTERNAL_ERROR",
+    }.get(status, "ERROR")
+
+    body = {
+        "error": {
+            "code": error_code,
+            "message": message,
+        }
+    }
     if details:
-        body["details"] = details
+        body["error"]["details"] = details
     return jsonify(body), status

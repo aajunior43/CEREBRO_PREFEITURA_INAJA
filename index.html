@@ -465,8 +465,8 @@
     <span class="progress-label" id="progress-label">0% concluído</span>
   </div>
 
-  <!-- TOOLBAR -->
-  <div class="toolbar">
+  <!-- TOOLBAR PRINCIPAL -->
+  <div class="toolbar" style="margin-bottom: 12px;">
     <div class="search-box">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8" />
@@ -475,78 +475,12 @@
       <input type="text" id="search-input" placeholder="Pesquisar credor..." autocomplete="off" data-tooltip="Buscar credor por nome" />
     </div>
 
-    <div class="filter-group">
-      <select id="filter-dept" class="select-filter">
-        <option value="">Todos os Departamentos</option>
-        <option value="ADMINISTRAÇÃO">Administração</option>
-        <option value="ASSISTÊNCIA SOCIAL">Assistência Social</option>
-        <option value="EDUCAÇÃO">Educação</option>
-        <option value="SAÚDE">Saúde</option>
-      </select>
-
-      <select id="filter-status" class="select-filter">
-        <option value="">Todos os Status</option>
-        <option value="pendente">Pendentes</option>
-        <option value="empenhado">Empenhados</option>
-      </select>
-
-      <select id="filter-tipo" class="select-filter">
-        <option value="">Todos os Tipos</option>
-        <option value="FIXO">Fixos</option>
-        <option value="VARIÁVEL">Variáveis</option>
-      </select>
-
-      <select id="filter-cadastro" class="select-filter">
-        <option value="">Todos os Cadastros</option>
-        <option value="sem_cnpj">Sem CNPJ</option>
-        <option value="sem_email">Sem E-mail</option>
-        <option value="com_pendencias">Com Pendências</option>
-      </select>
-
-      <select id="filter-vencimento" class="select-filter">
-        <option value="">Todos os Contratos</option>
-        <option value="vencidos">Somente Vencidos</option>
-        <option value="30">Vencendo em 30 dias</option>
-      </select>
-    </div>
-
     <div class="toolbar-actions">
-      <button class="btn btn-secondary" id="btn-expand-all" title="Expandir todos">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-        </svg>
-        Expandir
-      </button>
-      <button class="btn btn-secondary" id="btn-print-lote" title="Imprimir todos em lote">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 6 2 18 2 18 9" />
-          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-          <rect x="6" y="14" width="12" height="8" />
-        </svg>
-        Imprimir Lote
-      </button>
-      <button class="btn btn-secondary" id="btn-export-csv" title="Exportar lista como CSV">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        Exportar CSV
-      </button>
       <button class="btn btn-secondary" id="btn-empenhar-todos" title="Empenhar todos os pendentes visíveis">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         Empenhar Todos
-      </button>
-      <button class="btn btn-secondary" id="btn-lixeira" title="Credores excluídos" data-tooltip="Ver credores excluídos e restaurar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3 6 5 6 21 6"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M10 11v6M14 11v6"/>
-          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-        </svg>
-        Lixeira
       </button>
       <button class="btn btn-primary" id="btn-add-credor" title="Adicionar credor" data-tooltip="Adicionar novo credor fixo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -554,6 +488,79 @@
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         Novo Credor
+      </button>
+    </div>
+  </div>
+
+  <!-- TOOLBAR FILTROS & AÇÕES SECUNDÁRIAS -->
+  <div class="toolbar" style="margin-top: 0; padding-top: 0;">
+    <div class="filter-group" style="align-items: center; gap: 8px;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; margin-right: 4px;">Filtros:</span>
+      <select id="filter-dept" class="select-filter">
+        <option value="">Departamentos</option>
+        <option value="ADMINISTRAÇÃO">Administração</option>
+        <option value="ASSISTÊNCIA SOCIAL">Assistência Social</option>
+        <option value="EDUCAÇÃO">Educação</option>
+        <option value="SAÚDE">Saúde</option>
+      </select>
+
+      <select id="filter-status" class="select-filter">
+        <option value="">Status</option>
+        <option value="pendente">Pendentes</option>
+        <option value="empenhado">Empenhados</option>
+      </select>
+
+      <select id="filter-tipo" class="select-filter">
+        <option value="">Tipo</option>
+        <option value="FIXO">Fixos</option>
+        <option value="VARIÁVEL">Variáveis</option>
+      </select>
+
+      <select id="filter-cadastro" class="select-filter">
+        <option value="">Cadastro</option>
+        <option value="sem_cnpj">Sem CNPJ</option>
+        <option value="sem_email">Sem E-mail</option>
+        <option value="com_pendencias">Com Pendências</option>
+      </select>
+
+      <select id="filter-vencimento" class="select-filter">
+        <option value="">Contratos</option>
+        <option value="vencidos">Somente Vencidos</option>
+        <option value="30">Vencendo em 30 dias</option>
+      </select>
+    </div>
+
+    <div class="toolbar-actions" style="gap: 6px;">
+      <button class="btn btn-ghost" id="btn-expand-all" title="Expandir todos" style="padding: 6px 12px; font-size: 12px; border-color: transparent;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+        </svg>
+        Expandir
+      </button>
+      <button class="btn btn-ghost" id="btn-print-lote" title="Imprimir todos em lote" style="padding: 6px 12px; font-size: 12px; border-color: transparent;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9" />
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+          <rect x="6" y="14" width="12" height="8" />
+        </svg>
+        Imprimir
+      </button>
+      <button class="btn btn-ghost" id="btn-export-csv" title="Exportar lista como CSV" style="padding: 6px 12px; font-size: 12px; border-color: transparent;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        CSV
+      </button>
+      <button class="btn btn-ghost" id="btn-lixeira" title="Credores excluídos" data-tooltip="Ver credores excluídos" style="padding: 6px 12px; font-size: 12px; color: var(--red); border-color: rgba(199,74,74,0.3); background: var(--red-bg);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Lixeira
       </button>
     </div>
   </div>

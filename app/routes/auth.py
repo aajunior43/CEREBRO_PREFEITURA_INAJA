@@ -6,8 +6,10 @@ Migrado de routes/all_routes.py com rate limiting e init_auth_hash.
 from flask import Blueprint, request, jsonify, session
 from config import settings
 import hashlib
+import hmac
 import secrets
 from app.utils.helpers import rate_limited
+from app.utils.audit import log_auth_audit
 
 bp = Blueprint('auth', __name__)
 
@@ -20,6 +22,11 @@ def init_auth_hash(admin_password: str):
     _ADM_HASH = (
         hashlib.sha256(admin_password.encode()).hexdigest() if admin_password else ""
     )
+
+
+def _safe_compare(a: str, b: str) -> bool:
+    """Comparação segura contra timing attacks."""
+    return hmac.compare_digest(a.encode(), b.encode())
 
 
 @bp.route('/auth/adm', methods=['POST'])
@@ -35,19 +42,25 @@ def autentica_adm():
 
     # Se _ADM_HASH foi inicializado (via init_auth_hash), usa-o
     if _ADM_HASH:
-        if senha_hash == _ADM_HASH:
+        if _safe_compare(senha_hash, _ADM_HASH):
             session['adm_autenticado'] = True
             session['adm_token'] = secrets.token_hex(16)
+            session.permanent = True
+            log_auth_audit(success=True, ip=ip)
             return jsonify({'ok': True})
+        log_auth_audit(success=False, ip=ip, details='Senha incorreta')
         return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
 
     # Fallback: usar settings.admin_password diretamente
     senha_admin_hash = hashlib.sha256(settings.admin_password.encode()).hexdigest()
-    if senha_hash == senha_admin_hash:
+    if _safe_compare(senha_hash, senha_admin_hash):
         session['adm_autenticado'] = True
         session['adm_token'] = secrets.token_hex(16)
+        session.permanent = True
+        log_auth_audit(success=True, ip=ip)
         return jsonify({'ok': True})
 
+    log_auth_audit(success=False, ip=ip, details='Senha incorreta (fallback)')
     return jsonify({'ok': False, 'error': 'Senha incorreta'}), 401
 
 

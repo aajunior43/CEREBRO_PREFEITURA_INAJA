@@ -5,49 +5,9 @@ import json
 from flask import Blueprint, request, jsonify
 from app.utils.db import get_db
 from app.utils.helpers import row_to_dict, clean_value
-from config import settings
+from app.utils.ai_service_factory import get_openrouter_config, build_ai_facade
 
 bp = Blueprint("empenho_assistente", __name__)
-
-
-def _get_openrouter_config(conn, api_key_override="", model_override=""):
-    rows = conn.execute(
-        "SELECT chave,valor FROM configuracoes WHERE chave IN (?,?)",
-        ("api_openrouter_key", "api_openrouter_modelo"),
-    ).fetchall()
-    cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
-    api_key = (
-        (api_key_override or "").strip()
-        or cfg.get("api_openrouter_key", "")
-        or (settings.OPENROUTER_API_KEY or "").strip()
-    )
-    raw_model = (
-        (model_override or "").strip()
-        or cfg.get("api_openrouter_modelo", "")
-        or (settings.OPENROUTER_MODEL or "").strip()
-        or settings.openrouter_default_model
-    )
-    return api_key, raw_model.strip()
-
-
-def _build_ai_service(api_key, model):
-    from services.openrouter_service import build_openrouter_service
-    return build_openrouter_service(
-        api_key=api_key,
-        default_model=model or settings.openrouter_default_model,
-        referer=settings.openrouter_referer,
-        title=settings.openrouter_title,
-        logger=None,
-        timeout_seconds=settings.openrouter_timeout_seconds,
-        max_retries=settings.openrouter_max_retries,
-        backoff_base=settings.openrouter_backoff_base,
-        cache_ttl_seconds=settings.openrouter_cache_ttl_seconds,
-    )
-
-
-def _build_ai_facade(api_key, model):
-    from services.ai_tasks import AITaskFacade
-    return AITaskFacade(_build_ai_service(api_key, model))
 
 
 def _normalize_empenho_payload(payload):
@@ -136,7 +96,7 @@ def empenho_assistente():
     action = (data.get("action") or "").strip()
     payload = _normalize_empenho_payload(data.get("payload") or {})
     conn = get_db()
-    api_key, model = _get_openrouter_config(conn)
+    api_key, model = get_openrouter_config(conn)
     if not api_key:
         return jsonify({"error": "Chave do OpenRouter não configurada."}), 400
     if action not in {
@@ -145,7 +105,7 @@ def empenho_assistente():
     }:
         return jsonify({"error": "Ação inválida."}), 400
     try:
-        facade = _build_ai_facade(api_key, model)
+        facade = build_ai_facade(api_key, model)
         result = facade.gerar_texto_empenho(payload, acao=action)
         meta = {"model": model, "cached": False, "usage": {}}
         if hasattr(result, "model"):

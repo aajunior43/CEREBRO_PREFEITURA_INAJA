@@ -21,6 +21,7 @@ import hashlib
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from flask import Flask, g, request, Response, send_file, send_from_directory
+from datetime import timedelta
 from config import settings
 
 
@@ -32,12 +33,17 @@ def create_app(test_config=None):
     # Configurações básicas
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key-inaja")
     app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload
+    app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)  # Sessão expira em 8h
 
     if test_config is not None:
         app.config.update(test_config)
 
     # ── Logging ───────────────────────────────────────────
     _setup_logging(app)
+
+    # ── DB Context Connection (auto close/rollback) ──────
+    from app.utils.db import init_db_context_connection
+    init_db_context_connection(app)
 
     # ── Error Handlers Globais ────────────────────────────
     _register_error_handlers(app)
@@ -73,6 +79,23 @@ def _setup_logging(app):
     handler.setLevel(logging.WARNING)
     app.logger.addHandler(handler)
     app.logger.setLevel(logging.INFO)
+
+    # Audit logger (separate file)
+    audit_log_path = os.path.join(log_dir, "audit.log")
+    audit_handler = RotatingFileHandler(
+        audit_log_path,
+        maxBytes=5 * 1024 * 1024,  # 5MB
+        backupCount=5,
+        encoding="utf-8",
+    )
+    audit_handler.setFormatter(
+        logging.Formatter("%(asctime)s [AUDIT] %(message)s")
+    )
+    audit_handler.setLevel(logging.INFO)
+
+    from app.utils.audit import audit_logger
+    audit_logger.addHandler(audit_handler)
+    audit_logger.setLevel(logging.INFO)
 
 
 def _register_error_handlers(app):

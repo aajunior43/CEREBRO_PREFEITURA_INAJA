@@ -2541,7 +2541,7 @@ body.home-page .app-sidebar {
   top: 68px;
   left: 0;
   bottom: 0;
-  width: 272px;
+  width: 236px;
   background:
     linear-gradient(180deg, #e8eef6 0%, #dbe6f2 100%);
   border-right: 1px solid rgba(15, 23, 42, 0.12);
@@ -2558,7 +2558,7 @@ body.home-page.sidebar-collapsed .app-sidebar {
 body.home-page .sidebar-scroll {
   height: 100%;
   overflow-y: auto;
-  padding: 18px 14px 28px;
+  padding: 14px 10px 24px;
 }
 
 /* Botão Expandir/Recolher tudo na sidebar */
@@ -2608,11 +2608,11 @@ body.home-page .sidebar-expand-all-btn.expanded svg {
 body.home-page .sidebar-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 18px;
-  padding: 12px;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 8px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
+  border-radius: 14px;
   background: rgba(255,255,255,0.78);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
 }
@@ -2636,11 +2636,11 @@ body.home-page .sidebar-section-admin {
 body.home-page .nav-tab-sidebar {
   justify-content: flex-start;
   width: 100%;
-  min-height: 42px;
-  gap: 10px;
-  padding: 10px 12px;
+  min-height: 36px;
+  gap: 8px;
+  padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   font-size: 12px;
   color: #223449;
@@ -2721,10 +2721,10 @@ body.home-page .nav-group-sidebar {
 body.home-page .nav-group-sidebar .nav-group-btn {
   width: 100%;
   justify-content: space-between;
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 36px;
+  padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.88);
   font-size: 13px;
   color: #223449;
@@ -2782,17 +2782,22 @@ body.home-page .nav-group-item-inline {
 
 body.home-page .nav-group-item,
 body.home-page .nav-group-item-inline {
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  overflow: hidden;
 }
 
 body.home-page .nav-group-item-icon {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   background: linear-gradient(180deg, rgba(248,250,252,0.98), rgba(231,237,244,0.98));
   border: 1px solid rgba(15, 23, 42, 0.12);
 }
@@ -2807,12 +2812,14 @@ body.home-page .nav-group-item-name {
   font-size: 12px;
   font-weight: 650;
   color: #1f3144;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 body.home-page .nav-group-item-desc {
-  font-size: 10px;
-  line-height: 1.25;
-  color: #637487;
+  display: none;
 }
 
 body.home-page .nav-group-item:hover,
@@ -3173,7 +3180,7 @@ body.home-page .credores-meta,
 body.home-page .main-content,
 body.home-page .adm-panel,
 body.home-page .footer {
-  margin-left: 272px;
+  margin-left: 236px;
   transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
@@ -3195,7 +3202,7 @@ body.home-page .toolbar,
 body.home-page .credores-meta,
 body.home-page .main-content,
 body.home-page .adm-panel {
-  width: calc(100% - 272px);
+  width: calc(100% - 236px);
   max-width: 100%;
 }
 

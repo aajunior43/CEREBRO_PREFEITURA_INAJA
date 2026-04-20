@@ -10,25 +10,30 @@ def paginate(
 ) -> dict[str, Any]:
     """
     Retorna resposta paginada padrão.
-    
+
+    Se `total` for fornecido, usa-o diretamente (ignorando len(items)),
+    pois os items já podem estar fatiados pelo LIMIT/OFFSET.
+
     Exemplo de resposta:
     {
-        "data": [...],
-        "pagination": {
-            "page": 1,
-            "per_page": 50,
-            "total": 124,
-            "pages": 3,
-            "has_next": true,
-            "has_prev": false
-        }
+        "items": [...],
+        "total": 124,
+        "page": 1,
+        "per_page": 50,
+        "pages": 3,
+        "has_next": true,
+        "has_prev": false
     }
     """
+    # Se total não foi fornecido, calcula a partir dos items
     if total is None:
         total = len(items)
-    
+
+    total = max(0, total)
+    per_page = max(1, per_page)
     pages = max(1, (total + per_page - 1) // per_page)
-    
+    page = max(1, min(page, pages))
+
     return {
         "items": items,
         "total": total,

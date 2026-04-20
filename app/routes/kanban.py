@@ -9,29 +9,66 @@ from app.utils.helpers import row_to_dict
 
 bp = Blueprint('kanban', __name__)
 
+# Limite de upload: 5MB
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024
+ALLOWED_EXTENSIONS = {
+    '.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp',
+    '.doc', '.docx', '.xls', '.xlsx', '.txt', '.csv',
+    '.zip', '.rar', '.mp4', '.mp3', '.wav',
+}
+ALLOWED_MIME_TYPES = {
+    'application/pdf',
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/plain', 'text/csv',
+    'application/zip', 'application/x-rar-compressed',
+    'video/mp4', 'audio/mpeg', 'audio/wav',
+    'application/octet-stream',
+}
+
 
 @bp.route('/kanban', methods=['GET'])
 def listar_kanban():
-    """Lista todas as tarefas do kanban."""
+    """Lista todas as tarefas do kanban com anexos (JOIN único)."""
     try:
         conn = get_db()
+
+        # Busca todas as tarefas
         rows = conn.execute("""
             SELECT * FROM kanban_tasks ORDER BY criado_em DESC
         """).fetchall()
-        
+
+        # Busca todos os anexos de uma vez
+        task_ids = [row['id'] for row in rows]
+        if task_ids:
+            placeholders = ','.join('?' for _ in task_ids)
+            attachments_rows = conn.execute(f"""
+                SELECT * FROM kanban_attachments
+                WHERE task_id IN ({placeholders})
+                ORDER BY criado_em DESC
+            """, task_ids).fetchall()
+        else:
+            attachments_rows = []
+
+        # Agrupa anexos por task_id
+        attachments_by_task = {}
+        for att in attachments_rows:
+            att_dict = row_to_dict(att)
+            tid = att['task_id']
+            if tid not in attachments_by_task:
+                attachments_by_task[tid] = []
+            attachments_by_task[tid].append(att_dict)
+
+        # Monta resposta
         tasks = []
         for row in rows:
             task = row_to_dict(row)
-            
-            # Buscar anexos
-            attachments = conn.execute("""
-                SELECT id, file_name, mime_type, file_size, criado_em
-                FROM kanban_attachments WHERE task_id=?
-            """, (row['id'],)).fetchall()
-            task['attachments'] = [row_to_dict(a) for a in attachments]
-            
+            task['attachments'] = attachments_by_task.get(task['id'], [])
             tasks.append(task)
-        
+
         return jsonify(tasks)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -123,16 +160,47 @@ def excluir_tarefa(task_id):
 
 @bp.route('/kanban/<task_id>/attachments', methods=['POST'])
 def upload_anexo(task_id):
-    """Faz upload de anexo para tarefa."""
+    """Faz upload de anexo para tarefa com validação de segurança."""
     try:
         conn = get_db()
-        
+
+        # Verifica se a tarefa existe
+        task = conn.execute(
+            "SELECT id FROM kanban_tasks WHERE id=?", (task_id,)
+        ).fetchone()
+        if not task:
+            return jsonify({'error': 'Tarefa não encontrada'}), 404
+
         if 'file' not in request.files:
             return jsonify({'error': 'Nenhum arquivo enviado'}), 400
-        
+
         file = request.files['file']
+        if not file.filename or file.filename.strip() == '':
+            return jsonify({'error': 'Nome de arquivo inválido'}), 400
+
+        # Lê conteúdo e valida tamanho
         content = file.read()
-        
+        if len(content) > MAX_UPLOAD_SIZE:
+            return jsonify({
+                'error': f'Arquivo muito grande. Tamanho máximo: {MAX_UPLOAD_SIZE // (1024*1024)}MB'
+            }), 413
+
+        # Valida extensão
+        ext = ''
+        if '.' in file.filename:
+            ext = '.' + file.filename.rsplit('.', 1)[1].lower()
+        if ext and ext not in ALLOWED_EXTENSIONS:
+            return jsonify({
+                'error': f'Tipo de arquivo não permitido. Tipos aceitos: {", ".join(sorted(ALLOWED_EXTENSIONS))}'
+            }), 400
+
+        # Valida MIME type
+        mime_type = file.content_type or 'application/octet-stream'
+        if mime_type not in ALLOWED_MIME_TYPES:
+            return jsonify({
+                'error': 'Tipo de conteúdo não permitido'
+            }), 400
+
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO kanban_attachments (task_id, file_name, mime_type, file_size, content)
@@ -140,16 +208,16 @@ def upload_anexo(task_id):
         """, (
             task_id,
             file.filename,
-            file.content_type or 'application/octet-stream',
+            mime_type,
             len(content),
             content,
         ))
-        
+
         attachment_id = cur.lastrowid
         conn.commit()
-        
+
         return jsonify({'ok': True, 'attachment_id': attachment_id})
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
