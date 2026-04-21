@@ -273,6 +273,68 @@
     .cd-history-remove:hover { background: var(--cd-red-bg,#fef2f2); color: var(--cd-red,#dc2626); border-color: var(--cd-red,#dc2626); }
     .cd-history-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--text-3,#9ca3af); }
 
+    /* Autocomplete */
+    .cd-autocomplete-container {
+      position: relative; margin-top: -40px; margin-bottom: 12px;
+      background: white; border: 1px solid var(--border,rgba(0,0,0,.1));
+      border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      max-height: 300px; overflow-y: auto; z-index: 100;
+    }
+    [data-theme="dark"] .cd-autocomplete-container {
+      background: var(--bg-2,#1e293b); border-color: var(--border,rgba(255,255,255,.1));
+    }
+    .cd-autocomplete-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+      cursor: pointer; transition: background .15s; border-bottom: 1px solid var(--border,rgba(0,0,0,.05));
+    }
+    .cd-autocomplete-item:last-child { border-bottom: none; }
+    .cd-autocomplete-item:hover { background: var(--cd-accent-soft); }
+    .cd-autocomplete-item-text { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-1,#111); }
+    .cd-autocomplete-badge {
+      font-size: 11px; font-weight: 700; font-family: monospace;
+      padding: 3px 8px; border-radius: 6px; background: rgba(29,78,216,.08); color: var(--cd-badge-corrente);
+    }
+    .cd-autocomplete-count {
+      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+      background: var(--cd-green-bg); color: var(--cd-green);
+    }
+
+    /* Ações Rápidas */
+    .cd-actions-row {
+      display: flex; gap: 10px; padding: 16px 22px;
+      border-bottom: 1px solid var(--border,rgba(0,0,0,.07));
+      background: var(--bg-2,#f9fafb); flex-wrap: wrap;
+    }
+    .cd-action-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; border: 2px solid; transition: all .2s;
+    }
+    .cd-action-validate {
+      color: #166534; border-color: rgba(22,101,52,.3); background: rgba(22,101,52,.08);
+    }
+    .cd-action-validate:hover {
+      background: rgba(22,101,52,.15); border-color: #166534;
+      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(22,101,52,.2);
+    }
+    .cd-action-empenho {
+      color: #2563eb; border-color: rgba(37,99,235,.3); background: rgba(37,99,235,.08);
+    }
+    .cd-action-empenho:hover {
+      background: rgba(37,99,235,.15); border-color: #2563eb;
+      transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37,99,235,.2);
+    }
+
+    /* Toast */
+    @keyframes slideIn {
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(400px); opacity: 0; }
+    }
+
     @media (max-width: 600px) {
       .cd-page { margin: 12px auto 70px; padding: 0 12px; }
       .cd-hero { padding: 18px 16px; gap: 14px; }
@@ -312,6 +374,10 @@
     <div class="cd-hint">Descreva com detalhes para maior precisão. Atalho: Ctrl+Enter para classificar.</div>
     <textarea id="cd-item-input" class="cd-textarea" rows="4"
       placeholder="Ex: Aquisição de 10 cartuchos de tinta para impressora HP&#10;Ex: Contratação de empresa para manutenção preventiva do ar-condicionado&#10;Ex: Notebook Dell i5 16GB para uso administrativo na secretaria de finanças"></textarea>
+    
+    <!-- Autocomplete Suggestions -->
+    <div id="cd-autocomplete-suggestions" class="cd-autocomplete-container" style="display:none;"></div>
+    
     <div class="cd-examples">
       <span class="cd-example-chip" onclick="setExample('Cartuchos de tinta para impressora')">Cartuchos de tinta</span>
       <span class="cd-example-chip" onclick="setExample('Serviço de manutenção do sistema de ar-condicionado por empresa especializada')">Manutenção ar-cond.</span>
@@ -395,6 +461,18 @@
         Confiança abaixo de 70% — Classificações alternativas possíveis
       </div>
       <div class="cd-alt-list" id="cd-alt-list"></div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="cd-actions-row">
+      <button class="cd-action-btn cd-action-validate" id="cd-btn-validar" onclick="validarClassificacao()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+        Validar Classificação
+      </button>
+      <button class="cd-action-btn cd-action-empenho" onclick="criarEmpenhoUsandoClassificacao()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Criar Empenho com Esta Classificação
+      </button>
     </div>
 
     <!-- Exportar -->
@@ -541,6 +619,141 @@
     });
     renderResult(merged, null);
     document.getElementById('cd-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── VALIDAR CLASSIFICAÇÃO (Aprendizado Contínuo) ────────────
+  async function validarClassificacao() {
+    if (!_currentResult) return;
+    
+    const btn = document.getElementById('cd-btn-validar');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="cd-loading"></span> Validando...';
+    btn.disabled = true;
+    
+    try {
+      const response = await fetch('/classificador-despesa/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item: _currentResult.item_analisado,
+          elemento: _currentResult.elemento,
+          codigo_completo: _currentResult.codigo_completo,
+          justificativa: _currentResult.justificativa
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        showToast('Classificação validada e salva para aprendizado!', 'success');
+        btn.innerHTML = '✓ Validado';
+        btn.style.background = 'var(--cd-green-bg)';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          btn.style.background = '';
+        }, 2000);
+      }
+    } catch (error) {
+      showToast('Erro ao validar classificação', 'error');
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  // ── CRIAR EMPENHO USANDO CLASSIFICAÇÃO ──────────────────────
+  function criarEmpenhoUsandoClassificacao() {
+    if (!_currentResult) return;
+    
+    // Salvar dados no sessionStorage para o modal de empenhos
+    sessionStorage.setItem('empenho_from_classificador', JSON.stringify({
+      item: _currentResult.item_analisado,
+      codigo_completo: _currentResult.codigo_completo,
+      elemento: _currentResult.elemento,
+      grupo: _currentResult.grupo,
+      modalidade: _currentResult.modalidade,
+      justificativa: _currentResult.justificativa
+    }));
+    
+    // Redirecionar para página de empenhos
+    window.location.href = '/pages/gerador-empenho.html?from_classificador=1';
+  }
+
+  // ── AUTOCOMPLETE INTELIGENTE ────────────────────────────────
+  let autocompleteTimeout = null;
+  let elementCache = [];
+  
+  async function loadElementos() {
+    try {
+      const response = await fetch('/classificador-despesa/elementos');
+      elementCache = await response.json();
+    } catch (error) {
+      console.error('Erro ao carregar elementos:', error);
+    }
+  }
+  
+  function showAutocompleteSuggestions(suggestions) {
+    const container = document.getElementById('cd-autocomplete-suggestions');
+    if (!container) return;
+    
+    if (suggestions.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+    
+    container.innerHTML = suggestions.map(s => `
+      <div class="cd-autocomplete-item" onclick="useAutocompleteSuggestion('${escHtml(s.item)}')">
+        <span class="cd-autocomplete-item-text">${escHtml(s.item)}</span>
+        <span class="cd-autocomplete-badge">${s.codigo_completo}</span>
+        <span class="cd-autocomplete-count">${s.vezes_usado}x</span>
+      </div>
+    `).join('');
+    
+    container.style.display = 'block';
+  }
+  
+  function useAutocompleteSuggestion(item) {
+    document.getElementById('cd-item-input').value = item;
+    document.getElementById('cd-autocomplete-suggestions').style.display = 'none';
+    classificar();
+  }
+  
+  async function handleAutocompleteInput(value) {
+    const container = document.getElementById('cd-autocomplete-suggestions');
+    
+    if (value.length < 3) {
+      container.style.display = 'none';
+      return;
+    }
+    
+    clearTimeout(autocompleteTimeout);
+    autocompleteTimeout = setTimeout(async () => {
+      try {
+        const response = await fetch(`/classificador-despesa/sugestoes?q=${encodeURIComponent(value)}`);
+        const suggestions = await response.json();
+        showAutocompleteSuggestions(suggestions);
+      } catch (error) {
+        console.error('Erro no autocomplete:', error);
+      }
+    }, 300);
+  }
+  
+  // Toast notification
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `cd-toast cd-toast-${type}`;
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed; top: 24px; right: 24px; padding: 12px 20px; border-radius: 12px;
+      background: ${type === 'success' ? '#166534' : type === 'error' ? '#dc2626' : '#2563eb'};
+      color: white; font-weight: 600; font-size: 13px; z-index: 10000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15); animation: slideIn 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
   }
 
   // ── Classificar ─────────────────────────────────────────────
@@ -880,8 +1093,23 @@
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') classificar();
   });
 
+  // Autocomplete - input event
+  document.getElementById('cd-item-input').addEventListener('input', e => {
+    handleAutocompleteInput(e.target.value);
+  });
+
+  // Fechar autocomplete ao clicar fora
+  document.addEventListener('click', e => {
+    const container = document.getElementById('cd-autocomplete-suggestions');
+    const input = document.getElementById('cd-item-input');
+    if (!container.contains(e.target) && e.target !== input) {
+      container.style.display = 'none';
+    }
+  });
+
   // Init
   carregarHistorico();
+  loadElementos();
 </script>
 </body>
 </html>

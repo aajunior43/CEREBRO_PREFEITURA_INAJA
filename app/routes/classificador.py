@@ -2,50 +2,25 @@
 app/routes/classificador.py — AI expense classifier (migrated from routes/all_routes.py)
 """
 import json
+import os
+import sqlite3
 from flask import Blueprint, request, jsonify
 from app.utils.db import get_db
 from app.utils.helpers import row_to_dict
+from app.utils.ai_service_factory import get_openrouter_config, build_ai_facade
 from config import settings
 
 bp = Blueprint("classificador", __name__)
 
 
-def _get_openrouter_config(conn, api_key_override="", model_override=""):
-    rows = conn.execute(
-        "SELECT chave,valor FROM configuracoes WHERE chave IN (?,?)",
-        ("api_openrouter_key", "api_openrouter_modelo"),
-    ).fetchall()
-    cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
-    api_key = (
-        (api_key_override or "").strip()
-        or cfg.get("api_openrouter_key", "")
-        or (settings.OPENROUTER_API_KEY or "").strip()
-    )
-    raw_model = (
-        (model_override or "").strip()
-        or cfg.get("api_openrouter_modelo", "")
-        or (settings.OPENROUTER_MODEL or "").strip()
-        or settings.openrouter_default_model
-    )
-    return api_key, raw_model.strip()
-
-
 def _build_ai_service(api_key, model):
-    from services.openrouter_service import build_openrouter_service
-    return build_openrouter_service(
-        api_key=api_key,
-        default_model=model or settings.openrouter_default_model,
-        referer=settings.openrouter_referer,
-        title=settings.openrouter_title,
-        logger=None,
-        timeout_seconds=settings.openrouter_timeout_seconds,
-        max_retries=settings.openrouter_max_retries,
-        backoff_base=settings.openrouter_backoff_base,
-        cache_ttl_seconds=settings.openrouter_cache_ttl_seconds,
-    )
+    """Wrapper para manter compatibilidade com código existente"""
+    facade, _ = build_ai_facade(api_key=api_key, default_model=model)
+    return facade
 
 
 def _build_ai_facade(api_key, model):
+    """Deprecated: usar ai_service_factory diretamente"""
     from services.ai_tasks import AITaskFacade
     return AITaskFacade(_build_ai_service(api_key, model))
 
@@ -59,7 +34,7 @@ def classificador_despesa():
     if not item:
         return jsonify({"error": "Informe o item ou serviço."}), 400
     conn = get_db()
-    api_key, model = _get_openrouter_config(conn)
+    api_key, model = get_openrouter_config(conn)
     if not api_key:
         return jsonify({"error": "Chave do OpenRouter não configurada."}), 400
     web_context = ""
@@ -190,3 +165,163 @@ def classificador_historico_limpar():
         return jsonify({"ok": True, "cleared": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/classificador-despesa/elementos", methods=["GET"])
+def obter_elementos():
+    """Obter todos os elementos de despesa para autocomplete"""
+    elementos = [
+        {"codigo": "04", "nome": "Locação de Imóveis"},
+        {"codigo": "08", "nome": "Outros Benefícios Assistenciais"},
+        {"codigo": "11", "nome": "Vencimentos e Vantagens Fixas"},
+        {"codigo": "13", "nome": "Obrigações Patronais"},
+        {"codigo": "14", "nome": "Diárias"},
+        {"codigo": "30", "nome": "Material de Consumo"},
+        {"codigo": "31", "nome": "Premiações Culturais, Esportivas"},
+        {"codigo": "32", "nome": "Material para Distribuição Gratuita"},
+        {"codigo": "33", "nome": "Passagens e Deslocamentos"},
+        {"codigo": "34", "nome": "Equipamentos para Empresas Públicas"},
+        {"codigo": "35", "nome": "Serviços de Transporte"},
+        {"codigo": "36", "nome": "Serviços - Pessoa Física"},
+        {"codigo": "39", "nome": "Serviços - Pessoa Jurídica"},
+        {"codigo": "47", "nome": "Obrigações Tributárias"},
+        {"codigo": "48", "nome": "Auxílio Financeiro a Entidades"},
+        {"codigo": "51", "nome": "Obras e Instalações"},
+        {"codigo": "52", "nome": "Equipamentos e Material Permanente"},
+        {"codigo": "61", "nome": "Aquisição de Imóveis"},
+        {"codigo": "63", "nome": "Aquisição de Títulos"},
+        {"codigo": "64", "nome": "Concessão de Subvenções"},
+        {"codigo": "71", "nome": "Concessão de Empréstimos"},
+        {"codigo": "92", "nome": "Despesas de Exercícios Anteriores"},
+        {"codigo": "93", "nome": "Indenizações"}
+    ]
+    return jsonify(elementos)
+
+
+@bp.route("/classificador-despesa/validadas", methods=["GET"])
+def classificacoes_validadas():
+    """Obter classificações validadas (aprendizado contínuo)"""
+    import json
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'empenhos.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    
+    # Criar tabela se não existir
+    conn.execute("""CREATE TABLE IF NOT EXISTS classificacoes_validadas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item TEXT NOT NULL,
+        elemento TEXT NOT NULL,
+        codigo_completo TEXT NOT NULL,
+        justificativa TEXT,
+        validado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        vezes_usado INTEGER DEFAULT 1
+    )""")
+    conn.commit()
+    
+    limit = request.args.get('limit', 50)
+    search = request.args.get('search', '')
+    
+    if search:
+        rows = conn.execute(
+            "SELECT * FROM classificacoes_validadas WHERE item LIKE ? ORDER BY vezes_usado DESC, validado_em DESC LIMIT ?",
+            (f"%{search}%", limit)
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM classificacoes_validadas ORDER BY vezes_usado DESC, validado_em DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+    
+    conn.close()
+    return jsonify([dict(row) for row in rows])
+
+
+@bp.route("/classificador-despesa/validar", methods=["POST"])
+def validar_classificacao():
+    """Validar classificação para aprendizado contínuo"""
+    data = request.get_json()
+    
+    item = data.get('item', '').strip()
+    elemento = data.get('elemento', '').strip()
+    codigo_completo = data.get('codigo_completo', '').strip()
+    justificativa = data.get('justificativa', '').strip()
+    
+    if not item or not elemento:
+        return jsonify({"error": "Item e elemento são obrigatórios"}), 400
+    
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'empenhos.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    
+    # Criar tabela se não existir
+    conn.execute("""CREATE TABLE IF NOT EXISTS classificacoes_validadas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item TEXT NOT NULL,
+        elemento TEXT NOT NULL,
+        codigo_completo TEXT NOT NULL,
+        justificativa TEXT,
+        validado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        vezes_usado INTEGER DEFAULT 1
+    )""")
+    
+    # Verificar se já existe
+    existing = conn.execute(
+        "SELECT id, vezes_usado FROM classificacoes_validadas WHERE item = ? AND elemento = ?",
+        (item, elemento)
+    ).fetchone()
+    
+    if existing:
+        conn.execute(
+            "UPDATE classificacoes_validadas SET vezes_usado = vezes_usado + 1, validado_em = CURRENT_TIMESTAMP WHERE id = ?",
+            (existing['id'],)
+        )
+    else:
+        conn.execute(
+            "INSERT INTO classificacoes_validadas (item, elemento, codigo_completo, justificativa) VALUES (?, ?, ?, ?)",
+            (item, elemento, codigo_completo, justificativa)
+        )
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"success": True, "message": "Classificação validada!"})
+
+
+@bp.route("/classificador-despesa/sugestoes", methods=["GET"])
+def sugestoes_classificacao():
+    """Obter sugestões de classificação baseadas em histórico"""
+    search = request.args.get('q', '').strip()
+    
+    if not search or len(search) < 3:
+        return jsonify([])
+    
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'empenhos.db')
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    
+    # Buscar no histórico de classificações
+    rows = conn.execute(
+        """SELECT item, codigo_completo, elemento, grupo, modalidade, 
+                  COUNT(*) as vezes, 
+                  MAX(classificado_em) as ultima_vez
+           FROM classificador_despesa_historico 
+           WHERE item LIKE ? 
+           GROUP BY item, codigo_completo 
+           ORDER BY vezes DESC, ultima_vez DESC 
+           LIMIT 10""",
+        (f"%{search}%",)
+    ).fetchall()
+    
+    conn.close()
+    
+    sugestoes = []
+    for row in rows:
+        sugestoes.append({
+            "item": row["item"],
+            "codigo_completo": row["codigo_completo"],
+            "elemento": row["elemento"],
+            "grupo": row["grupo"],
+            "vezes_usado": row["vezes"]
+        })
+    
+    return jsonify(sugestoes)

@@ -57,10 +57,6 @@ def create_app(test_config=None):
     # ── Rotas Estáticas e Especiais ──────────────────────
     _register_static_routes(app)
 
-    # ── Inicializar auth hash (migrado de routes/all_routes.py) ──
-    from app.routes.auth import init_auth_hash
-    init_auth_hash(settings.admin_password)
-
     return app
 
 

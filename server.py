@@ -432,10 +432,14 @@ if __name__ == "__main__":
 
     _terminal_section("Sistema de Empenhos - Prefeitura Municipal de Inaja")
     _terminal_log("BOOT", "Iniciando servidor Flask...", "cyan")
-    init_db()
-    _terminal_log("BOOT", "Estrutura principal do banco verificada", "green")
-    migrate_db()
-    _terminal_log("BOOT", "Migracoes do banco aplicadas", "green")
+    
+    # Criar contexto da aplicação para operações de banco de dados
+    with app.app_context():
+        init_db()
+        _terminal_log("BOOT", "Estrutura principal do banco verificada", "green")
+        migrate_db()
+        _terminal_log("BOOT", "Migracoes do banco aplicadas", "green")
+    
     _preload_static_files()
 
     try:

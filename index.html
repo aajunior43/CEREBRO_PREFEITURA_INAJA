@@ -9,6 +9,21 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <link rel="stylesheet" href="/static/css/toast.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <script>
+    // Verificar autenticação ao carregar
+    (async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/verificar');
+        const data = await res.json();
+        if (!data.autenticado) {
+          window.location.href = '/login.html';
+          return;
+        }
+      } catch (e) {
+        console.error('Erro ao verificar autenticação:', e);
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
 </head>
 
@@ -17,7 +32,7 @@
   <header class="header">
     <div class="header-inner">
       <div class="header-left">
-        <button class="hamburger" id="hamburger">
+        <button class="hamburger btn-ripple" id="hamburger" aria-label="Abrir menu">
           <span></span>
           <span></span>
           <span></span>
@@ -30,22 +45,34 @@
       </div>
       <div class="header-right">
         <div class="month-nav">
-          <button class="nav-btn" id="btn-prev-month" title="Mês anterior">&#8249;</button>
+          <button class="nav-btn btn-ripple" id="btn-prev-month" title="Mês anterior" aria-label="Mês anterior">&#8249;</button>
           <div class="month-display">
             <span class="month-name" id="current-month-name">Fevereiro</span>
             <span class="month-year" id="current-month-year">2026</span>
           </div>
-          <button class="nav-btn" id="btn-next-month" title="Próximo mês">&#8250;</button>
+          <button class="nav-btn btn-ripple" id="btn-next-month" title="Próximo mês" aria-label="Próximo mês">&#8250;</button>
         </div>
 
         <div class="dropdown">
-          <button type="button" class="header-manual-btn" id="header-admin-btn" onclick="document.querySelector('.nav-tab[data-tab=&quot;adm&quot;]')?.click();" title="Abrir administração">
+          <div id="header-user-info" style="display:flex;align-items:center;gap:8px;margin-right:12px;font-size:12px;color:var(--text-2);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span id="header-usuario-nome">
+              <span class="skeleton-loader" style="width:80px;height:14px;display:inline-block;border-radius:4px;"></span>
+            </span>
+            <button type="button" id="header-logout-btn" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--red);cursor:pointer;transition:all 0.2s;" title="Sair">
+              Sair
+            </button>
+          </div>
+          <button type="button" class="header-manual-btn btn-ripple" id="header-admin-btn" onclick="document.querySelector('.nav-tab[data-tab=&quot;adm&quot;]')?.click();" title="Abrir administração">
             ADM
           </button>
-          <button type="button" class="header-manual-btn" id="header-manual-btn" onclick="window.location.href='/pages/manual.html'" title="Abrir manual">
+          <button type="button" class="header-manual-btn btn-ripple" id="header-manual-btn" onclick="window.location.href='/pages/manual.html'" title="Abrir manual">
             Manual
           </button>
-          <button class="dropdown-toggle" id="dropdown-toggle">
+          <button class="dropdown-toggle btn-ripple" id="dropdown-toggle" aria-label="Abrir menu de opções">
           </button>
           <div class="dropdown-menu" id="dropdown-menu">
             <button class="dropdown-item" id="btn-logs" data-tooltip="Ver histórico de alterações">
@@ -55,7 +82,7 @@
               </svg>
               Logs
             </button>
-            <button class="dropdown-item theme-toggle" id="theme-toggle">
+            <button class="dropdown-item theme-toggle" id="theme-toggle" aria-label="Alterar tema">
               <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
               </svg>
@@ -75,7 +102,7 @@
 
       <!-- Botão Início -->
       <div class="sidebar-section" style="padding-bottom:0">
-        <button class="nav-home-btn active" id="btn-home-screen">
+        <button class="nav-home-btn active btn-ripple" id="btn-home-screen">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
           Início
         </button>
@@ -83,7 +110,7 @@
 
       <!-- Botão de expandir/recolher todos os grupos -->
       <div class="sidebar-expand-all-wrap">
-        <button class="sidebar-expand-all-btn" id="btn-sidebar-expand-all" title="Expandir ou recolher todos os grupos do menu">
+        <button class="sidebar-expand-all-btn btn-ripple" id="btn-sidebar-expand-all" title="Expandir ou recolher todos os grupos do menu">
           <svg id="sidebar-expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="6 9 12 15 18 9"/>
           </svg>
@@ -91,9 +118,15 @@
         </button>
       </div>
 
+      <!-- Busca rápida na sidebar -->
+      <div class="sidebar-search">
+        <svg class="sidebar-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" class="sidebar-search__input" placeholder="Buscar módulo..." id="sidebarSearch">
+      </div>
+
       <div class="sidebar-section">
         <div class="sidebar-label">Operação</div>
-        <button class="nav-tab active nav-tab-sidebar" data-tab="credores-fixos" data-tooltip="Lista de credores com empenhos mensais">
+        <button class="nav-tab active nav-tab-sidebar sidebar-nav-link" data-tab="credores-fixos" data-tooltip="Lista de credores com empenhos mensais" data-glow-btn data-glow-btn-color="blue">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
@@ -102,38 +135,40 @@
           </svg>
           <span>Credores Fixos</span>
         </button>
-        <a href="/pages/tarefas.html" class="nav-group-item nav-group-item-inline">
+        <a href="/pages/tarefas.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Gerenciar atividades">
           <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
           <div class="nav-group-item-text"><span class="nav-group-item-name">Tarefas</span><span class="nav-group-item-desc">Gerenciar atividades</span></div>
         </a>
-        <a href="/pages/calendario.html" class="nav-group-item nav-group-item-inline">
+        <a href="/pages/calendario.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Histórico mensal">
           <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <div class="nav-group-item-text"><span class="nav-group-item-name">Calendário</span><span class="nav-group-item-desc">Histórico mensal</span></div>
         </a>
       </div>
 
+      <hr class="sidebar-divider">
+
       <div class="sidebar-section">
         <div class="sidebar-label">Financeiro</div>
-        <div class="nav-group open nav-group-sidebar">
-          <button class="nav-group-btn">
+        <div class="nav-group nav-group-sidebar">
+          <button class="nav-group-btn sidebar-group-toggle" role="button" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>
             Financeiro
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <div class="nav-group-menu nav-group-menu-sidebar">
-            <a href="/pages/tarifas-bancarias.html" class="nav-group-item">
+          <div class="nav-group-menu nav-group-menu-sidebar" role="region">
+            <a href="/pages/tarifas-bancarias.html" class="nav-group-item sidebar-nav-link" data-tooltip="Encargos e tarifas bancárias">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Tarifas</span><span class="nav-group-item-desc">Encargos e tarifas bancárias</span></div>
             </a>
-            <a href="/pages/fornecimento.html" class="nav-group-item">
+            <a href="/pages/fornecimento.html" class="nav-group-item sidebar-nav-link" data-tooltip="Controle de fornecedores">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Solicitação de Compra ou Serviço</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
             </a>
-            <a href="/pages/despesa-prefeitura.html" class="nav-group-item">
+            <a href="/pages/despesa-prefeitura.html" class="nav-group-item sidebar-nav-link" data-tooltip="Dotações e execução orçamentária">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Dotação Orçamentária</span><span class="nav-group-item-desc">Dotações e execução orçamentária</span></div>
             </a>
-            <a href="/pages/despesa-relatorios.html" class="nav-group-item">
+            <a href="/pages/despesa-relatorios.html" class="nav-group-item sidebar-nav-link" data-tooltip="Comparar períodos e histórico">
               <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
               <div class="nav-group-item-text"><span class="nav-group-item-name">Relatórios</span><span class="nav-group-item-desc">Comparar períodos e histórico</span></div>
             </a>
@@ -141,63 +176,64 @@
         </div>
       </div>
 
+      <hr class="sidebar-divider">
+
       <div class="sidebar-section">
         <div class="sidebar-label">Documentos</div>
-        <div class="nav-group open nav-group-sidebar">
-          <button class="nav-group-btn">
+        <div class="nav-group nav-group-sidebar">
+          <button class="nav-group-btn sidebar-group-toggle" role="button" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Documentos
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <div class="nav-group-menu nav-group-menu-sidebar">
-            <a href="/pages/documentos.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Centro de Documentos</span><span class="nav-group-item-desc">Salvar e organizar arquivos</span></div></a>
-            <a href="/pages/rpa.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de RPAs</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
-            <a href="/pages/pdf.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">PDF</span><span class="nav-group-item-desc">Mesclar, dividir e proteger</span></div></a>
-            <a href="/pages/assistente-empenho.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Descrição para Empenhos</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
-            <a href="/pages/classificador-despesa.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Classificador de Despesas</span><span class="nav-group-item-desc">Desdobramento correto via TCE-PR</span></div></a>
-            <a href="/pages/visualizador.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Relação de Empenhos Emitidos</span><span class="nav-group-item-desc">Documentos e contratos</span></div></a>
-            <a href="/pages/auditor.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Auditor NF</span><span class="nav-group-item-desc">Auditoria e notas fiscais</span></div></a>
-            <a href="/pages/prazos.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Prazos</span><span class="nav-group-item-desc">Contratos e prazos críticos</span></div></a>
-            <a href="/pages/protocolo.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Protocolo</span><span class="nav-group-item-desc">Ofícios e memorandos</span></div></a>
-            <a href="/pages/autentique-assinatura.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Assinatura Digital</span><span class="nav-group-item-desc">Autentique e envio por WhatsApp</span></div></a>
+          <div class="nav-group-menu nav-group-menu-sidebar" role="region">
+            <a href="/pages/documentos.html" class="nav-group-item sidebar-nav-link" data-tooltip="Salvar e organizar arquivos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Centro de Documentos</span><span class="nav-group-item-desc">Salvar e organizar arquivos</span></div></a>
+            <a href="/pages/rpa.html" class="nav-group-item sidebar-nav-link" data-tooltip="Recibo de Pagamento Autônomo"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de RPAs</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
+            <a href="/pages/pdf.html" class="nav-group-item sidebar-nav-link" data-tooltip="Mesclar, dividir e proteger"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">PDF</span><span class="nav-group-item-desc">Mesclar, dividir e proteger</span></div></a>
+            <a href="/pages/assistente-empenho.html" class="nav-group-item sidebar-nav-link" data-tooltip="IA para descricao e conferencia"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Descrição para Empenhos</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
+            <a href="/pages/classificador-despesa.html" class="nav-group-item sidebar-nav-link" data-tooltip="Desdobramento correto via TCE-PR"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Classificador de Despesas</span><span class="nav-group-item-desc">Desdobramento correto via TCE-PR</span></div></a>
+            <a href="/pages/visualizador.html" class="nav-group-item sidebar-nav-link" data-tooltip="Documentos e contratos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Relação de Empenhos Emitidos</span><span class="nav-group-item-desc">Documentos e contratos</span></div></a>
+            <a href="/pages/auditor.html" class="nav-group-item sidebar-nav-link" data-tooltip="Auditoria e notas fiscais"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Auditor NF</span><span class="nav-group-item-desc">Auditoria e notas fiscais</span></div></a>
+            <a href="/pages/prazos.html" class="nav-group-item sidebar-nav-link" data-tooltip="Contratos e prazos críticos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Prazos</span><span class="nav-group-item-desc">Contratos e prazos críticos</span></div></a>
+            <a href="/pages/protocolo.html" class="nav-group-item sidebar-nav-link" data-tooltip="Ofícios e memorandos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Protocolo</span><span class="nav-group-item-desc">Ofícios e memorandos</span></div></a>
+            <a href="/pages/autentique-assinatura.html" class="nav-group-item sidebar-nav-link" data-tooltip="Autentique e envio por WhatsApp"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Assinatura Digital</span><span class="nav-group-item-desc">Autentique e envio por WhatsApp</span></div></a>
           </div>
         </div>
       </div>
 
+      <hr class="sidebar-divider">
+
       <div class="sidebar-section">
         <div class="sidebar-label">Ferramentas</div>
-        <div class="nav-group open nav-group-sidebar">
-          <button class="nav-group-btn">
+        <div class="nav-group nav-group-sidebar">
+          <button class="nav-group-btn sidebar-group-toggle" role="button" aria-expanded="false">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             Ferramentas
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <div class="nav-group-menu nav-group-menu-sidebar">
-            <a href="/pages/cnpj.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">CNPJ</span><span class="nav-group-item-desc">Consultar dados de empresas</span></div></a>
-            <a href="/pages/renomear.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Renomeador de Arquivos</span><span class="nav-group-item-desc">Organizar PDFs e extratos</span></div></a>
-            <a href="/pages/calculadora-diarias.html" class="nav-group-item"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Calc. Diárias</span><span class="nav-group-item-desc">Cálculo de diárias de viagem</span></div></a>
-            <a href="/pages/manual.html" class="nav-group-item"><div class="nav-group-item-icon">📖</div><div class="nav-group-item-text"><span class="nav-group-item-name">Manual</span><span class="nav-group-item-desc">Guia completo do sistema</span></div></a>
+          <div class="nav-group-menu nav-group-menu-sidebar" role="region">
+            <a href="/pages/cnpj.html" class="nav-group-item sidebar-nav-link" data-tooltip="Consultar dados de empresas"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">CNPJ</span><span class="nav-group-item-desc">Consultar dados de empresas</span></div></a>
+            <a href="/pages/renomear.html" class="nav-group-item sidebar-nav-link" data-tooltip="Organizar PDFs e extratos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Renomeador de Arquivos</span><span class="nav-group-item-desc">Organizar PDFs e extratos</span></div></a>
+            <a href="/pages/calculadora-diarias.html" class="nav-group-item sidebar-nav-link" data-tooltip="Cálculo de diárias de viagem"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Calc. Diárias</span><span class="nav-group-item-desc">Cálculo de diárias de viagem</span></div></a>
+            <a href="/pages/manual.html" class="nav-group-item sidebar-nav-link" data-tooltip="Guia completo do sistema"><div class="nav-group-item-icon">📖</div><div class="nav-group-item-text"><span class="nav-group-item-name">Manual</span><span class="nav-group-item-desc">Guia completo do sistema</span></div></a>
           </div>
         </div>
       </div>
 
+      <hr class="sidebar-divider">
+
       <div class="sidebar-section sidebar-section-admin">
         <div class="sidebar-label">Administração</div>
-        <button class="nav-tab nav-tab-sidebar nav-tab-admin" data-tab="adm" data-requires-auth="true" data-tooltip="Configurações de API e sistema">
+        <button class="nav-tab nav-tab-sidebar nav-tab-admin sidebar-nav-link" data-tab="adm" data-requires-auth="true" data-tooltip="Configurações de API e sistema" data-glow-btn data-glow-btn-color="purple">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
           <span>ADM</span>
         </button>
-        <button class="nav-tab nav-tab-sidebar" id="sidebar-logs">
+        <button class="nav-tab nav-tab-sidebar sidebar-nav-link" id="sidebar-logs" data-tooltip="Ver histórico de alterações" data-glow-btn data-glow-btn-color="orange">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Logs</span>
-        </button>
-        <button class="nav-tab nav-tab-sidebar theme-toggle" id="sidebar-theme-toggle">
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          <span class="theme-label-sidebar">Tema</span>
         </button>
       </div>
     </div>
@@ -206,7 +242,7 @@
   <div class="mobile-nav" id="mobile-nav">
     <div class="mobile-nav-header">
       <span>Menu</span>
-      <button class="mobile-nav-close" id="mobile-nav-close">&times;</button>
+      <button class="mobile-nav-close" id="mobile-nav-close" aria-label="Fechar">&times;</button>
     </div>
     <div class="mobile-nav-body">
       <div class="mobile-nav-label">Operação</div>
@@ -241,13 +277,16 @@
       <div class="mobile-nav-label">Administração</div>
       <button class="mobile-nav-item" data-tab="adm" data-requires-auth="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>ADM</button>
       <button class="mobile-nav-item" id="mobile-logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Logs</button>
-      <button class="mobile-nav-item theme-toggle" id="mobile-theme-toggle"><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-label-mobile">Tema Escuro</span></button>
     </div>
   </div>
   <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
 
-  <!-- ═══════════════════ HOME SCREEN ═══════════════════ -->
-  <section id="home-screen">
+  <!-- ═══════════════════ DASHBOARD AREA ═══════════════════ -->
+  <section id="dashboard-area" class="dashboard-area">
+    <div class="dashboard-header">
+      <h1 class="dashboard-title">Bem-vindo ao Sistema de Empenhos</h1>
+      <p class="dashboard-subtitle">Prefeitura Municipal de Inajá - Controle e Gestão Financeira</p>
+    </div>
 
     <!-- Modules -->
     <div class="hs-modules">
@@ -264,17 +303,19 @@
           </div>
         </div>
         <div class="hs-cards">
-          <button class="hs-card hs-accent-blue" data-hs-tab="credores-fixos">
+          <button class="hs-card hs-accent-blue hs-card--operacao hs-card--destaque" data-hs-tab="credores-fixos">
+            <span class="hs-card__badge hs-card__badge--principal">Principal</span>
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Gestão de Credores Fixos</span><span class="hs-card-desc">Cadastro, controle mensal e emissão de empenhos</span></div>
             <span class="hs-card-arrow">›</span>
           </button>
-          <a class="hs-card hs-accent-blue" href="/pages/tarefas.html">
+          <a class="hs-card hs-accent-blue hs-card--operacao" href="/pages/tarefas.html">
+            <span class="hs-card__badge hs-card__badge--novo">Novo</span>
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Painel de Tarefas</span><span class="hs-card-desc">Quadro Kanban para execução e acompanhamento</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-blue" href="/pages/calendario.html">
+          <a class="hs-card hs-accent-blue hs-card--operacao" href="/pages/calendario.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Calendário</span><span class="hs-card-desc">Agenda, histórico e controle mensal</span></div>
             <span class="hs-card-arrow">›</span>
@@ -294,27 +335,27 @@
           </div>
         </div>
         <div class="hs-cards">
-          <a class="hs-card hs-accent-green" href="/pages/assistente-empenho.html">
+          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/assistente-empenho.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Gerador de Descrição para Empenhos</span><span class="hs-card-desc">Gerar texto e apoiar a conferência do empenho</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-green" href="/pages/classificador-despesa.html">
+          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/classificador-despesa.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Classificador de Despesas</span><span class="hs-card-desc">Desdobramento correto da despesa via TCE-PR e MCASP</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-green" href="/pages/visualizador.html">
+          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/visualizador.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Relação de Empenhos Emitidos</span><span class="hs-card-desc">Visualizar, filtrar e detalhar empenhos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-green" href="/pages/despesa-prefeitura.html">
+          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/despesa-prefeitura.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Dotação Orçamentária</span><span class="hs-card-desc">Consulta de despesas e análise orçamentária</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-green" href="/pages/despesa-relatorios.html">
+          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/despesa-relatorios.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Comparativo Orçamentário</span><span class="hs-card-desc">Relatórios, histórico e comparação entre períodos</span></div>
             <span class="hs-card-arrow">›</span>
@@ -334,42 +375,42 @@
           </div>
         </div>
         <div class="hs-cards">
-          <a class="hs-card hs-accent-orange" href="/pages/documentos.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/documentos.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Centro de Documentos</span><span class="hs-card-desc">Salvar e organizar arquivos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/fornecimento.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/fornecimento.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Gerador de Solicitação de Compra ou Serviço</span><span class="hs-card-desc">Pedidos, fornecedores e fluxo de compras</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/rpa.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/rpa.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Gerador de RPAs</span><span class="hs-card-desc">Recibo de Pagamento Autônomo</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/pdf.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/pdf.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 13h4m-2-2v4"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Editor de PDF</span><span class="hs-card-desc">Mesclar, dividir, proteger e reorganizar PDFs</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/auditor.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/auditor.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Auditor NF</span><span class="hs-card-desc">Auditoria e notas fiscais</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/prazos.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/prazos.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Prazos</span><span class="hs-card-desc">Contratos e prazos críticos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/protocolo.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/protocolo.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Protocolo</span><span class="hs-card-desc">Ofícios e memorandos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-orange" href="/pages/autentique-assinatura.html">
+          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/autentique-assinatura.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Assinatura Digital</span><span class="hs-card-desc">Envio de documentos para assinatura eletrônica</span></div>
             <span class="hs-card-arrow">›</span>
@@ -389,22 +430,22 @@
           </div>
         </div>
         <div class="hs-cards">
-          <a class="hs-card hs-accent-purple" href="/pages/tarifas-bancarias.html">
+          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/tarifas-bancarias.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Análise de Tarifas Bancárias</span><span class="hs-card-desc">Leitura de extratos e conferência de encargos</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-purple" href="/pages/cnpj.html">
+          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/cnpj.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Consulta de CNPJ</span><span class="hs-card-desc">Consulta cadastral de empresas e fornecedores</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-purple" href="/pages/renomear.html">
+          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/renomear.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Renomeador de Arquivos</span><span class="hs-card-desc">Padronizar nomes de documentos automaticamente</span></div>
             <span class="hs-card-arrow">›</span>
           </a>
-          <a class="hs-card hs-accent-purple" href="/pages/calculadora-diarias.html">
+          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/calculadora-diarias.html">
             <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div>
             <div class="hs-card-body"><span class="hs-card-name">Calculadora de Diárias</span><span class="hs-card-desc">Cálculo administrativo de diárias de viagem</span></div>
             <span class="hs-card-arrow">›</span>
@@ -413,40 +454,68 @@
       </div>
 
     </div><!-- .hs-modules -->
-  </section><!-- #home-screen -->
+  </section><!-- #dashboard-area -->
 
+  <!-- ═══════════════════ CREDORSES AREA ═══════════════════ -->
+  <section id="credores-area" class="credores-area" style="display:none;">
   <!-- STATS BAR -->
-  <div class="stats-bar">
-    <div class="stat-card stat-total">
-      <div class="stat-icon">📋</div>
+  <div class="stats-bar stats-bar-modern">
+    <div class="stat-card stat-card-modern stat-total">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      </div>
       <div class="stat-info">
         <span class="stat-label">Total</span>
         <span class="stat-value" id="stat-total">0</span>
       </div>
     </div>
-    <div class="stat-card stat-done">
-      <div class="stat-icon">✅</div>
+    <div class="stat-card stat-card-modern stat-done">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
       <div class="stat-info">
         <span class="stat-label">Empenhados</span>
         <span class="stat-value" id="stat-done">0</span>
       </div>
     </div>
-    <div class="stat-card stat-pending">
-      <div class="stat-icon">⏳</div>
+    <div class="stat-card stat-card-modern stat-pending">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
       <div class="stat-info">
         <span class="stat-label">Pendentes</span>
         <span class="stat-value" id="stat-pending">0</span>
       </div>
     </div>
-    <div class="stat-card stat-valor">
-      <div class="stat-icon">💰</div>
+    <div class="stat-card stat-card-modern stat-valor">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
       <div class="stat-info">
         <span class="stat-label">Valor Empenhado</span>
         <span class="stat-value" id="stat-valor">R$ 0</span>
       </div>
     </div>
-    <div class="stat-card stat-restante">
-      <div class="stat-icon">📌</div>
+    <div class="stat-card stat-card-modern stat-restante">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
       <div class="stat-info">
         <span class="stat-label">Restante</span>
         <span class="stat-value" id="stat-restante">R$ 0</span>
@@ -466,8 +535,8 @@
   </div>
 
   <!-- TOOLBAR PRINCIPAL -->
-  <div class="toolbar" style="margin-bottom: 12px;">
-    <div class="search-box">
+  <div class="toolbar toolbar-modern">
+    <div class="search-box search-box-modern">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="11" cy="11" r="8" />
         <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -475,69 +544,95 @@
       <input type="text" id="search-input" placeholder="Pesquisar credor..." autocomplete="off" data-tooltip="Buscar credor por nome" />
     </div>
 
-    <div class="toolbar-actions">
-      <button class="btn btn-secondary" id="btn-empenhar-todos" title="Empenhar todos os pendentes visíveis">
+    <div class="toolbar-actions toolbar-actions-modern">
+      <button class="btn btn-secondary btn-ripple" id="btn-empenhar-todos" title="Empenhar todos os pendentes visíveis">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
         Empenhar Todos
       </button>
-      <button class="btn btn-primary" id="btn-add-credor" title="Adicionar credor" data-tooltip="Adicionar novo credor fixo">
+      <button class="btn btn-primary btn-ripple" id="btn-add-credor" title="Adicionar credor" data-tooltip="Adicionar novo credor fixo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
         Novo Credor
       </button>
+      <button class="btn btn-ghost btn-ripple btn-toggle-filters" id="btn-toggle-filters" title="Mostrar/ocultar filtros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        Filtros
+      </button>
     </div>
   </div>
 
-  <!-- TOOLBAR FILTROS & AÇÕES SECUNDÁRIAS -->
-  <div class="toolbar" style="margin-top: 0; padding-top: 0;">
-    <div class="filter-group" style="align-items: center; gap: 8px;">
-      <span style="font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; margin-right: 4px;">Filtros:</span>
-      <select id="filter-dept" class="select-filter">
-        <option value="">Departamentos</option>
-        <option value="ADMINISTRAÇÃO">Administração</option>
-        <option value="ASSISTÊNCIA SOCIAL">Assistência Social</option>
-        <option value="EDUCAÇÃO">Educação</option>
-        <option value="SAÚDE">Saúde</option>
-      </select>
+  <!-- FILTROS COLAPSÁVEIS -->
+  <div class="filters-panel" id="filters-panel" style="display:none;">
+    <div class="filters-grid">
+      <div class="filter-item">
+        <label class="filter-label">Departamento</label>
+        <select id="filter-dept" class="select-filter select-filter-modern">
+          <option value="">Todos</option>
+          <option value="ADMINISTRAÇÃO">Administração</option>
+          <option value="ASSISTÊNCIA SOCIAL">Assistência Social</option>
+          <option value="EDUCAÇÃO">Educação</option>
+          <option value="SAÚDE">Saúde</option>
+        </select>
+      </div>
 
-      <select id="filter-status" class="select-filter">
-        <option value="">Status</option>
-        <option value="pendente">Pendentes</option>
-        <option value="empenhado">Empenhados</option>
-      </select>
+      <div class="filter-item">
+        <label class="filter-label">Status</label>
+        <select id="filter-status" class="select-filter select-filter-modern">
+          <option value="">Todos</option>
+          <option value="pendente">Pendentes</option>
+          <option value="empenhado">Empenhados</option>
+        </select>
+      </div>
 
-      <select id="filter-tipo" class="select-filter">
-        <option value="">Tipo</option>
-        <option value="FIXO">Fixos</option>
-        <option value="VARIÁVEL">Variáveis</option>
-      </select>
+      <div class="filter-item">
+        <label class="filter-label">Tipo</label>
+        <select id="filter-tipo" class="select-filter select-filter-modern">
+          <option value="">Todos</option>
+          <option value="FIXO">Fixos</option>
+          <option value="VARIÁVEL">Variáveis</option>
+        </select>
+      </div>
 
-      <select id="filter-cadastro" class="select-filter">
-        <option value="">Cadastro</option>
-        <option value="sem_cnpj">Sem CNPJ</option>
-        <option value="sem_email">Sem E-mail</option>
-        <option value="com_pendencias">Com Pendências</option>
-      </select>
+      <div class="filter-item">
+        <label class="filter-label">Cadastro</label>
+        <select id="filter-cadastro" class="select-filter select-filter-modern">
+          <option value="">Todos</option>
+          <option value="sem_cnpj">Sem CNPJ</option>
+          <option value="sem_email">Sem E-mail</option>
+          <option value="com_pendencias">Com Pendências</option>
+        </select>
+      </div>
 
-      <select id="filter-vencimento" class="select-filter">
-        <option value="">Contratos</option>
-        <option value="vencidos">Somente Vencidos</option>
-        <option value="30">Vencendo em 30 dias</option>
-      </select>
+      <div class="filter-item">
+        <label class="filter-label">Contratos</label>
+        <select id="filter-vencimento" class="select-filter select-filter-modern">
+          <option value="">Todos</option>
+          <option value="vencidos">Somente Vencidos</option>
+          <option value="30">Vencendo em 30 dias</option>
+        </select>
+      </div>
     </div>
-
-    <div class="toolbar-actions" style="gap: 6px;">
-      <button class="btn btn-ghost" id="btn-expand-all" title="Expandir todos" style="padding: 6px 12px; font-size: 12px; border-color: transparent;">
+    <div class="filters-actions">
+      <button class="btn btn-ghost btn-ripple" id="btn-clear-filters">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>
+        Limpar Filtros
+      </button>
+      <button class="btn btn-ghost btn-ripple" id="btn-expand-all" title="Expandir todos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
         </svg>
         Expandir
       </button>
-      <button class="btn btn-ghost" id="btn-print-lote" title="Imprimir todos em lote" style="padding: 6px 12px; font-size: 12px; border-color: transparent;">
+      <button class="btn btn-ghost btn-ripple" id="btn-print-lote" title="Imprimir todos em lote">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="6 9 6 2 18 2 18 9" />
           <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
@@ -545,7 +640,7 @@
         </svg>
         Imprimir
       </button>
-      <button class="btn btn-ghost" id="btn-export-csv" title="Exportar lista como CSV" style="padding: 6px 12px; font-size: 12px; border-color: transparent;">
+      <button class="btn btn-ghost btn-ripple" id="btn-export-csv" title="Exportar lista como CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -553,7 +648,7 @@
         </svg>
         CSV
       </button>
-      <button class="btn btn-ghost" id="btn-lixeira" title="Credores excluídos" data-tooltip="Ver credores excluídos" style="padding: 6px 12px; font-size: 12px; color: var(--red); border-color: rgba(199,74,74,0.3); background: var(--red-bg);">
+      <button class="btn btn-ghost btn-ripple" id="btn-lixeira" title="Credores excluídos" data-tooltip="Ver credores excluídos" style="color: var(--red);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3 6 5 6 21 6"/>
           <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -586,11 +681,12 @@
       <p>Nenhum credor encontrado.</p>
     </div>
     <div class="pagination-bar" id="credores-pagination" style="display:none;align-items:center;justify-content:center;gap:12px;margin:18px 0 4px;padding:10px 0;">
-      <button type="button" class="btn btn-ghost" id="btn-page-prev">Anterior</button>
+      <button type="button" class="btn btn-ghost btn-ripple" id="btn-page-prev">Anterior</button>
       <span id="credores-page-info" class="pagination-info">Página 1 de 1</span>
-      <button type="button" class="btn btn-ghost" id="btn-page-next">Próxima</button>
+      <button type="button" class="btn btn-ghost btn-ripple" id="btn-page-next">Próxima</button>
     </div>
   </main>
+  </section><!-- #credores-area -->
 
   <!-- MODAL: Adicionar / Editar Credor -->
   <div class="modal-overlay" id="modal-overlay" style="display:none;">
@@ -665,10 +761,10 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="btn-delete-credor" style="display:none;">Excluir</button>
+          <button type="button" class="btn btn-danger btn-ripple" id="btn-delete-credor" style="display:none;">Excluir</button>
           <div class="modal-footer-right">
-            <button type="button" class="btn btn-ghost" id="btn-modal-cancel">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar</button>
+            <button type="button" class="btn btn-ghost btn-ripple" id="btn-modal-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-primary btn-ripple">Salvar</button>
           </div>
         </div>
       </form>
@@ -693,8 +789,8 @@
       <div class="modal-footer">
         <div></div>
         <div class="modal-footer-right">
-          <button type="button" class="btn btn-ghost" id="btn-delete-confirm-cancel">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="btn-delete-confirm-ok">Confirmar exclusão</button>
+          <button type="button" class="btn btn-ghost btn-ripple" id="btn-delete-confirm-cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger btn-ripple" id="btn-delete-confirm-ok">Confirmar exclusão</button>
         </div>
       </div>
     </div>
@@ -736,7 +832,7 @@
           <!-- Logs inserted by JS -->
         </div>
         <div class="logs-pagination" id="logs-pagination" style="display:none;">
-          <button class="btn btn-secondary btn-sm" id="logs-load-more">Carregar mais</button>
+          <button class="btn btn-secondary btn-sm btn-ripple" id="logs-load-more">Carregar mais</button>
         </div>
       </div>
     </div>
@@ -753,7 +849,7 @@
         <p style="color:var(--text-2);margin-bottom:16px;">Digite a senha para acessar a área administrativa</p>
         <input type="password" id="password-input" placeholder="Senha" style="width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);color:var(--text);font-size:14px;text-align:center;outline:none;" />
         <p id="password-error" style="color:var(--red);font-size:12px;margin-top:10px;display:none;">Senha incorreta</p>
-        <button class="btn btn-primary" id="password-submit" style="width:100%;margin-top:16px;">Entrar</button>
+        <button class="btn btn-primary btn-ripple" id="password-submit" style="width:100%;margin-top:16px;">Entrar</button>
       </div>
     </div>
   </div>
@@ -865,32 +961,26 @@
         <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Configure as integrações utilizadas nos módulos do sistema.</p>
 
         <!-- OpenRouter -->
-        <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <span style="font-size:14px;font-weight:700;color:var(--text);">🤖 OpenRouter</span>
+        <div class="adm-card">
+          <div class="adm-card__header">
+            <span>🤖 OpenRouter</span>
             <span style="font-size:10px;background:rgba(79,128,200,.15);color:var(--blue);padding:2px 8px;border-radius:20px;font-weight:700;">IA</span>
             <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: Extratos</span>
           </div>
 
-          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chave API</label>
-          <div style="display:flex;gap:8px;margin-bottom:14px;">
-            <input type="password" id="adm-or-key" placeholder="sk-or-v1-..."
-              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
-            <button onclick="admToggleKey()" title="Mostrar/ocultar chave"
-              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
-              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
+          <label for="adm-or-key" class="adm-label">Chave API</label>
+          <div class="adm-input-row">
+            <input type="password" id="adm-or-key" class="adm-input" placeholder="sk-or-v1-..." />
+            <button onclick="admToggleKey()" title="Mostrar/ocultar chave" class="adm-btn-icon" aria-label="Mostrar ou ocultar chave">👁</button>
           </div>
 
-          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Modelo Padrão</label>
-          <div style="display:flex;gap:8px;margin-bottom:18px;">
-            <input type="text" id="adm-or-modelo" placeholder="openai/gpt-4o-mini"
-              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
-            <button onclick="admVerModelos()" id="adm-btn-modelos"
-              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 14px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap;transition:box-shadow .15s;"
-              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">📋 Ver Modelos</button>
+          <label for="adm-or-modelo" class="adm-label">Modelo Padrão</label>
+          <div class="adm-input-row adm-input-row--lg">
+            <input type="text" id="adm-or-modelo" class="adm-input" placeholder="openai/gpt-4o-mini" />
+            <button onclick="admVerModelos()" id="adm-btn-modelos" class="adm-btn-icon" style="padding:0 14px;font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap;" aria-label="Ver modelos disponíveis">📋 Ver Modelos</button>
           </div>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="adm-btn-group">
             <button class="btn btn-primary" onclick="admSalvarChaves()" style="padding:10px 22px;font-size:13px;">💾 Salvar</button>
             <button class="btn btn-secondary" onclick="admTestarChave()" id="adm-btn-testar" style="padding:10px 18px;font-size:13px;">🔌 Testar Conexão</button>
           </div>
@@ -903,9 +993,9 @@
         </div>
 
         <!-- CNPJá -->
-        <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:18px;margin-bottom:16px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <span style="font-size:14px;font-weight:700;color:var(--text);">🏢 CNPJá</span>
+        <div class="adm-card">
+          <div class="adm-card__header">
+            <span>🏢 CNPJá</span>
             <span style="font-size:10px;background:rgba(58,170,110,.15);color:var(--green-dark);padding:2px 8px;border-radius:20px;font-weight:700;">Opcional</span>
             <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: Consulta CNPJ</span>
           </div>
@@ -915,16 +1005,13 @@
             Com chave: sem limite de taxa (plano pago em <strong>cnpja.com</strong>).
           </p>
 
-          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chave API CNPJá <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <input type="password" id="adm-cnpja-key" placeholder="Deixe em branco para usar grátis"
-              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
-            <button onclick="admToggleCnpjaKey()" title="Mostrar/ocultar"
-              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
-              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
+          <label for="adm-cnpja-key" class="adm-label">Chave API CNPJá <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+          <div class="adm-input-row adm-input-row--md">
+            <input type="password" id="adm-cnpja-key" class="adm-input" placeholder="Deixe em branco para usar grátis" />
+            <button onclick="admToggleCnpjaKey()" title="Mostrar/ocultar" class="adm-btn-icon" aria-label="Mostrar ou ocultar chave">👁</button>
           </div>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="adm-btn-group">
             <button class="btn btn-primary" onclick="admSalvarCnpja()" style="padding:10px 22px;font-size:13px;">💾 Salvar</button>
             <button class="btn btn-secondary" onclick="admTestarCnpja()" id="adm-btn-testar-cnpja" style="padding:10px 18px;font-size:13px;">🔌 Testar</button>
           </div>
@@ -933,9 +1020,9 @@
         </div>
 
         <!-- Autentique -->
-        <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:18px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <span style="font-size:14px;font-weight:700;color:var(--text);">✍️ Autentique</span>
+        <div class="adm-card">
+          <div class="adm-card__header">
+            <span>✍️ Autentique</span>
             <span style="font-size:10px;background:rgba(79,128,200,.15);color:var(--blue);padding:2px 8px;border-radius:20px;font-weight:700;">Assinatura</span>
             <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: envio para assinatura</span>
           </div>
@@ -944,16 +1031,13 @@
             A integração cria o documento na Autentique e envia por WhatsApp. Você pode cadastrar várias chaves, uma por linha, e o sistema revezará automaticamente entre elas.
           </p>
 
-          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chaves API Autentique</label>
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <textarea id="adm-autentique-key" placeholder="Uma chave por linha" data-hidden="true"
-              style="flex:1;min-height:110px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;resize:vertical;-webkit-text-security:disc;"></textarea>
-            <button onclick="admToggleAutentiqueKey()" title="Mostrar/ocultar"
-              style="align-self:flex-start;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:10px 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
-              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
+          <label for="adm-autentique-key" class="adm-label">Chaves API Autentique</label>
+          <div class="adm-input-row adm-input-row--md">
+            <textarea id="adm-autentique-key" class="adm-textarea" placeholder="Uma chave por linha" data-hidden="true"></textarea>
+            <button onclick="admToggleAutentiqueKey()" title="Mostrar/ocultar" class="adm-btn-icon adm-btn-icon--top" aria-label="Mostrar ou ocultar chave">👁</button>
           </div>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="adm-btn-group">
             <button class="btn btn-primary" onclick="admSalvarAutentique()" style="padding:10px 22px;font-size:13px;">💾 Salvar</button>
             <button class="btn btn-secondary" onclick="admTestarAutentique()" id="adm-btn-testar-autentique" style="padding:10px 18px;font-size:13px;">🔌 Testar</button>
             <a href="/pages/autentique-assinatura.html" class="btn btn-secondary" style="padding:10px 18px;font-size:13px;text-decoration:none;">📨 Abrir módulo</a>
@@ -963,9 +1047,9 @@
         </div>
 
         <!-- Tavily Search -->
-        <div style="background:var(--bg-2,rgba(0,0,0,.03));border-radius:var(--radius-sm);padding:18px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <span style="font-size:14px;font-weight:700;color:var(--text);">🔍 Tavily Search</span>
+        <div class="adm-card adm-mb-0">
+          <div class="adm-card__header">
+            <span>🔍 Tavily Search</span>
             <span style="font-size:10px;background:rgba(128,79,200,.15);color:var(--purple);padding:2px 8px;border-radius:20px;font-weight:700;">IA Contexto</span>
             <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: classificador de despesa</span>
           </div>
@@ -975,16 +1059,13 @@
             Sem chave: o classificador usa apenas o prompt interno. Com chave: resultados mais precisos.
           </p>
 
-          <label style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Chave API Tavily <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
-          <div style="display:flex;gap:8px;margin-bottom:16px;">
-            <input type="password" id="adm-tavily-key" placeholder="tvly-..."
-              style="flex:1;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);padding:10px 14px;font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
-            <button onclick="admToggleTavilyKey()" title="Mostrar/ocultar"
-              style="background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-sm);padding:0 13px;cursor:pointer;font-size:16px;transition:box-shadow .15s;"
-              onmouseover="this.style.boxShadow='var(--neo)'" onmouseout="this.style.boxShadow='var(--neo-sm)'">👁</button>
+          <label for="adm-tavily-key" class="adm-label">Chave API Tavily <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+          <div class="adm-input-row adm-input-row--md">
+            <input type="password" id="adm-tavily-key" class="adm-input" placeholder="tvly-..." />
+            <button onclick="admToggleTavilyKey()" title="Mostrar/ocultar" class="adm-btn-icon" aria-label="Mostrar ou ocultar chave">👁</button>
           </div>
 
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="adm-btn-group">
             <button class="btn btn-primary" onclick="admSalvarTavily()" style="padding:10px 22px;font-size:13px;">💾 Salvar</button>
           </div>
 
@@ -1014,13 +1095,13 @@
   </div>
 
   <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-glow"></div>
-    <div class="footer-content">
-      <span class="footer-divider"></span>
-      <span class="footer-dev-label">dev</span>
-      <span class="footer-dev-name">Aleksandro Alves</span>
-      <span class="footer-divider"></span>
+  <footer class="app-footer">
+    <div class="app-footer__content">
+      <span class="app-footer__version">v2.0 — Sistema de Controle de Empenhos</span>
+      <span class="app-footer__separator">•</span>
+      <a href="/pages/manual.html" class="app-footer__link">Manual</a>
+      <span class="app-footer__separator">•</span>
+      <span class="app-footer__credit">Desenvolvido por Aleksandro Alves</span>
     </div>
   </footer>
 
@@ -1071,7 +1152,7 @@
     <div style="background:var(--bg);border-radius:var(--radius);box-shadow:var(--neo);width:560px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(184,194,204,.2);">
         <span style="font-size:14px;font-weight:700;color:var(--text);">📋 Modelos – OpenRouter</span>
-        <button onclick="document.getElementById('adm-modelos-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-3);">×</button>
+        <button onclick="document.getElementById('adm-modelos-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-3);" aria-label="Fechar">×</button>
       </div>
       <div style="padding:10px 16px;border-bottom:1px solid rgba(184,194,204,.15);display:flex;gap:8px;align-items:center;">
         <input type="text" id="adm-modelos-filtro" placeholder="Filtrar modelos..." oninput="admFiltrarModelos()"
@@ -1571,13 +1652,18 @@
   (function() {
     'use strict';
 
-    const CONTENT_SELS = ['.stats-bar', '.dept-stats-row', '.progress-section', '.toolbar', '.main-content', '.footer'];
+    const CONTENT_SELS = ['.stats-bar', '.dept-stats-row', '.progress-section', '.toolbar', '.main-content', '.app-footer'];
 
     function showHomeScreen() {
-      const hs = document.getElementById('home-screen');
-      if (!hs) return;
+      const dashboard = document.getElementById('dashboard-area');
+      const credores = document.getElementById('credores-area');
+      
+      if (!dashboard) return;
+      
       document.body.classList.add('home-active');
-      hs.style.display = 'block';
+      dashboard.style.display = 'block';
+      if (credores) credores.style.display = 'none';
+      
       CONTENT_SELS.forEach(s => { const el = document.querySelector(s); if (el) el.style.display = 'none'; });
       const adm = document.getElementById('adm-panel');
       if (adm) adm.style.display = 'none';
@@ -1588,16 +1674,27 @@
     }
 
     function hideHomeScreen() {
-      const hs = document.getElementById('home-screen');
-      if (!hs || hs.style.display === 'none') return;
+      const dashboard = document.getElementById('dashboard-area');
+      if (!dashboard || dashboard.style.display === 'none') return;
       document.body.classList.remove('home-active');
-      hs.style.display = 'none';
-      CONTENT_SELS.forEach(s => { const el = document.querySelector(s); if (el) el.style.display = ''; });
+      dashboard.style.display = 'none';
       document.querySelectorAll('.nav-home-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    function showCredoresArea() {
+      const dashboard = document.getElementById('dashboard-area');
+      const credores = document.getElementById('credores-area');
+      
+      if (dashboard) dashboard.style.display = 'none';
+      if (credores) credores.style.display = 'block';
+      
+      document.body.classList.remove('home-active');
+      CONTENT_SELS.forEach(s => { const el = document.querySelector(s); if (el) el.style.display = ''; });
     }
 
     window.showHomeScreen = showHomeScreen;
     window.hideHomeScreen = hideHomeScreen;
+    window.showCredoresArea = showCredoresArea;
 
     // Intercept nav-tab clicks to hide home screen first (capture phase)
     document.addEventListener('click', function(e) {
@@ -1611,6 +1708,17 @@
       if (!hsCard) return;
       const tabName = hsCard.dataset.hsTab;
       const requiresAuth = hsCard.dataset.requiresAuth === 'true';
+      
+      // Se for o card de credores fixos, mostrar a área de credores
+      if (tabName === 'credores-fixos') {
+        hideHomeScreen();
+        showCredoresArea();
+        // Ativar o botão correspondente na sidebar
+        const sidebarBtn = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
+        if (sidebarBtn) sidebarBtn.click();
+        return;
+      }
+      
       hideHomeScreen();
       // Find and click the corresponding sidebar nav-tab button
       const sidebarBtn = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
@@ -1645,6 +1753,230 @@
       setInterval(updateClock, 1000);
     });
 
+  })();
+  </script>
+
+  <!-- SIDEBAR SEARCH & GROUP TOGGLE -->
+  <script>
+  (function() {
+    'use strict';
+
+    /* ---------- Toggle de grupos ao clicar no título ---------- */
+    document.querySelectorAll('.sidebar-group-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var group = btn.closest('.nav-group');
+        if (!group) return;
+        group.classList.toggle('open');
+        var isOpen = group.classList.contains('open');
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+    });
+
+    /* ---------- Botão Expandir/Recolher tudo ---------- */
+    var expandBtn = document.getElementById('btn-sidebar-expand-all');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', function() {
+        var groups = document.querySelectorAll('.nav-group-sidebar');
+        var allOpen = Array.prototype.every.call(groups, function(g) {
+          return g.classList.contains('open');
+        });
+        groups.forEach(function(g) {
+          g.classList.toggle('open', !allOpen);
+          var btn = g.querySelector('.sidebar-group-toggle');
+          if (btn) btn.setAttribute('aria-expanded', !allOpen ? 'true' : 'false');
+        });
+        var label = document.getElementById('sidebar-expand-label');
+        var icon = document.getElementById('sidebar-expand-icon');
+        if (label) label.textContent = allOpen ? 'Expandir tudo' : 'Recolher tudo';
+        if (icon) icon.style.transform = allOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+      });
+    }
+
+    /* ---------- Busca na sidebar ---------- */
+    var searchInput = document.getElementById('sidebarSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        var query = searchInput.value.trim().toLowerCase();
+        var sections = document.querySelectorAll('.sidebar-section');
+        var dividers = document.querySelectorAll('.sidebar-divider');
+
+        sections.forEach(function(section) {
+          var items = section.querySelectorAll('.sidebar-nav-link, .nav-group-btn');
+          var hasMatch = false;
+          var group = section.querySelector('.nav-group-sidebar');
+
+          items.forEach(function(item) {
+            var text = (item.textContent || '').toLowerCase();
+            var tooltip = (item.getAttribute('data-tooltip') || '').toLowerCase();
+            var match = query === '' || text.indexOf(query) !== -1 || tooltip.indexOf(query) !== -1;
+            item.style.display = match ? '' : 'none';
+            if (match) hasMatch = true;
+          });
+
+          // Also search inside group items if group is present
+          if (group) {
+            var groupItems = group.querySelectorAll('.sidebar-nav-link');
+            groupItems.forEach(function(gi) {
+              var text = (gi.textContent || '').toLowerCase();
+              var tooltip = (gi.getAttribute('data-tooltip') || '').toLowerCase();
+              var match = query === '' || text.indexOf(query) !== -1 || tooltip.indexOf(query) !== -1;
+              gi.style.display = match ? '' : 'none';
+              if (match) hasMatch = true;
+            });
+            // Expand group if it has matches and query is not empty
+            if (query !== '' && hasMatch) {
+              group.classList.add('open');
+            }
+          }
+
+          section.style.display = hasMatch || query === '' ? '' : 'none';
+        });
+
+        // Hide/show dividers based on visible sections
+        var visibleSections = Array.prototype.filter.call(sections, function(s) {
+          return s.style.display !== 'none';
+        });
+        dividers.forEach(function(div) {
+          div.style.display = query !== '' ? 'none' : '';
+        });
+      });
+    }
+
+    /* ---------- Marcar link ativo conforme URL ---------- */
+    function setActiveSidebarLink() {
+      var path = window.location.pathname;
+      document.querySelectorAll('.sidebar-nav-link').forEach(function(link) {
+        link.classList.remove('active');
+        var href = link.getAttribute('href');
+        if (href && path.indexOf(href.replace(/^\//, '')) !== -1) {
+          link.classList.add('active');
+        }
+      });
+    }
+    setActiveSidebarLink();
+  })();
+  </script>
+
+  <!-- MODERN UI IMPROVEMENTS JS -->
+  <script>
+  (function() {
+    'use strict';
+
+    // Toggle filters panel
+    const btnToggleFilters = document.getElementById('btn-toggle-filters');
+    const filtersPanel = document.getElementById('filters-panel');
+    
+    if (btnToggleFilters && filtersPanel) {
+      btnToggleFilters.addEventListener('click', function() {
+        const isVisible = filtersPanel.style.display !== 'none';
+        filtersPanel.style.display = isVisible ? 'none' : 'block';
+        
+        // Update button active state
+        if (!isVisible) {
+          btnToggleFilters.classList.add('active');
+        } else {
+          btnToggleFilters.classList.remove('active');
+        }
+      });
+    }
+
+    // Clear filters button
+    const btnClearFilters = document.getElementById('btn-clear-filters');
+    if (btnClearFilters) {
+      btnClearFilters.addEventListener('click', function() {
+        // Reset all filter selects
+        const filterSelects = document.querySelectorAll('.select-filter-modern');
+        filterSelects.forEach(select => {
+          select.value = '';
+        });
+        
+        // Trigger change event to apply filters
+        filterSelects.forEach(select => {
+          select.dispatchEvent(new Event('change'));
+        });
+        
+        // Show toast notification
+        if (typeof showToast === 'function') {
+          showToast('Filtros limpos com sucesso!', 'info');
+        }
+      });
+    }
+
+    // Animate stats on load
+    function animateValue(element, start, end, duration, prefix = '', suffix = '') {
+      if (!element) return;
+      
+      let startTimestamp = null;
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const value = Math.floor(progress * (end - start) + start);
+        
+        element.textContent = prefix + value.toLocaleString('pt-BR') + suffix;
+        
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    // Animate stats when they change
+    const originalUpdateStats = window.updateStats;
+    if (originalUpdateStats) {
+      window.updateStats = function(...args) {
+        originalUpdateStats.apply(this, args);
+        
+        // Add animation after update
+        setTimeout(() => {
+          const statTotal = document.getElementById('stat-total');
+          const statDone = document.getElementById('stat-done');
+          const statPending = document.getElementById('stat-pending');
+          
+          if (statTotal) {
+            const value = parseInt(statTotal.textContent) || 0;
+            animateValue(statTotal, 0, value, 800);
+          }
+          if (statDone) {
+            const value = parseInt(statDone.textContent) || 0;
+            animateValue(statDone, 0, value, 800);
+          }
+          if (statPending) {
+            const value = parseInt(statPending.textContent) || 0;
+            animateValue(statPending, 0, value, 800);
+          }
+        }, 100);
+      };
+    }
+  })();
+  </script>
+
+  <!-- MONTH NAVIGATOR SLIDE ANIMATION -->
+  <script>
+  (function() {
+    'use strict';
+    var prevBtn = document.getElementById('btn-prev-month');
+    var nextBtn = document.getElementById('btn-next-month');
+    var monthDisplay = document.querySelector('.month-display');
+    if (!monthDisplay) return;
+
+    function animate(direction) {
+      monthDisplay.classList.remove('slide-left', 'slide-right');
+      // force reflow
+      void monthDisplay.offsetWidth;
+      monthDisplay.classList.add(direction === 'prev' ? 'slide-right' : 'slide-left');
+      // remove class after animation ends
+      setTimeout(function() {
+        monthDisplay.classList.remove('slide-left', 'slide-right');
+      }, 350);
+    }
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function() { animate('prev'); });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function() { animate('next'); });
+    }
   })();
   </script>
 

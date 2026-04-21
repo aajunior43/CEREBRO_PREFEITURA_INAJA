@@ -1588,6 +1588,7 @@ async function restaurarCredor(id, btn) {
 async function init() {
   try {
     attachEvents();
+    loadUsuarioLogado(); // Carregar nome do usuário logado
     const startsOnHome = document.body.classList.contains('home-page');
     if (!startsOnHome) {
       await ensureMainAppLoaded();
@@ -1671,7 +1672,8 @@ function initCosmosEffects() {
     comet.style.setProperty('--moveY', `${moveY}px`);
     comet.style.setProperty('--angle', angle);
     comet.style.setProperty('--duration', duration);
-    comet.style.setProperty('--comet-length', `${80 + Math.round(Math.random() * 60)}px`);
+    // Cometas mais discretos: tamanho reduzido (50-90px)
+    comet.style.setProperty('--comet-length', `${50 + Math.round(Math.random() * 40)}px`);
 
     comet.addEventListener('animationend', () => comet.remove(), { once: true });
     document.body.appendChild(comet);
@@ -1680,7 +1682,8 @@ function initCosmosEffects() {
   function scheduleNextComet() {
     clearTimer();
     if (!isCosmosTheme() || prefersReducedMotion()) return;
-    const delay = 8000 + Math.random() * 10000;
+    // Cometas mais esporádicos: intervalo entre 12-25 segundos
+    const delay = 12000 + Math.random() * 13000;
     state.timer = window.setTimeout(() => {
       createComet();
       scheduleNextComet();
@@ -1727,18 +1730,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initCosmosEffects();
   syncThemeLabel();
-  const syncExtraThemeLabels = () => {
-    const current = document.documentElement.getAttribute('data-theme') || 'light';
-    let text = 'Tema Escuro';
-    if (current === 'dark') text = 'Tema Vintage';
-    if (current === 'vintage') text = 'Tema Claro';
-    
-    const sidebarLabel = document.querySelector('.theme-label-sidebar');
-    if (sidebarLabel) sidebarLabel.textContent = text;
-    const mobileLabel = document.querySelector('.theme-label-mobile');
-    if (mobileLabel) mobileLabel.textContent = text;
-  };
-  syncExtraThemeLabels();
   
   // Hamburger menu
   const hamburger = document.getElementById('hamburger');
@@ -1797,21 +1788,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sidebar-logs')?.addEventListener('click', () => {
     document.getElementById('btn-logs')?.click();
   });
-
-  // Mobile theme toggle
-  const mobileThemeToggle = document.getElementById('mobile-theme-toggle');
-  if (mobileThemeToggle) {
-    mobileThemeToggle.addEventListener('click', () => {
-      toggleTheme();
-      syncThemeLabel();
-      syncExtraThemeLabels();
-    });
-  }
-  document.getElementById('sidebar-theme-toggle')?.addEventListener('click', () => {
-    toggleTheme();
-    syncThemeLabel();
-    syncExtraThemeLabels();
-  });
   
   // Dropdown menu
   const dropdownToggle = document.getElementById('dropdown-toggle');
@@ -1865,13 +1841,24 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isSidebar) {
         // Na sidebar: toggle independente (não fecha os outros)
         group.classList.toggle('open');
+        const isOpen = group.classList.contains('open');
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         // Sincroniza o botão expandir tudo
         syncSidebarExpandBtn();
       } else {
         // No header: accordion (fecha os outros)
         const isOpen = group.classList.contains('open');
-        document.querySelectorAll('.nav-group:not(.nav-group-sidebar)').forEach(g => g.classList.remove('open'));
-        if (!isOpen) group.classList.add('open');
+        document.querySelectorAll('.nav-group:not(.nav-group-sidebar)').forEach(g => {
+          g.classList.remove('open');
+          const gBtn = g.querySelector('.nav-group-btn');
+          if (gBtn) gBtn.setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          group.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        } else {
+          btn.setAttribute('aria-expanded', 'false');
+        }
       }
     });
   });
@@ -1898,54 +1885,59 @@ document.addEventListener('DOMContentLoaded', () => {
     syncExtraThemeLabels();
   });
   
-  // ADM Authentication — resets on every page load (never persisted)
-  let isAdmAuthenticated = false;
+  // Glow Effect for Buttons
+  (function initGlowButtons() {
+    const glowButtons = document.querySelectorAll('[data-glow-btn]');
+    
+    function handlePointerMove(e) {
+      const btn = e.target.closest('[data-glow-btn]');
+      if (!btn) return;
+      
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      btn.style.setProperty('--glow-x', `${x}px`);
+      btn.style.setProperty('--glow-y', `${y}px`);
+    }
+    
+    document.addEventListener('pointermove', handlePointerMove);
+  })();
   
-  function showPasswordModal() {
-    document.getElementById('password-overlay').style.display = 'flex';
-    document.getElementById('password-input').value = '';
-    document.getElementById('password-error').style.display = 'none';
-    document.getElementById('password-input').focus();
-  }
-  
-  function hidePasswordModal() {
-    document.getElementById('password-overlay').style.display = 'none';
-  }
-  
-  async function checkPassword() {
-    const password = document.getElementById('password-input').value;
-    const submitBtn = document.getElementById('password-submit');
-    const errorEl  = document.getElementById('password-error');
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = '…';
-    errorEl.style.display = 'none';
-
+  // Carregar nome do usuário logado
+  async function loadUsuarioLogado() {
     try {
-      const resp = await fetch('/api/auth/adm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senha: password })
-      });
-      const data = await resp.json();
-
-      if (data.ok) {
-        isAdmAuthenticated = true;
-        hidePasswordModal();
-        showAdmPanel();
-        showToast('Bem-vindo à área administrativa!', 'success');
+      const res = await fetch('/api/auth/verificar');
+      const data = await res.json();
+      console.log('Auth verificar:', data);
+      if (data.autenticado && data.usuario) {
+        const nomeEl = document.getElementById('header-usuario-nome');
+        if (nomeEl) {
+          const nome = data.usuario.charAt(0).toUpperCase() + data.usuario.slice(1);
+          nomeEl.textContent = nome;
+          console.log('Usuário carregado:', nome);
+        } else {
+          console.error('Elemento header-usuario-nome não encontrado');
+        }
       } else {
-        errorEl.style.display = 'block';
+        console.warn('Usuário não autenticado ou sem campo usuario');
       }
     } catch (e) {
-      errorEl.textContent = 'Erro de conexão. Tente novamente.';
-      errorEl.style.display = 'block';
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Entrar';
+      console.error('Erro ao carregar usuário:', e);
     }
   }
   
+  // Botão de logout no header
+  document.getElementById('header-logout-btn')?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/sair', { method: 'POST' });
+    } catch (e) {
+      console.error('Erro no logout:', e);
+    }
+    window.location.href = '/login.html';
+  });
+  
+  // ADM Panel — já autenticado via /login.html
   function showAdmPanel() {
     document.getElementById('adm-panel').style.display = 'block';
     document.querySelector('.stats-bar').style.display = 'none';
@@ -1973,10 +1965,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function handleTabClick(tabName, requiresAuth) {
-    if (requiresAuth && !isAdmAuthenticated) {
-      showPasswordModal();
-      return;
-    }
+    // Autenticação já feita via /login.html
     if (tabName !== 'adm') {
       await ensureMainAppLoaded();
     }
@@ -2008,18 +1997,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
-  // Password modal events
-  document.getElementById('password-close')?.addEventListener('click', hidePasswordModal);
-  document.getElementById('password-submit')?.addEventListener('click', checkPassword);
-  document.getElementById('password-input')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkPassword();
-  });
-  
   // ADM logout
-  document.getElementById('adm-logout')?.addEventListener('click', () => {
-    isAdmAuthenticated = false;
-    hideAdmPanel();
-    document.querySelector('.nav-tab[data-tab="credores-fixos"]')?.click();
+  document.getElementById('adm-logout')?.addEventListener('click', async () => {
+    try {
+      await fetch('/api/auth/sair', { method: 'POST' });
+    } catch (e) {
+      console.error('Erro no logout:', e);
+    }
+    window.location.href = '/login.html';
     showToast('Saiu da área administrativa', 'info');
   });
   
