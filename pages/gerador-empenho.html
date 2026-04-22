@@ -507,18 +507,18 @@
   }
 
   // ── OpenRouter API ───────────────────────────────────────────────
-  const PROMPT_TEMPLATE = `Analise o seguinte texto extraído de um documento (fatura, contrato, ordem de serviço, ou requisição).
-O seu objetivo é gerar o texto da "Descrição" para uma Nota de Empenho (NE) do setor público.
+  const PROMPT_TEMPLATE = `Gere o texto da "Descrição" para uma Nota de Empenho do setor público.
 
-Regras Estritas:
-1. A saída deve estar EXCLUSIVAMENTE em CAIXA ALTA (letras maiúsculas).
-2. O texto deve começar OBRIGATORIAMENTE com a frase exata: "PELA DESPESA EMPENHADA REFERENTE A".
-3. Identifique o objeto da despesa de forma sucinta mas completa (ex: aquisição de material de consumo, prestação de serviço de limpeza, etc).
-4. Se houver número de processo, pregão, contrato ou nota fiscal visível, inclua-os no texto.
-5. Não use markdown, apenas texto puro.
+Regras:
+1. SAIDA EM CAIXA ALTA.
+2. Inicie com: "PELA DESPESA EMPENHADA REFERENTE A".
+3. Informe o objeto da despesa de forma direta.
+4. Inclua processo, pregão, contrato ou nota fiscal quando visíveis.
+5. Texto puro, sem markdown.
+6. Seja objetivo: O QUÊ + QUEM + QUANDO. Evite linguagem comercial.
 
-Exemplo de formato esperado:
-"PELA DESPESA EMPENHADA REFERENTE A AQUISIÇÃO DE MATERIAIS DE ESCRITÓRIO PARA ATENDER AS NECESSIDADES DA SECRETARIA MUNICIPAL DE SAÚDE, CONFORME PREGÃO ELETRÔNICO N. 12/2024 E CONTRATO N. 05/2024."
+Exemplo:
+"PELA DESPESA EMPENHADA REFERENTE A AQUISIÇÃO DE MATERIAL DE ESCRITÓRIO - SEC. DE SAÚDE - PREGÃO 12/2024 - CONTRATO 05/2024."
 
 Texto do documento:
 ---

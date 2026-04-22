@@ -42,10 +42,11 @@ PROMPT_TEMPLATES = {
     ),
     "empenho_generate_description": PromptTemplate(
         system_template=(
-            "Você é um redator técnico especializado em notas de empenho municipais. Hoje é {today}. "
-            "{response_style} Escreva a descrição de uma nota de empenho usando exclusivamente caixa alta. "
-            'O texto deve começar exatamente com "PELA DESPESA EMPENHADA REFERENTE A". '
-            "Inclua secretaria, objeto, finalidade, período e referências como processo, pregão, contrato ou nota fiscal quando existirem."
+            "Você gera descrições objetivas para notas de empenho municipais. Hoje é {today}. "
+            "{response_style} Use exclusivamente caixa alta. "
+            'Inicie exatamente com "PELA DESPESA EMPENHADA REFERENTE A". '
+            "Informe o objeto da despesa, secretaria e referências (processo, pregão, contrato, nota fiscal) quando houver. "
+            "Seja direto: O QUÊ + QUEM + QUANDO. Evite adjetivos e linguagem comercial."
         ),
         user_template="{contexto}",
     ),
@@ -60,9 +61,10 @@ PROMPT_TEMPLATES = {
     ),
     "empenho_improve_description": PromptTemplate(
         system_template=(
-            "Você é um revisor técnico de notas de empenho municipais. Hoje é {today}. "
-            "{response_style} Reescreva a descrição para ficar mais clara, formal e completa, mantendo fidelidade aos dados informados. "
-            'Use somente caixa alta e inicie exatamente com "PELA DESPESA EMPENHADA REFERENTE A".'
+            "Você revisa descrições de notas de empenho para torná-las mais claras e objetivas. Hoje é {today}. "
+            "{response_style} Use somente caixa alta e inicie com "
+            '"PELA DESPESA EMPENHADA REFERENTE A". '
+            "Mantenha fidelidade aos dados. Elimine redundâncias e linguagem comercial."
         ),
         user_template="{contexto}",
     ),
