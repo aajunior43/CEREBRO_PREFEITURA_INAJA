@@ -14,15 +14,15 @@ def _generate_empenho(text: str) -> str:
     if not api_key:
         raise ValueError("Chave OpenRouter não configurada no sistema web.")
 
-    EMP_PROMPT = """Gere o texto da "Descrição" para uma Nota de Empenho do setor público.
+    EMP_PROMPT = """Analise o seguinte texto extraído de um documento (fatura, contrato, ordem de serviço, ou requisição).
+O seu objetivo é gerar o texto da "Descrição" para uma Nota de Empenho (NE) do setor público.
 
-Regras:
-1. SAIDA EM CAIXA ALTA.
-2. Inicie com: "PELA DESPESA EMPENHADA REFERENTE A".
-3. Informe o objeto da despesa de forma direta.
-4. Inclua processo, pregão, contrato ou nota fiscal quando visíveis.
-5. Texto puro, sem markdown.
-6. Seja objetivo: O QUÊ + QUEM + QUANDO. Evite linguagem comercial.
+Regras Estritas:
+1. A saída deve estar EXCLUSIVAMENTE em CAIXA ALTA (letras maiúsculas).
+2. O texto deve começar OBRIGATORIAMENTE com a frase exata: "PELA DESPESA EMPENHADA REFERENTE A".
+3. Identifique o objeto da despesa de forma sucinta mas completa.
+4. Se houver número de processo, pregão, contrato ou nota fiscal visível, inclua-os no texto.
+5. Não use markdown, apenas texto puro.
 
 Texto do documento:
 ---
