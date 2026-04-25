@@ -46,3 +46,7 @@ server_novo.py
 server_modular.py
 
 empenhos.db
+
+# Arquivos com nomes reservados do Windows
+nul
+con
