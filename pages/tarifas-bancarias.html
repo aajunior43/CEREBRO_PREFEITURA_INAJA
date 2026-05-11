@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analisador Financeiro – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module" id="pdfjs-script"></script>
+  <style>
+    /* ── Page Wrapper ── */
+    .tarifa-wrap {
+      max-width: 780px;
+      margin: 32px auto 80px;
+      padding: 0 20px;
+    }
+
+    /* ── Main Card ── */
+    .tarifa-card {
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--neo-lg);
+      padding: 40px 36px;
+    }
+    @media (max-width: 600px) { .tarifa-card { padding: 28px 20px; } }
+
+    /* ── Card Header ── */
+    .tarifa-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+    .tarifa-hero-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--bg);
+      box-shadow: var(--neo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--blue);
+    }
+    .tarifa-hero-icon svg { width: 32px; height: 32px; }
+    .tarifa-hero h2 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .tarifa-hero h2 span { color: var(--blue); }
+    .tarifa-hero p { font-size: 14px; color: var(--text-3); max-width: 400px; line-height: 1.6; }
+
+    /* ── API Key Box ── */
+    .api-key-section {
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo-in-sm);
+      padding: 16px 18px;
+      margin-bottom: 24px;
+    }
+    .api-key-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .api-key-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .api-key-input {
+      flex: 1;
+      background: var(--bg);
+      border: none;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-in-sm);
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      transition: box-shadow 0.2s;
+    }
+    .api-key-input:focus { box-shadow: var(--neo-in); }
+    .btn-save-key {
+      padding: 10px 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 2px 2px 6px rgba(79,128,200,0.4);
+      transition: box-shadow 0.2s;
+      white-space: nowrap;
+    }
+    .btn-save-key:hover { box-shadow: 4px 4px 10px rgba(79,128,200,0.5); }
+    .api-key-status { font-size: 11px; margin-top: 8px; }
+    .api-key-status.ok { color: var(--green); }
+    .api-key-status.miss { color: var(--orange); }
+
+    /* ── Upload Zone ── */
+    .upload-zone {
+      border-radius: var(--radius-lg);
+      box-shadow: var(--neo-in);
+      padding: 48px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: box-shadow 0.25s;
+      position: relative;
+      text-align: center;
+      border: 2px solid transparent;
+      background: var(--bg);
+    }
+    .upload-zone.drag-over {
+      box-shadow: var(--neo-in-sm);
+      border-color: var(--blue);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .upload-zone svg { width: 48px; height: 48px; color: var(--text-3); }
+    .upload-zone p { font-size: 14px; color: var(--text-3); }
+    .upload-zone p strong { color: var(--blue); }
+    .upload-zone small { font-size: 12px; color: var(--text-3); }
+
+    /* ── File Name Badge ── */
+    .file-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      box-shadow: var(--neo-sm);
+      background: var(--bg);
+      margin-top: 16px;
+    }
+    .file-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      flex-shrink: 0;
+    }
+    .file-name { font-size: 13px; font-weight: 600; color: var(--text-2); max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── Analyze Button ── */
+    .btn-analyze {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--bg);
+      box-shadow: var(--neo);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--blue);
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
+      margin-top: 20px;
+    }
+    .btn-analyze:hover { box-shadow: var(--neo-sm); transform: translateY(-1px); }
+    .btn-analyze:active { box-shadow: var(--neo-in); transform: translateY(0); }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: var(--neo); }
+
+    /* ── Loader ── */
+    .loader-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 0;
+    }
+    .loader-spinner {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      box-shadow: var(--neo-sm);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loader-spinner svg {
+      width: 28px;
+      height: 28px;
+      color: var(--blue);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .loader-wrap p { font-size: 13px; color: var(--text-3); font-weight: 500; text-align: center; }
+
+    /* ── Result ── */
+    .result-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      animation: fadeIn 0.4s ease;
+      width: 100%;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Destaque total tarifas */
+    .result-highlight {
+      background: var(--bg);
+      box-shadow: var(--neo-in);
+      border-radius: var(--radius-lg);
+      padding: 24px 32px;
+      text-align: center;
+    }
+    .result-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .result-value {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--red, #c74a4a);
+      letter-spacing: -1px;
+    }
+
+    /* Grid de cards resumo */
+    .res-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 560px) { .res-grid { grid-template-columns: 1fr 1fr; } }
+    .res-card {
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .res-card-icon { font-size: 22px; margin-bottom: 4px; }
+    .res-card-val { font-size: 18px; font-weight: 800; color: var(--text); }
+    .res-card-val.green { color: var(--green); }
+    .res-card-val.red { color: var(--red, #c74a4a); }
+    .res-card-val.blue { color: var(--blue); }
+    .res-card-lbl { font-size: 10px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 3px; }
+
+    /* Seção tarifas detalhadas */
+    .res-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 10px;
+    }
+    .res-section {
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .fee-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(0,0,0,.05);
+      font-size: 13px;
+    }
+    [data-theme="dark"] .fee-item { border-bottom-color: rgba(255,255,255,.05); }
+    .fee-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .fee-name { color: var(--text-2); font-weight: 500; }
+    .fee-val { font-weight: 700; color: var(--red, #c74a4a); white-space: nowrap; }
+
+    /* Alertas */
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 12.5px;
+      color: var(--text-2);
+      border-bottom: 1px solid rgba(0,0,0,.05);
+      line-height: 1.4;
+    }
+    [data-theme="dark"] .alert-item { border-bottom-color: rgba(255,255,255,.05); }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--orange, #d97c3a); flex-shrink: 0; margin-top: 4px; }
+
+    /* Resumo texto */
+    .res-resumo {
+      background: var(--bg);
+      box-shadow: var(--neo-in-sm);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.6;
+    }
+
+    /* Ações */
+    .result-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 22px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      color: var(--text-2);
+    }
+    .btn-action:hover { box-shadow: var(--neo); }
+    .btn-action:active { box-shadow: var(--neo-in-sm); }
+    .btn-action.copied { color: var(--green); }
+    .btn-action svg { width: 16px; height: 16px; }
+
+    /* ── Error ── */
+    .error-box {
+      background: var(--red-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo-in-sm);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--red);
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .error-box strong { font-weight: 700; }
+
+    /* ── Steps info ── */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid rgba(0,0,0,0.07);
+    }
+    [data-theme="dark"] .steps-list { border-color: rgba(255,255,255,0.07); }
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+  <script src="/static/js/ia-chat-widget.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+
+  <!-- MAIN -->
+  <div class="tarifa-wrap">
+    <div class="tarifa-card">
+
+      <!-- Hero -->
+      <div class="tarifa-hero">
+        <div class="tarifa-hero-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/>
+          </svg>
+        </div>
+        <h2>Analisador <span>Financeiro</span></h2>
+        <p>Carregue um extrato bancário em PDF e descubra o total de tarifas, taxas e encargos cobrados pelo banco.</p>
+      </div>
+
+      <!-- API Key -->
+      <!-- Upload -->
+      <div id="upload-section">
+        <label class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept=".pdf" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 16V4m0 0L8 8m4-4l4 4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+          </svg>
+          <p><strong>Clique para enviar</strong> ou arraste o arquivo</p>
+          <small>PDF – Extrato Bancário</small>
+        </label>
+
+        <div class="file-badge" id="file-badge" style="display:none;">
+          <div class="file-dot"></div>
+          <span class="file-name" id="file-name-label">—</span>
+        </div>
+
+        <button class="btn-analyze" id="btn-analyze" style="display:none;" disabled>
+          🔍 Calcular Tarifas Bancárias
+        </button>
+      </div>
+
+      <!-- Loader -->
+      <div class="loader-wrap" id="loader" style="display:none;">
+        <div class="loader-spinner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+        </div>
+        <p>Extraindo texto do PDF...<br><span id="loader-msg" style="color:var(--blue);font-weight:600;"></span></p>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="error-box" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;flex-shrink:0;margin-top:1px;">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div><strong>Erro: </strong><span id="error-msg"></span></div>
+      </div>
+
+      <!-- Result -->
+      <div class="result-wrap" id="result-section" style="display:none;">
+
+        <!-- Total tarifas em destaque -->
+        <div class="result-highlight">
+          <div class="result-label">⚠️ Total de Tarifas e Encargos Identificados</div>
+          <div class="result-value" id="result-value">R$ 0,00</div>
+        </div>
+
+        <!-- Cards resumo financeiro -->
+        <div class="res-grid" id="res-grid" style="display:none;">
+          <div class="res-card">
+            <div class="res-card-icon">📈</div>
+            <div class="res-card-val green" id="res-creditos">—</div>
+            <div class="res-card-lbl">Total Créditos</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">📉</div>
+            <div class="res-card-val red" id="res-debitos">—</div>
+            <div class="res-card-lbl">Total Débitos</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">💰</div>
+            <div class="res-card-val blue" id="res-saldo">—</div>
+            <div class="res-card-lbl">Saldo do Período</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">🔢</div>
+            <div class="res-card-val" id="res-lancamentos">—</div>
+            <div class="res-card-lbl">Lançamentos</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">🏦</div>
+            <div class="res-card-val red" id="res-taxa-pct">—</div>
+            <div class="res-card-lbl">% em Tarifas</div>
+          </div>
+          <div class="res-card">
+            <div class="res-card-icon">📋</div>
+            <div class="res-card-val" id="res-qtd-tarifas">—</div>
+            <div class="res-card-lbl">Tipos de Tarifas</div>
+          </div>
+        </div>
+
+        <!-- Detalhamento das tarifas -->
+        <div id="res-fees-section" style="display:none;">
+          <div class="res-section-title">📊 Detalhamento das Tarifas</div>
+          <div class="res-section" id="res-fees-list"></div>
+        </div>
+
+        <!-- Maiores débitos -->
+        <div id="res-debitos-section" style="display:none;">
+          <div class="res-section-title">💸 Maiores Débitos do Período</div>
+          <div class="res-section" id="res-debitos-list"></div>
+        </div>
+
+        <!-- Alertas -->
+        <div id="res-alertas-section" style="display:none;">
+          <div class="res-section-title">🔔 Alertas e Observações</div>
+          <div class="res-section" id="res-alertas-list"></div>
+        </div>
+
+        <!-- Resumo textual da IA -->
+        <div id="res-resumo-section" style="display:none;">
+          <div class="res-section-title">🤖 Análise da IA</div>
+          <div class="res-resumo" id="res-resumo-txt"></div>
+        </div>
+
+        <!-- Ações -->
+        <div class="result-actions">
+          <button class="btn-action" id="btn-reset">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6"/><path d="M3 8A9 9 0 1 0 5.5 4.9"/></svg>
+            Nova Análise
+          </button>
+          <button class="btn-action" id="btn-copy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copiar Total
+          </button>
+          <button class="btn-action" id="btn-export">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+            Exportar Relatório
+          </button>
+        </div>
+      </div>
+
+      <!-- Info Steps -->
+      <div class="steps-list" id="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <span>Configure sua <strong style="color:var(--text-2);">chave API OpenRouter</strong> em <a href="https://openrouter.ai/keys" target="_blank" style="color:var(--blue);">openrouter.ai</a></span>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <span>Faça upload do <strong style="color:var(--text-2);">extrato bancário em PDF</strong> do banco (BB, Caixa, Bradesco, etc.)</span>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <span>A IA identifica e soma automaticamente <strong style="color:var(--text-2);">todas as tarifas, taxas, IOF e encargos</strong></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+  'use strict';
+
+  // ── Theme ────────────────────────────────────────────────────
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    const label = document.querySelector('.theme-label');
+    if (label) label.textContent = saved === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+  })();
+  document.getElementById('dropdown-toggle')?.addEventListener('click', () => {
+    document.getElementById('dropdown-menu')?.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown')) document.getElementById('dropdown-menu')?.classList.remove('open');
+  });
+
+  // ── API Key ──────────────────────────────────────────────────
+
+  // ── PDF.js Setup ─────────────────────────────────────────────
+  // Dynamic import for pdf.js ES module
+  let pdfjsLib = null;
+  try {
+    const pdfjs = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');
+    pdfjsLib = pdfjs;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+  } catch(e) {
+    console.warn('pdf.js load error:', e);
+  }
+
+  async function extractTextFromPdf(file) {
+    if (!pdfjsLib) throw new Error('Biblioteca PDF.js não carregou. Verifique sua conexão.');
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+    return fullText;
+  }
+
+  // ── OpenRouter API ───────────────────────────────────────────────
+  async function analyzeBankStatement(text) {
+    const PROMPT = `Você é um especialista em finanças públicas municipais do Brasil. Analise o extrato bancário abaixo e retorne UM ÚNICO objeto JSON com EXATAMENTE estas chaves (sem texto extra):
+
+{
+  "total_tarifas": <número: soma de todas as tarifas/taxas/IOF/encargos do banco>,
+  "categorias_tarifas": [{"nome": "...", "valor": <número>}, ...],
+  "total_creditos": <número: soma de todos os créditos/depósitos/entradas>,
+  "total_debitos": <número: soma de todos os débitos/pagamentos/saídas>,
+  "saldo_periodo": <número: diferença créditos - débitos, pode ser negativo>,
+  "num_lancamentos": <inteiro: total de lançamentos no extrato>,
+  "maiores_debitos": [{"descricao": "...", "valor": <número>}, ...],
+  "alertas": ["alerta 1", "alerta 2", ...],
+  "resumo": "Análise resumida do extrato em 2-3 frases."
+}
+
+Regras:
+- "categorias_tarifas": listar CADA tipo de tarifa separadamente (ex: Manutenção de Conta, IOF, TED, Pacote de Serviços, etc). Array vazio se não houver.
+- "maiores_debitos": listar os 5 maiores débitos (excluindo as tarifas já listadas). Array vazio se não houver.
+- "alertas": situações relevantes como tarifas excessivas, cobranças duplicadas, valores suspeitos. Array vazio se não houver.
+- Use ponto como separador decimal. Todos os valores monetários como números (sem R$).
+- Se algum dado não estiver disponível no extrato, use 0 ou array vazio.
+
+Extrato bancário:
+---
+${text.slice(0, 12000)}
+---`;
+
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
+
+    const resp = await fetch('/api/ia/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: PROMPT }],
+        temperature: 0.1,
+      })
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.json().catch(() => ({}));
+      const msg = errBody?.error?.message || errBody?.error || `HTTP ${resp.status}`;
+      throw new Error(`[${model}] ${msg}`);
+    }
+
+    const data = await resp.json();
+    let raw = data?.choices?.[0]?.message?.content?.trim();
+    if (!raw) throw new Error('Resposta vazia da API.');
+
+    // Extrair JSON mesmo que a IA adicione texto extra
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Formato de resposta inesperado da IA.');
+    return JSON.parse(jsonMatch[0]);
+  }
+
+  // ── State ────────────────────────────────────────────────────
+  let currentFile = null;
+  let lastResult = null;
+  let lastExtractedText = '';
+
+  // ── Helpers ──────────────────────────────────────────────────
+  const fmt = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+  const fmtNum = v => (v ?? '—').toLocaleString?.('pt-BR') ?? v;
+
+  // ── DOM refs ─────────────────────────────────────────────────
+  const uploadSection = document.getElementById('upload-section');
+  const fileInput = document.getElementById('file-input');
+  const uploadZone = document.getElementById('upload-zone');
+  const fileBadge = document.getElementById('file-badge');
+  const fileNameLabel = document.getElementById('file-name-label');
+  const btnAnalyze = document.getElementById('btn-analyze');
+  const loaderEl = document.getElementById('loader');
+  const loaderMsg = document.getElementById('loader-msg');
+  const errorBox = document.getElementById('error-box');
+  const errorMsg = document.getElementById('error-msg');
+  const resultSection = document.getElementById('result-section');
+  const resultValue = document.getElementById('result-value');
+  const stepsEl = document.getElementById('steps-list');
+
+  function showSection(section) {
+    uploadSection.style.display = section === 'upload' ? '' : 'none';
+    loaderEl.style.display = section === 'loader' ? 'flex' : 'none';
+    resultSection.style.display = section === 'result' ? 'flex' : 'none';
+    stepsEl.style.display = section === 'upload' ? '' : 'none';
+  }
+
+  function showError(msg) {
+    errorBox.style.display = 'flex';
+    errorMsg.textContent = msg;
+  }
+
+  function hideError() {
+    errorBox.style.display = 'none';
+    errorMsg.textContent = '';
+  }
+
+  function setFile(file) {
+    if (!file || file.type !== 'application/pdf') {
+      showError('Por favor, selecione um arquivo PDF válido.');
+      return;
+    }
+    hideError();
+    currentFile = file;
+    fileNameLabel.textContent = file.name;
+    fileBadge.style.display = 'flex';
+    btnAnalyze.style.display = '';
+    btnAnalyze.disabled = false;
+  }
+
+  // ── Upload Zone Events ───────────────────────────────────────
+  fileInput.addEventListener('change', e => {
+    if (e.target.files?.[0]) setFile(e.target.files[0]);
+  });
+
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
+  });
+
+  // ── Analyze ──────────────────────────────────────────────────
+  btnAnalyze.addEventListener('click', async () => {
+    if (!currentFile) return;
+
+    hideError();
+    showSection('loader');
+
+    try {
+      loaderMsg.textContent = 'Lendo PDF...';
+      const text = await extractTextFromPdf(currentFile);
+      lastExtractedText = text;
+
+      if (!text.trim()) {
+        throw new Error('Não foi possível extrair texto do PDF. O arquivo pode ser uma imagem digitalizada.');
+      }
+
+      loaderMsg.textContent = 'Analisando com IA...';
+      const result = await analyzeBankStatement(text);
+      lastResult = result;
+
+      // Preencher total tarifas
+      document.getElementById('result-value').textContent = fmt(result.total_tarifas);
+
+      // Preencher cards resumo
+      const hasFluxo = result.total_creditos || result.total_debitos;
+      if (hasFluxo) {
+        document.getElementById('res-creditos').textContent = fmt(result.total_creditos);
+        document.getElementById('res-debitos').textContent = fmt(result.total_debitos);
+        document.getElementById('res-saldo').textContent = fmt(result.saldo_periodo);
+        document.getElementById('res-saldo').className = 'res-card-val ' + ((result.saldo_periodo || 0) >= 0 ? 'green' : 'red');
+        document.getElementById('res-lancamentos').textContent = result.num_lancamentos || '—';
+        const pct = result.total_debitos ? ((result.total_tarifas / result.total_debitos) * 100).toFixed(1) + '%' : '—';
+        document.getElementById('res-taxa-pct').textContent = pct;
+        document.getElementById('res-qtd-tarifas').textContent = (result.categorias_tarifas || []).length || '—';
+        document.getElementById('res-grid').style.display = '';
+      } else {
+        document.getElementById('res-grid').style.display = 'none';
+      }
+
+      // Detalhamento tarifas
+      const fees = result.categorias_tarifas || [];
+      if (fees.length) {
+        document.getElementById('res-fees-list').innerHTML = fees.map(f =>
+          `<div class="fee-item"><span class="fee-name">${f.nome}</span><span class="fee-val">${fmt(f.valor)}</span></div>`
+        ).join('');
+        document.getElementById('res-fees-section').style.display = '';
+      } else {
+        document.getElementById('res-fees-section').style.display = 'none';
+      }
+
+      // Maiores débitos
+      const debList = result.maiores_debitos || [];
+      if (debList.length) {
+        document.getElementById('res-debitos-list').innerHTML = debList.map(d =>
+          `<div class="fee-item"><span class="fee-name">${d.descricao}</span><span class="fee-val" style="color:var(--text-2)">${fmt(d.valor)}</span></div>`
+        ).join('');
+        document.getElementById('res-debitos-section').style.display = '';
+      } else {
+        document.getElementById('res-debitos-section').style.display = 'none';
+      }
+
+      // Alertas
+      const alertas = result.alertas || [];
+      if (alertas.length) {
+        document.getElementById('res-alertas-list').innerHTML = alertas.map(a =>
+          `<div class="alert-item"><div class="alert-dot"></div><span>${a}</span></div>`
+        ).join('');
+        document.getElementById('res-alertas-section').style.display = '';
+      } else {
+        document.getElementById('res-alertas-section').style.display = 'none';
+      }
+
+      // Resumo IA
+      if (result.resumo) {
+        document.getElementById('res-resumo-txt').textContent = result.resumo;
+        document.getElementById('res-resumo-section').style.display = '';
+      } else {
+        document.getElementById('res-resumo-section').style.display = 'none';
+      }
+
+      showSection('result');
+    } catch (err) {
+      showSection('upload');
+      showError(err instanceof Error ? err.message : 'Erro desconhecido durante o processamento.');
+    }
+  });
+
+  // ── Reset ────────────────────────────────────────────────────
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    currentFile = null;
+    lastResult = null;
+    lastExtractedText = '';
+    fileInput.value = '';
+    fileBadge.style.display = 'none';
+    btnAnalyze.style.display = 'none';
+    btnAnalyze.disabled = true;
+    hideError();
+    showSection('upload');
+  });
+
+  // ── Copy ─────────────────────────────────────────────────────
+  const btnCopy = document.getElementById('btn-copy');
+  btnCopy.addEventListener('click', async () => {
+    if (!lastResult) return;
+    try {
+      await navigator.clipboard.writeText(String(lastResult.total_tarifas));
+      btnCopy.classList.add('copied');
+      btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M20 6L9 17l-5-5"/></svg> Copiado!`;
+      setTimeout(() => {
+        btnCopy.classList.remove('copied');
+        btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar Total`;
+      }, 2500);
+    } catch {
+      alert('Copie manualmente: ' + lastResult.total_tarifas);
+    }
+  });
+
+  // ── Exportar ─────────────────────────────────────────────────
+  document.getElementById('btn-export').addEventListener('click', () => {
+    if (!lastResult) return;
+    const r = lastResult;
+    const fmt2 = v => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+    let lines = [
+      '═══════════════════════════════════════════',
+      '  RELATÓRIO DE ANÁLISE DE EXTRATO BANCÁRIO',
+      '  Prefeitura de Inajá',
+      '  Gerado em: ' + new Date().toLocaleString('pt-BR'),
+      '═══════════════════════════════════════════',
+      '',
+      '📊 RESUMO FINANCEIRO',
+      `  Total Créditos:   ${fmt2(r.total_creditos)}`,
+      `  Total Débitos:    ${fmt2(r.total_debitos)}`,
+      `  Saldo do Período: ${fmt2(r.saldo_periodo)}`,
+      `  Lançamentos:      ${r.num_lancamentos || '—'}`,
+      '',
+      '⚠️  TARIFAS E ENCARGOS',
+      `  TOTAL TARIFAS:    ${fmt2(r.total_tarifas)}`,
+      '',
+    ];
+    if ((r.categorias_tarifas || []).length) {
+      lines.push('  Detalhamento:');
+      r.categorias_tarifas.forEach(f => lines.push(`    - ${f.nome}: ${fmt2(f.valor)}`));
+      lines.push('');
+    }
+    if ((r.maiores_debitos || []).length) {
+      lines.push('💸 MAIORES DÉBITOS');
+      r.maiores_debitos.forEach(d => lines.push(`    - ${d.descricao}: ${fmt2(d.valor)}`));
+      lines.push('');
+    }
+    if ((r.alertas || []).length) {
+      lines.push('🔔 ALERTAS');
+      r.alertas.forEach(a => lines.push(`    • ${a}`));
+      lines.push('');
+    }
+    if (r.resumo) {
+      lines.push('🤖 ANÁLISE DA IA');
+      lines.push('  ' + r.resumo);
+      lines.push('');
+    }
+    lines.push('═══════════════════════════════════════════');
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `analise_extrato_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+  });
+
+  window.buildFinancialContext = function() {
+    return {
+      arquivo: currentFile ? currentFile.name : '',
+      resumo: lastResult?.resumo || '',
+      total_tarifas: lastResult?.total_tarifas || 0,
+      total_creditos: lastResult?.total_creditos || 0,
+      total_debitos: lastResult?.total_debitos || 0,
+      saldo_periodo: lastResult?.saldo_periodo || 0,
+      num_lancamentos: lastResult?.num_lancamentos || 0,
+      categorias_tarifas: lastResult?.categorias_tarifas || [],
+      maiores_debitos: lastResult?.maiores_debitos || [],
+      alertas: lastResult?.alertas || []
+    };
+  }
+
+  if (window.IaChatWidget) {
+    // Shared widget in shared-header.js handles creation.
+    return;
+  }
+  </script>
+</body>
+</html>

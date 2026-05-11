@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Texto de Empenho – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <style>
+    /* ── Page ── */
+    .emp-wrap {
+      max-width: 860px;
+      margin: 32px auto 80px;
+      padding: 0 20px;
+    }
+
+    /* ── Page Hero ── */
+    .emp-page-hero {
+      text-align: center;
+      margin-bottom: 36px;
+      padding: 36px 24px 28px;
+      position: relative;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(79, 128, 200, 0.08), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 20%, rgba(124, 95, 200, 0.06), transparent),
+        var(--surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .emp-page-hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--purple), var(--green), var(--orange));
+      background-size: 300% 100%;
+      animation: gradientShift 8s ease infinite;
+    }
+    @keyframes gradientShift {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .emp-page-hero .hero-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(79, 128, 200, 0.3);
+    }
+    .emp-page-hero .hero-icon svg { width: 28px; height: 28px; color: white; }
+    .emp-page-hero h2 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+      margin: 0 0 8px;
+    }
+    .emp-page-hero h2 span {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .emp-page-hero p { font-size: 15px; color: var(--text-3); margin: 0; }
+
+    /* ── Card ── */
+    .emp-card {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      padding: 32px 28px;
+      transition: box-shadow 0.3s ease;
+    }
+    .emp-card:hover { box-shadow: var(--shadow-lg); }
+    @media (max-width: 600px) { .emp-card { padding: 20px 16px; } }
+
+    /* ── Mode Selector ── */
+    .mode-selector {
+      display: flex; gap: 8px; margin-bottom: 24px;
+      padding: 6px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+    }
+    .btn-mode {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-mode:hover { color: var(--text); background: rgba(79, 128, 200, 0.05); }
+    .btn-mode.active {
+      background: var(--surface);
+      color: var(--blue);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .btn-mode svg { width: 18px; height: 18px; }
+
+    /* ── Upload Zone ── */
+    .upload-zone {
+      background: var(--bg);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 56px 24px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      position: relative;
+    }
+    .upload-zone:hover {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, 0.03);
+    }
+    .upload-zone.drag-over {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, 0.06);
+      transform: scale(1.01);
+    }
+    .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .upload-zone .upload-icon-wrap {
+      width: 64px; height: 64px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(79, 128, 200, 0.1), rgba(124, 95, 200, 0.1));
+      border-radius: 50%;
+      margin-bottom: 8px;
+      transition: transform 0.3s ease;
+    }
+    .upload-zone:hover .upload-icon-wrap { transform: scale(1.1); }
+    .upload-zone svg { width: 28px; height: 28px; color: var(--blue); }
+    .upload-zone h3 { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
+    .upload-zone p { font-size: 14px; color: var(--text-3); margin: 0; }
+    .upload-zone small { font-size: 12px; color: var(--text-4, var(--text-3)); margin: 0; }
+
+    /* ── File Preview Row ── */
+    .file-preview-row {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 16px 20px;
+      margin-top: 16px;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .file-thumb {
+      width: 56px; height: 56px;
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .file-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-md); }
+    .file-thumb .pdf-icon {
+      font-size: 12px; font-weight: 800;
+      color: var(--red);
+      letter-spacing: -0.5px;
+    }
+    .file-info { flex: 1; min-width: 0; }
+    .file-info strong {
+      display: block;
+      font-size: 14px; font-weight: 600;
+      color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .file-info span { font-size: 12px; color: var(--text-3); }
+    .file-actions { display: flex; gap: 8px; }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 24px;
+      border: none;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      color: white;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(79, 128, 200, 0.3);
+      transition: all 0.25s ease;
+      white-space: nowrap;
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(79, 128, 200, 0.4);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text-2);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .btn-secondary:hover {
+      background: var(--bg);
+      border-color: var(--text-4, rgba(0,0,0,0.15));
+    }
+    .btn-secondary:active { transform: scale(0.98); }
+    .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger { color: var(--red); border-color: rgba(220, 53, 69, 0.3); }
+    .btn-danger:hover { background: rgba(220, 53, 69, 0.05); }
+    .btn-sm { padding: 8px 14px; font-size: 13px; }
+    .btn-icon { padding: 10px; }
+
+    /* ── Action Row ── */
+    .action-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap; margin-top: 24px;
+    }
+    .action-row .actions-right { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── Loader ── */
+    .loader-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px; padding: 48px 0;
+      animation: fadeIn 0.3s ease;
+    }
+    .loader-ring {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 3px solid var(--border);
+      border-top-color: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-wrap p {
+      font-size: 14px; color: var(--text-3); text-align: center; margin: 0;
+    }
+    .loader-wrap strong { color: var(--blue); font-weight: 600; }
+
+    /* ── Error ── */
+    .error-box {
+      background: rgba(220, 53, 69, 0.08);
+      border: 1px solid rgba(220, 53, 69, 0.2);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-size: 14px; color: var(--red);
+      margin-top: 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+      animation: fadeIn 0.3s ease;
+    }
+    .error-box svg { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; color: var(--red); }
+
+    /* ── Result ── */
+    .result-section {
+      margin-top: 32px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .result-label-row {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+    }
+    .result-label {
+      font-size: 12px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-editavel {
+      font-size: 11px; font-weight: 600;
+      color: var(--blue);
+      background: rgba(79, 128, 200, 0.1);
+      padding: 4px 12px;
+      border-radius: 100px;
+    }
+    .result-textarea {
+      width: 100%; min-height: 180px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px; font-weight: 600;
+      color: var(--text);
+      text-transform: uppercase;
+      line-height: 1.7;
+      resize: vertical;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+    .result-textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(79, 128, 200, 0.1);
+    }
+    .result-hint {
+      font-size: 12px; color: var(--text-3); text-align: center;
+      margin-top: 14px;
+    }
+
+    /* ── Info box ── */
+    .info-tip {
+      background: rgba(79, 128, 200, 0.08);
+      border: 1px solid rgba(79, 128, 200, 0.15);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-size: 13px; color: var(--text-2);
+      display: flex; gap: 12px; align-items: flex-start;
+      margin-top: 20px;
+    }
+    [data-theme="dark"] .info-tip { background: rgba(79,128,200,0.1); color: var(--blue); }
+    .info-tip svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; color: var(--blue); }
+
+    /* ── Text Input ── */
+    .text-input-area {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+    .text-input-area:focus {
+      border-color: var(--blue);
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(79, 128, 200, 0.1);
+    }
+    .text-input-area::placeholder { color: var(--text-4, var(--text-3)); }
+  </style>
+  <script defer src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+  <script defer src="/static/js/shared-header.js"></script>
+</head>
+<body>
+
+  <!-- HEADER -->
+
+  <!-- MAIN -->
+  <div class="emp-wrap">
+    <div class="emp-page-hero">
+      <div class="hero-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <h2>Gerador de <span>Texto de Empenho</span></h2>
+      <p>Envie uma fatura, contrato ou ordem de serviço e a IA gera o texto formal da Nota de Empenho.</p>
+    </div>
+
+    <div class="emp-card">
+
+      <!-- Mode Selector -->
+      <div class="mode-selector">
+        <button class="btn-mode active" id="btn-mode-file" onclick="switchMode('file')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          Enviar Arquivo
+        </button>
+        <button class="btn-mode" id="btn-mode-text" onclick="switchMode('text')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Digitar Texto
+        </button>
+      </div>
+
+      <!-- Upload Section -->
+      <div id="upload-section">
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept=".pdf,image/png,image/jpeg,image/jpg,image/webp" />
+          <div class="upload-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h3 id="upload-title">Toque ou arraste para selecionar</h3>
+          <p>Fatura, contrato, ordem de serviço ou nota fiscal</p>
+          <small>Suporta PDF, JPG, PNG, WEBP · Máx. 20MB</small>
+        </div>
+
+        <!-- File preview row (hidden until file selected) -->
+        <div class="file-preview-row" id="file-preview" style="display:none; margin-top:16px;">
+          <div class="file-thumb" id="file-thumb">
+            <span class="pdf-icon">PDF</span>
+          </div>
+          <div class="file-info">
+            <strong id="file-name-label">—</strong>
+            <span id="file-size-label">—</span>
+          </div>
+          <div class="file-actions">
+            <button class="btn-secondary btn-icon btn-danger" id="btn-clear-file" title="Remover arquivo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Text Input Section -->
+      <div id="text-section" style="display:none;">
+        <textarea id="input-text" class="text-input-area" placeholder="Cole ou digite o texto do documento aqui (fatura, contrato, ordem de serviço, etc.)..."></textarea>
+        
+        <button class="btn-primary" id="btn-generate-text" style="margin-top:20px;width:100%;" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+          </svg>
+          Gerar Texto de Empenho
+        </button>
+
+        <!-- Error -->
+        <div class="error-box" id="error-box-text" style="display:none;margin-top:16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div><strong>Erro: </strong><span id="error-msg-text">—</span></div>
+        </div>
+
+        <!-- Info tip -->
+        <div class="info-tip" style="margin-top:16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>O texto é enviado diretamente à API OpenRouter e <strong>não é armazenado</strong> em nenhum servidor.</span>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="error-box" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div><strong>Erro: </strong><span id="error-msg">—</span></div>
+      </div>
+
+      <!-- Info tip -->
+      <div class="info-tip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span>O documento é enviado diretamente à API OpenRouter e <strong>não é armazenado</strong> em nenhum servidor. Verifique sempre os dados gerados antes de usar.</span>
+      </div>
+
+      <div class="action-row">
+        <span style="font-size:13px;color:var(--text-3);">Analise documentos com IA</span>
+        <button class="btn-primary" id="btn-generate" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+          </svg>
+          Gerar Texto de Empenho
+        </button>
+      </div>
+    </div>
+
+      <!-- Loader -->
+      <div class="loader-wrap" id="loader" style="display:none;">
+        <div class="loader-ring"></div>
+        <p>Analisando documento com <strong>IA OpenRouter</strong>…<br><span style="font-size:13px;">Isso pode levar alguns segundos</span></p>
+      </div>
+
+      <!-- Result Section -->
+      <div class="result-section" id="result-section" style="display:none;">
+        <div class="result-label-row">
+          <span class="result-label">Descrição da Nota de Empenho</span>
+          <span class="badge-editavel">Editável</span>
+        </div>
+
+        <textarea class="result-textarea" id="result-textarea" rows="6"
+          placeholder="O texto gerado aparecerá aqui em CAIXA ALTA..."></textarea>
+
+        <p class="result-hint">Verifique números de contratos, valores e datas antes de efetivar o empenho.</p>
+
+        <div class="action-row">
+          <button class="btn-secondary btn-danger" id="btn-reset">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+            </svg>
+            Nova Análise
+          </button>
+          <div class="actions-right">
+            <button class="btn-secondary" id="btn-download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <path d="M12 15V3m0 12l-3-3m3 3l3-3M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/>
+              </svg>
+              Baixar .txt
+            </button>
+            <button class="btn-primary" id="btn-copy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+              Copiar Texto
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+  'use strict';
+
+  // ── PDF.js Setup ─────────────────────────────────────────────
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+  // ── Theme ────────────────────────────────────────────────────
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    const label = document.querySelector('.theme-label');
+    if (label) label.textContent = saved === 'dark' ? 'Tema Claro' : 'Tema Escuro';
+  })();
+  document.getElementById('dropdown-toggle')?.addEventListener('click', () => {
+    document.getElementById('dropdown-menu')?.classList.toggle('open');
+  });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown')) document.getElementById('dropdown-menu')?.classList.remove('open');
+  });
+
+  // ── Mode Switching ───────────────────────────────────────────
+  function switchMode(mode) {
+    document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+    if (mode === 'file') {
+      document.getElementById('btn-mode-file').classList.add('active');
+      document.getElementById('upload-section').style.display = '';
+      document.getElementById('text-section').style.display = 'none';
+    } else {
+      document.getElementById('btn-mode-text').classList.add('active');
+      document.getElementById('upload-section').style.display = 'none';
+      document.getElementById('text-section').style.display = '';
+    }
+  }
+
+  // ── State ────────────────────────────────────────────────────
+  let currentFile = null;
+  let previewObjectUrl = null;
+
+  // ── DOM refs ─────────────────────────────────────────────────
+  const uploadZone    = document.getElementById('upload-zone');
+  const fileInput     = document.getElementById('file-input');
+  const uploadSection = document.getElementById('upload-section');
+  const filePreview   = document.getElementById('file-preview');
+  const fileThumb     = document.getElementById('file-thumb');
+  const fileNameLabel = document.getElementById('file-name-label');
+  const fileSizeLabel = document.getElementById('file-size-label');
+  const btnGenerate   = document.getElementById('btn-generate');
+  const loaderEl      = document.getElementById('loader');
+  const errorBox      = document.getElementById('error-box');
+  const errorMsg      = document.getElementById('error-msg');
+  const resultSection = document.getElementById('result-section');
+  const resultTextarea= document.getElementById('result-textarea');
+  const uploadTitle   = document.getElementById('upload-title');
+
+  const VALID_TYPES = ['application/pdf','image/png','image/jpeg','image/jpg','image/webp'];
+  const MAX_SIZE    = 20 * 1024 * 1024;
+
+  function showError(msg) {
+    errorBox.style.display = 'flex';
+    errorMsg.textContent = msg;
+  }
+  function hideError() { errorBox.style.display = 'none'; }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(2) + ' MB';
+  }
+
+  function setFile(file) {
+    hideError();
+    if (file.size > MAX_SIZE) { showError('O arquivo é muito grande. Limite: 20MB.'); return; }
+    if (!VALID_TYPES.includes(file.type)) { showError('Tipo inválido. Use PDF, JPG, PNG ou WEBP.'); return; }
+
+    // Revoke previous object URL
+    if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+
+    currentFile = file;
+    fileNameLabel.textContent = file.name;
+    fileSizeLabel.textContent = formatBytes(file.size);
+
+    // Thumb
+    if (file.type.startsWith('image/')) {
+      previewObjectUrl = URL.createObjectURL(file);
+      fileThumb.innerHTML = `<img src="${previewObjectUrl}" alt="preview" />`;
+    } else {
+      fileThumb.innerHTML = `<span class="pdf-icon">PDF</span>`;
+    }
+
+    filePreview.style.display = 'flex';
+    btnGenerate.disabled = false;
+    resultSection.style.display = 'none';
+    resultTextarea.value = '';
+  }
+
+  function clearFile() {
+    currentFile = null;
+    if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
+    fileInput.value = '';
+    filePreview.style.display = 'none';
+    btnGenerate.disabled = true;
+    hideError();
+    uploadTitle.textContent = 'Toque ou arraste para selecionar';
+  }
+
+  // ── Upload Events ────────────────────────────────────────────
+  fileInput.addEventListener('change', e => {
+    if (e.target.files?.[0]) setFile(e.target.files[0]);
+  });
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); uploadTitle.textContent = 'Solte o arquivo aqui'; });
+  uploadZone.addEventListener('dragleave', () => { uploadZone.classList.remove('drag-over'); uploadTitle.textContent = 'Toque ou arraste para selecionar'; });
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    uploadTitle.textContent = 'Toque ou arraste para selecionar';
+    if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
+  });
+  document.getElementById('btn-clear-file').addEventListener('click', clearFile);
+
+  // ── File → Base64 ────────────────────────────────────────────
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const b64 = reader.result.split(',')[1];
+        resolve({ data: b64, mimeType: file.type });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ── OpenRouter API ───────────────────────────────────────────────
+  const PROMPT_TEMPLATE = `Analise o seguinte texto extraído de um documento (fatura, contrato, ordem de serviço, ou requisição).
+O seu objetivo é gerar o texto da "Descrição" para uma Nota de Empenho (NE) do setor público.
+
+Regras Estritas:
+1. A saída deve estar EXCLUSIVAMENTE em CAIXA ALTA (letras maiúsculas).
+2. O texto deve começar OBRIGATORIAMENTE com a frase exata: "PELA DESPESA EMPENHADA REFERENTE A".
+3. Identifique o objeto da despesa de forma sucinta mas completa (ex: aquisição de material de consumo, prestação de serviço de limpeza, etc).
+4. Se houver número de processo, pregão, contrato ou nota fiscal visível, inclua-os no texto.
+5. Não use markdown, apenas texto puro.
+
+Exemplo de formato esperado:
+"PELA DESPESA EMPENHADA REFERENTE A AQUISIÇÃO DE MATERIAIS DE ESCRITÓRIO PARA ATENDER AS NECESSIDADES DA SECRETARIA MUNICIPAL DE SAÚDE, CONFORME PREGÃO ELETRÔNICO N. 12/2024 E CONTRATO N. 05/2024."
+
+Texto do documento:
+---
+{TEXT}
+---`;
+
+  async function extractTextFromFile(file) {
+    if (file.type === 'application/pdf') {
+      // Extract text from PDF using pdf.js
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+      return fullText;
+    } else {
+      // For images, use Tesseract.js OCR
+      const { data: { text } } = await Tesseract.recognize(file, 'por', {
+        logger: m => console.log(m)
+      });
+      return text;
+    }
+  }
+
+  async function generateEmpenhoText(file) {
+    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
+    if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
+
+    // Extract text from file
+    const extractedText = await extractTextFromFile(file);
+    if (!extractedText.trim()) throw new Error('Não foi possível extrair texto do arquivo.');
+
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
+    const prompt = PROMPT_TEMPLATE.replace('{TEXT}', extractedText);
+
+    const resp = await fetch('/api/ia/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: openrouterApiKey, model, messages: [{ role: 'user', content: prompt }], temperature: 0.2 })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err?.error?.message || err?.error || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    let text = data?.choices?.[0]?.message?.content || '';
+    if (!text) throw new Error('Resposta vazia da API.');
+
+    // Enforce rules
+    text = text.toUpperCase().trim().replace(/\*\*/g, '').replace(/\*/g, '');
+    const PREFIX = 'PELA DESPESA EMPENHADA';
+    if (!text.startsWith(PREFIX)) {
+      text = text.startsWith('REFERENTE') ? `${PREFIX} ${text}` : `${PREFIX} REFERENTE A ${text}`;
+    }
+    return text;
+  }
+
+  async function generateFromText(inputText) {
+    const openrouterApiKey = localStorage.getItem('api_openrouter_key') || '';
+    if (!openrouterApiKey) throw new Error('Configure a chave API OpenRouter na aba ADM primeiro.');
+
+    const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
+    const prompt = PROMPT_TEMPLATE.replace('{TEXT}', inputText);
+
+    const resp = await fetch('/api/ia/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: openrouterApiKey, model, messages: [{ role: 'user', content: prompt }], temperature: 0.2 })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err?.error?.message || err?.error || `HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    let text = data?.choices?.[0]?.message?.content || '';
+    if (!text) throw new Error('Resposta vazia da API.');
+
+    // Enforce rules
+    text = text.toUpperCase().trim().replace(/\*\*/g, '').replace(/\*/g, '');
+    const PREFIX = 'PELA DESPESA EMPENHADA';
+    if (!text.startsWith(PREFIX)) {
+      text = text.startsWith('REFERENTE') ? `${PREFIX} ${text}` : `${PREFIX} REFERENTE A ${text}`;
+    }
+    return text;
+  }
+
+  // ── Generate ─────────────────────────────────────────────────
+  btnGenerate.addEventListener('click', async () => {
+    if (!currentFile) return;
+
+    hideError();
+    uploadSection.style.display = 'none';
+    loaderEl.style.display = 'flex';
+    resultSection.style.display = 'none';
+
+    try {
+      const text = await generateEmpenhoText(currentFile);
+      resultTextarea.value = text;
+      loaderEl.style.display = 'none';
+      uploadSection.style.display = '';
+      resultSection.style.display = '';
+      resultTextarea.focus();
+    } catch (err) {
+      loaderEl.style.display = 'none';
+      uploadSection.style.display = '';
+      showError(err instanceof Error ? err.message : 'Erro desconhecido.');
+    }
+  });
+
+  // Force uppercase on manual edit
+  resultTextarea.addEventListener('input', () => {
+    const pos = resultTextarea.selectionStart;
+    resultTextarea.value = resultTextarea.value.toUpperCase();
+    resultTextarea.setSelectionRange(pos, pos);
+  });
+
+  // ── Text Input ───────────────────────────────────────────────
+  const inputText = document.getElementById('input-text');
+  const btnGenerateText = document.getElementById('btn-generate-text');
+  
+  inputText.addEventListener('input', () => {
+    btnGenerateText.disabled = !inputText.value.trim();
+  });
+
+  btnGenerateText.addEventListener('click', async () => {
+    const text = inputText.value.trim();
+    if (!text) return;
+
+    const errorBoxText = document.getElementById('error-box-text');
+    const errorMsgText = document.getElementById('error-msg-text');
+    errorBoxText.style.display = 'none';
+    
+    uploadSection.style.display = 'none';
+    document.getElementById('text-section').style.display = 'none';
+    loaderEl.style.display = 'flex';
+    resultSection.style.display = 'none';
+
+    try {
+      const generated = await generateFromText(text);
+      resultTextarea.value = generated;
+      loaderEl.style.display = 'none';
+      resultSection.style.display = '';
+      resultTextarea.focus();
+    } catch (err) {
+      loaderEl.style.display = 'none';
+      document.getElementById('text-section').style.display = '';
+      errorBoxText.style.display = 'flex';
+      errorMsgText.textContent = err instanceof Error ? err.message : 'Erro desconhecido.';
+    }
+  });
+
+  // ── Reset ────────────────────────────────────────────────────
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    clearFile();
+    inputText.value = '';
+    btnGenerateText.disabled = true;
+    resultSection.style.display = 'none';
+    resultTextarea.value = '';
+    hideError();
+    document.getElementById('error-box-text').style.display = 'none';
+  });
+
+  // ── Copy ─────────────────────────────────────────────────────
+  const btnCopy = document.getElementById('btn-copy');
+  btnCopy.addEventListener('click', async () => {
+    const text = resultTextarea.value.trim();
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = btnCopy.innerHTML;
+      btnCopy.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M20 6L9 17l-5-5"/></svg> Copiado!`;
+      setTimeout(() => { btnCopy.innerHTML = orig; }, 2200);
+    } catch {
+      alert('Não foi possível copiar automaticamente. Selecione o texto manualmente.');
+    }
+  });
+
+  // ── Download ─────────────────────────────────────────────────
+  document.getElementById('btn-download').addEventListener('click', () => {
+    const text = resultTextarea.value.trim();
+    if (!text) return;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'descricao_empenho.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  </script>
+</body>
+</html>

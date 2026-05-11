@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta CNPJ – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <style>
+    .cnpj-wrap { max-width: 860px; margin: 28px auto 60px; padding: 0 24px; }
+    .cnpj-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 28px; margin-bottom: 20px; }
+    .cnpj-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .cnpj-input-row { display: flex; gap: 10px; align-items: stretch; }
+    .cnpj-input { flex: 1; background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 12px 16px; font-family: inherit; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 2px; outline: none; transition: box-shadow .2s; }
+    .cnpj-input:focus { box-shadow: var(--neo-in); }
+    .btn-cnpj { display: inline-flex; align-items: center; gap: 8px; padding: 12px 28px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: white; box-shadow: 3px 3px 10px rgba(79,128,200,.4); transition: all .2s; }
+    .btn-cnpj:hover { box-shadow: 5px 5px 14px rgba(79,128,200,.5); transform: translateY(-1px); }
+    .btn-cnpj:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+    .btn-limpar { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); }
+    .btn-limpar:hover { box-shadow: var(--neo); }
+
+    /* Result card */
+    .result-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+    .result-empresa h2 { font-size: 20px; font-weight: 800; color: var(--text); }
+    .result-empresa .fantasia { font-size: 13px; color: var(--text-3); margin-top: 3px; }
+    .result-empresa .cnpj-fmt { font-size: 12px; color: var(--text-3); margin-top: 2px; font-family: monospace; }
+    .badge-ativa { background: var(--green-bg); color: var(--green-dark); font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+    .badge-inativa { background: var(--red-bg); color: var(--red); font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+    .badge-outra { background: var(--orange-bg); color: var(--orange); font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .info-item { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 14px; }
+    .info-item .lbl { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+    .info-item .val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .section-title { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 10px; }
+    .lista-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 14px; border-bottom: 1px solid rgba(184,194,204,.2); font-size: 13px; }
+    .lista-item:last-child { border-bottom: none; }
+    .lista-item .num { font-size: 11px; font-weight: 700; color: var(--text-3); min-width: 20px; }
+    .lista-item .nome { font-weight: 600; color: var(--text); }
+    .lista-item .qual { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+    .lista-box { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); overflow: hidden; margin-bottom: 14px; }
+
+    .contact-row { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-bottom: 1px solid rgba(184,194,204,.2); font-size: 13px; }
+    .contact-row:last-child { border-bottom: none; }
+    .contact-row .icon { font-size: 16px; }
+    .contact-row .val { font-weight: 600; color: var(--text); }
+    .contact-row .tipo { font-size: 10px; font-weight: 700; color: var(--text-3); background: var(--bg-2,#f0f0f0); padding: 2px 7px; border-radius: 10px; }
+
+    .btn-imprimir { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); font-size: 13px; padding: 9px 18px; }
+    .btn-imprimir:hover { box-shadow: var(--neo); }
+
+    @media print {
+      header, .cnpj-card:not(#resultado), .btn-imprimir, .fonte-badge { display: none !important; }
+      body { background: white !important; }
+      .cnpj-wrap { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
+      #resultado { display: block !important; box-shadow: none !important; padding: 0 !important; }
+      .info-item { box-shadow: none !important; border: 1px solid #ccc; }
+      .lista-box { box-shadow: none !important; border: 1px solid #ccc; }
+      .print-header { display: flex !important; }
+    }
+
+    @media (max-width: 600px) {
+      .cnpj-wrap { padding: 0 12px; margin: 16px auto 80px; }
+      .cnpj-card { padding: 16px; }
+      .cnpj-card h3 { font-size: 14px; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .cnpj-input-row { flex-direction: column; }
+      .cnpj-input { font-size: 16px; padding: 14px; }
+      .btn-cnpj { width: 100%; justify-content: center; min-height: 44px; padding: 14px 20px; }
+      .info-grid { grid-template-columns: 1fr; gap: 10px; }
+      .info-item { padding: 12px; }
+      .result-header { flex-direction: column; gap: 10px; }
+      .result-empresa h2 { font-size: 18px; }
+      .lista-item { padding: 10px 12px; font-size: 12px; }
+      .contact-row { padding: 8px 12px; font-size: 12px; }
+      .section-title { font-size: 11px; margin: 16px 0 8px; }
+      .btn-imprimir { width: 100%; justify-content: center; min-height: 44px; }
+    }
+  </style>
+  <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
+</head>
+<body>
+
+  <div class="cnpj-wrap">
+
+    <div style="margin-bottom:24px;">
+      <h2 style="font-size:22px;font-weight:800;color:var(--text);">🏢 Consulta de CNPJ</h2>
+      <p style="font-size:13px;color:var(--text-3);margin-top:6px;">Dados cadastrais oficiais da Receita Federal via API CNPJá. Razão social, sócios, contatos, endereço e CNAEs.</p>
+    </div>
+
+    <!-- Busca -->
+    <div class="cnpj-card">
+      <h3>🔍 Buscar Empresa</h3>
+      <div class="cnpj-input-row">
+        <input id="input-cnpj" class="cnpj-input" type="text" placeholder="00.000.000/0000-00"
+               maxlength="18" autocomplete="off" inputmode="numeric" />
+        <button id="btn-buscar" class="btn-cnpj" onclick="buscarCNPJ()" data-tooltip="Buscar dados da empresa pelo CNPJ">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Buscar
+        </button>
+        <button class="btn-cnpj btn-limpar" onclick="limpar()">Limpar</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-3);margin-top:10px;">Fonte: <strong>CNPJá</strong> (open.cnpja.com) com fallback para ReceitaWS · Limite: 5 consultas/min</p>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" style="display:none;" class="cnpj-card">
+      <div class="loading-wrap">
+        <div class="spinner-cnpj"></div>
+        <p>Consultando Receita Federal...</p>
+      </div>
+    </div>
+
+    <!-- Erro -->
+    <div id="erro-box" style="display:none;" class="cnpj-card">
+      <div class="error-box" id="erro-msg"></div>
+    </div>
+
+    <!-- Resultado -->
+    <div id="resultado" style="display:none;" class="cnpj-card">
+
+      <!-- Cabeçalho só para impressão -->
+      <div class="print-header">
+        <span><strong>Prefeitura de Inajá</strong> · Consulta CNPJ</span>
+        <span id="print-data"></span>
+      </div>
+
+      <!-- Cabeçalho da empresa -->
+      <div class="result-header">
+        <div class="result-empresa">
+          <h2 id="r-razao"></h2>
+          <div class="fantasia" id="r-fantasia"></div>
+          <div class="cnpj-fmt" id="r-cnpj-fmt"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="r-situacao-badge"></span>
+          <button class="btn-cnpj btn-imprimir" onclick="imprimirCNPJ()" title="Imprimir consulta">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid de informações -->
+      <div class="info-grid">
+        <div class="info-item"><div class="lbl">Data de Abertura</div><div class="val" id="r-abertura">—</div></div>
+        <div class="info-item"><div class="lbl">Data da Situação</div><div class="val" id="r-data-situacao">—</div></div>
+        <div class="info-item"><div class="lbl">Natureza Jurídica</div><div class="val" id="r-natureza">—</div></div>
+        <div class="info-item"><div class="lbl">Porte</div><div class="val" id="r-porte">—</div></div>
+        <div class="info-item"><div class="lbl">Capital Social</div><div class="val" id="r-capital">—</div></div>
+        <div class="info-item"><div class="lbl">Matriz / Filial</div><div class="val" id="r-matriz">—</div></div>
+        <div class="info-item"><div class="lbl">Simples Nacional</div><div class="val" id="r-simples">—</div></div>
+        <div class="info-item"><div class="lbl">MEI</div><div class="val" id="r-mei">—</div></div>
+      </div>
+
+      <!-- Endereço -->
+      <div class="section-title">📍 Endereço</div>
+      <div class="lista-box" style="padding:14px;">
+        <span id="r-endereco" style="font-size:13px;color:var(--text);"></span>
+      </div>
+
+      <!-- CNAE -->
+      <div class="section-title">🏭 Atividade Econômica</div>
+      <div class="lista-box" style="padding:14px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);" id="r-cnae-principal"></div>
+        <div id="r-cnaes-sec" style="margin-top:8px;font-size:12px;color:var(--text-3);"></div>
+      </div>
+
+      <!-- Contatos -->
+      <div id="bloco-contatos" style="display:none;">
+        <div class="section-title">📞 Contatos</div>
+        <div class="lista-box" id="r-contatos"></div>
+      </div>
+
+      <!-- Sócios -->
+      <div id="bloco-socios" style="display:none;">
+        <div class="section-title">👥 Quadro Societário</div>
+        <div class="lista-box" id="r-socios"></div>
+      </div>
+
+      <div class="fonte-badge" id="r-fonte"></div>
+    </div>
+
+  </div><!-- /cnpj-wrap -->
+
+  <script>
+  // Theme
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+    // Máscara CNPJ
+    const inp = document.getElementById('input-cnpj');
+    inp.addEventListener('input', () => {
+      let v = inp.value.replace(/\D/g,'');
+      if (v.length > 14) v = v.slice(0,14);
+      let m = v;
+      if (v.length > 12) m = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8,12)+'-'+v.slice(12);
+      else if (v.length > 8) m = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5,8)+'/'+v.slice(8);
+      else if (v.length > 5) m = v.slice(0,2)+'.'+v.slice(2,5)+'.'+v.slice(5);
+      else if (v.length > 2) m = v.slice(0,2)+'.'+v.slice(2);
+      inp.value = m;
+    });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') buscarCNPJ(); });
+
+    function escHtml(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function formatCNPJ(n) {
+      const v = n.replace(/\D/g,'');
+      if (v.length !== 14) return n;
+      return `${v.slice(0,2)}.${v.slice(2,5)}.${v.slice(5,8)}/${v.slice(8,12)}-${v.slice(12)}`;
+    }
+
+    function mostrar(id, show=true) {
+      document.getElementById(id).style.display = show ? '' : 'none';
+    }
+
+    async function buscarCNPJ() {
+      const cnpj = inp.value.replace(/\D/g,'');
+      if (cnpj.length !== 14) {
+        alert('CNPJ deve ter 14 dígitos.');
+        return;
+      }
+      document.getElementById('btn-buscar').disabled = true;
+      mostrar('loading');
+      mostrar('erro-box', false);
+      mostrar('resultado', false);
+
+      try {
+        const res = await fetch('/api/cnpj/buscar', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({cnpj, api_key_cnpja: localStorage.getItem('api_cnpja_key') || ''})
+        });
+        const data = await res.json();
+        mostrar('loading', false);
+
+        if (!res.ok || data.error) {
+          document.getElementById('erro-msg').textContent = data.error || 'Erro na consulta.';
+          mostrar('erro-box');
+        } else {
+          exibirResultado(data);
+        }
+      } catch(e) {
+        mostrar('loading', false);
+        document.getElementById('erro-msg').textContent = 'Erro de conexão: ' + e.message;
+        mostrar('erro-box');
+      } finally {
+        document.getElementById('btn-buscar').disabled = false;
+      }
+    }
+
+    function exibirResultado(d) {
+      window._lastCnpjData = d;
+      document.getElementById('r-razao').textContent = d.razao_social || '—';
+      document.getElementById('r-fantasia').textContent = d.nome_fantasia ? `"${d.nome_fantasia}"` : '';
+      document.getElementById('r-cnpj-fmt').textContent = formatCNPJ(d.cnpj || '');
+
+      // Badge situação
+      const sit = (d.situacao || '').toUpperCase();
+      const badgeEl = document.getElementById('r-situacao-badge');
+      let cls = 'badge-outra';
+      if (sit.includes('ATIVA') || sit === 'ACTIVE') cls = 'badge-ativa';
+      else if (sit.includes('INATIVA') || sit.includes('BAIXADA') || sit.includes('SUSPENSA')) cls = 'badge-inativa';
+      badgeEl.textContent = d.situacao || '';
+      badgeEl.className = cls;
+
+      // Campos simples
+      const set = (id, val) => { document.getElementById(id).textContent = val || '—'; };
+      set('r-abertura', d.data_abertura);
+      set('r-data-situacao', d.data_situacao);
+      set('r-natureza', d.natureza_juridica);
+      set('r-porte', d.porte);
+      set('r-capital', d.capital_social);
+      set('r-matriz', d.matriz);
+      set('r-simples', d.simples);
+      set('r-mei', d.mei);
+      set('r-endereco', d.endereco);
+      set('r-cnae-principal', d.cnae_principal);
+
+      // CNAEs secundários
+      const csec = d.cnaes_secundarios || [];
+      document.getElementById('r-cnaes-sec').innerHTML = csec.length
+        ? csec.map(c => `<div>• ${escHtml(c)}</div>`).join('')
+        : '';
+
+      // Contatos
+      const contatos = [...(d.telefones||[]).map(t=>`📞 ${t}|tel`), ...(d.emails||[]).map(e=>`📧 ${e}|email`)];
+      if (contatos.length) {
+        document.getElementById('r-contatos').innerHTML = contatos.map(c => {
+          const [val] = c.split('|');
+          return `<div class="contact-row"><span class="val">${escHtml(val)}</span></div>`;
+        }).join('');
+        mostrar('bloco-contatos');
+      } else {
+        mostrar('bloco-contatos', false);
+      }
+
+      // Sócios
+      const socios = d.socios || [];
+      if (socios.length) {
+        document.getElementById('r-socios').innerHTML = socios.map((s,i) => `
+          <div class="lista-item">
+            <span class="num">${i+1}</span>
+            <div><div class="nome">${escHtml(s.nome)}</div><div class="qual">${escHtml(s.qualificacao)}</div></div>
+          </div>`).join('');
+        mostrar('bloco-socios');
+      } else {
+        mostrar('bloco-socios', false);
+      }
+
+      document.getElementById('r-fonte').textContent = `Fonte: ${d.fonte || 'API'}`;
+      mostrar('resultado');
+    }
+
+    function imprimirCNPJ() {
+      document.getElementById('print-data').textContent =
+        'Emitido em: ' + new Date().toLocaleString('pt-BR');
+      window.print();
+    }
+
+    function limpar() {
+      inp.value = '';
+      mostrar('resultado', false);
+      mostrar('erro-box', false);
+      mostrar('loading', false);
+      inp.focus();
+    }
+
+  </script>
+<script>
+(function() {
+  async function askIaCnpj(action, question) {
+    const d = window._lastCnpjData || {};
+    const ctx = {
+      cnpj: d.cnpj,
+      razao_social: d.razao_social,
+      nome_fantasia: d.nome_fantasia,
+      situacao: d.situacao,
+      data_abertura: d.data_abertura,
+      natureza_juridica: d.natureza_juridica,
+      porte: d.porte,
+      capital_social: d.capital_social,
+      endereco: d.logradouro ? `${d.logradouro}, ${d.numero} - ${d.municipio}/${d.uf}` : undefined,
+      cnae_principal: d.cnae_fiscal_descricao || d.cnae_principal,
+      simples: d.opcao_pelo_simples,
+      mei: d.opcao_pelo_mei,
+      socios: (d.qsa || []).slice(0, 5).map(s => ({ nome: s.nome_socio, qualificacao: s.qualificacao_socio }))
+    };
+    const prompts = {
+      analise:     'Analise esta empresa para fins de contratação pelo município: verifique se a situação cadastral está regular, se o CNAE é compatível com serviços municipais típicos, se o porte é adequado e se há pontos de atenção (MEI, empresa recém-aberta, capital social baixo).',
+      regularidade:'Avalie detalhadamente a regularidade desta empresa: situação na Receita Federal, tempo de atividade, natureza jurídica, opção pelo Simples/MEI e quaisquer restrições que possam impedir a contratação pública.',
+      relatorio:   'Gere uma nota técnica de habilitação preliminar desta empresa para anexar ao processo de contratação, conforme exigido pela Lei 14.133/2021. Inclua CNPJ, razão social, situação, atividade principal e parecer.',
+      chat:        question || 'Responda à pergunta sobre esta empresa ou sobre os requisitos para contratação pública.'
+    };
+    const userPrompt = [
+      prompts[action] || prompts.analise, '', 'Dados da empresa:', JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta: ${question}` : ''
+    ].filter(Boolean).join('\n');
+    return await window.callIaFree([
+      { role: 'system', content: 'Você é o fiscal de contratos da Prefeitura de Inajá. Avalia fornecedores para contratação pública conforme a Lei 14.133/2021 (Nova Lei de Licitações), verificando regularidade, compatibilidade de atividade (CNAE) com o objeto do contrato, porte da empresa, tempo de atuação e riscos. Responda de forma objetiva, apontando se a empresa está apta ou se há impedimentos.' },
+      { role: 'user', content: userPrompt }
+    ], { temperature: 0.2, max_tokens: 1200 });
+  }
+  function initIaCnpj() {
+    if (!window.IaChatWidget) { setTimeout(initIaCnpj, 300); return; }
+    window.IaChatWidget.create({
+      title: 'IA Consulta CNPJ',
+      subtitle: 'Habilitação de fornecedores conforme Lei 14.133/2021',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA para CNPJ',
+      chatPlaceholder: 'Ex: Esta empresa pode prestar serviços de TI para a prefeitura?',
+      emptyMessage: 'Consulte um CNPJ primeiro para usar o assistente.',
+      actions: [
+        { id: 'analise',     label: 'Apta para contratar?',  description: 'Situação, CNAE, porte e pontos de atenção para contratação.' },
+        { id: 'regularidade',label: 'Regularidade cadastral',description: 'Receita Federal, tempo de atividade, natureza jurídica e restrições.' },
+        { id: 'relatorio',   label: 'Nota técnica',          description: 'Nota de habilitação preliminar conforme Lei 14.133/2021.' },
+        { id: 'chat',        label: 'Chat',                  description: 'Pergunta sobre a empresa ou requisitos de contratação pública.' }
+      ],
+      shortcuts: [
+        { label: 'Apta para contratar?',   action: 'analise' },
+        { label: 'Regularidade cadastral', action: 'regularidade' },
+        { label: 'Nota técnica',           action: 'relatorio' }
+      ],
+      hasData: () => Boolean(window._lastCnpjData),
+      onRun: ({ action, question }) => askIaCnpj(action, question)
+    });
+  }
+  initIaCnpj();
+})();
+</script>
+</body>
+</html>

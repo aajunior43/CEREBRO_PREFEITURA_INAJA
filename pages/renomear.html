@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Renomear com IA – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src='https://unpkg.com/tesseract.js@5/dist/tesseract.min.js'></script>
+  <style>
+    .ren-page {
+      background: var(--bg);
+      min-height: calc(100vh - 64px);
+      padding: 20px 16px 60px
+    }
+
+    .ren-hero {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      max-width: 960px;
+      margin: 0 auto 14px
+    }
+
+    .ren-hero-icon {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--blue), #7c3aed);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 10px rgba(79, 128, 200, .3)
+    }
+
+    .ren-hero h2 {
+      font-size: clamp(17px, 4vw, 22px);
+      font-weight: 800;
+      color: var(--text);
+      margin: 0
+    }
+
+    .ren-hero p {
+      font-size: 12px;
+      color: var(--text-3);
+      margin: 2px 0 0
+    }
+
+    /* Stats bar */
+    .ren-stats {
+      max-width: 960px;
+      margin: 0 auto 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .ren-stat {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-sm);
+      padding: 10px 16px;
+      flex: 1;
+      min-width: 100px;
+      text-align: center
+    }
+
+    .ren-stat-v {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--blue)
+    }
+
+    .ren-stat-l {
+      font-size: 10px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .5px
+    }
+
+    /* Warn */
+    .ren-warn {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: var(--radius-sm);
+      padding: 11px 14px;
+      font-size: 13px;
+      color: #92400e;
+      margin: 0 auto 14px;
+      max-width: 960px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5
+    }
+
+    .ren-warn a {
+      color: #92400e;
+      font-weight: 700
+    }
+
+    /* Drop zone */
+    .ren-drop {
+      border: 2px dashed rgba(79, 128, 200, .35);
+      border-radius: var(--radius);
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .2s;
+      background: var(--bg);
+      box-shadow: var(--neo);
+      max-width: 960px;
+      margin: 0 auto 14px
+    }
+
+    .ren-drop:hover,
+    .ren-drop.drag-over {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, .04)
+    }
+
+    .ren-drop-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--blue), #7c3aed);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      box-shadow: 2px 2px 10px rgba(79, 128, 200, .3)
+    }
+
+    .ren-drop-title {
+      font-size: clamp(14px, 3.5vw, 17px);
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 4px
+    }
+
+    .ren-drop-sub {
+      font-size: 12px;
+      color: var(--text-3);
+      margin: 0
+    }
+
+    .ren-drop-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--blue);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 2px 2px 8px rgba(79, 128, 200, .35)
+    }
+
+    /* Progress */
+    .ren-prog-wrap {
+      max-width: 960px;
+      margin: 0 auto 10px
+    }
+
+    .ren-prog-label {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between
+    }
+
+    .ren-prog-bar {
+      height: 6px;
+      background: rgba(79, 128, 200, .15);
+      border-radius: 3px;
+      overflow: hidden
+    }
+
+    .ren-prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), #7c3aed);
+      border-radius: 3px;
+      transition: width .3s
+    }
+
+    /* Toolbar */
+    .ren-toolbar {
+      max-width: 960px;
+      margin: 0 auto 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    .ren-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      transition: all .15s;
+      min-height: 40px;
+      white-space: nowrap
+    }
+
+    .ren-btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark, #3563b8));
+      color: white;
+      box-shadow: 2px 2px 8px rgba(79, 128, 200, .4)
+    }
+
+    .ren-btn-primary:hover {
+      box-shadow: 3px 3px 12px rgba(79, 128, 200, .5);
+      transform: translateY(-1px)
+    }
+
+    .ren-btn-primary:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none !important
+    }
+
+    .ren-btn-secondary {
+      background: var(--bg);
+      color: var(--text-2);
+      box-shadow: var(--neo-sm)
+    }
+
+    .ren-btn-secondary:hover {
+      box-shadow: var(--neo);
+      color: var(--text)
+    }
+
+    .ren-btn-danger {
+      background: var(--bg);
+      color: var(--red, #e11d48);
+      box-shadow: var(--neo-sm);
+      margin-left: auto
+    }
+
+    .ren-btn-danger:hover {
+      box-shadow: var(--neo)
+    }
+
+    .ren-model-info {
+      font-size: 11px;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 5px
+    }
+
+    .ren-model-badge {
+      background: rgba(79, 128, 200, .12);
+      color: var(--blue);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    /* Table */
+    .ren-table-wrap {
+      max-width: 960px;
+      margin: 0 auto 14px;
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--neo);
+      overflow: hidden;
+      display: none
+    }
+
+    @media(min-width:640px) {
+      .ren-table-wrap {
+        display: block
+      }
+
+      .ren-cards {
+        display: none !important
+      }
+
+      .ren-page {
+        padding: 24px 20px 80px
+      }
+    }
+
+    .ren-table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    .ren-table th {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(0, 0, 0, .07);
+      background: var(--bg)
+    }
+
+    .ren-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+      vertical-align: middle;
+      font-size: 13px
+    }
+
+    .ren-table tr:last-child td {
+      border-bottom: none
+    }
+
+    .ren-table tr:hover td {
+      background: rgba(79, 128, 200, .025)
+    }
+
+    /* Badges */
+    .ren-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap
+    }
+
+    .ren-badge-wait {
+      background: rgba(0, 0, 0, .06);
+      color: var(--text-3)
+    }
+
+    .ren-badge-proc {
+      background: rgba(79, 128, 200, .12);
+      color: var(--blue)
+    }
+
+    .ren-badge-done {
+      background: rgba(34, 197, 94, .12);
+      color: #15803d
+    }
+
+    .ren-badge-err {
+      background: rgba(239, 68, 68, .1);
+      color: var(--red, #e11d48)
+    }
+
+    /* Input name */
+    .ren-inp {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      padding: 5px 7px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      width: 100%;
+      outline: none;
+      transition: all .15s
+    }
+
+    .ren-inp:focus {
+      background: var(--bg);
+      border-color: var(--blue);
+      box-shadow: var(--neo-in-sm, inset 0 1px 4px rgba(0, 0, 0, .08))
+    }
+
+    /* Action Buttons */
+    .ren-act {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 9px;
+      min-height: 34px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      transition: all .15s;
+      background: var(--bg);
+      box-shadow: var(--neo-sm);
+      color: var(--text-2)
+    }
+
+    .ren-act:hover {
+      box-shadow: var(--neo);
+      color: var(--text)
+    }
+
+    .ren-act:disabled {
+      opacity: .4;
+      cursor: not-allowed
+    }
+
+    .ren-act-dl {
+      color: var(--blue)
+    }
+
+    .ren-act-rm {
+      color: var(--red, #e11d48)
+    }
+
+    .ren-act-fb {
+      color: #f59e0b
+    }
+
+    /* Cards mobile */
+    .ren-cards {
+      max-width: 960px;
+      margin: 0 auto 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .ren-card {
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-sm);
+      padding: 13px
+    }
+
+    .ren-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap
+    }
+
+    /* Spinner */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .spin {
+      display: inline-block;
+      animation: spin .7s linear infinite
+    }
+
+    /* Modal overlay */
+    .ren-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      z-index: 5000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px
+    }
+
+    .ren-modal {
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, .22);
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column
+    }
+
+    .ren-modal-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, .07);
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .ren-modal-head h3 {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 0;
+      color: var(--text)
+    }
+
+    .ren-modal-body {
+      overflow-y: auto;
+      padding: 16px 20px;
+      flex: 1
+    }
+
+    .ren-modal-foot {
+      padding: 12px 20px;
+      border-top: 1px solid rgba(0, 0, 0, .07);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end
+    }
+
+    .ren-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text-3);
+      line-height: 1
+    }
+
+    /* Template list */
+    .tpl-item {
+      border: 1px solid rgba(0, 0, 0, .08);
+      border-radius: var(--radius-sm);
+      padding: 11px 13px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all .15s;
+      background: var(--bg)
+    }
+
+    .tpl-item:hover {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, .04)
+    }
+
+    .tpl-item.active {
+      border-color: var(--blue);
+      background: rgba(79, 128, 200, .08)
+    }
+
+    .tpl-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text)
+    }
+
+    .tpl-desc {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: 2px
+    }
+
+    .tpl-cat {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 700;
+      background: rgba(79, 128, 200, .12);
+      color: var(--blue);
+      display: inline-block;
+      margin-top: 4px
+    }
+
+    .tpl-form label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-2);
+      margin-bottom: 4px;
+      margin-top: 12px
+    }
+
+    .tpl-form input,
+    .tpl-form select,
+    .tpl-form textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid rgba(0, 0, 0, .12);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      box-sizing: border-box
+    }
+
+    .tpl-form textarea {
+      min-height: 120px;
+      resize: vertical
+    }
+
+    .tpl-form input:focus,
+    .tpl-form select:focus,
+    .tpl-form textarea:focus {
+      border-color: var(--blue)
+    }
+
+    /* History */
+    .hist-item {
+      padding: 10px 13px;
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+      font-size: 12px
+    }
+
+    .hist-item:last-child {
+      border-bottom: none
+    }
+
+    .hist-orig {
+      color: var(--text-3);
+      text-decoration: line-through;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .hist-new {
+      color: var(--text);
+      font-weight: 700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-top: 2px
+    }
+
+    .hist-meta {
+      color: var(--text-3);
+      font-size: 10px;
+      margin-top: 2px
+    }
+
+    /* Feedback */
+    .fb-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      opacity: .5;
+      transition: opacity .15s;
+      padding: 2px 4px
+    }
+
+    .fb-btn:hover {
+      opacity: 1
+    }
+
+    .fb-btn.active {
+      opacity: 1
+    }
+
+    /* Retry badge */
+    .ren-retry-badge {
+      font-size: 10px;
+      color: var(--blue);
+      background: rgba(79, 128, 200, .1);
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px
+    }
+
+    /* Cache badge */
+    .ren-cache-badge {
+      font-size: 10px;
+      color: #15803d;
+      background: rgba(34, 197, 94, .1);
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 6px
+    }
+
+    @media (max-width: 600px) {
+      .ren-page { padding: 16px 12px 80px; }
+      .ren-hero { flex-direction: column; text-align: center; gap: 10px; }
+      .ren-hero-icon { width: 40px; height: 40px; }
+      .ren-hero h2 { font-size: 18px; }
+      .ren-hero p { font-size: 11px; }
+      .ren-stats { gap: 6px; }
+      .ren-stat { padding: 8px 12px; min-width: 80px; }
+      .ren-stat-v { font-size: 18px; }
+      .ren-stat-l { font-size: 9px; }
+      .ren-drop { padding: 20px 16px; }
+      .ren-drop-icon { width: 44px; height: 44px; }
+      .ren-drop-title { font-size: 15px; }
+      .ren-drop-sub { font-size: 11px; }
+      .ren-drop-btn { min-height: 44px; padding: 10px 20px; font-size: 14px; }
+      .ren-toolbar { flex-direction: column; align-items: stretch; gap: 6px; }
+      .ren-btn { min-height: 44px; justify-content: center; width: 100%; }
+      .ren-btn-danger { margin-left: 0; }
+      .ren-card { padding: 10px; }
+      .ren-card-actions { flex-direction: column; }
+      .ren-card-actions .ren-act { min-height: 44px; width: 100%; justify-content: center; }
+      .ren-act { min-height: 44px; padding: 8px 12px; }
+      .ren-modal { max-width: 95%; margin: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-height: 92vh; }
+      .ren-modal-head { padding: 14px 16px; }
+      .ren-modal-head h3 { font-size: 15px; }
+      .ren-modal-body { padding: 12px 16px; }
+      .ren-modal-foot { padding: 10px 16px; }
+      .ren-close { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
+      .tpl-form input,
+      .tpl-form select,
+      .tpl-form textarea { padding: 10px; font-size: 16px; }
+      .fb-btn { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    }
+  </style>
+  <script defer src="/static/js/shared-header.js"></script>
+</head>
+
+<body>
+
+  <div class="ren-page">
+    <div class="ren-hero">
+      <div class="ren-hero-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
+          stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg></div>
+      <div>
+        <h2>Renomeador de Documentos com IA</h2>
+        <p>OpenRouter analisa o conteúdo e sugere nomes profissionais · PDF, Word, Imagens · Retry automático · Cache ·
+          Histórico</p>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="ren-stats">
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-total">0</div>
+        <div class="ren-stat-l">Total</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-ok" style="color:#15803d">0</div>
+        <div class="ren-stat-l">Concluídos</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-err" style="color:var(--red,#e11d48)">0</div>
+        <div class="ren-stat-l">Erros</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-cache" style="color:#7c3aed">0</div>
+        <div class="ren-stat-l">Do Cache</div>
+      </div>
+      <div class="ren-stat">
+        <div class="ren-stat-v" id="stat-hist">0</div>
+        <div class="ren-stat-l">Histórico</div>
+      </div>
+    </div>
+
+    <div id="warn-key" class="ren-warn" style="display:none">⚠️ <span>Chave OpenRouter não configurada. <a
+          href="/" onclick="sessionStorage.setItem('openAdm','1')">Configure no ADM →</a></span></div>
+
+    <div class="ren-drop" id="drop-zone" onclick="document.getElementById('file-inp').click()"
+      ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+      <div class="ren-drop-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white"
+          stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg></div>
+      <p class="ren-drop-title" data-tooltip="Arraste PDFs ou imagens aqui">Arraste arquivos aqui</p>
+      <p class="ren-drop-sub">PDF · Word (.docx) · Imagens (JPEG, PNG, WebP) · Múltiplos arquivos</p>
+      <span class="ren-drop-btn">📂 Selecionar arquivos</span>
+    </div>
+    <input type="file" id="file-inp"
+      accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.webp,.gif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
+      multiple style="display:none" onchange="onFileInput(event)" />
+
+    <div class="ren-prog-wrap" id="prog-wrap" style="display:none">
+      <div class="ren-prog-label"><span id="prog-txt">Processando…</span><span id="prog-pct">0%</span></div>
+      <div class="ren-prog-bar">
+        <div class="ren-prog-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="ren-toolbar" id="toolbar" style="display:none">
+      <button class="ren-btn ren-btn-primary" id="btn-all" onclick="processAll()" data-tooltip="Renomear arquivos automaticamente com IA">✨ Processar Todos</button>
+      <button class="ren-btn ren-btn-secondary" id="btn-dl-all" onclick="downloadAll()">⬇️ Baixar Todos</button>
+      <button class="ren-btn ren-btn-secondary" onclick="openHistory()">🕐 Histórico</button>
+      <div class="ren-model-info">Modelo:&nbsp;<span class="ren-model-badge" id="model-badge">—</span><a
+          href="/" style="font-size:11px;color:var(--blue);"
+          onclick="sessionStorage.setItem('openAdm','1')">trocar</a></div>
+      <button class="ren-btn ren-btn-danger" onclick="clearAll()">🗑 Limpar</button>
+    </div>
+
+    <div class="ren-table-wrap" id="table-wrap">
+      <table class="ren-table">
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Arquivo Original</th>
+            <th>Nome Sugerido pela IA</th>
+            <th style="width:100px">Status</th>
+            <th style="width:170px">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="file-tbody"></tbody>
+      </table>
+    </div>
+    <div class="ren-cards" id="file-cards"></div>
+  </div>
+
+  <div id="toast"
+    style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:none;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:90vw;text-align:center;transition:opacity .3s">
+  </div>
+
+  <!-- History Modal -->
+  <div class="ren-overlay" id="modal-hist" style="display:none" onclick="if(event.target===this)closeHist()">
+    <div class="ren-modal">
+      <div class="ren-modal-head">
+        <h3>🕐 Histórico de Renomeações</h3><button class="ren-close" onclick="closeHist()">✕</button>
+      </div>
+      <div class="ren-modal-body" id="hist-body"></div>
+      <div class="ren-modal-foot">
+        <button class="ren-btn ren-btn-danger" onclick="clearHistory()">🗑 Limpar</button>
+        <button class="ren-btn ren-btn-secondary" onclick="exportHistory()">⬇️ Exportar JSON</button>
+        <button class="ren-btn ren-btn-secondary" onclick="closeHist()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Theme
+  (function() {
+    const saved = localStorage.getItem('theme') || 'light';
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+    try { if (typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } catch(e) {}
+
+    // ── CACHE ──────────────────────────────────────────────────────────────────
+    const aiCache = new Map(); // key: name+size+templateId → suggestedName
+    function cacheKey(file) { return `${file.name}|${file.size}`; }
+
+    // ── HISTORY ────────────────────────────────────────────────────────────────
+    const HIST_KEY = 'renamer_history_v2';
+    function loadHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch (e) { return []; } }
+    function saveHistory(h) { try { localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, 200))); } catch (e) { } }
+    function addHistory(orig, newn, type, size) {
+      const h = loadHistory();
+      h.unshift({ id: Date.now() + '-' + Math.random().toString(36).slice(2), orig, newn, type, size, ts: new Date().toISOString() });
+      saveHistory(h);
+      updateCounters();
+    }
+
+    // ── PROMPT ─────────────────────────────────────────────────────────────────
+    const RENAME_PROMPT = `Gere um nome de arquivo para este documento público brasileiro.
+REGRAS: MAIÚSCULAS + números + underscore apenas. Sem espaços. Máximo 60 chars.
+Formato: TIPO_DESCRICAO_DATA
+Exemplos: SOLICITACAO_SERVICO_LAVAGEM_VEICULOS_2024, NOTA_FISCAL_EMPRESA_ABC_20240315
+Responda SOMENTE com o nome, nada mais.
+
+TEXTO:
+[CONTEUDO]`;
+
+    function getActivePrompt(fileType, content) {
+      return RENAME_PROMPT.replace('[CONTEUDO]', (content || fileType).substring(0, 2000));
+    }
+
+    // Gera nome localmente do texto OCR quando IA falha
+    function buildNameFromText(text, origName) {
+      if (!text || text.length < 10) return null;
+      const up = text.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const parts = [];
+      // Detecta tipo do documento
+      const tipos = [
+        ['SOLICITACAO DE SERVICO','SOLICITACAO_SERVICO'], ['SOLICITACAO DE COMPRA','SOLICITACAO_COMPRA'],
+        ['NOTA FISCAL','NOTA_FISCAL'], ['RECIBO','RECIBO'], ['CONTRATO','CONTRATO'],
+        ['EMPENHO','EMPENHO'], ['LIQUIDACAO','LIQUIDACAO'], ['CERTIDAO','CERTIDAO'],
+        ['EXTRATO','EXTRATO'], ['RELATORIO','RELATORIO'], ['DECLARACAO','DECLARACAO'],
+        ['PORTARIA','PORTARIA'], ['DECRETO','DECRETO'], ['OFICIO','OFICIO'],
+        ['ATA','ATA'], ['MEMORANDO','MEMORANDO'], ['SOLICITACAO','SOLICITACAO'],
+        ['ORDEM DE SERVICO','ORDEM_SERVICO'], ['ORDEM DE PAGAMENTO','ORDEM_PAGAMENTO'],
+      ];
+      let tipo = '';
+      for (const [pat, label] of tipos) {
+        if (up.includes(pat)) { tipo = label; break; }
+      }
+      if (tipo) parts.push(tipo);
+      // Extrai palavras-chave relevantes (linhas curtas com conteúdo)
+      const lines = up.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 3 && l.length < 60 && !/CNPJ|CEP|EMAIL|TELEFON|AV\.|RUA |ESTADO|MUNICIPIO/.test(l));
+      const keywords = [];
+      for (const line of lines.slice(2, 10)) {
+        const clean = line.replace(/[^A-Z0-9 ]/g, ' ').replace(/\s+/g, '_').replace(/^_|_$/g, '');
+        if (clean.length > 3 && clean.length < 40 && !parts.join('').includes(clean.split('_')[0])) {
+          keywords.push(clean);
+          if (keywords.length >= 2) break;
+        }
+      }
+      parts.push(...keywords);
+      // Extrai data
+      const dateMatch = text.match(/\d{2}\/\d{2}\/(\d{4})/);
+      if (dateMatch) parts.push(dateMatch[1]);
+      const result = parts.join('_').replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 70);
+      return result.length >= 8 ? result : null;
+    }
+
+    // ── STATE ──────────────────────────────────────────────────────────────────
+    const files = []; // {file,origName,type,sugName,status,error,fromCache,retries}
+    let processing = false;
+
+    // ── CACHE ──────────────────────────────────────────────────────────────────
+
+    // ── INIT ───────────────────────────────────────────────────────────────────
+    window.addEventListener('load', () => {
+      const k = localStorage.getItem('api_openrouter_key') || '';
+      document.getElementById('warn-key').style.display = k ? 'none' : 'flex';
+      updateModelBadge();
+      updateCounters();
+    });
+    function updateModelBadge() {
+      const m = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+      document.getElementById('model-badge').textContent = m;
+    }
+    function updateCounters() {
+      document.getElementById('stat-total').textContent = files.length || '0';
+      document.getElementById('stat-ok').textContent = files.filter(f => f.status === 'done').length || '0';
+      document.getElementById('stat-err').textContent = files.filter(f => f.status === 'error').length || '0';
+      document.getElementById('stat-cache').textContent = files.filter(f => f.fromCache).length || '0';
+      document.getElementById('stat-hist').textContent = loadHistory().length || '0';
+    }
+
+    // ── FILE TYPE UTILS ────────────────────────────────────────────────────────
+    function getFileType(file) {
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return 'PDF';
+      if (file.type.includes('word') || file.name.toLowerCase().match(/\.docx?$/)) return 'Word';
+      if (file.type.startsWith('image/')) return 'Imagem';
+      return 'documento';
+    }
+    function isAccepted(file) {
+      return getFileType(file) !== 'documento' || file.type === 'application/pdf';
+    }
+    function fileIcon(type) { return { PDF: '📄', Word: '📝', Imagem: '🖼️' }[type] || '📁'; }
+
+    // ── DRAG & DROP ────────────────────────────────────────────────────────────
+    function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+    function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+    function onDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag-over'); addFiles(Array.from(e.dataTransfer.files)); }
+    function onFileInput(e) { addFiles(Array.from(e.target.files)); e.target.value = ''; }
+
+    function addFiles(list) {
+      const valid = list.filter(f => isAccepted(f));
+      if (!valid.length) { showToast('Formato não suportado. Use PDF, Word ou Imagem.', 'error'); return; }
+      for (const f of valid) {
+        files.push({ file: f, origName: f.name, type: getFileType(f), sugName: '', status: 'wait', error: '', fromCache: false, retries: 0 });
+      }
+      renderAll();
+      showToast(`${valid.length} arquivo(s) adicionado(s)`, 'success');
+    }
+
+    // ── RENDER ─────────────────────────────────────────────────────────────────
+    function renderAll() {
+      const show = files.length > 0;
+      document.getElementById('toolbar').style.display = show ? 'flex' : 'none';
+      renderTable(); renderCards(); updateModelBadge(); updateCounters();
+    }
+    function renderTable() {
+      const tb = document.getElementById('file-tbody'); tb.innerHTML = '';
+      files.forEach((item, idx) => {
+        const tr = document.createElement('tr'); tr.id = `trow-${idx}`;
+        const cacheB = item.fromCache ? `<span class="ren-cache-badge">cache</span>` : '';
+        const retryB = item.retries > 0 ? `<span class="ren-retry-badge">${item.retries}× retry</span>` : '';
+        tr.innerHTML = `
+        <td style="color:var(--text-3);font-size:12px">${idx + 1}</td>
+        <td><div style="font-size:12.5px;font-weight:500;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(item.origName)}">${fileIcon(item.type)} ${esc(item.origName)}</div>
+            <div style="font-size:10px;color:var(--text-3)">${item.type} · ${fmtSize(item.file.size)}${cacheB}${retryB}</div></td>
+        <td>${nameCell(item, idx)}</td>
+        <td>${badgeHtml(item.status)}</td>
+        <td style="white-space:nowrap">${actionsHtml(item, idx)}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+    function renderCards() {
+      const c = document.getElementById('file-cards'); c.innerHTML = '';
+      files.forEach((item, idx) => {
+        const card = document.createElement('div'); card.className = 'ren-card'; card.id = `card-${idx}`;
+        card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <div style="overflow:hidden"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fileIcon(item.type)} ${esc(item.origName)}</div>
+          <div style="font-size:11px;color:var(--text-3)">${fmtSize(item.file.size)} · ${badgeHtml(item.status)}</div></div>
+        </div>
+        ${item.status === 'done' ? `<div style="font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:4px">Nome Sugerido</div>
+          <input class="ren-inp" style="background:var(--bg);border:1px solid rgba(79,128,200,.3);border-radius:6px;padding:7px 9px;font-size:12px" value="${esc(item.sugName)}" id="cinp-${idx}" onchange="files[${idx}].sugName=this.value"/>`
+            : item.status === 'proc' ? `<div style="font-size:12px;color:var(--blue)"><span class="spin">⚙️</span> Analisando…</div>`
+              : item.status === 'error' ? `<div style="font-size:12px;color:var(--red,#e11d48)" title="${esc(item.error)}">❌ ${esc(item.error.substring(0, 80))}</div>` : ''}
+        <div class="ren-card-actions">
+          <button class="ren-btn ren-btn-primary" onclick="processSingle(${idx})" ${processing || item.status === 'proc' ? 'disabled' : ''} style="font-size:12px;padding:8px 10px;flex:1">✨ Analisar</button>
+          ${item.status === 'done' ? `<button class="ren-btn ren-btn-secondary" onclick="downloadOne(${idx})" style="font-size:12px;padding:8px 10px">⬇️ Baixar</button>` : ''}
+          <button class="ren-btn ren-btn-danger" onclick="removeFile(${idx})" style="font-size:12px;padding:8px 10px">✕</button>
+        </div>`;
+        c.appendChild(card);
+      });
+    }
+    function nameCell(item, idx) {
+      if (item.status === 'wait') return `<span style="font-size:12px;color:var(--text-3);font-style:italic">—</span>`;
+      if (item.status === 'proc') return `<span class="spin">⚙️</span> <span style="font-size:12px;color:var(--blue)">Analisando…</span>`;
+      if (item.status === 'done') return `<input class="ren-inp" id="inp-${idx}" value="${esc(item.sugName)}" onchange="files[${idx}].sugName=this.value"/>`;
+      return `<span style="font-size:12px;color:var(--red,#e11d48)" title="${esc(item.error)}">❌ ${esc(item.error.substring(0, 55))}</span>`;
+    }
+    function actionsHtml(item, idx) {
+      return `<button class="ren-act" onclick="processSingle(${idx})" ${processing || item.status === 'proc' ? 'disabled' : ''} title="Analisar">✨</button>` +
+        (item.status === 'done' ? `<button class="ren-act ren-act-dl" onclick="downloadOne(${idx})" title="Baixar">⬇️</button>` : '')
+        + `<button class="ren-act ren-act-rm" onclick="removeFile(${idx})" title="Remover">✕</button>`;
+    }
+    function badgeHtml(st) {
+      const cls = { wait: 'ren-badge-wait', proc: 'ren-badge-proc', done: 'ren-badge-done', error: 'ren-badge-err' };
+      const lbl = { wait: 'Aguardando', proc: 'Processando', done: 'Concluído', error: 'Erro' };
+      return `<span class="ren-badge ${cls[st] || ''}">${lbl[st] || st}</span>`;
+    }
+    // ── TEXT EXTRACTION ────────────────────────────────────────────────────────
+    async function extractText(file) {
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      let text = '';
+      for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+        const pg = await pdf.getPage(i);
+        const c = await pg.getTextContent();
+        text += c.items.map(it => it.str).join(' ') + '\n';
+      }
+      return text.trim();
+    }
+    async function pdfFirstPageCanvas(file) {
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      const page = await pdf.getPage(1);
+      const vp = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      return canvas;
+    }
+
+    async function ocrCanvas(canvas) {
+      const worker = await Tesseract.createWorker('por+eng');
+      const { data: { text } } = await worker.recognize(canvas);
+      await worker.terminate();
+      return text.trim();
+    }
+
+    async function ocrFile(file) {
+      const worker = await Tesseract.createWorker('por+eng');
+      const url = URL.createObjectURL(file);
+      const { data: { text } } = await worker.recognize(url);
+      await worker.terminate();
+      URL.revokeObjectURL(url);
+      return text.trim();
+    }
+
+    // ── RETRY LOGIC ────────────────────────────────────────────────────────────
+    async function withRetry(fn, maxAttempts = 3, baseDelay = 1500) {
+      let lastErr;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try { return await fn(attempt); }
+        catch (e) {
+          lastErr = e;
+          const msg = (e.message || '').toLowerCase();
+          const isOverload = msg.includes('overload') || msg.includes('503') || msg.includes('502') || msg.includes('rate') || msg.includes('429');
+          if (!isOverload || attempt >= maxAttempts) throw e;
+          const delay = baseDelay * Math.pow(2, attempt - 1) + (Math.random() * 500);
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+      throw lastErr;
+    }
+
+    // ── CALL OPENROUTER ────────────────────────────────────────────────────────
+    async function callAPI(content, attempt) {
+      const key = localStorage.getItem('api_openrouter_key') || '';
+      if (!key) throw new Error('Chave OpenRouter não configurada (ADM → OpenRouter)');
+      const model = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.3-70b-instruct:free';
+      const res = await fetch('/api/ia/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: key, model, messages: [{ role: 'user', content }], max_tokens: 200, temperature: 0.2 })
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.error?.message || data.error || `Erro HTTP ${res.status}`;
+        throw new Error(`[${model}] ${msg}`);
+      }
+      const data = await res.json();
+      if (!data.choices?.length) throw new Error('API não retornou resposta');
+      const raw = data.choices[0].message.content.trim();
+      return extractFileName(raw);
+    }
+
+    // Extrai o nome do arquivo de uma resposta livre da IA
+    function extractFileName(raw) {
+      if (!raw) return '';
+      const up = raw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      // 1. Se a resposta inteira (sem espaços) já é um nome válido, usa direto
+      const direct = up.replace(/\s+/g, '_').replace(/[^A-Z0-9_\-]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      if (direct.length >= 5 && direct.length <= 80 && !direct.includes(' ') && direct === up.replace(/\s/g,'').replace(/[^A-Z0-9_\-]/g,'')) {
+        return direct.substring(0, 80);
+      }
+      // 2. Procura padrões de nome de arquivo (UPPERCASE_COM_UNDERSCORES) na resposta
+      const tokens = up.match(/[A-Z][A-Z0-9_\-]{4,79}/g) || [];
+      // Prefere tokens que contenham palavras-chave de documentos municipais
+      const keywords = ['EMPENHO','NOTA','FISCAL','CONTRATO','EXTRATO','RECIBO','CERTIDAO','LIQUIDACAO','RELATORIO','PORTARIA','DECRETO','OFICIO','ATA','COMPROVANTE','ORDEM','PAGAMENTO','SOLICITACAO'];
+      const withKw = tokens.filter(t => keywords.some(k => t.includes(k)));
+      if (withKw.length) return withKw.sort((a,b) => b.length - a.length)[0].substring(0, 80);
+      // 3. Pega o token mais longo que pareça nome de arquivo
+      tokens.sort((a,b) => b.length - a.length);
+      return (tokens[0] || '').substring(0, 80);
+    }
+
+    // ── CLEAN NAME ─────────────────────────────────────────────────────────────
+    // Normaliza o nome (remove acentos, espaços, extensão) com fallback no nome original
+    function cleanName(raw, origName) {
+      const cleaned = (raw || '').toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\.(PDF|DOCX?|JPE?G|PNG|WEBP)$/i, '')
+        .replace(/[^A-Z0-9_\-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
+        .substring(0, 80);
+      if (cleaned && cleaned.length >= 5) return cleaned;
+      // fallback: limpa o nome original do arquivo
+      const fallback = (origName || 'DOCUMENTO').toUpperCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\.[^.]+$/, '').replace(/[^A-Z0-9_\-]/g, '_')
+        .replace(/_+/g, '_').replace(/^_|_$/g, '').substring(0, 80);
+      return fallback || 'DOCUMENTO';
+    }
+
+    // ── PROCESS SINGLE ─────────────────────────────────────────────────────────
+    async function processSingle(idx) {
+      if (files[idx].status === 'proc') return;
+      const item = files[idx];
+      // check cache
+      const ck = cacheKey(item.file);
+      if (aiCache.has(ck)) {
+        item.sugName = aiCache.get(ck); item.status = 'done'; item.fromCache = true;
+        renderAll(); showToast('✅ Nome obtido do cache', 'success'); return;
+      }
+      item.status = 'proc'; item.retries = 0; renderAll();
+      try {
+        let msgContent;
+        if (item.type === 'PDF') {
+          let text = await extractText(item.file);
+          console.log(`[RENOMEAR] PDF texto extraído (${text.length} chars):`, text.substring(0, 200));
+          if (text.length < 50) {
+            item.error = 'OCR em andamento…'; renderAll();
+            try {
+              const canvas = await pdfFirstPageCanvas(item.file);
+              text = await ocrCanvas(canvas);
+              console.log(`[RENOMEAR] OCR resultado (${text.length} chars):`, text.substring(0, 200));
+            } catch (e) { console.warn('[RENOMEAR] OCR falhou:', e); text = ''; }
+          }
+          item._ocrText = text;
+          const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (sem texto legível)`;
+          console.log('[RENOMEAR] Conteúdo enviado para IA:', content.substring(0, 300));
+          msgContent = getActivePrompt('PDF', content);
+        } else if (item.type === 'Imagem') {
+          item.error = 'OCR em andamento…'; renderAll();
+          let text = '';
+          try {
+            text = await ocrFile(item.file);
+            console.log(`[RENOMEAR] OCR imagem (${text.length} chars):`, text.substring(0, 200));
+          } catch (e) { console.warn('[RENOMEAR] OCR imagem falhou:', e); text = ''; }
+          item._ocrText = text;
+          const content = text.length >= 20 ? text.substring(0, 4000) : `Nome original: ${item.origName} (imagem sem texto)`;
+          msgContent = getActivePrompt('Imagem', content);
+        } else {
+          msgContent = getActivePrompt('Word', `Nome original: ${item.origName}`);
+        }
+        item.error = '';
+        let retryCount = 0;
+        const suggestion = await withRetry(async (attempt) => {
+          retryCount = attempt - 1;
+          item.retries = retryCount; renderTable();
+          return callAPI(msgContent, attempt);
+        }, 3, 1500);
+        console.log('[RENOMEAR] Resposta bruta da IA:', suggestion);
+        // Usa fallback local se IA retornar vazio
+        let finalName = suggestion ? cleanName(suggestion, item.origName) : null;
+        if (!finalName || finalName === cleanName('', item.origName)) {
+          // tenta gerar localmente do OCR/texto
+          const ocrText = item._ocrText || '';
+          finalName = cleanName(buildNameFromText(ocrText, item.origName) || suggestion, item.origName);
+          if (ocrText) console.log('[RENOMEAR] Usando fallback local:', finalName);
+        }
+        console.log('[RENOMEAR] Nome final:', finalName);
+        item.sugName = finalName; item.status = 'done'; item.fromCache = false; item.retries = retryCount;
+        aiCache.set(ck, item.sugName);
+        addHistory(item.origName, item.sugName, item.type, item.file.size);
+      } catch (e) {
+        let errMsg = e.message;
+        if (errMsg.includes('could not be read') || e.name === 'NotReadableError') {
+          errMsg = 'Arquivo bloqueado ou em uso por outro programa (ex: Scanner/Leitor de PDF). Tente novamente.';
+        }
+        item.status = 'error'; item.error = errMsg;
+        showToast(errMsg, 'error');
+      }
+      renderAll();
+    }
+
+    // ── PROCESS ALL ────────────────────────────────────────────────────────────
+    async function processAll() {
+      if (processing) return;
+      const key = localStorage.getItem('api_openrouter_key') || '';
+      if (!key) { document.getElementById('warn-key').style.display = 'flex'; showToast('Configure a chave OpenRouter no ADM primeiro', 'error'); return; }
+      processing = true; const btn = document.getElementById('btn-all');
+      btn.disabled = true; btn.innerHTML = '<span class="spin">⚙️</span> Processando…';
+      const queue = files.filter(f => f.status !== 'done');
+      const total = queue.length || files.length;
+      const toRun = queue.length ? queue : [...files];
+      let done = 0;
+      document.getElementById('prog-wrap').style.display = ''; setProgress(0, total);
+      for (const item of toRun) { await processSingle(files.indexOf(item)); done++; setProgress(done, total); }
+      document.getElementById('prog-wrap').style.display = 'none';
+      processing = false; btn.disabled = false; btn.innerHTML = '✨ Processar Todos'; renderAll();
+      const ok = files.filter(f => f.status === 'done').length;
+      const err = files.filter(f => f.status === 'error').length;
+      showToast(`✅ ${ok} concluído(s)${err ? ` · ❌ ${err} erro(s)` : ''}`, err ? 'error' : 'success');
+    }
+    function setProgress(done, total) {
+      const pct = total ? Math.round((done / total) * 100) : 0;
+      document.getElementById('prog-fill').style.width = pct + '%';
+      document.getElementById('prog-txt').textContent = `Processando ${done} / ${total}…`;
+      document.getElementById('prog-pct').textContent = pct + '%';
+    }
+
+    // ── DOWNLOAD ───────────────────────────────────────────────────────────────
+    function downloadOne(idx) {
+      const item = files[idx]; if (item.status !== 'done') return;
+      const inp = document.getElementById(`inp-${idx}`) || document.getElementById(`cinp-${idx}`);
+      const name = cleanName((inp ? inp.value : '') || item.sugName || item.origName, item.origName);
+      const ext = item.type === 'PDF' ? '.pdf' : item.type === 'Word' ? '.docx' : getImageExt(item.file);
+      const url = URL.createObjectURL(item.file);
+      const a = document.createElement('a'); a.href = url; a.download = name + ext; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+    function getImageExt(file) { const m = file.type || ''; if (m.includes('png')) return '.png'; if (m.includes('webp')) return '.webp'; return '.jpg'; }
+    function downloadAll() {
+      const done = files.filter(f => f.status === 'done');
+      if (!done.length) { showToast('Nenhum arquivo processado ainda', 'error'); return; }
+      done.forEach(item => downloadOne(files.indexOf(item)));
+      showToast(`⬇️ ${done.length} download(s) iniciado(s)`, 'success');
+    }
+
+    // ── CLEAR ──────────────────────────────────────────────────────────────────
+    function removeFile(idx) { files.splice(idx, 1); renderAll(); }
+    function clearAll() {
+      if (!files.length) return; files.length = 0; aiCache.clear();
+      document.getElementById('toolbar').style.display = 'none';
+      document.getElementById('file-tbody').innerHTML = '';
+      document.getElementById('file-cards').innerHTML = '';
+      document.getElementById('prog-wrap').style.display = 'none';
+      updateCounters();
+    }
+
+    // ── HISTORY MODAL ──────────────────────────────────────────────────────────
+    function openHistory() { renderHistModal(); document.getElementById('modal-hist').style.display = 'flex'; }
+    function closeHist() { document.getElementById('modal-hist').style.display = 'none'; }
+    function renderHistModal() {
+      const h = loadHistory(); const el = document.getElementById('hist-body');
+      if (!h.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-3);padding:30px">Nenhuma renomeação realizada ainda.</div>'; return; }
+      el.innerHTML = h.map(e => `<div class="hist-item">
+      <div class="hist-orig">${esc(e.orig)}</div>
+      <div class="hist-new">→ ${esc(e.newn)}</div>
+      <div class="hist-meta">${e.type || 'PDF'} · ${fmtSize(e.size || 0)} · ${fmtDate(e.ts)}</div>
+    </div>`).join('');
+    }
+    function clearHistory() { saveHistory([]); closeHist(); updateCounters(); showToast('Histórico limpo', 'success'); }
+    function exportHistory() {
+      const h = loadHistory(); if (!h.length) { showToast('Histórico vazio', 'error'); return; }
+      const blob = new Blob([JSON.stringify(h, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'historico_renomeacoes.json'; a.click();
+      showToast('Histórico exportado!', 'success');
+    }
+
+    // ── UTILS ──────────────────────────────────────────────────────────────────
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : b > 1024 ? (b / 1024).toFixed(0) + ' KB' : b + ' B'; }
+    function fmtDate(ts) { try { const d = new Date(ts); return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+    function showToast(msg, type) {
+      const t = document.getElementById('toast'); t.textContent = msg;
+      t.style.background = type === 'error' ? '#e11d48' : type === 'success' ? '#16a34a' : '#1e40af';
+      t.style.display = 'block'; t.style.opacity = '1';
+      clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 3500);
+    }
+
+  </script>
+</body>
+
+</html>

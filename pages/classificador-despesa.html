@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Classificador de Despesas - Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script defer src="/static/js/shared-header.js"></script>
+  <style>
+    :root {
+      --cd-accent: #1d5f3e;
+      --cd-accent-soft: rgba(29,95,62,.08);
+      --cd-green: #166534;
+      --cd-green-bg: #f0fdf4;
+      --cd-yellow-bg: #fefce8;
+      --cd-yellow: #854d0e;
+      --cd-red-bg: #fef2f2;
+      --cd-red: #991b1b;
+      --cd-badge-corrente: #1d4ed8;
+      --cd-badge-capital: #7c3aed;
+    }
+    [data-theme="dark"] {
+      --cd-accent: #34d399;
+      --cd-accent-soft: rgba(52,211,153,.1);
+      --cd-green: #86efac;
+      --cd-green-bg: rgba(52,211,153,.08);
+      --cd-yellow-bg: rgba(234,179,8,.08);
+      --cd-yellow: #fde047;
+      --cd-red-bg: rgba(239,68,68,.08);
+      --cd-red: #fca5a5;
+      --cd-badge-corrente: #93c5fd;
+      --cd-badge-capital: #c4b5fd;
+    }
+    .cd-page { max-width: 900px; margin: 24px auto 80px; padding: 0 20px; }
+
+    /* Hero */
+    .cd-hero {
+      display: flex; align-items: flex-start; gap: 20px;
+      padding: 28px 32px; border-radius: 24px;
+      background: radial-gradient(circle at top left, rgba(29,95,62,.18), transparent 38%),
+        linear-gradient(135deg, #ffffff 0%, #f0fdf4 60%, #ecfdf5 100%);
+      border: 1px solid rgba(29,95,62,.14);
+      box-shadow: 0 16px 48px rgba(20,50,77,.10); margin-bottom: 24px;
+    }
+    [data-theme="dark"] .cd-hero {
+      background: radial-gradient(circle at top left, rgba(52,211,153,.12), transparent 38%),
+        linear-gradient(135deg, rgba(30,41,59,.9) 0%, rgba(15,23,42,.95) 100%);
+      border-color: rgba(52,211,153,.15);
+    }
+    .cd-hero-icon {
+      width: 56px; height: 56px; border-radius: 16px; flex-shrink: 0;
+      background: linear-gradient(135deg, #1d5f3e, #166534);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(29,95,62,.3);
+    }
+    [data-theme="dark"] .cd-hero-icon { background: linear-gradient(135deg, #059669, #047857); }
+    .cd-hero-icon svg { width: 28px; height: 28px; color: #fff; }
+    .cd-hero-body h1 { font-size: 22px; font-weight: 800; color: var(--text-1,#111); margin: 0 0 4px; line-height: 1.2; }
+    .cd-hero-body p { font-size: 13.5px; color: var(--text-3,#6b7280); margin: 0; line-height: 1.5; }
+    .cd-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px; font-size: 10.5px;
+      font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+      background: rgba(29,95,62,.1); color: var(--cd-accent);
+      border: 1px solid rgba(29,95,62,.15); margin-bottom: 8px;
+    }
+    [data-theme="dark"] .cd-badge { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.2); }
+
+    /* Cards */
+    .cd-input-card, .cd-result, .cd-history-card {
+      background: var(--card,#fff); border: 1px solid var(--border,rgba(0,0,0,.08));
+      border-radius: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.05); margin-bottom: 20px;
+    }
+    .cd-input-card { padding: 24px; }
+
+    .cd-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-1,#111); margin-bottom: 8px; }
+    .cd-hint { font-size: 11.5px; color: var(--text-3,#9ca3af); margin-bottom: 10px; }
+    .cd-textarea {
+      width: 100%; min-height: 110px; padding: 14px 16px;
+      border: 1.5px solid var(--border,rgba(0,0,0,.1)); border-radius: 12px;
+      font-size: 14.5px; font-family: inherit; resize: vertical;
+      background: var(--input-bg,#f9fafb); color: var(--text-1,#111);
+      transition: border-color .2s, box-shadow .2s; box-sizing: border-box;
+    }
+    .cd-textarea:focus { outline: none; border-color: var(--cd-accent); box-shadow: 0 0 0 3px var(--cd-accent-soft); }
+    [data-theme="dark"] .cd-textarea { background: rgba(255,255,255,.04); }
+
+    .cd-examples { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .cd-example-chip {
+      padding: 5px 12px; border-radius: 999px; font-size: 12px; cursor: pointer;
+      border: 1px solid var(--border,rgba(0,0,0,.1)); background: var(--bg-2,#f3f4f6);
+      color: var(--text-2,#374151); transition: background .15s, border-color .15s, color .15s; white-space: nowrap;
+    }
+    .cd-example-chip:hover { background: var(--cd-accent-soft); border-color: var(--cd-accent); color: var(--cd-accent); }
+    [data-theme="dark"] .cd-example-chip { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.1); }
+
+    .cd-btn-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .cd-btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px;
+      border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer;
+      border: none; transition: background .18s, transform .12s, box-shadow .18s;
+    }
+    .cd-btn-primary {
+      background: linear-gradient(135deg, #1d5f3e, #166534); color: #fff;
+      box-shadow: 0 4px 16px rgba(29,95,62,.3);
+    }
+    .cd-btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #166534, #14532d); transform: translateY(-1px); }
+    .cd-btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    [data-theme="dark"] .cd-btn-primary { background: linear-gradient(135deg, #059669, #047857); }
+    .cd-btn-ghost {
+      background: var(--bg-2,#f3f4f6); color: var(--text-2,#374151);
+      border: 1px solid var(--border,rgba(0,0,0,.1));
+    }
+    .cd-btn-ghost:hover { background: var(--bg-3,#e5e7eb); }
+    [data-theme="dark"] .cd-btn-ghost { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.1); color: var(--text-2); }
+    .cd-btn-export {
+      background: rgba(29,78,216,.07); color: var(--cd-badge-corrente);
+      border: 1px solid rgba(29,78,216,.2);
+    }
+    .cd-btn-export:hover { background: rgba(29,78,216,.13); }
+
+    .cd-loading { display: none; align-items: center; gap: 10px; color: var(--cd-accent); font-size: 13.5px; font-weight: 600; }
+    .cd-loading.show { display: flex; }
+    .cd-spinner {
+      width: 18px; height: 18px; border: 2.5px solid var(--cd-accent-soft);
+      border-top-color: var(--cd-accent); border-radius: 50%; animation: cd-spin .7s linear infinite;
+    }
+    @keyframes cd-spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .cd-error {
+      display: none; padding: 14px 18px; border-radius: 12px;
+      background: var(--cd-red-bg); border: 1px solid rgba(153,27,27,.15);
+      color: var(--cd-red); font-size: 13.5px; margin-bottom: 16px; align-items: center; gap: 10px;
+    }
+    .cd-error.show { display: flex; }
+
+    /* Result */
+    .cd-result { display: none; overflow: hidden; }
+    .cd-result.show { display: block; }
+
+    .cd-result-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 22px; border-bottom: 1px solid var(--border,rgba(0,0,0,.07));
+      background: var(--bg-2,#f9fafb); flex-wrap: wrap; gap: 10px;
+    }
+    .cd-result-title { font-size: 14.5px; font-weight: 700; color: var(--text-1,#111); display: flex; align-items: center; gap: 8px; }
+    .cd-result-meta { font-size: 11.5px; color: var(--text-3,#9ca3af); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+    .cd-codigo-block {
+      padding: 22px 24px; border-bottom: 1px solid var(--border,rgba(0,0,0,.07));
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .cd-codigo-pill {
+      display: inline-flex; align-items: center; padding: 10px 20px;
+      border-radius: 12px; font-size: 22px; font-weight: 900;
+      letter-spacing: .06em; font-family: 'JetBrains Mono','Courier New',monospace;
+    }
+    .cd-codigo-pill.corrente { background: rgba(29,78,216,.08); color: var(--cd-badge-corrente); border: 2px solid rgba(29,78,216,.2); }
+    .cd-codigo-pill.capital  { background: rgba(124,58,237,.08); color: var(--cd-badge-capital);  border: 2px solid rgba(124,58,237,.2); }
+    .cd-codigo-info { flex: 1; min-width: 180px; }
+    .cd-codigo-info h3 { font-size: 15px; font-weight: 700; color: var(--text-1,#111); margin: 0 0 4px; }
+    .cd-codigo-info p  { font-size: 12.5px; color: var(--text-3,#6b7280); margin: 0; }
+    .cd-confianca-bar { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .cd-confianca-label { font-size: 11px; font-weight: 600; color: var(--text-3,#9ca3af); text-transform: uppercase; letter-spacing: .06em; }
+    .cd-confianca-track { width: 90px; height: 6px; border-radius: 999px; background: var(--bg-3,#e5e7eb); overflow: hidden; }
+    .cd-confianca-fill { height: 100%; border-radius: 999px; transition: width .5s ease; }
+    .cd-confianca-fill.high   { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .cd-confianca-fill.medium { background: linear-gradient(90deg, #d97706, #f59e0b); }
+    .cd-confianca-fill.low    { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    .cd-confianca-pct { font-size: 12px; font-weight: 700; color: var(--text-2,#374151); }
+
+    .cd-detail-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1px; background: var(--border,rgba(0,0,0,.07));
+    }
+    .cd-detail-cell { padding: 14px 20px; background: var(--card,#fff); }
+    .cd-detail-cell-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3,#9ca3af); margin-bottom: 4px; }
+    .cd-detail-cell-value { font-size: 13.5px; font-weight: 600; color: var(--text-1,#111); }
+
+    .cd-justificativa { padding: 16px 22px; border-top: 1px solid var(--border,rgba(0,0,0,.07)); }
+    .cd-justificativa-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-3,#9ca3af); margin-bottom: 6px; }
+    .cd-justificativa p { font-size: 13.5px; color: var(--text-2,#374151); margin: 0; line-height: 1.6; }
+
+    .cd-atencao {
+      display: none; margin: 0 22px 16px; padding: 12px 16px;
+      border-radius: 10px; border-left: 4px solid #d97706;
+      background: var(--cd-yellow-bg); font-size: 13px; color: var(--cd-yellow); line-height: 1.5;
+    }
+    .cd-atencao.show { display: block; }
+    .cd-atencao strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; opacity: .8; }
+
+    /* Alternativas */
+    .cd-alternativas { padding: 16px 22px; border-top: 1px solid var(--border,rgba(0,0,0,.07)); }
+    .cd-alternativas-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+      color: var(--cd-yellow,#854d0e); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .cd-alt-list { display: flex; flex-direction: column; gap: 8px; }
+    .cd-alt-item {
+      display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px;
+      border-radius: 10px; background: var(--bg-2,#f9fafb);
+      border: 1px solid var(--border,rgba(0,0,0,.07)); cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .cd-alt-item:hover { border-color: var(--cd-accent); background: var(--cd-accent-soft); }
+    .cd-alt-code {
+      font-size: 13px; font-weight: 800; font-family: monospace; white-space: nowrap; flex-shrink: 0;
+      padding: 3px 8px; border-radius: 6px;
+      color: var(--cd-badge-corrente); background: rgba(29,78,216,.07);
+    }
+    .cd-alt-code.capital { color: var(--cd-badge-capital); background: rgba(124,58,237,.07); }
+    .cd-alt-body { flex: 1; min-width: 0; }
+    .cd-alt-name { font-size: 13px; font-weight: 600; color: var(--text-1,#111); }
+    .cd-alt-just { font-size: 12px; color: var(--text-3,#6b7280); margin-top: 2px; line-height: 1.4; }
+    .cd-alt-use { font-size: 11px; color: var(--cd-accent); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+
+    /* Export buttons */
+    .cd-export-row {
+      display: flex; gap: 8px; padding: 12px 22px;
+      border-top: 1px solid var(--border,rgba(0,0,0,.07));
+      background: var(--bg-2,#f9fafb); flex-wrap: wrap;
+    }
+    .cd-export-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
+      cursor: pointer; border: 1px solid; transition: background .15s;
+    }
+    .cd-export-pdf  { color: #dc2626; border-color: rgba(220,38,38,.25); background: rgba(220,38,38,.06); }
+    .cd-export-pdf:hover  { background: rgba(220,38,38,.12); }
+    .cd-export-csv  { color: #16a34a; border-color: rgba(22,163,74,.25); background: rgba(22,163,74,.06); }
+    .cd-export-csv:hover  { background: rgba(22,163,74,.12); }
+    .cd-export-copy { color: var(--text-2,#374151); border-color: var(--border,rgba(0,0,0,.1)); background: var(--bg-2,#f3f4f6); }
+    .cd-export-copy:hover { background: var(--bg-3,#e5e7eb); }
+
+    /* History */
+    .cd-history-card { padding: 0; overflow: hidden; }
+    .cd-history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 1px solid var(--border,rgba(0,0,0,.07));
+      background: var(--bg-2,#f9fafb);
+    }
+    .cd-history-header h2 { font-size: 14px; font-weight: 700; color: var(--text-2,#374151); margin: 0; display: flex; align-items: center; gap: 8px; }
+    .cd-history-list { display: flex; flex-direction: column; }
+    .cd-history-item {
+      display: flex; align-items: center; gap: 12px; padding: 11px 18px;
+      border-bottom: 1px solid var(--border,rgba(0,0,0,.05));
+      cursor: pointer; transition: background .12s;
+    }
+    .cd-history-item:last-child { border-bottom: none; }
+    .cd-history-item:hover { background: var(--bg-2,#f9fafb); }
+    .cd-history-code {
+      font-size: 12.5px; font-weight: 800; font-family: monospace;
+      color: var(--cd-badge-corrente); background: rgba(29,78,216,.07);
+      padding: 3px 8px; border-radius: 6px; white-space: nowrap; flex-shrink: 0;
+    }
+    .cd-history-code.capital { color: var(--cd-badge-capital); background: rgba(124,58,237,.07); }
+    .cd-history-item-text { flex: 1; min-width: 0; }
+    .cd-history-item-name { font-size: 13px; font-weight: 600; color: var(--text-1,#111); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cd-history-item-sub  { font-size: 11.5px; color: var(--text-3,#9ca3af); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cd-history-conf { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; flex-shrink: 0; }
+    .cd-history-conf.high   { background: rgba(22,163,74,.1);  color: #15803d; }
+    .cd-history-conf.medium { background: rgba(217,119,6,.1);  color: #b45309; }
+    .cd-history-conf.low    { background: rgba(220,38,38,.1);  color: #b91c1c; }
+    .cd-history-remove {
+      width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border,rgba(0,0,0,.08));
+      background: var(--bg-2,#f9fafb); cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-3,#9ca3af); flex-shrink: 0; transition: background .15s, color .15s, border-color .15s;
+    }
+    .cd-history-remove:hover { background: var(--cd-red-bg,#fef2f2); color: var(--cd-red,#dc2626); border-color: var(--cd-red,#dc2626); }
+    .cd-history-empty { padding: 24px; text-align: center; font-size: 13px; color: var(--text-3,#9ca3af); }
+
+    @media (max-width: 600px) {
+      .cd-page { margin: 12px auto 70px; padding: 0 12px; }
+      .cd-hero { padding: 18px 16px; gap: 14px; }
+      .cd-hero-icon { width: 44px; height: 44px; border-radius: 12px; }
+      .cd-hero-body h1 { font-size: 18px; }
+      .cd-input-card { padding: 16px; }
+      .cd-codigo-block { padding: 16px; }
+      .cd-codigo-pill { font-size: 17px; padding: 8px 14px; }
+      .cd-detail-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<main class="cd-page">
+
+  <!-- Hero -->
+  <div class="cd-hero">
+    <div class="cd-hero-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/>
+      </svg>
+    </div>
+    <div class="cd-hero-body">
+      <div class="cd-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+        TCE-PR · MCASP 11ª Ed.
+      </div>
+      <h1>Classificador de Despesas</h1>
+      <p>Informe um item ou serviço e a IA identifica o desdobramento correto conforme TCE-PR e MCASP, com justificativa técnica, alternativas e exportação para PDF ou CSV.</p>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="cd-input-card">
+    <label class="cd-label" for="cd-item-input">Item ou Serviço a Classificar</label>
+    <div class="cd-hint">Descreva com detalhes para maior precisão. Atalho: Ctrl+Enter para classificar.</div>
+    <textarea id="cd-item-input" class="cd-textarea" rows="4"
+      placeholder="Ex: Aquisição de 10 cartuchos de tinta para impressora HP&#10;Ex: Contratação de empresa para manutenção preventiva do ar-condicionado&#10;Ex: Notebook Dell i5 16GB para uso administrativo na secretaria de finanças"></textarea>
+    <div class="cd-examples">
+      <span class="cd-example-chip" onclick="setExample('Cartuchos de tinta para impressora')">Cartuchos de tinta</span>
+      <span class="cd-example-chip" onclick="setExample('Serviço de manutenção do sistema de ar-condicionado por empresa especializada')">Manutenção ar-cond.</span>
+      <span class="cd-example-chip" onclick="setExample('Notebook Dell com processador i5, 16GB RAM e SSD 512GB para uso administrativo')">Notebook</span>
+      <span class="cd-example-chip" onclick="setExample('Serviço de capina e roçagem de lotes e vias públicas')">Capina e roçagem</span>
+      <span class="cd-example-chip" onclick="setExample('Material de escritório: resmas de papel A4, canetas, grampeador')">Material de escritório</span>
+      <span class="cd-example-chip" onclick="setExample('Construção de calçadas em concreto no bairro centro')">Construção de calçada</span>
+      <span class="cd-example-chip" onclick="setExample('Combustível (gasolina) para veículos da frota municipal')">Combustível</span>
+      <span class="cd-example-chip" onclick="setExample('Serviços de contabilidade prestados por pessoa jurídica')">Contabilidade PJ</span>
+    </div>
+    <div class="cd-btn-row">
+      <button class="cd-btn cd-btn-primary" id="cd-classificar-btn" onclick="classificar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Classificar Despesa
+      </button>
+      <button class="cd-btn cd-btn-ghost" onclick="limpar()">Limpar</button>
+      <div class="cd-loading" id="cd-loading">
+        <div class="cd-spinner"></div>
+        Consultando IA especialista…
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="cd-error" id="cd-error">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="cd-error-text"></span>
+  </div>
+
+  <!-- Result -->
+  <div class="cd-result" id="cd-result">
+    <div class="cd-result-header">
+      <div class="cd-result-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="color:var(--cd-accent)"><polyline points="20 6 9 17 4 12"/></svg>
+        Classificação Orçamentária
+      </div>
+      <div class="cd-result-meta">
+        <span id="cd-meta-model">—</span>
+        <span id="cd-meta-cache" style="display:none;color:var(--cd-accent);font-weight:700;">cache</span>
+      </div>
+    </div>
+
+    <!-- Código principal -->
+    <div class="cd-codigo-block">
+      <div class="cd-codigo-pill" id="cd-codigo-pill">—</div>
+      <div class="cd-codigo-info">
+        <h3 id="cd-item-nome">—</h3>
+        <p id="cd-subelemento-nome">—</p>
+      </div>
+      <div class="cd-confianca-bar">
+        <span class="cd-confianca-label">Confiança</span>
+        <div class="cd-confianca-track"><div class="cd-confianca-fill" id="cd-confianca-fill"></div></div>
+        <span class="cd-confianca-pct" id="cd-confianca-pct">—</span>
+      </div>
+    </div>
+
+    <!-- Detalhamento -->
+    <div class="cd-detail-grid">
+      <div class="cd-detail-cell"><div class="cd-detail-cell-label">Grupo (GND)</div><div class="cd-detail-cell-value" id="cd-grupo">—</div></div>
+      <div class="cd-detail-cell"><div class="cd-detail-cell-label">Modalidade</div><div class="cd-detail-cell-value" id="cd-modalidade">—</div></div>
+      <div class="cd-detail-cell"><div class="cd-detail-cell-label">Elemento</div><div class="cd-detail-cell-value" id="cd-elemento">—</div></div>
+      <div class="cd-detail-cell"><div class="cd-detail-cell-label">Subelemento</div><div class="cd-detail-cell-value" id="cd-subelemento">—</div></div>
+    </div>
+
+    <!-- Justificativa -->
+    <div class="cd-justificativa">
+      <div class="cd-justificativa-title">Justificativa Técnica</div>
+      <p id="cd-justificativa-text">—</p>
+    </div>
+
+    <!-- Ponto de atenção -->
+    <div class="cd-atencao" id="cd-atencao">
+      <strong>Ponto de Atenção</strong>
+      <span id="cd-atencao-text"></span>
+    </div>
+
+    <!-- Alternativas (confiança < 70%) -->
+    <div class="cd-alternativas" id="cd-alternativas" style="display:none">
+      <div class="cd-alternativas-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        Confiança abaixo de 70% — Classificações alternativas possíveis
+      </div>
+      <div class="cd-alt-list" id="cd-alt-list"></div>
+    </div>
+
+    <!-- Exportar -->
+    <div class="cd-export-row">
+      <button class="cd-export-btn cd-export-pdf" onclick="exportarPDF()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar PDF
+      </button>
+      <button class="cd-export-btn cd-export-csv" onclick="exportarCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Exportar CSV
+      </button>
+      <button class="cd-export-btn cd-export-copy" onclick="copiarTexto()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="cd-copy-label">Copiar Texto</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Histórico (banco de dados) -->
+  <div class="cd-history-card" id="cd-history-card">
+    <div class="cd-history-header">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        Histórico de Classificações
+      </h2>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="cd-btn-ghost cd-btn" style="padding:5px 12px;font-size:12px;" onclick="limparHistorico()" title="Limpar tudo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          Limpar
+        </button>
+        <button class="cd-btn-ghost cd-btn" style="padding:5px 12px;font-size:12px;" onclick="carregarHistorico()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          Atualizar
+        </button>
+      </div>
+    </div>
+    <div class="cd-history-list" id="cd-history-list">
+      <div class="cd-history-empty">Carregando histórico…</div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  let _currentResult = null;
+
+  function setExample(text) {
+    document.getElementById('cd-item-input').value = text;
+    document.getElementById('cd-item-input').focus();
+  }
+
+  function limpar() {
+    document.getElementById('cd-item-input').value = '';
+    document.getElementById('cd-result').classList.remove('show');
+    document.getElementById('cd-error').classList.remove('show');
+    _currentResult = null;
+    document.getElementById('cd-item-input').focus();
+  }
+
+  function showError(msg) {
+    document.getElementById('cd-error-text').textContent = msg;
+    document.getElementById('cd-error').classList.add('show');
+  }
+  function hideError() { document.getElementById('cd-error').classList.remove('show'); }
+
+  function isCapital(codigo) { return (codigo || '').startsWith('4.'); }
+
+  function confClass(pct) { return pct >= 80 ? 'high' : pct >= 55 ? 'medium' : 'low'; }
+
+  // ── Renderizar resultado ────────────────────────────────────
+  function renderResult(r, meta) {
+    hideError();
+    _currentResult = r;
+
+    const pill = document.getElementById('cd-codigo-pill');
+    pill.textContent = r.codigo_completo || '—';
+    pill.className = 'cd-codigo-pill ' + (isCapital(r.codigo_completo) ? 'capital' : 'corrente');
+
+    document.getElementById('cd-item-nome').textContent = r.item_analisado || '—';
+    document.getElementById('cd-subelemento-nome').textContent =
+      (r.subelemento_codigo && r.subelemento_nome)
+        ? `Subel. ${r.subelemento_codigo} — ${r.subelemento_nome}`
+        : (r.subelemento_nome || '—');
+
+    const pct = Math.round((parseFloat(r.confianca) || 0) * 100);
+    document.getElementById('cd-confianca-pct').textContent = pct + '%';
+    const fill = document.getElementById('cd-confianca-fill');
+    fill.style.width = pct + '%';
+    fill.className = 'cd-confianca-fill ' + confClass(pct);
+
+    document.getElementById('cd-grupo').textContent = r.grupo || '—';
+    document.getElementById('cd-modalidade').textContent = r.modalidade || '—';
+    document.getElementById('cd-elemento').textContent = r.elemento || '—';
+    document.getElementById('cd-subelemento').textContent =
+      (r.subelemento_codigo && r.subelemento_nome)
+        ? `${r.subelemento_codigo} — ${r.subelemento_nome}`
+        : (r.subelemento_nome || r.subelemento_codigo || '—');
+
+    document.getElementById('cd-justificativa-text').textContent = r.justificativa || '—';
+
+    const atencaoEl = document.getElementById('cd-atencao');
+    const atencaoText = (r.ponto_atencao || '').trim();
+    if (atencaoText) { document.getElementById('cd-atencao-text').textContent = atencaoText; atencaoEl.classList.add('show'); }
+    else atencaoEl.classList.remove('show');
+
+    // Alternativas
+    const alts = Array.isArray(r.alternativas) ? r.alternativas : [];
+    const altSection = document.getElementById('cd-alternativas');
+    if (alts.length > 0) {
+      altSection.style.display = 'block';
+      document.getElementById('cd-alt-list').innerHTML = alts.map((a, i) => `
+        <div class="cd-alt-item" onclick="usarAlternativa(${i})" title="Clique para usar esta classificação">
+          <span class="cd-alt-code ${isCapital(a.codigo_completo) ? 'capital' : ''}">${a.codigo_completo || '—'}</span>
+          <div class="cd-alt-body">
+            <div class="cd-alt-name">${escHtml(a.subelemento_nome || a.codigo_completo || '—')}</div>
+            <div class="cd-alt-just">${escHtml(a.justificativa || '')}</div>
+          </div>
+          <span class="cd-alt-use">Usar →</span>
+        </div>`).join('');
+    } else {
+      altSection.style.display = 'none';
+    }
+
+    document.getElementById('cd-meta-model').textContent = (meta && meta.model) ? meta.model.split('/').pop() : '—';
+    const cacheEl = document.getElementById('cd-meta-cache');
+    cacheEl.style.display = (meta && meta.cached) ? 'inline' : 'none';
+
+    document.getElementById('cd-result').classList.add('show');
+  }
+
+  function usarAlternativa(idx) {
+    if (!_currentResult) return;
+    const alts = _currentResult.alternativas || [];
+    const alt = alts[idx];
+    if (!alt) return;
+    // Mescla a alternativa no resultado atual para exibição
+    const merged = Object.assign({}, _currentResult, {
+      codigo_completo: alt.codigo_completo,
+      subelemento_nome: alt.subelemento_nome,
+      justificativa: alt.justificativa,
+      alternativas: [],
+      confianca: _currentResult.confianca,
+    });
+    renderResult(merged, null);
+    document.getElementById('cd-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ── Classificar ─────────────────────────────────────────────
+  async function classificar() {
+    const item = document.getElementById('cd-item-input').value.trim();
+    if (!item) { showError('Informe o item ou serviço a ser classificado.'); return; }
+
+    hideError();
+    document.getElementById('cd-result').classList.remove('show');
+
+    const btn = document.getElementById('cd-classificar-btn');
+    const loading = document.getElementById('cd-loading');
+    btn.disabled = true;
+    loading.classList.add('show');
+
+    try {
+      const res = await fetch('/api/classificador-despesa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showError(data.error || 'Erro ao classificar.'); return; }
+      if (data.resultado && data.resultado.codigo_completo) {
+        renderResult(data.resultado, data.meta);
+        carregarHistorico();
+      } else {
+        showError('Resposta inesperada da IA. Tente detalhar melhor o item.');
+      }
+    } catch {
+      showError('Erro de conexão. Verifique se o servidor está ativo.');
+    } finally {
+      btn.disabled = false;
+      loading.classList.remove('show');
+    }
+  }
+
+  // ── Exportar PDF ─────────────────────────────────────────────
+  function exportarPDF() {
+    if (!_currentResult) return;
+    const r = _currentResult;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const azul = [29, 78, 216];
+    const verde = [22, 101, 52];
+    const cinza = [107, 114, 128];
+    const preto = [17, 24, 39];
+    const margem = 20;
+    let y = 20;
+
+    // Cabeçalho
+    doc.setFillColor(...verde);
+    doc.rect(0, 0, 210, 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PREFEITURA MUNICIPAL DE INAJÁ — CLASSIFICAÇÃO DE DESPESA', margem, 9);
+    doc.text(new Date().toLocaleDateString('pt-BR'), 210 - margem, 9, { align: 'right' });
+
+    y = 26;
+    doc.setTextColor(...preto);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Classificação Orçamentária', margem, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...cinza);
+    doc.text('TCE-PR · MCASP 11ª Edição · Portaria STN nº 448/2002', margem, y);
+
+    y += 10;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margem, y, 210 - margem, y);
+    y += 8;
+
+    // Item analisado
+    doc.setTextColor(...cinza);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ITEM ANALISADO', margem, y);
+    y += 5;
+    doc.setTextColor(...preto);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    const itemLines = doc.splitTextToSize(r.item_analisado || '—', 170);
+    doc.text(itemLines, margem, y);
+    y += itemLines.length * 6 + 6;
+
+    // Código em destaque
+    const isCapit = isCapital(r.codigo_completo);
+    doc.setFillColor(...(isCapit ? [124, 58, 237] : azul));
+    doc.roundedRect(margem, y, 170, 18, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(r.codigo_completo || '—', margem + 8, y + 12);
+    const pct = Math.round((parseFloat(r.confianca) || 0) * 100);
+    doc.setFontSize(9);
+    doc.text(`Confiança: ${pct}%`, 210 - margem - 4, y + 12, { align: 'right' });
+    y += 26;
+
+    // Grid detalhamento
+    const cells = [
+      ['GRUPO (GND)', r.grupo || '—'],
+      ['MODALIDADE', r.modalidade || '—'],
+      ['ELEMENTO', r.elemento || '—'],
+      ['SUBELEMENTO', r.subelemento_codigo && r.subelemento_nome ? `${r.subelemento_codigo} — ${r.subelemento_nome}` : (r.subelemento_nome || '—')],
+    ];
+    const cellW = 170 / 4;
+    cells.forEach(([label, val], i) => {
+      const x = margem + i * cellW;
+      doc.setFillColor(248, 250, 252);
+      doc.rect(x, y, cellW, 16, 'F');
+      doc.setDrawColor(220, 220, 220);
+      doc.rect(x, y, cellW, 16);
+      doc.setTextColor(...cinza);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, x + 3, y + 5);
+      doc.setTextColor(...preto);
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      const vLines = doc.splitTextToSize(val, cellW - 6);
+      doc.text(vLines[0], x + 3, y + 12);
+    });
+    y += 24;
+
+    // Justificativa
+    doc.setTextColor(...cinza);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('JUSTIFICATIVA TÉCNICA', margem, y);
+    y += 5;
+    doc.setTextColor(...preto);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const justLines = doc.splitTextToSize(r.justificativa || '—', 170);
+    doc.text(justLines, margem, y);
+    y += justLines.length * 5.5 + 6;
+
+    // Ponto de atenção
+    if ((r.ponto_atencao || '').trim()) {
+      doc.setFillColor(254, 252, 232);
+      const atLines = doc.splitTextToSize(r.ponto_atencao, 158);
+      const atH = atLines.length * 5.5 + 12;
+      doc.roundedRect(margem, y, 170, atH, 2, 2, 'F');
+      doc.setDrawColor(217, 119, 6);
+      doc.setLineWidth(0.5);
+      doc.line(margem, y, margem, y + atH);
+      doc.setLineWidth(0.2);
+      doc.setTextColor(133, 77, 14);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PONTO DE ATENÇÃO', margem + 6, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(atLines, margem + 6, y + 12);
+      y += atH + 6;
+    }
+
+    // Alternativas
+    const alts = Array.isArray(r.alternativas) ? r.alternativas : [];
+    if (alts.length > 0) {
+      doc.setTextColor(...cinza);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('CLASSIFICAÇÕES ALTERNATIVAS', margem, y);
+      y += 5;
+      alts.forEach(a => {
+        doc.setFillColor(249, 250, 251);
+        doc.rect(margem, y, 170, 14, 'F');
+        doc.setDrawColor(220, 220, 220);
+        doc.rect(margem, y, 170, 14);
+        doc.setTextColor(...(isCapital(a.codigo_completo) ? [124, 58, 237] : azul));
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(a.codigo_completo || '—', margem + 4, y + 6);
+        doc.setTextColor(...preto);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(doc.splitTextToSize(a.subelemento_nome || '', 70)[0], margem + 36, y + 6);
+        doc.setTextColor(...cinza);
+        doc.text(doc.splitTextToSize(a.justificativa || '', 90)[0], margem + 4, y + 12);
+        y += 16;
+      });
+      y += 4;
+    }
+
+    // Rodapé
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margem, 287, 210 - margem, 287);
+    doc.setTextColor(...cinza);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Gerado por Sistema de Gestão Municipal — Prefeitura de Inajá/PR', margem, 292);
+    doc.text(`${new Date().toLocaleString('pt-BR')}`, 210 - margem, 292, { align: 'right' });
+
+    const nomeItem = (r.item_analisado || 'classificacao').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+    doc.save(`classificacao_${nomeItem}.pdf`);
+  }
+
+  // ── Exportar CSV ─────────────────────────────────────────────
+  function exportarCSV() {
+    if (!_currentResult) return;
+    const r = _currentResult;
+    const esc = v => `"${(v || '').replace(/"/g, '""')}"`;
+    const rows = [
+      ['Item Analisado', 'Código Completo', 'Grupo', 'Modalidade', 'Elemento', 'Subelemento', 'Justificativa', 'Ponto de Atenção', 'Confiança'],
+      [r.item_analisado, r.codigo_completo, r.grupo, r.modalidade, r.elemento,
+       `${r.subelemento_codigo || ''} - ${r.subelemento_nome || ''}`.trim(' -'),
+       r.justificativa, r.ponto_atencao, `${Math.round((parseFloat(r.confianca)||0)*100)}%`],
+    ];
+    const csv = rows.map(row => row.map(esc).join(',')).join('\r\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'classificacao_despesa.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Copiar texto ─────────────────────────────────────────────
+  function copiarTexto() {
+    if (!_currentResult) return;
+    const r = _currentResult;
+    const pct = Math.round((parseFloat(r.confianca)||0)*100);
+    let text = `CLASSIFICAÇÃO DE DESPESA — Prefeitura de Inajá/PR\n`;
+    text += `Item: ${r.item_analisado}\n`;
+    text += `Código: ${r.codigo_completo}\n`;
+    text += `Grupo: ${r.grupo}\n`;
+    text += `Modalidade: ${r.modalidade}\n`;
+    text += `Elemento: ${r.elemento}\n`;
+    text += `Subelemento: ${r.subelemento_codigo} — ${r.subelemento_nome}\n`;
+    text += `Confiança: ${pct}%\n`;
+    text += `Justificativa: ${r.justificativa}\n`;
+    if ((r.ponto_atencao || '').trim()) text += `Ponto de Atenção: ${r.ponto_atencao}\n`;
+    navigator.clipboard.writeText(text).then(() => {
+      const lbl = document.getElementById('cd-copy-label');
+      lbl.textContent = 'Copiado!';
+      setTimeout(() => { lbl.textContent = 'Copiar Texto'; }, 2000);
+    });
+  }
+
+  // ── Histórico do banco ───────────────────────────────────────
+  async function carregarHistorico() {
+    try {
+      const res = await fetch('/api/classificador-despesa/historico?limit=30');
+      const data = await res.json();
+      renderHistorico(data.items || []);
+    } catch {
+      document.getElementById('cd-history-list').innerHTML =
+        '<div class="cd-history-empty">Erro ao carregar histórico.</div>';
+    }
+  }
+
+  function renderHistorico(items) {
+    const list = document.getElementById('cd-history-list');
+    if (!items.length) {
+      list.innerHTML = '<div class="cd-history-empty">Nenhuma classificação registrada ainda.</div>';
+      return;
+    }
+    list.innerHTML = items.map(e => {
+      const pct = Math.round((parseFloat(e.confianca) || 0) * 100);
+      const cc = confClass(pct);
+      const data = e.criado_em ? e.criado_em.substring(0, 16).replace('T', ' ') : '—';
+      return `
+        <div class="cd-history-item" onclick="loadFromHistory(${e.id})">
+          <span class="cd-history-code ${isCapital(e.codigo_completo) ? 'capital' : ''}">${e.codigo_completo || '—'}</span>
+          <div class="cd-history-item-text">
+            <div class="cd-history-item-name">${escHtml(e.item)}</div>
+            <div class="cd-history-item-sub">${escHtml(e.subelemento || '')} · ${data}</div>
+          </div>
+          <span class="cd-history-conf ${cc}">${pct}%</span>
+          <button class="cd-history-remove" onclick="event.stopPropagation();removerHistorico(${e.id})" title="Remover">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>`;
+    }).join('');
+  }
+
+  // Guarda os dados do histórico para reutilizar no loadFromHistory
+  let _historicoCache = [];
+  async function carregarHistoricoComCache() {
+    try {
+      const res = await fetch('/api/classificador-despesa/historico?limit=30');
+      const data = await res.json();
+      _historicoCache = data.items || [];
+      renderHistorico(_historicoCache);
+    } catch {
+      document.getElementById('cd-history-list').innerHTML =
+        '<div class="cd-history-empty">Erro ao carregar histórico.</div>';
+    }
+  }
+
+  function loadFromHistory(id) {
+    const entry = _historicoCache.find(e => e.id === id);
+    if (!entry) return;
+    document.getElementById('cd-item-input').value = entry.item;
+    if (entry.resultado && entry.resultado.codigo_completo) {
+      renderResult(entry.resultado, { model: entry.model, cached: entry.cached });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function removerHistorico(id) {
+    if (!confirm('Remover esta classificação do histórico?')) return;
+    try {
+      await fetch(`/api/classificador-despesa/historico/${id}`, { method: 'DELETE' });
+      await carregarHistoricoComCache();
+    } catch {
+      alert('Erro ao remover item do histórico.');
+    }
+  }
+
+  async function limparHistorico() {
+    if (!confirm('Remover TODAS as classificações do histórico?')) return;
+    try {
+      const res = await fetch('/api/classificador-despesa/historico', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Falha ao limpar');
+      await carregarHistoricoComCache();
+    } catch {
+      alert('Erro ao limpar histórico.');
+    }
+  }
+
+  // Sobrescreve carregarHistorico para usar o cache
+  async function carregarHistorico() {
+    await carregarHistoricoComCache();
+  }
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Ctrl+Enter
+  document.getElementById('cd-item-input').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') classificar();
+  });
+
+  // Init
+  carregarHistorico();
+</script>
+</body>
+</html>

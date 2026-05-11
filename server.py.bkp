@@ -1,0 +1,85 @@
+"""
+server.py — Servidor Flask + SQLite para o Sistema de Empenhos Mensais
+Prefeitura Municipal de Inajá
+
+VERSÃO MODULARIZADA - Arquivo principal simplificado
+
+Para iniciar: python server.py
+Ou duplo clique em iniciar.bat
+"""
+
+import os
+import sys
+
+# Adicionar projeto ao path
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
+
+from config import settings
+from app import create_app
+from app.utils.db import init_db, get_db
+
+# ── Terminal Logging ─────────────────────────────────────
+import time as _time
+import logging
+from logging.handlers import RotatingFileHandler
+
+_TERM_COLORS = {
+    'reset': '\033[0m',
+    'dim': '\033[2m',
+    'bold': '\033[1m',
+    'cyan': '\033[36m',
+    'green': '\033[32m',
+    'yellow': '\033[33m',
+    'red': '\033[31m',
+    'magenta': '\033[35m',
+}
+
+def _term_enabled() -> bool:
+    return sys.stdout.isatty()
+
+def _color(text: str, name: str) -> str:
+    if not _term_enabled():
+        return text
+    return f"{_TERM_COLORS.get(name, '')}{text}{_TERM_COLORS['reset']}"
+
+def _terminal_log(kind: str, message: str, color_name: str = 'cyan'):
+    ts = _time.strftime('%H:%M:%S')
+    prefix = _color(f'[{ts}] [{kind}]', color_name)
+    print(f'{prefix} {message}')
+
+# ── Criar aplicação ───────────────────────────────────────
+app = create_app()
+
+# ── Inicializar banco de dados ───────────────────────────
+with app.app_context():
+    init_db()
+    _terminal_log('DB', f'Banco de dados inicializado: {settings.db_path}', 'green')
+
+# ── Configurar logging ───────────────────────────────────
+_LOG_DIR = str(settings.log_dir)
+os.makedirs(_LOG_DIR, exist_ok=True)
+
+_log_handler = RotatingFileHandler(
+    str(settings.log_file), maxBytes=2*1024*1024, backupCount=3, encoding='utf-8')
+_log_handler.setFormatter(logging.Formatter('%(asctime)s [%(levelname)s] %(message)s'))
+_log_handler.setLevel(logging.WARNING)
+app.logger.addHandler(_log_handler)
+
+# ── Mensagens de startup ─────────────────────────────────
+_terminal_log('BOOT', f'Servidor Flask pronto', 'green')
+_terminal_log('INFO', f'Host: {settings.host}', 'cyan')
+_terminal_log('INFO', f'Porta: {settings.port}', 'cyan')
+_terminal_log('INFO', f'Debug: {settings.debug}', 'cyan')
+_terminal_log('INFO', f'Acesso: http://localhost:{settings.port}', 'green')
+print()
+
+# ── Iniciar servidor ─────────────────────────────────────
+if __name__ == '__main__':
+    app.run(
+        host=settings.host,
+        port=settings.port,
+        debug=settings.debug,
+        use_reloader=settings.reloader,
+        threaded=True,
+    )

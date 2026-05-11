@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aquisições – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script>window.addEventListener('load',function(){var s=document.createElement('script');s.src='/static/js/brasao_b64.js';document.head.appendChild(s);});</script>
+  <style>
+    /* ── PAGE ── */
+    .forn-page { min-height: calc(100vh - 64px); padding: 20px 16px 60px; }
+
+    /* ── HERO ── */
+    .forn-hero { display: flex; align-items: center; gap: 14px; max-width: 1200px; margin: 0 auto 18px; }
+    .forn-hero-icon { width: 48px; height: 48px; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); border-radius: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 10px rgba(79,128,200,.3); }
+    .forn-hero-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2; }
+    .forn-hero h2 { font-size: clamp(17px,4vw,22px); font-weight: 800; color: var(--text); margin: 0; }
+    .forn-hero p { font-size: 12px; color: var(--text-3); margin: 2px 0 0; }
+
+    /* ── TABS ── */
+    .forn-tabs { display: flex; gap: 6px; max-width: 1200px; margin: 0 auto 20px; flex-wrap: wrap; }
+    .forn-tab { padding: 9px 20px; border: none; background: var(--bg); font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-3); cursor: pointer; border-radius: 50px; box-shadow: var(--neo-sm); transition: all .2s; }
+    .forn-tab.active { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; box-shadow: 3px 3px 8px rgba(79,128,200,.4); }
+    .forn-tab:hover:not(.active) { color: var(--text); box-shadow: var(--neo); }
+    .forn-panel { display: none; max-width: 1200px; margin: 0 auto; }
+    .forn-panel.active { display: block; }
+
+    /* ── STATS BAR ── */
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo-sm); padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 160px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .stat-icon svg { width: 20px; height: 20px; stroke-width: 2; fill: none; }
+    .stat-icon.blue { background: var(--blue-light); }
+    .stat-icon.blue svg { stroke: var(--blue); }
+    .stat-icon.green { background: var(--green-bg); }
+    .stat-icon.green svg { stroke: var(--green); }
+    .stat-icon.orange { background: var(--orange-bg); }
+    .stat-icon.orange svg { stroke: var(--orange); }
+    .stat-val { font-size: 20px; font-weight: 800; color: var(--text); }
+    .stat-lbl { font-size: 11px; color: var(--text-3); }
+
+    /* ── LAYOUT ── */
+    .form-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    @media(max-width:900px) { .form-layout { grid-template-columns: 1fr; } }
+
+    /* ── CARD ── */
+    .forn-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 22px; margin-bottom: 20px; }
+    .forn-card h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .forn-card h3 svg { width: 18px; height: 18px; stroke: var(--blue); fill: none; stroke-width: 2; }
+
+    /* ── FORM ── */
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
+    .fg input, .fg select, .fg textarea {
+      background: var(--bg); border: none; border-radius: var(--radius-sm);
+      box-shadow: var(--neo-in-sm); padding: 10px 12px; font-family: inherit;
+      font-size: 13px; color: var(--text); outline: none; transition: box-shadow .2s;
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { box-shadow: var(--neo-in); }
+    .fg textarea { resize: vertical; min-height: 60px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .grid4 { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 10px; align-items: end; }
+    .char-counter { font-size: 10px; color: var(--text-3); text-align: right; margin-top: 2px; }
+    .picker-field { position: relative; }
+    .picker-input-wrap { position: relative; }
+    .picker-input-wrap input { padding-right: 42px; }
+    .picker-toggle {
+      position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+      width: 28px; height: 28px; border: none; border-radius: 8px;
+      background: transparent; color: var(--text-3); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .picker-toggle:hover { background: rgba(79,128,200,.12); color: var(--blue); }
+    .picker-toggle svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+    .picker-menu {
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40;
+      display: none; max-height: 220px; overflow-y: auto; padding: 8px;
+      background: var(--bg); border-radius: 14px; box-shadow: var(--neo), 0 12px 28px rgba(15, 23, 42, .12);
+    }
+    .picker-field.open .picker-menu { display: block; }
+    .picker-search {
+      width: 100%; margin-bottom: 8px; background: var(--bg); border: none; border-radius: 10px;
+      box-shadow: var(--neo-in-sm); padding: 9px 11px; font-family: inherit; font-size: 12px; color: var(--text); outline: none;
+    }
+    .picker-option {
+      display: block; width: 100%; text-align: left; border: none; cursor: pointer;
+      background: transparent; color: var(--text); font-family: inherit; font-size: 12px;
+      padding: 9px 10px; border-radius: 10px; transition: all .15s;
+    }
+    .picker-option:hover { background: rgba(79,128,200,.10); color: var(--blue); }
+    .picker-empty { padding: 8px 10px; font-size: 12px; color: var(--text-3); }
+    .request-status { margin-top: 10px; font-size: 12px; color: var(--text-3); }
+    .saved-toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+    .saved-toolbar input { flex:1; min-width:220px; background: var(--bg); border:none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 12px; font-family: inherit; font-size: 13px; color: var(--text); outline:none; }
+    .saved-list { display:flex; flex-direction:column; gap:10px; }
+    .saved-card { background: var(--bg); border-radius: 14px; box-shadow: var(--neo-in-sm); padding: 14px; }
+    .saved-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .saved-card-title { font-size: 13px; font-weight: 800; color: var(--text); }
+    .saved-card-sub { margin-top: 4px; font-size: 11px; color: var(--text-3); line-height: 1.5; }
+    .saved-card-meta { margin-top: 8px; font-size: 11px; color: var(--text-3); display:flex; gap:10px; flex-wrap:wrap; }
+    .saved-card-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top: 12px; }
+    .saved-empty { padding: 22px 14px; text-align:center; color: var(--text-3); font-size: 13px; background: var(--bg); border-radius: 14px; box-shadow: var(--neo-in-sm); }
+
+    /* ── ITEMS ── */
+    .item-card { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 14px; margin-bottom: 10px; position: relative; }
+    .item-card .grid4 { margin-bottom: 0; }
+    .item-total { font-size: 13px; font-weight: 700; color: var(--green-dark); margin-top: 8px; text-align: right; }
+    .item-remove { position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; color: var(--red); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .item-remove:hover { background: var(--red-bg); }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; transition: all .2s; }
+    .btn-blue { background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff; box-shadow: 3px 3px 8px rgba(79,128,200,.4); }
+    .btn-blue:hover { box-shadow: 5px 5px 12px rgba(79,128,200,.5); }
+    .btn-green { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; box-shadow: 3px 3px 8px rgba(58,170,110,.4); }
+    .btn-green:hover { box-shadow: 5px 5px 12px rgba(58,170,110,.5); }
+    .btn-orange { background: linear-gradient(135deg, var(--orange), #c06a2a); color: #fff; box-shadow: 3px 3px 8px rgba(217,124,58,.4); }
+    .btn-red { background: var(--bg); color: var(--red); box-shadow: var(--neo-sm); }
+    .btn-red:hover { box-shadow: var(--neo); }
+    .btn-ghost { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); }
+    .btn-ghost:hover { box-shadow: var(--neo); }
+    .btn-sm { padding: 7px 13px; font-size: 12px; border-radius: var(--radius-sm); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── PREVIEW ── */
+    .preview-mini { background: #fff; border-radius: 6px; padding: 16px; font-size: 9px; color: #333; line-height: 1.4; min-height: 200px; border: 1px solid #ddd; }
+    .preview-mini .ph { background: var(--blue); color: #fff; padding: 6px 8px; text-align: center; font-weight: 700; font-size: 10px; border-radius: 4px 4px 0 0; margin: -16px -16px 10px; }
+    .preview-mini table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 8px; }
+    .preview-mini th { background: var(--blue); color: #fff; padding: 3px 4px; text-align: left; font-size: 8px; }
+    .preview-mini td { padding: 3px 4px; border-bottom: 1px solid #eee; }
+    .preview-mini .pf { background: var(--blue); color: #fff; padding: 4px 8px; text-align: center; font-size: 8px; border-radius: 0 0 4px 4px; margin: 10px -16px -16px; }
+
+    /* ── BATCH ── */
+    .batch-result { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 16px; margin-top: 14px; max-height: 400px; overflow-y: auto; }
+    .batch-valid { color: var(--green-dark); font-weight: 600; }
+    .batch-error { color: var(--red); font-weight: 600; }
+    .batch-line { padding: 6px 0; border-bottom: 1px solid rgba(184,194,204,.2); font-size: 12px; }
+
+    /* ── DATA MANAGER ── */
+    .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--bg); box-shadow: var(--neo-sm); padding: 5px 12px; border-radius: 50px; font-size: 12px; color: var(--text-2); cursor: pointer; transition: all .15s; border: none; font-family: inherit; }
+    .chip:hover { box-shadow: var(--neo); color: var(--blue); }
+    .chip .chip-x { font-size: 14px; color: var(--red); margin-left: 4px; cursor: pointer; }
+    .chip .chip-x:hover { font-weight: 700; }
+
+    .data-section { margin-bottom: 20px; }
+    .data-section h4 { font-size: 12px; font-weight: 700; color: var(--text-3); text-transform: uppercase; margin-bottom: 6px; }
+    .add-row { display: flex; gap: 8px; }
+    .add-row input { flex: 1; }
+
+    /* ── UPLOAD AREA ── */
+    .upload-area { border: 2px dashed var(--shadow-dark); border-radius: var(--radius); padding: 30px; text-align: center; color: var(--text-3); cursor: pointer; transition: all .2s; }
+    .upload-area:hover { border-color: var(--blue); color: var(--blue); }
+    .upload-area svg { width: 36px; height: 36px; margin-bottom: 8px; }
+
+    .hidden { display: none !important; }
+
+    /* ── DOC PREVIEW ── */
+    .doc-preview { background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; font-family: Arial, sans-serif; font-size: 12px; color: #2d3748; min-height: 350px; }
+    .dp-header { background: linear-gradient(135deg, #1e3a5f, #2d5986); padding: 14px 20px; display: flex; align-items: center; gap: 14px; }
+    .dp-header img { height: 48px; width: auto; }
+    .dp-header-center { flex: 1; text-align: center; }
+    .dp-header-center h2 { font-size: 15px; font-weight: 900; color: #fff; margin: 0; }
+    .dp-header-center p { font-size: 10px; color: rgba(255,255,255,.7); margin: 3px 0 0; }
+    .dp-separator { border: none; border-top: 3px solid #1e3a5f; margin: 0 20px 16px; }
+    .dp-doc-title { text-align: center; padding: 14px 20px 0; font-size: 14px; font-weight: 900; color: #1e3a5f; text-transform: uppercase; letter-spacing: 2px; }
+    .dp-info-box { margin: 12px 20px; background: #f0f5ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 10px 16px; display: flex; gap: 24px; font-size: 12px; flex-wrap: wrap; }
+    .dp-info-box span { color: #4a5568; } .dp-info-box strong { color: #1e3a5f; }
+    .dp-table-wrap { padding: 0 20px 12px; }
+    .dp-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .dp-table thead tr { background: #1e3a5f; }
+    .dp-table th { color: #fff; padding: 8px 10px; font-size: 11px; text-align: left; font-weight: 700; }
+    .dp-table tbody tr:nth-child(even) { background: #edf2ff; }
+    .dp-table td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; color: #2d3748; }
+    .dp-total-row { margin: 0 20px 12px; background: #1e3a5f; color: #fff; padding: 8px 14px; border-radius: 4px; text-align: right; font-weight: 700; font-size: 14px; }
+    .dp-obs-row { margin: 0 20px 16px; font-size: 11px; color: #718096; }
+    .dp-sign-row { margin: 0 20px 20px; text-align: center; }
+    .dp-sign-line { width: 280px; border-top: 1px solid #2d3748; margin: 0 auto 6px; padding-top: 4px; }
+    .dp-sign-name { font-size: 12px; font-weight: 700; color: #2d3748; }
+    .dp-sign-sub { font-size: 10px; color: #718096; }
+    .dp-footer { background: #f7fafc; border-top: 2px solid #1e3a5f; padding: 8px 20px; font-size: 10px; color: #a0aec0; text-align: center; }
+    .dp-empty { padding: 40px; text-align: center; color: #a0aec0; font-size: 13px; }
+
+    /* ── QUEUE / BATCH MANUAL ── */
+    .queue-item { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .queue-item-info { flex: 1; }
+    .queue-item-name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .queue-item-meta { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .queue-item-total { font-size: 13px; font-weight: 700; color: var(--green-dark); }
+    .bl-item { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 8px; align-items: end; margin-bottom: 8px; }
+    .bl-item input { background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 8px 10px; font-family: inherit; font-size: 12px; color: var(--text); outline: none; width: 100%; }
+    .bl-item-remove { background: none; border: none; color: var(--red); cursor: pointer; font-size: 18px; padding: 4px 8px; }
+  </style>
+  <script defer src="/static/js/shared-header.js"></script>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="forn-page">
+
+  <!-- Hero -->
+  <div class="forn-hero">
+    <div class="forn-hero-icon">
+      <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </div>
+    <div>
+      <h2>Sistema de Solicitações de Aquisição</h2>
+      <p>Gerencie solicitações de fornecimento e aquisição de materiais</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="forn-tabs">
+    <button class="forn-tab active" data-panel="tab-form">📝 Formulário</button>
+    <button class="forn-tab" data-panel="tab-batch">📦 Lote</button>
+    <button class="forn-tab" data-panel="tab-data">💾 Dados</button>
+  </div>
+
+  <!-- ════════ TAB 1 – FORMULÁRIO ════════ -->
+  <div class="forn-panel active" id="tab-form">
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon blue"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+        <div><div class="stat-val" id="stat-items">0</div><div class="stat-lbl">Itens</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
+        <div><div class="stat-val" id="stat-total">R$ 0,00</div><div class="stat-lbl">Total</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div><div class="stat-val" id="stat-status">0%</div><div class="stat-lbl">Preenchimento</div></div>
+      </div>
+    </div>
+
+    <div class="form-layout">
+      <!-- LEFT COLUMN -->
+      <div>
+        <!-- Form Fields -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Dados da Solicitação</h3>
+          <div class="grid2" style="margin-bottom:14px;">
+            <div class="fg">
+              <label>Solicitante</label>
+              <div class="picker-field" data-picker-source="solicitantes">
+                <div class="picker-input-wrap">
+                  <input type="text" id="f-solicitante" placeholder="Nome do solicitante" list="dl-solicitantes" autocomplete="off" />
+                  <button type="button" class="picker-toggle" data-picker-toggle aria-label="Selecionar solicitante salvo">
+                    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                </div>
+                <div class="picker-menu" data-picker-menu></div>
+              </div>
+              <datalist id="dl-solicitantes"></datalist>
+            </div>
+            <div class="fg">
+              <label>Empresa</label>
+              <div class="picker-field" data-picker-source="empresas">
+                <div class="picker-input-wrap">
+                  <input type="text" id="f-empresa" placeholder="Nome da empresa" list="dl-empresas" autocomplete="off" />
+                  <button type="button" class="picker-toggle" data-picker-toggle aria-label="Selecionar empresa salva">
+                    <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                </div>
+                <div class="picker-menu" data-picker-menu></div>
+              </div>
+              <datalist id="dl-empresas"></datalist>
+            </div>
+          </div>
+          <div class="grid2" style="margin-bottom:14px;">
+            <div class="fg">
+              <label>Data</label>
+              <input type="text" id="f-data" placeholder="DD/MM/AAAA" />
+            </div>
+            <div class="fg" style="position:relative;">
+              <label>Observações <span class="char-counter" id="obs-counter">0/500</span></label>
+              <textarea id="f-obs" maxlength="500" placeholder="Observações opcionais..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items Section -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Itens da Solicitação</h3>
+          <div id="items-container"></div>
+          <button class="btn btn-blue btn-sm" id="btn-add-item" style="margin-top:10px;">+ Adicionar Item</button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+        <!-- Actions -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Ações</h3>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn btn-green" id="btn-save-request">💾 Salvar no Banco</button>
+            <button class="btn btn-blue" id="btn-export-pdf" data-tooltip="Gerar solicitação de aquisição em PDF">📄 Exportar PDF</button>
+            <button class="btn btn-ghost" id="btn-duplicate-current">🧬 Clonar Atual</button>
+            <button class="btn btn-red" id="btn-clear">🗑 Limpar</button>
+          </div>
+          <div class="request-status" id="request-status">Nenhuma solicitação carregada do banco.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Preview full-width -->
+    <div class="forn-card" style="margin-top:0;">
+      <h3><svg viewBox="0 0 24 24"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg> Pré-visualização do Documento</h3>
+      <div class="doc-preview" id="preview-box">
+        <div class="dp-empty" id="dp-empty">Preencha os dados acima para ver a pré-visualização</div>
+        <div id="dp-content" style="display:none;">
+          <div class="dp-header">
+            <img id="dp-brasao" src="" alt="Brasão" />
+            <div class="dp-header-center"><h2>PREFEITURA MUNICIPAL DE INAJÁ</h2><p>Estado do Paraná</p></div>
+          </div>
+          <div class="dp-doc-title">Solicitação de Aquisição / Fornecimento</div>
+          <hr class="dp-separator" />
+          <div class="dp-info-box" id="dp-info"></div>
+          <div class="dp-table-wrap">
+            <table class="dp-table"><thead><tr><th>#</th><th>Item</th><th>Descrição</th><th>Qtd</th><th>Preço Unit.</th><th>Total</th></tr></thead>
+            <tbody id="dp-tbody"></tbody></table>
+          </div>
+          <div class="dp-total-row" id="dp-total"></div>
+          <div class="dp-obs-row" id="dp-obs-preview"></div>
+          <div class="dp-sign-row" id="dp-sign"></div>
+          <div class="dp-footer">Prefeitura Municipal de Inajá – Documento gerado eletronicamente</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 2 – LOTE ════════ -->
+  <div class="forn-panel" id="tab-batch">
+
+    <!-- Manual Entry -->
+    <div class="forn-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Adicionar Solicitação ao Lote</h3>
+      <div class="grid2" style="margin-bottom:12px;">
+        <div class="fg">
+          <label>Solicitante</label>
+          <div class="picker-field" data-picker-source="solicitantes">
+            <div class="picker-input-wrap">
+              <input type="text" id="bl-sol" placeholder="Nome do solicitante" autocomplete="off" />
+              <button type="button" class="picker-toggle" data-picker-toggle aria-label="Selecionar solicitante salvo">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </div>
+            <div class="picker-menu" data-picker-menu></div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Empresa</label>
+          <div class="picker-field" data-picker-source="empresas">
+            <div class="picker-input-wrap">
+              <input type="text" id="bl-emp" placeholder="Nome da empresa" autocomplete="off" />
+              <button type="button" class="picker-toggle" data-picker-toggle aria-label="Selecionar empresa salva">
+                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </div>
+            <div class="picker-menu" data-picker-menu></div>
+          </div>
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:12px;">
+        <label>Observações</label>
+        <input type="text" id="bl-obs" placeholder="Opcional..." />
+      </div>
+      <div id="bl-items-container"></div>
+      <div class="btn-row" style="margin:10px 0;">
+        <button class="btn btn-ghost btn-sm" id="bl-add-item">+ Item</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" id="bl-add-to-queue">➕ Adicionar à Fila</button>
+        <button class="btn btn-ghost btn-sm" id="bl-clear-form">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="forn-card" id="queue-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M9 12h6m-3-3v6M3 12a9 9 0 1018 0 9 9 0 00-18 0z"/></svg> Fila de Lote <span id="queue-count" style="background:var(--blue);color:#fff;border-radius:50px;padding:2px 10px;font-size:11px;margin-left:8px;">0</span></h3>
+      <div id="queue-list"></div>
+      <div class="btn-row" style="margin-top:14px;" id="queue-actions">
+        <button class="btn btn-blue" id="btn-batch-pdf">📄 Exportar Lote PDF</button>
+        <button class="btn btn-green" id="btn-batch-json">💾 Exportar JSON</button>
+        <button class="btn btn-red btn-sm" id="btn-clear-queue">🗑 Limpar Fila</button>
+      </div>
+    </div>
+
+    <!-- Import via Arquivo -->
+    <div class="forn-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Importar via Arquivo</h3>
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:14px;">Formato: <code>SOLICITANTE|EMPRESA|OBS|ITEM:DESC:QTD:VALOR;ITEM:DESC:QTD:VALOR</code></p>
+      <div class="btn-row" style="margin-bottom:16px;">
+        <button class="btn btn-ghost btn-sm" id="btn-download-template">📥 Baixar Template</button>
+      </div>
+      <div class="upload-area" id="batch-upload-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <div>Clique ou arraste um arquivo .txt aqui</div>
+        <input type="file" id="batch-file-input" accept=".txt" style="display:none;" />
+      </div>
+      <div id="batch-results" class="hidden"></div>
+    </div>
+
+    <!-- Batch Summary (from file import) -->
+    <div class="forn-card hidden" id="batch-actions-card">
+      <h3><svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> Resultado da Importação</h3>
+      <div id="batch-summary" style="margin-bottom:14px;"></div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 3 – DADOS ════════ -->
+  <div class="forn-panel" id="tab-data">
+    <div class="form-layout">
+      <div>
+        <!-- Data Manager -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Gerenciador de Dados</h3>
+
+          <div class="data-section">
+            <h4>Solicitantes</h4>
+            <div class="add-row">
+              <input type="text" id="add-solic-input" placeholder="Novo solicitante..." class="fg" style="padding:8px 10px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+              <button class="btn btn-blue btn-sm" id="btn-add-solic">+</button>
+            </div>
+            <div class="chip-list" id="solic-chips"></div>
+          </div>
+
+          <div class="data-section">
+            <h4>Empresas</h4>
+            <div class="add-row">
+              <input type="text" id="add-emp-input" placeholder="Nova empresa..." class="fg" style="padding:8px 10px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+              <button class="btn btn-blue btn-sm" id="btn-add-emp">+</button>
+            </div>
+            <div class="chip-list" id="emp-chips"></div>
+          </div>
+
+          <div class="data-section">
+            <h4>Observações</h4>
+            <div class="add-row">
+              <input type="text" id="add-obs-input" placeholder="Nova observação..." class="fg" style="padding:8px 10px;background:var(--bg);border:none;border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);font-family:inherit;font-size:13px;color:var(--text);outline:none;" />
+              <button class="btn btn-blue btn-sm" id="btn-add-obs">+</button>
+            </div>
+            <div class="chip-list" id="obs-chips"></div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--shadow-dark);margin:18px 0;" />
+          <div class="btn-row">
+            <button class="btn btn-green btn-sm" id="btn-export-data">📤 Exportar Dados</button>
+            <button class="btn btn-ghost btn-sm" id="btn-import-data">📥 Importar Dados</button>
+            <button class="btn btn-red btn-sm" id="btn-clear-data">🗑 Limpar Tudo</button>
+            <input type="file" id="import-data-file" accept=".json" style="display:none;" />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg> Solicitações Salvas</h3>
+          <div class="saved-toolbar">
+            <input type="text" id="saved-request-search" placeholder="Buscar por solicitante, empresa ou observação..." />
+            <button class="btn btn-ghost btn-sm" id="btn-refresh-saved">↻ Atualizar</button>
+          </div>
+          <div id="saved-requests-list" class="saved-list"></div>
+        </div>
+
+        <!-- Template Manager -->
+        <div class="forn-card">
+          <h3><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Gerenciador de Templates</h3>
+          <div class="fg" style="margin-bottom:12px;">
+            <label>Nome do Template</label>
+            <input type="text" id="template-name" placeholder="Ex: Fornecimento mensal..." />
+          </div>
+          <div class="btn-row" style="margin-bottom:16px;">
+            <button class="btn btn-blue btn-sm" id="btn-save-template">💾 Salvar Template</button>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--shadow-dark);margin:14px 0;" />
+          <div class="fg">
+            <label>Carregar Template</label>
+            <div class="upload-area" id="template-upload-area" style="padding:20px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <div style="font-size:12px;">Carregar arquivo JSON</div>
+              <input type="file" id="template-file-input" accept=".json" style="display:none;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+</main>
+
+<script>
+/* ═══════════ THEME & NAV ═══════════ */
+const saved = localStorage.getItem('theme');
+if (saved) document.documentElement.setAttribute('data-theme', saved);
+
+/* ═══════════ TAB SWITCHING ═══════════ */
+function switchFornecimentoTab(panelId) {
+  document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.forn-tab[data-panel="${panelId}"]`)?.classList.add('active');
+  document.getElementById(panelId)?.classList.add('active');
+}
+
+document.querySelectorAll('.forn-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    switchFornecimentoTab(tab.dataset.panel);
+  });
+});
+
+/* ═══════════ HELPERS ═══════════ */
+function fmtMoney(v) {
+  return 'R$ ' + v.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+function parseMoney(s) {
+  if (!s) return 0;
+  return parseFloat(String(s).replace(/[^\d,.-]/g, '').replace(',', '.')) || 0;
+}
+function todayStr() {
+  const d = new Date();
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+}
+function download(filename, content, mime) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ═══════════ STATE ═══════════ */
+let items = [];
+let itemIdCounter = 0;
+let processedRequests = [];
+let currentRequestId = null;
+let savedRequests = [];
+
+/* ═══════════ TAB 1 – FORMULÁRIO ═══════════ */
+const $sol = document.getElementById('f-solicitante');
+const $emp = document.getElementById('f-empresa');
+const $dat = document.getElementById('f-data');
+const $obs = document.getElementById('f-obs');
+const $itemsC = document.getElementById('items-container');
+
+// Auto-fill date
+$dat.value = todayStr();
+
+// Char counter
+$obs.addEventListener('input', () => {
+  document.getElementById('obs-counter').textContent = $obs.value.length + '/500';
+});
+
+// Add item
+function createItemId() { return ++itemIdCounter; }
+
+function addItem(data) {
+  const id = createItemId();
+  const item = { id, nome: data?.nome || '', desc: data?.desc || '', qtd: data?.qtd || '', preco: data?.preco || '' };
+  items.push(item);
+  renderItems();
+  return id;
+}
+
+function removeItem(id) {
+  items = items.filter(i => i.id !== id);
+  renderItems();
+}
+
+function renderItems() {
+  $itemsC.innerHTML = '';
+  items.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'item-card';
+    const qtd = parseFloat(item.qtd) || 0;
+    const preco = parseMoney(item.preco);
+    const total = qtd * preco;
+    div.innerHTML = `
+      <button class="item-remove" data-id="${item.id}">&times;</button>
+      <div class="grid4">
+        <div class="fg"><label>Item</label><input type="text" value="${esc(item.nome)}" data-field="nome" data-id="${item.id}" /></div>
+        <div class="fg"><label>Descrição</label><input type="text" value="${esc(item.desc)}" data-field="desc" data-id="${item.id}" /></div>
+        <div class="fg"><label>Qtd</label><input type="number" min="0" step="1" value="${esc(item.qtd)}" data-field="qtd" data-id="${item.id}" /></div>
+        <div class="fg"><label>Preço Unit.</label><input type="text" value="${esc(item.preco)}" data-field="preco" data-id="${item.id}" /></div>
+      </div>
+      <div class="item-total">Total: ${fmtMoney(total)}</div>
+    `;
+    $itemsC.appendChild(div);
+  });
+
+  // Bind events
+  $itemsC.querySelectorAll('.item-remove').forEach(btn => {
+    btn.addEventListener('click', () => removeItem(Number(btn.dataset.id)));
+  });
+  $itemsC.querySelectorAll('input[data-field]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const it = items.find(i => i.id === Number(inp.dataset.id));
+      if (it) { it[inp.dataset.field] = inp.value; }
+      updateTotals();
+      updatePreview();
+    });
+  });
+
+  updateTotals();
+  updatePreview();
+}
+
+function esc(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+function getGrandTotal() {
+  return items.reduce((s, i) => s + (parseFloat(i.qtd) || 0) * parseMoney(i.preco), 0);
+}
+
+function updateTotals() {
+  // Re-render totals inside item cards
+  $itemsC.querySelectorAll('.item-card').forEach(card => {
+    const id = Number(card.querySelector('.item-remove').dataset.id);
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const total = (parseFloat(it.qtd) || 0) * parseMoney(it.preco);
+    card.querySelector('.item-total').textContent = 'Total: ' + fmtMoney(total);
+  });
+
+  document.getElementById('stat-items').textContent = items.length;
+  document.getElementById('stat-total').textContent = fmtMoney(getGrandTotal());
+
+  // Completion
+  let filled = 0, total = 3;
+  if ($sol.value.trim()) filled++;
+  if ($emp.value.trim()) filled++;
+  if (items.length > 0) filled++;
+  document.getElementById('stat-status').textContent = Math.round(filled / total * 100) + '%';
+}
+
+function updatePreview() {
+  const hasContent = $sol.value.trim() || $emp.value.trim() || items.length > 0;
+  document.getElementById('dp-empty').style.display = hasContent ? 'none' : '';
+  document.getElementById('dp-content').style.display = hasContent ? '' : 'none';
+
+  // Brasão
+  const brasaoEl = document.getElementById('dp-brasao');
+  if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
+    brasaoEl.src = BRASAO_B64; brasaoEl.style.display = '';
+  } else { brasaoEl.style.display = 'none'; }
+
+  // Info
+  document.getElementById('dp-info').innerHTML =
+    `<span><strong>Solicitante:</strong> ${esc($sol.value) || '—'}</span>` +
+    `<span><strong>Empresa:</strong> ${esc($emp.value) || '—'}</span>` +
+    `<span><strong>Data:</strong> ${esc($dat.value) || '—'}</span>`;
+
+  // Table
+  document.getElementById('dp-tbody').innerHTML = items.map((i, idx) => {
+    const t = (parseFloat(i.qtd)||0) * parseMoney(i.preco);
+    return `<tr><td>${idx+1}</td><td>${esc(i.nome)}</td><td>${esc(i.desc)}</td><td>${esc(i.qtd)}</td><td>${esc(i.preco)}</td><td>${fmtMoney(t)}</td></tr>`;
+  }).join('');
+
+  document.getElementById('dp-total').textContent = items.length ? 'TOTAL: ' + fmtMoney(getGrandTotal()) : '';
+  document.getElementById('dp-obs-preview').textContent = $obs.value ? '📝 ' + $obs.value : '';
+
+  // Signature
+  document.getElementById('dp-sign').innerHTML = $sol.value.trim() ? `
+    <div class="dp-sign-line"></div>
+    <div class="dp-sign-name">${esc($sol.value)}</div>
+    <div class="dp-sign-sub">Assinatura do Solicitante</div>` : '';
+}
+
+function getRequestPayload() {
+  return {
+    solicitante: $sol.value.trim(),
+    empresa: $emp.value.trim(),
+    data: $dat.value.trim(),
+    obs: $obs.value.trim(),
+    items: items.map(i => ({
+      nome: String(i.nome || '').trim(),
+      desc: String(i.desc || '').trim(),
+      qtd: String(i.qtd || '').trim(),
+      preco: String(i.preco || '').trim()
+    })).filter(i => i.nome || i.desc || i.qtd || i.preco)
+  };
+}
+
+function resetRequestEditor() {
+  currentRequestId = null;
+  document.getElementById('request-status').textContent = 'Nenhuma solicitação carregada do banco.';
+}
+
+function updateRequestStatus(savedRequest) {
+  const el = document.getElementById('request-status');
+  if (!savedRequest) {
+    resetRequestEditor();
+    return;
+  }
+  currentRequestId = Number(savedRequest.id);
+  el.textContent = `Editando solicitação #${savedRequest.id} · Atualizada em ${savedRequest.atualizado_em || savedRequest.criado_em || 'agora'}.`;
+}
+
+function applyRequestToForm(req, { cloned = false } = {}) {
+  $sol.value = req.solicitante || '';
+  $emp.value = req.empresa || '';
+  $dat.value = req.data || todayStr();
+  $obs.value = req.obs || '';
+  document.getElementById('obs-counter').textContent = `${$obs.value.length}/500`;
+  items = [];
+  itemIdCounter = 0;
+  (req.items || []).forEach(item => {
+    addItem({
+      nome: item.nome || '',
+      desc: item.desc || '',
+      qtd: item.qtd || '',
+      preco: item.preco || ''
+    });
+  });
+  if (!req.items || !req.items.length) renderItems();
+  updateRequestStatus(cloned ? null : req);
+  updateTotals();
+  updatePreview();
+  switchFornecimentoTab('tab-form');
+  localStorage.setItem('inaja-form-autosave', JSON.stringify({
+    solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value
+  }));
+  localStorage.setItem('inaja-items-autosave', JSON.stringify(items));
+}
+
+async function loadSavedRequests() {
+  try {
+    const q = document.getElementById('saved-request-search')?.value?.trim() || '';
+    const r = await fetch(`/api/fornecimento/solicitacoes${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+    const data = await r.json().catch(() => ([]));
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    savedRequests = Array.isArray(data) ? data : [];
+    renderSavedRequests();
+  } catch (e) {
+    showToast('❌ Falha ao carregar solicitações salvas: ' + e.message, 'error');
+  }
+}
+
+function renderSavedRequests() {
+  const list = document.getElementById('saved-requests-list');
+  if (!list) return;
+  if (!savedRequests.length) {
+    list.innerHTML = '<div class="saved-empty">Nenhuma solicitação salva encontrada.</div>';
+    return;
+  }
+  list.innerHTML = savedRequests.map(req => `
+    <div class="saved-card" data-saved-id="${req.id}">
+      <div class="saved-card-head">
+        <div>
+          <div class="saved-card-title">${esc(req.solicitante || 'Sem solicitante')}</div>
+          <div class="saved-card-sub">${esc(req.empresa || 'Sem empresa')} · ${esc(req.data || 'Sem data')}</div>
+        </div>
+        <div class="saved-card-sub">#${req.id}</div>
+      </div>
+      <div class="saved-card-meta">
+        <span>${req.total_itens || 0} item(ns)</span>
+        <span>${fmtMoney(Number(req.valor_total || 0))}</span>
+        <span>${esc(req.atualizado_em || req.criado_em || '')}</span>
+      </div>
+      ${req.obs ? `<div class="saved-card-sub" style="margin-top:8px;">${esc(req.obs)}</div>` : ''}
+      <div class="saved-card-actions">
+        <button class="btn btn-blue btn-sm" data-action="edit">Editar</button>
+        <button class="btn btn-ghost btn-sm" data-action="duplicate">Clonar</button>
+        <button class="btn btn-ghost btn-sm" data-action="pdf">PDF</button>
+        <button class="btn btn-red btn-sm" data-action="delete">Excluir</button>
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-saved-id]').forEach(card => {
+    const id = Number(card.dataset.savedId);
+    const req = savedRequests.find(x => Number(x.id) === id);
+    if (!req) return;
+    card.querySelector('[data-action="edit"]')?.addEventListener('click', () => applyRequestToForm(req));
+    card.querySelector('[data-action="duplicate"]')?.addEventListener('click', async () => {
+      try {
+        const r = await fetch(`/api/fornecimento/solicitacoes/${id}/duplicate`, { method: 'POST' });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+        showToast('✅ Solicitação clonada no banco.', 'success');
+        await loadSavedRequests();
+        applyRequestToForm(data, { cloned: true });
+      } catch (e) {
+        showToast('❌ Falha ao clonar: ' + e.message, 'error');
+      }
+    });
+    card.querySelector('[data-action="pdf"]')?.addEventListener('click', () => {
+      const doc = generatePDF(req);
+      doc.save('solicitacao_' + (req.solicitante || 'doc').replace(/\s+/g, '_') + '.pdf');
+    });
+    card.querySelector('[data-action="delete"]')?.addEventListener('click', async () => {
+      if (!confirm(`Excluir a solicitação #${id}?`)) return;
+      try {
+        const r = await fetch(`/api/fornecimento/solicitacoes/${id}`, { method: 'DELETE' });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+        if (currentRequestId === id) resetRequestEditor();
+        showToast('✅ Solicitação excluída.', 'success');
+        await loadSavedRequests();
+      } catch (e) {
+        showToast('❌ Falha ao excluir: ' + e.message, 'error');
+      }
+    });
+  });
+}
+
+async function saveCurrentRequest({ silent = false } = {}) {
+  const payload = getRequestPayload();
+  if (!payload.solicitante) throw new Error('Informe o solicitante.');
+  if (!payload.items.length) throw new Error('Adicione pelo menos um item.');
+  const isUpdate = !!currentRequestId;
+  const url = isUpdate ? `/api/fornecimento/solicitacoes/${currentRequestId}` : '/api/fornecimento/solicitacoes';
+  const method = isUpdate ? 'PUT' : 'POST';
+  const r = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  updateRequestStatus(data);
+  await loadSavedRequests();
+  if (!silent) showToast(isUpdate ? '✅ Solicitação atualizada no banco.' : '✅ Solicitação salva no banco.', 'success');
+  return data;
+}
+
+// Listen for form changes
+[$sol, $emp, $dat, $obs].forEach(el => el.addEventListener('input', () => { updateTotals(); updatePreview(); }));
+
+document.getElementById('btn-add-item').addEventListener('click', () => addItem());
+document.getElementById('btn-save-request').addEventListener('click', async () => {
+  try {
+    await saveCurrentRequest();
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  }
+});
+document.getElementById('btn-duplicate-current').addEventListener('click', async () => {
+  try {
+    if (currentRequestId) {
+      const r = await fetch(`/api/fornecimento/solicitacoes/${currentRequestId}/duplicate`, { method: 'POST' });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+      await loadSavedRequests();
+      applyRequestToForm(data, { cloned: true });
+      showToast('✅ Solicitação clonada. Edite e salve quando quiser.', 'success');
+      return;
+    }
+    const payload = getRequestPayload();
+    if (!payload.solicitante) throw new Error('Informe o solicitante.');
+    if (!payload.items.length) throw new Error('Adicione pelo menos um item.');
+    resetRequestEditor();
+    showToast('✅ Formulário preparado como nova cópia. Agora salve no banco.', 'success');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  }
+});
+
+// Clear
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Limpar todo o formulário?')) return;
+  $sol.value = ''; $emp.value = ''; $dat.value = todayStr(); $obs.value = '';
+  document.getElementById('obs-counter').textContent = '0/500';
+  items = [];
+  itemIdCounter = 0;
+  resetRequestEditor();
+  renderItems();
+});
+
+/* ═══════════ AUTO-SAVE ═══════════ */
+setInterval(() => {
+  localStorage.setItem('inaja-form-autosave', JSON.stringify({
+    solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value
+  }));
+  localStorage.setItem('inaja-items-autosave', JSON.stringify(items));
+}, 2000);
+
+// Restore
+(function restoreAutoSave() {
+  try {
+    const f = JSON.parse(localStorage.getItem('inaja-form-autosave'));
+    if (f) {
+      $sol.value = f.solicitante || '';
+      $emp.value = f.empresa || '';
+      $dat.value = f.data || todayStr();
+      $obs.value = f.obs || '';
+      document.getElementById('obs-counter').textContent = ($obs.value.length) + '/500';
+    }
+    const saved = JSON.parse(localStorage.getItem('inaja-items-autosave'));
+    if (saved && saved.length) {
+      saved.forEach(i => {
+        itemIdCounter = Math.max(itemIdCounter, i.id || 0);
+        items.push(i);
+      });
+      renderItems();
+    }
+  } catch(e) {}
+  updateTotals();
+  updatePreview();
+})();
+
+/* ═══════════ PDF EXPORT ═══════════ */
+function generatePDF(req) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const W = 210, M = 15, pw = W - 2 * M;
+
+  const C = {
+    navy:   [18,  52, 110],
+    blue:   [30,  90, 175],
+    blueLt: [237, 244, 255],
+    gold:   [185, 140,  20],
+    white:  [255, 255, 255],
+    dark:   [28,  40,  58],
+    gray:   [108, 120, 140],
+    grLt:   [218, 226, 238],
+    rowAlt: [247, 251, 255],
+  };
+
+  doc.setProperties({
+    title:   'Solicitação de Aquisição / Fornecimento',
+    subject: 'Solicitação de Aquisição – Prefeitura Municipal de Inajá',
+    author:  'Prefeitura Municipal de Inajá – PR',
+    creator: 'Sistema de Aquisições – PMI',
+  });
+
+  /* ── helpers de rodapé/cabeçalho em cada página ── */
+  function drawPageHeader() {
+    // Fundo navy
+    doc.setFillColor(...C.navy);
+    doc.rect(0, 0, W, 40, 'F');
+    // Faixa dourada
+    doc.setFillColor(...C.gold);
+    doc.rect(0, 40, W, 2.2, 'F');
+
+    // Brasão
+    let bW = 0;
+    if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) {
+      try {
+        const p = doc.getImageProperties(BRASAO_B64);
+        const bH = 33;
+        bW = bH * (p.width / p.height);
+        doc.addImage(BRASAO_B64, 'PNG', M, 3.5, bW, bH);
+      } catch(e) {}
+    }
+
+    const cX = M + bW + (bW > 0 ? 6 : 0);
+    const cCenter = (cX + W - M) / 2;
+    doc.setFontSize(14.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
+    doc.text('PREFEITURA MUNICIPAL DE INAJÁ', cCenter, 15, { align: 'center' });
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(195, 215, 255);
+    doc.text('Estado do Paraná', cCenter, 22, { align: 'center' });
+    doc.setFontSize(7.5); doc.setTextColor(160, 190, 240);
+    doc.text('Gabinete do Prefeito – Setor de Compras e Suprimentos', cCenter, 28.5, { align: 'center' });
+  }
+
+  function stampFooters() {
+    const total = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      doc.setPage(i);
+      doc.setFillColor(...C.navy);
+      doc.rect(0, 285, W, 12, 'F');
+      doc.setFillColor(...C.gold);
+      doc.rect(0, 285, W, 1.5, 'F');
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.white);
+      doc.text(`Documento gerado eletronicamente em ${new Date().toLocaleDateString('pt-BR')}`, M, 291.5);
+      doc.text(`Página ${i} de ${total}`, W - M, 291.5, { align: 'right' });
+    }
+  }
+
+  /* ── PÁGINA 1: cabeçalho ── */
+  drawPageHeader();
+  let y = 49;
+
+  /* ── TÍTULO DO DOCUMENTO ── */
+  doc.setFillColor(...C.blue);
+  doc.roundedRect(M, y, pw, 13, 1.5, 1.5, 'F');
+  doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
+  doc.text('SOLICITAÇÃO DE AQUISIÇÃO / FORNECIMENTO', W / 2, y + 9, { align: 'center' });
+  y += 19;
+
+  /* ── GRADE DE INFORMAÇÕES ── */
+  const infoH = 34;
+  doc.setFillColor(...C.blueLt);
+  doc.setDrawColor(...C.grLt);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(M, y, pw, infoH, 2.5, 2.5, 'FD');
+
+  // Barra lateral azul
+  doc.setFillColor(...C.blue);
+  doc.roundedRect(M, y, 4, infoH, 2.5, 2.5, 'F');
+  doc.rect(M + 2.5, y, 1.5, infoH, 'F');
+
+  // Divisores internos
+  const mid = M + pw * 0.5;
+  doc.setDrawColor(...C.grLt); doc.setLineWidth(0.25);
+  doc.line(mid, y + 5, mid, y + infoH - 5);
+  doc.line(M + 7, y + infoH / 2, M + pw - 5, y + infoH / 2);
+
+  const iLbl = (t, x, yy) => {
+    doc.setFontSize(6.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray);
+    doc.text(t, x, yy);
+  };
+  const iVal = (t, x, yy) => {
+    doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+    // Truncate se ultrapassar a coluna
+    const safe = doc.splitTextToSize(t || '—', mid - x - 4)[0];
+    doc.text(safe, x, yy);
+  };
+
+  const c1 = M + 8, c2 = mid + 6;
+  const row1y = y + 12, row2y = y + 27;
+  iLbl('SOLICITANTE', c1, row1y - 5);     iVal(req.solicitante || '—', c1, row1y);
+  iLbl('DATA DA SOLICITAÇÃO', c2, row1y - 5); iVal(req.data || '—', c2, row1y);
+  iLbl('EMPRESA / FORNECEDOR', c1, row2y - 5);
+  const empSafe = doc.splitTextToSize(req.empresa || '—', pw * 0.9)[0];
+  doc.setFontSize(9.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+  doc.text(empSafe, c1, row2y);
+  y += infoH + 10;
+
+  /* ── TABELA DE ITENS (autoTable) ── */
+  const items = req.items || [];
+  let grandTotal = 0;
+  const tableBody = items.map((item, idx) => {
+    const qtd   = parseFloat(item.qtd) || 0;
+    const preco = parseMoney(item.preco);
+    const total = qtd * preco;
+    grandTotal += total;
+    return [idx + 1, item.nome || '', item.desc || '', qtd, fmtMoney(preco), fmtMoney(total)];
+  });
+
+  doc.autoTable({
+    startY: y,
+    margin: { left: M, right: M },
+    tableWidth: pw,
+    head: [['#', 'Item', 'Descrição', 'Qtd', 'Preço Unit.', 'Total']],
+    body: tableBody,
+    styles: {
+      font: 'helvetica',
+      fontSize: 8.5,
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+      lineColor: C.grLt,
+      lineWidth: 0.25,
+      textColor: C.dark,
+      overflow: 'linebreak',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: C.navy,
+      textColor: C.white,
+      fontStyle: 'bold',
+      fontSize: 8,
+      cellPadding: { top: 5, bottom: 5, left: 5, right: 5 },
+      lineWidth: 0,
+    },
+    alternateRowStyles: {
+      fillColor: C.rowAlt,
+    },
+    columnStyles: {
+      0: { cellWidth: 10,   halign: 'center', fontStyle: 'bold', textColor: C.blue, fillColor: C.blueLt },
+      1: { cellWidth: 38,   halign: 'left'   },
+      2: { cellWidth: 'auto' },
+      3: { cellWidth: 14,   halign: 'center' },
+      4: { cellWidth: 28,   halign: 'right'  },
+      5: { cellWidth: 28,   halign: 'right',  fontStyle: 'bold', textColor: C.blue },
+    },
+    tableLineColor: C.grLt,
+    tableLineWidth: 0.3,
+    didDrawPage: (data) => {
+      // Cabeçalho institucional em páginas de continuação
+      if (data.pageNumber > 1) {
+        drawPageHeader();
+        // Reposiciona a tabela abaixo do cabeçalho nas páginas seguintes
+        data.settings.margin.top = 46;
+      }
+    },
+  });
+
+  y = doc.lastAutoTable.finalY + 5;
+
+  /* ── TOTAL ── */
+  if (y + 13 > 276) { doc.addPage(); drawPageHeader(); y = 48; }
+  doc.setFillColor(...C.navy);
+  doc.roundedRect(M, y, pw, 13, 1.5, 1.5, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.white);
+  doc.text('VALOR TOTAL DA SOLICITAÇÃO', M + 7, y + 9);
+  doc.text(fmtMoney(grandTotal), M + pw - 5, y + 9, { align: 'right' });
+  y += 20;
+
+  /* ── OBSERVAÇÕES ── */
+  if (req.obs && req.obs.trim()) {
+    if (y + 20 > 272) { doc.addPage(); drawPageHeader(); y = 48; }
+    doc.setFontSize(7.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray);
+    doc.text('OBSERVAÇÕES', M, y);
+    y += 5;
+
+    const obsLines = doc.splitTextToSize(req.obs, pw - 18);
+    const obsH = Math.max(obsLines.length * 5.5 + 14, 20);
+    if (y + obsH > 272) { doc.addPage(); drawPageHeader(); y = 48; }
+
+    doc.setFillColor(249, 252, 255);
+    doc.setDrawColor(...C.grLt); doc.setLineWidth(0.3);
+    doc.roundedRect(M, y, pw, obsH, 2, 2, 'FD');
+    doc.setFillColor(...C.blue);
+    doc.roundedRect(M, y, 4, obsH, 2, 2, 'F');
+    doc.rect(M + 2.5, y, 1.5, obsH, 'F');
+
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark);
+    doc.text(obsLines, M + 9, y + 8);
+    y += obsH + 12;
+  }
+
+  /* ── LOCAL E DATA ── */
+  if (y + 30 > 278) { doc.addPage(); drawPageHeader(); y = 48; }
+  y = Math.max(y, 252);
+  doc.setDrawColor(...C.grLt); doc.setLineWidth(0.4);
+  doc.line(M, y, M + pw, y);
+  y += 8;
+  doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.setTextColor(...C.gray);
+  doc.text(`Inajá – PR, ${req.data || '_____ / _____ / __________'}`, W / 2, y, { align: 'center' });
+
+  /* ── RODAPÉ EM TODAS AS PÁGINAS ── */
+  stampFooters();
+
+  return doc;
+}
+
+document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+  try {
+    const req = await saveCurrentRequest({ silent: true });
+    const doc = generatePDF(req);
+    doc.save('solicitacao_' + (req.solicitante || 'doc').replace(/\s+/g, '_') + '.pdf');
+    showToast('✅ Solicitação salva no banco e PDF gerado.', 'success');
+  } catch (e) {
+    showToast('❌ ' + e.message, 'error');
+  }
+});
+
+/* ═══════════ TAB 2 – LOTE ═══════════ */
+// Download template
+document.getElementById('btn-download-template').addEventListener('click', () => {
+  const tmpl = 'João Silva|Empresa XPTO|Material para escritório|Caneta:Caneta azul:10:2.50;Papel:Resma A4:5:25.00\nMaria Souza|Fornecedora ABC|Itens de limpeza|Detergente:500ml:20:3.00;Pano:Multiuso:30:1.50';
+  download('template_lote.txt', tmpl, 'text/plain');
+});
+
+// Upload area
+const batchArea = document.getElementById('batch-upload-area');
+const batchInput = document.getElementById('batch-file-input');
+batchArea.addEventListener('click', () => batchInput.click());
+batchArea.addEventListener('dragover', e => { e.preventDefault(); batchArea.style.borderColor = 'var(--blue)'; });
+batchArea.addEventListener('dragleave', () => { batchArea.style.borderColor = ''; });
+batchArea.addEventListener('drop', e => {
+  e.preventDefault();
+  batchArea.style.borderColor = '';
+  if (e.dataTransfer.files[0]) processBatchFile(e.dataTransfer.files[0]);
+});
+batchInput.addEventListener('change', () => {
+  if (batchInput.files[0]) processBatchFile(batchInput.files[0]);
+});
+
+function parseBatchLine(line, lineNum) {
+  const parts = line.split('|');
+  if (parts.length < 4) return { error: `Linha ${lineNum}: esperado 4 campos separados por |, encontrado ${parts.length}` };
+  const [solicitante, empresa, obs, itemsStr] = parts;
+  if (!solicitante.trim()) return { error: `Linha ${lineNum}: solicitante vazio` };
+  if (!itemsStr.trim()) return { error: `Linha ${lineNum}: nenhum item encontrado` };
+  const rawItems = itemsStr.split(';').filter(s => s.trim());
+  const parsedItems = [];
+  for (let ii = 0; ii < rawItems.length; ii++) {
+    const fields = rawItems[ii].split(':');
+    if (fields.length < 4) return { error: `Linha ${lineNum}, item ${ii + 1}: esperado 4 campos (ITEM:DESC:QTD:VALOR)` };
+    parsedItems.push({ nome: fields[0].trim(), desc: fields[1].trim(), qtd: fields[2].trim(), preco: fields[3].trim() });
+  }
+  return { solicitante: solicitante.trim(), empresa: empresa.trim(), obs: obs.trim(), data: todayStr(), items: parsedItems };
+}
+
+function processBatchFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.split('\n').map(l => l.trim()).filter(l => l);
+    const results = { valid: [], errors: [] };
+    lines.forEach((line, idx) => {
+      const r = parseBatchLine(line, idx + 1);
+      if (r.error) results.errors.push(r.error);
+      else results.valid.push(r);
+    });
+
+    processedRequests = results.valid;
+    if (typeof renderQueue === 'function') renderQueue();
+    const resDiv = document.getElementById('batch-results');
+    resDiv.classList.remove('hidden');
+    resDiv.innerHTML = `
+      <div class="batch-result">
+        <p><span class="batch-valid">✓ ${results.valid.length} solicitações válidas</span> &nbsp; <span class="batch-error">✗ ${results.errors.length} erros</span></p>
+        ${results.errors.map(e => `<div class="batch-line" style="color:var(--red);">⚠ ${esc(e)}</div>`).join('')}
+        ${results.valid.map((v, i) => `<div class="batch-line">✓ <b>${esc(v.solicitante)}</b> – ${esc(v.empresa)} – ${v.items.length} itens</div>`).join('')}
+      </div>
+    `;
+
+    // Show actions
+    const actionsCard = document.getElementById('batch-actions-card');
+    if (results.valid.length) {
+      actionsCard.classList.remove('hidden');
+      const total = results.valid.reduce((s, r) => s + r.items.reduce((si, it) => si + (parseFloat(it.qtd) || 0) * parseMoney(it.preco), 0), 0);
+      const totalItems = results.valid.reduce((s, r) => s + r.items.length, 0);
+      document.getElementById('batch-summary').innerHTML = `
+        <div class="stats-bar">
+          <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="stat-val">${results.valid.length}</div><div class="stat-lbl">Solicitações</div></div></div>
+          <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div><div class="stat-val">${totalItems}</div><div class="stat-lbl">Total de Itens</div></div></div>
+          <div class="stat-card"><div class="stat-icon orange"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><div class="stat-val">${fmtMoney(total)}</div><div class="stat-lbl">Valor Total</div></div></div>
+        </div>
+      `;
+    } else {
+      actionsCard.classList.add('hidden');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Batch PDF
+document.getElementById('btn-batch-pdf').addEventListener('click', () => {
+  if (!processedRequests.length) { alert('Nenhuma solicitação processada.'); return; }
+  const { jsPDF } = window.jspdf;
+  let doc = null;
+  processedRequests.forEach((req, idx) => {
+    const page = generatePDF(req);
+    if (idx === 0) {
+      doc = page;
+    } else {
+      const pageCount = page.internal.getNumberOfPages();
+      for (let p = 1; p <= pageCount; p++) {
+        doc.addPage();
+        const srcPage = page.internal.pages[p];
+        doc.internal.pages[doc.internal.getNumberOfPages()] = srcPage;
+      }
+    }
+  });
+  if (doc) doc.save('lote_solicitacoes.pdf');
+});
+
+// Batch JSON
+document.getElementById('btn-batch-json').addEventListener('click', () => {
+  if (!processedRequests.length) { alert('Nenhuma solicitação processada.'); return; }
+  download('lote_solicitacoes.json', JSON.stringify(processedRequests, null, 2), 'application/json');
+});
+
+/* ═══════════ BATCH MANUAL ═══════════ */
+let blItems = [];
+let blItemCounter = 0;
+
+function renderBlItems() {
+  const c = document.getElementById('bl-items-container');
+  c.innerHTML = blItems.map(it => `
+    <div class="bl-item">
+      <input type="text" placeholder="Item" value="${esc(it.nome)}" data-bid="${it.id}" data-field="nome" />
+      <input type="text" placeholder="Descrição" value="${esc(it.desc)}" data-bid="${it.id}" data-field="desc" />
+      <input type="number" placeholder="Qtd" value="${esc(it.qtd)}" data-bid="${it.id}" data-field="qtd" min="0" />
+      <input type="text" placeholder="Preço" value="${esc(it.preco)}" data-bid="${it.id}" data-field="preco" />
+      <button class="bl-item-remove" data-bid="${it.id}">&times;</button>
+    </div>`).join('');
+  c.querySelectorAll('input[data-bid]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const it = blItems.find(i => i.id === Number(inp.dataset.bid));
+      if (it) it[inp.dataset.field] = inp.value;
+    });
+  });
+  c.querySelectorAll('.bl-item-remove').forEach(btn => {
+    btn.addEventListener('click', () => { blItems = blItems.filter(i => i.id !== Number(btn.dataset.bid)); renderBlItems(); });
+  });
+}
+
+document.getElementById('bl-add-item').addEventListener('click', () => {
+  blItems.push({ id: ++blItemCounter, nome: '', desc: '', qtd: '', preco: '' });
+  renderBlItems();
+});
+
+document.getElementById('bl-clear-form').addEventListener('click', () => {
+  document.getElementById('bl-sol').value = '';
+  document.getElementById('bl-emp').value = '';
+  document.getElementById('bl-obs').value = '';
+  blItems = []; renderBlItems();
+});
+
+document.getElementById('bl-add-to-queue').addEventListener('click', () => {
+  const sol = document.getElementById('bl-sol').value.trim();
+  const emp = document.getElementById('bl-emp').value.trim();
+  const obs = document.getElementById('bl-obs').value.trim();
+  if (!sol) { alert('Informe o solicitante.'); return; }
+  if (!blItems.length) { alert('Adicione pelo menos um item.'); return; }
+  processedRequests.push({ solicitante: sol, empresa: emp, obs, data: todayStr(), items: blItems.map(i => ({...i})) });
+  blItems = []; blItemCounter = 0; renderBlItems();
+  document.getElementById('bl-sol').value = '';
+  document.getElementById('bl-emp').value = '';
+  document.getElementById('bl-obs').value = '';
+  renderQueue();
+});
+
+function renderQueue() {
+  const list = document.getElementById('queue-list');
+  const count = document.getElementById('queue-count');
+  const actions = document.getElementById('queue-actions');
+  count.textContent = processedRequests.length;
+  actions.style.display = processedRequests.length ? '' : 'none';
+  list.innerHTML = processedRequests.length === 0
+    ? '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:13px;">Nenhuma solicitação na fila</div>'
+    : processedRequests.map((r, i) => {
+        const tot = r.items.reduce((s, it) => s + (parseFloat(it.qtd)||0) * parseMoney(it.preco), 0);
+        return `<div class="queue-item">
+          <div class="queue-item-info">
+            <div class="queue-item-name">${esc(r.solicitante)} — ${esc(r.empresa) || '—'}</div>
+            <div class="queue-item-meta">${r.items.length} item(s) · ${r.data}${r.obs ? ' · ' + esc(r.obs) : ''}</div>
+          </div>
+          <div class="queue-item-total">${fmtMoney(tot)}</div>
+          <button class="btn btn-red btn-sm" data-qi="${i}">✕</button>
+        </div>`;
+      }).join('');
+  list.querySelectorAll('[data-qi]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      processedRequests.splice(Number(btn.dataset.qi), 1);
+      renderQueue();
+    });
+  });
+}
+
+document.getElementById('btn-clear-queue').addEventListener('click', () => {
+  if (!confirm('Limpar toda a fila?')) return;
+  processedRequests = []; renderQueue();
+});
+
+// Init queue display
+renderQueue();
+
+/* ═══════════ TAB 3 – DADOS (SQLite via API) ═══════════ */
+let _dmCache = { solicitantes: [], empresas: [], observacoes: [] };
+
+async function loadDataManager() {
+  try {
+    const r = await fetch('/api/fornecimento/dados');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+
+    // Migração única: se banco vazio e localStorage tem dados, importa automaticamente
+    const totalDB = (data.solicitantes||[]).length + (data.empresas||[]).length + (data.observacoes||[]).length;
+    if (totalDB === 0) {
+      try {
+        const legacy = JSON.parse(localStorage.getItem('inaja-data-manager') || '{}');
+        const items = [
+          ...(legacy.solicitantes||[]).map(v => ({tipo:'solicitantes', valor:v})),
+          ...(legacy.empresas||[]).map(v     => ({tipo:'empresas',     valor:v})),
+          ...(legacy.observacoes||[]).map(v  => ({tipo:'observacoes',  valor:v}))
+        ];
+        if (items.length > 0) {
+          for (const it of items) {
+            await fetch('/api/fornecimento/dados', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(it)
+            });
+          }
+          localStorage.removeItem('inaja-data-manager');
+          // Recarrega após migração
+          const r2 = await fetch('/api/fornecimento/dados');
+          _dmCache = await r2.json();
+          showToast('✅ Dados migrados para o banco com sucesso!', 'success');
+          renderChips();
+          return;
+        }
+      } catch(e2) { /* sem dados legados, ok */ }
+    }
+
+    _dmCache = data;
+  } catch(e) {
+    console.error('[fornecimento] Erro ao carregar dados:', e);
+    showToast('⚠️ Erro ao carregar dados: ' + e.message + ' — reinicie o servidor', 'error');
+  }
+  renderChips();
+}
+
+async function apiAddItem(tipo, valor) {
+  try {
+    const r = await fetch('/api/fornecimento/dados', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({tipo, valor})
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadDataManager();
+  } catch(e) {
+    showToast('❌ Falha ao salvar: ' + e.message, 'error');
+  }
+}
+
+async function apiDelItem(tipo, valor) {
+  try {
+    const r = await fetch('/api/fornecimento/dados', {
+      method: 'DELETE',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({tipo, valor})
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await loadDataManager();
+  } catch(e) {
+    showToast('❌ Falha ao remover: ' + e.message, 'error');
+  }
+}
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;background:${type==='error'?'#ef4444':'#22c55e'};box-shadow:0 4px 12px rgba(0,0,0,.2);max-width:360px;word-break:break-word`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+}
+
+function renderChips() {
+  renderChipList('solic-chips', _dmCache.solicitantes, 'solicitantes', $sol);
+  renderChipList('emp-chips',   _dmCache.empresas,     'empresas',     $emp);
+  renderChipList('obs-chips',   _dmCache.observacoes,  'observacoes',  $obs);
+  updateDataLists();
+  renderPickerMenus();
+}
+
+function updateDataLists() {
+  const solDL = document.getElementById('dl-solicitantes');
+  const empDL = document.getElementById('dl-empresas');
+  if (solDL) solDL.innerHTML = (_dmCache.solicitantes||[]).map(s => `<option value="${esc(s)}">`).join('');
+  if (empDL) empDL.innerHTML = (_dmCache.empresas||[]).map(s => `<option value="${esc(s)}">`).join('');
+}
+
+function closeAllPickers(exceptField) {
+  document.querySelectorAll('.picker-field.open').forEach(field => {
+    if (field !== exceptField) field.classList.remove('open');
+  });
+}
+
+function renderPickerOptions(field, filterText = '') {
+  if (!field) return;
+  const key = field.dataset.pickerSource;
+  const menu = field.querySelector('[data-picker-menu]');
+  const input = field.querySelector('input');
+  if (!menu || !input) return;
+
+  const normalizedFilter = String(filterText || '').trim().toLocaleLowerCase('pt-BR');
+  const source = Array.isArray(_dmCache[key]) ? _dmCache[key] : [];
+  const items = source.filter(value => !normalizedFilter || String(value).toLocaleLowerCase('pt-BR').includes(normalizedFilter));
+
+  menu.innerHTML = `
+    <input type="text" class="picker-search" placeholder="Filtrar itens salvos..." value="${esc(filterText)}" />
+    ${items.length
+      ? items.map(value => `<button type="button" class="picker-option" data-picker-value="${esc(value)}">${esc(value)}</button>`).join('')
+      : '<div class="picker-empty">Nenhum item salvo encontrado.</div>'}
+  `;
+
+  const search = menu.querySelector('.picker-search');
+  search?.addEventListener('input', () => renderPickerOptions(field, search.value));
+  search?.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      field.classList.remove('open');
+      input.focus();
+    }
+  });
+
+  menu.querySelectorAll('[data-picker-value]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.value = btn.dataset.pickerValue || '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      field.classList.remove('open');
+      input.focus();
+    });
+  });
+}
+
+function renderPickerMenus() {
+  document.querySelectorAll('.picker-field').forEach(field => {
+    renderPickerOptions(field);
+  });
+}
+
+function initSavedDataPickers() {
+  document.querySelectorAll('.picker-field').forEach(field => {
+    const input = field.querySelector('input');
+    const toggle = field.querySelector('[data-picker-toggle]');
+    const menu = field.querySelector('[data-picker-menu]');
+    if (!input || !toggle || !menu || field.dataset.pickerReady === '1') return;
+    field.dataset.pickerReady = '1';
+
+    toggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const willOpen = !field.classList.contains('open');
+      closeAllPickers(field);
+      field.classList.toggle('open', willOpen);
+      renderPickerOptions(field, input.value);
+      if (willOpen) {
+        field.querySelector('.picker-search')?.focus();
+      }
+    });
+
+    input.addEventListener('focus', () => {
+      renderPickerOptions(field, input.value);
+    });
+
+    input.addEventListener('input', () => {
+      if (!field.classList.contains('open')) return;
+      renderPickerOptions(field, input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        closeAllPickers(field);
+        field.classList.add('open');
+        renderPickerOptions(field, input.value);
+        field.querySelector('.picker-search')?.focus();
+      } else if (e.key === 'Escape') {
+        field.classList.remove('open');
+      }
+    });
+
+    menu.addEventListener('click', (e) => e.stopPropagation());
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.picker-field')) closeAllPickers();
+  });
+}
+
+function renderChipList(containerId, arr, key, targetInput) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  arr.forEach((val) => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.innerHTML = `${esc(val)} <span class="chip-x" data-key="${key}" data-val="${esc(val)}">&times;</span>`;
+    chip.addEventListener('click', (e) => {
+      if (e.target.classList.contains('chip-x')) return;
+      targetInput.value = val;
+      targetInput.dispatchEvent(new Event('input'));
+      switchFornecimentoTab('tab-form');
+    });
+    container.appendChild(chip);
+  });
+
+  container.querySelectorAll('.chip-x').forEach(x => {
+    x.addEventListener('click', (e) => {
+      e.stopPropagation();
+      apiDelItem(x.dataset.key, x.dataset.val);
+    });
+  });
+}
+
+function addDataItem(key, inputId) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  apiAddItem(key, val);
+}
+
+document.getElementById('btn-add-solic').addEventListener('click', () => addDataItem('solicitantes', 'add-solic-input'));
+document.getElementById('btn-add-emp').addEventListener('click',   () => addDataItem('empresas',     'add-emp-input'));
+document.getElementById('btn-add-obs').addEventListener('click',   () => addDataItem('observacoes',  'add-obs-input'));
+
+['add-solic-input', 'add-emp-input', 'add-obs-input'].forEach((id, i) => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      ['btn-add-solic', 'btn-add-emp', 'btn-add-obs'][i] && document.getElementById(['btn-add-solic', 'btn-add-emp', 'btn-add-obs'][i]).click();
+    }
+  });
+});
+
+// Export / Import data
+document.getElementById('btn-export-data').addEventListener('click', () => {
+  download('dados_fornecimento.json', JSON.stringify(_dmCache, null, 2), 'application/json');
+});
+
+const importDataFile = document.getElementById('import-data-file');
+document.getElementById('btn-import-data').addEventListener('click', () => importDataFile.click());
+importDataFile.addEventListener('change', () => {
+  const file = importDataFile.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (d.solicitantes || d.empresas || d.observacoes) {
+        const all = [
+          ...(d.solicitantes||[]).map(v => ({tipo:'solicitantes',valor:v})),
+          ...(d.empresas||[]).map(v => ({tipo:'empresas',valor:v})),
+          ...(d.observacoes||[]).map(v => ({tipo:'observacoes',valor:v}))
+        ];
+        for (const item of all) {
+          await fetch('/api/fornecimento/dados', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(item)
+          });
+        }
+        await loadDataManager();
+        alert('Dados importados com sucesso!');
+      } else { alert('Formato inválido.'); }
+    } catch { alert('Erro ao ler arquivo JSON.'); }
+  };
+  reader.readAsText(file);
+  importDataFile.value = '';
+});
+
+document.getElementById('btn-clear-data').addEventListener('click', async () => {
+  if (!confirm('Limpar todos os dados salvos?')) return;
+  const all = [
+    ..._dmCache.solicitantes.map(v => ({tipo:'solicitantes',valor:v})),
+    ..._dmCache.empresas.map(v     => ({tipo:'empresas',valor:v})),
+    ..._dmCache.observacoes.map(v  => ({tipo:'observacoes',valor:v}))
+  ];
+  for (const item of all) {
+    await fetch('/api/fornecimento/dados', {
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(item)
+    });
+  }
+  await loadDataManager();
+});
+
+initSavedDataPickers();
+loadDataManager();
+loadSavedRequests();
+
+document.getElementById('btn-refresh-saved').addEventListener('click', () => loadSavedRequests());
+document.getElementById('saved-request-search').addEventListener('input', () => loadSavedRequests());
+
+/* ═══════════ TEMPLATE MANAGER ═══════════ */
+document.getElementById('btn-save-template').addEventListener('click', () => {
+  const name = document.getElementById('template-name').value.trim() || 'template';
+  const tmpl = {
+    name,
+    form: { solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value },
+    items: items.map(i => ({ nome: i.nome, desc: i.desc, qtd: i.qtd, preco: i.preco }))
+  };
+  download(name.replace(/\s+/g, '_') + '.json', JSON.stringify(tmpl, null, 2), 'application/json');
+});
+
+const tmplUpload = document.getElementById('template-upload-area');
+const tmplInput = document.getElementById('template-file-input');
+tmplUpload.addEventListener('click', () => tmplInput.click());
+tmplInput.addEventListener('change', () => {
+  const file = tmplInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const tmpl = JSON.parse(e.target.result);
+      if (tmpl.form) {
+        $sol.value = tmpl.form.solicitante || '';
+        $emp.value = tmpl.form.empresa || '';
+        $dat.value = tmpl.form.data || todayStr();
+        $obs.value = tmpl.form.obs || '';
+        document.getElementById('obs-counter').textContent = $obs.value.length + '/500';
+      }
+      if (tmpl.items && tmpl.items.length) {
+        items = [];
+        itemIdCounter = 0;
+        tmpl.items.forEach(i => addItem(i));
+      }
+      updateTotals();
+      updatePreview();
+      // Switch to form tab
+      document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-panel="tab-form"]').classList.add('active');
+      document.getElementById('tab-form').classList.add('active');
+      alert('Template carregado com sucesso!');
+    } catch { alert('Erro ao ler template.'); }
+  };
+  reader.readAsText(file);
+  tmplInput.value = '';
+});
+
+</script>
+</body>
+</html>

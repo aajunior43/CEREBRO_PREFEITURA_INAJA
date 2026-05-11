@@ -1,0 +1,971 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dotações Orçamentárias – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link rel="stylesheet" href="/static/css/despesa-prefeitura.css" />
+  <script src="/static/js/ia-chat-widget.js"></script>
+  <script defer src="/static/js/shared-header.js"></script>
+</head>
+
+<body>
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+
+  <div id="printHeader" class="print-header">
+    <img src="/static/img/brasao.png" alt="Brasão da Prefeitura" class="print-logo" />
+    <div>
+      <div class="print-title">Prefeitura Municipal de Inajá - Dotações Orçamentárias</div>
+      <div class="print-meta">Emitido em <span id="printDate"></span></div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div>
+      <h1>Dotações Orçamentárias</h1>
+      <div id="periodo-ativo" style="font-size:12px;color:var(--accent-2);margin-top:4px;min-height:18px;"></div>
+    </div>
+    <div class="upload" style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+      <label class="file">
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <span>Selecionar CSV</span>
+      </label>
+      <!-- Salvar no banco -->
+      <div id="salvar-banco-wrap" style="display:none;flex-direction:column;gap:8px;align-items:flex-end;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <input id="input-periodo" type="text" placeholder="Período (ex: Jan/2025)"
+            style="background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;width:150px;" />
+          <input id="input-descricao" type="text" placeholder="Descrição (opcional)"
+            style="background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;width:160px;" />
+        </div>
+        <button id="btn-salvar-banco" class="ghost" style="display:flex;align-items:center;gap:6px;background:rgba(201,169,97,0.15);border-color:var(--accent-2);color:var(--accent-2);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salvar no banco
+        </button>
+      </div>
+      <!-- Botão para abrir histórico -->
+      <button id="btn-historico" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Histórico
+      </button>
+      <button id="btn-comparativo" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;" data-tooltip="Compare dois períodos importados e veja a variação de saldo por despesa">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Comparar Períodos
+      </button>
+      <button id="btn-ia-dotacoes" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.5);color:#a78bfa;" data-tooltip="Assistente de IA para análise de dotações orçamentárias">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        ✨ IA
+      </button>
+    </div>
+  </header>
+
+  <!-- Painel de histórico -->
+  <div id="historico-painel" style="display:none;background:rgba(20,20,20,0.98);border-bottom:1px solid var(--line);padding:20px 28px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <h2 style="font-size:15px;font-weight:700;color:var(--ink);margin:0;">📅 Histórico de importações</h2>
+      <button id="btn-fechar-historico" class="ghost" style="font-size:12px;">Fechar ×</button>
+    </div>
+    <div id="historico-lista" style="max-height:320px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- Modal Comparativo de Períodos -->
+    <div id="comparativo-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(6px);z-index:9999;overflow-y:auto;padding:18px 12px;" role="dialog" aria-modal="true" aria-labelledby="comp-title" aria-hidden="true">
+    <div style="max-width:1240px;margin:0 auto 18px;background:linear-gradient(180deg,rgba(18,18,22,.98),rgba(13,13,16,.98));border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 28px 80px rgba(0,0,0,.55);overflow:hidden;">
+      <div style="padding:22px 22px 0;border-bottom:1px solid rgba(255,255,255,.06);background:linear-gradient(135deg,rgba(201,169,97,.08),rgba(124,58,237,.06) 55%,transparent);">
+        <div style="display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;">
+          <div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:rgba(201,169,97,.14);border:1px solid rgba(201,169,97,.25);color:var(--accent-2);font-weight:700;">↔</span>
+              <div><h2 id="comp-title" style="margin:0;font-size:20px;line-height:1.2;color:var(--ink);letter-spacing:-.02em;">Comparativo entre Períodos</h2><div style="font-size:12px;color:var(--muted);margin-top:4px;">Compare linhas importadas, destaque status, filtre por variação e agrupe por natureza de despesa.</div></div>
+            </div>
+            <div id="comp-contexto" style="font-size:12px;color:var(--muted);min-height:18px;padding-left:44px;"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><button id="btn-exportar-comparativo" class="ghost" style="display:none;white-space:nowrap;" data-tooltip="Exportar resultado para CSV">📥 Exportar CSV</button><button id="btn-fechar-comparativo" class="ghost" style="font-size:13px;white-space:nowrap;">Fechar ×</button></div>
+        </div>
+        <div style="display:flex;gap:14px;margin:18px 0 18px;flex-wrap:wrap;align-items:flex-end;">
+          <div style="flex:1;min-width:220px;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--muted);">Período A (base)</label><select id="comp-periodo-a" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-size:13px;outline:none;"><option value="">Selecione o período base...</option></select></div>
+          <div style="flex:1;min-width:220px;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--muted);">Período B (comparação)</label><select id="comp-periodo-b" style="width:100%;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-size:13px;outline:none;"><option value="">Selecione o período para comparar...</option></select></div>
+          <button id="btn-comparar" class="ghost" style="min-height:42px;padding:10px 18px;background:rgba(201,169,97,.15);border-color:var(--accent-2);color:var(--accent-2);white-space:nowrap;font-weight:700;">📊 Comparar</button>
+          <button id="comp-toggle-grupo" class="ghost" style="min-height:42px;padding:10px 16px;white-space:nowrap;">Ver por grupo</button>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:18px;">
+          <div style="flex:1;min-width:260px;position:relative;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--muted);">Busca</label><input id="comp-busca" type="search" placeholder="Número, descrição, natureza..." autocomplete="off" style="width:100%;padding:10px 14px 10px 40px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-size:13px;outline:none;" /><span style="position:absolute;left:14px;bottom:11px;color:var(--muted);font-size:14px;pointer-events:none;">⌕</span></div>
+          <div style="min-width:280px;flex:2;"><label style="font-size:12px;font-weight:700;display:block;margin-bottom:6px;color:var(--muted);">Filtros rápidos</label><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="ghost comp-filter active" data-filter="all" style="padding:8px 12px;white-space:nowrap;">Todas</button><button class="ghost comp-filter" data-filter="nova" style="padding:8px 12px;white-space:nowrap;">Novas</button><button class="ghost comp-filter" data-filter="removida" style="padding:8px 12px;white-space:nowrap;">Removidas</button><button class="ghost comp-filter" data-filter="alta" style="padding:8px 12px;white-space:nowrap;">Aumentaram</button><button class="ghost comp-filter" data-filter="baixa" style="padding:8px 12px;white-space:nowrap;">Diminuíram</button></div></div>
+        </div>
+        <div id="comp-resumo" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px;"></div>
+        <div id="comp-mini-resumo" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px;"></div>
+      </div>
+      <div style="padding:18px 22px 22px;"><div id="comp-resultado" style="overflow-x:auto;"></div></div>
+    </div>
+    <style>#comparativo-overlay .comp-card,#comparativo-overlay .comp-mini-card,#comparativo-overlay .comp-table-wrap{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:14px}#comparativo-overlay .comp-card{padding:14px 16px;min-height:96px}#comparativo-overlay .comp-card .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}#comparativo-overlay .comp-card .value{margin-top:6px;font-size:20px;font-weight:800;color:var(--ink)}#comparativo-overlay .comp-card .sub{margin-top:6px;font-size:12px;color:var(--muted)}#comparativo-overlay .comp-mini-card{padding:12px 14px;min-height:118px}#comparativo-overlay .comp-mini-card .mini-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-size:12px;font-weight:800}#comparativo-overlay .comp-mini-card .mini-list{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink)}#comparativo-overlay .comp-mini-card .mini-list .mini-row{display:flex;justify-content:space-between;gap:10px;color:var(--muted)}#comparativo-overlay .comp-mini-card .mini-list .mini-row strong{color:var(--ink);font-weight:700}#comparativo-overlay .comp-table{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}#comparativo-overlay .comp-table thead th{position:sticky;top:0;z-index:2;background:rgba(18,18,22,.98);border-bottom:1px solid rgba(255,255,255,.08);color:var(--muted);text-align:left;padding:11px 10px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;user-select:none}#comparativo-overlay .comp-th-sort{cursor:pointer}#comparativo-overlay .comp-th-sort:hover{color:var(--ink)}#comparativo-overlay .comp-th-sort .sort-mark{margin-left:6px;color:var(--accent-2);opacity:.75}#comparativo-overlay .comp-row td{padding:10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top}#comparativo-overlay .comp-row:hover td{background:rgba(255,255,255,.03)}#comparativo-overlay .comp-row.is-selected td{background:rgba(201,169,97,.10)!important}#comparativo-overlay .comp-row.is-selected:hover td{background:rgba(201,169,97,.14)!important}#comparativo-overlay .comp-num{font-family:monospace;font-weight:700;color:var(--accent-2)}#comparativo-overlay .comp-desc{max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#comparativo-overlay .comp-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;border:1px solid transparent}#comparativo-overlay .comp-badge.nova{color:#4ade80;background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25)}#comparativo-overlay .comp-badge.removida{color:#f87171;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25)}#comparativo-overlay .comp-badge.alta{color:#34d399;background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25)}#comparativo-overlay .comp-badge.baixa{color:#fb7185;background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.25)}#comparativo-overlay .comp-badge.igual{color:#cbd5e1;background:rgba(148,163,184,.10);border-color:rgba(148,163,184,.22)}#comparativo-overlay .comp-bar{width:100%;height:8px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden;margin-top:6px}#comparativo-overlay .comp-bar>span{display:block;height:100%;border-radius:999px}#comparativo-overlay .comp-bar .positive{background:linear-gradient(90deg,rgba(34,197,94,.85),rgba(74,222,128,.95))}#comparativo-overlay .comp-bar .negative{background:linear-gradient(90deg,rgba(248,113,113,.90),rgba(239,68,68,.95))}#comparativo-overlay .comp-bar .neutral{background:linear-gradient(90deg,rgba(148,163,184,.8),rgba(203,213,225,.9))}#comparativo-overlay .comp-group-row td{background:rgba(255,255,255,.04);font-weight:800;color:var(--ink)}#comparativo-overlay .comp-group-row:hover td{background:rgba(255,255,255,.06)}#comparativo-overlay .comp-group-children.hidden{display:none}#comparativo-overlay .comp-toggle-inline{cursor:pointer}#comparativo-overlay .comp-empty{padding:28px 16px;text-align:center;color:var(--muted);border:1px dashed rgba(255,255,255,.10);border-radius:14px;background:rgba(255,255,255,.02)}@media (max-width:1100px){#comparativo-overlay #comp-resumo,#comparativo-overlay #comp-mini-resumo{grid-template-columns:repeat(2,minmax(0,1fr))!important}}@media (max-width:700px){#comparativo-overlay{padding:10px 8px}#comparativo-overlay .comp-card .value{font-size:18px}#comparativo-overlay .comp-desc{max-width:220px}#comparativo-overlay #comp-resumo,#comparativo-overlay #comp-mini-resumo{grid-template-columns:1fr!important}}</style>
+  </div>
+  <div id='ia-painel' style="display:none;border-bottom:1px solid rgba(124,58,237,0.3);background:rgba(13,10,25,0.97);padding:20px 28px 24px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;color:#a78bfa;margin-right:4px;">✨ IA Orçamentária</span>
+      <button class="ia-tab active" data-action="analisar">📊 Analisar</button>
+      <button class="ia-tab" data-action="chat">💬 Chat</button>
+      <button class="ia-tab" data-action="anomalias">🔍 Anomalias</button>
+      <button class="ia-tab" data-action="relatorio">📄 Relatório</button>
+      <button class="ia-tab" data-action="remanejamento">🔀 Remanejamento</button>
+      <button class="ia-tab" data-action="prioridades">🎯 Prioridades</button>
+      <button class="ia-tab" data-action="cortes">✂️ Cortes</button>
+      <button id="ia-fechar" style="margin-left:auto;background:transparent;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;" title="Fechar">×</button>
+    </div>
+    <div id="ia-desc" style="font-size:11px;color:var(--muted);margin-bottom:12px;min-height:16px;"></div>
+    <div id="ia-atalhos" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="ghost ia-shortcut" data-action="analisar" style="font-size:11px;padding:5px 10px;">Resumo executivo</button>
+      <button class="ghost ia-shortcut" data-action="anomalias" style="font-size:11px;padding:5px 10px;">Riscos imediatos</button>
+      <button class="ghost ia-shortcut" data-action="prioridades" style="font-size:11px;padding:5px 10px;">Onde reforçar</button>
+      <button class="ghost ia-shortcut" data-action="cortes" style="font-size:11px;padding:5px 10px;">Onde cortar</button>
+      <button class="ghost ia-shortcut" data-action="remanejamento" style="font-size:11px;padding:5px 10px;">Simular remanejamento</button>
+    </div>
+    <div id="ia-chat-input-wrap" style="display:none;margin-bottom:12px;gap:8px;">
+      <input id="ia-chat-pergunta" type="text" placeholder="Ex: Qual secretaria tem maior saldo?" style="flex:1;padding:8px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(124,58,237,0.4);border-radius:8px;color:var(--ink);font-size:13px;outline:none;" />
+      <button id="ia-chat-send" class="ghost" style="background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.5);color:#a78bfa;white-space:nowrap;">Enviar →</button>
+    </div>
+    <div id="ia-exec-wrap" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+      <button id="ia-exec-btn" class="ghost" style="background:rgba(124,58,237,0.2);border-color:rgba(124,58,237,0.5);color:#a78bfa;font-size:13px;font-weight:700;">▶ Executar</button>
+      <span id="ia-sem-dados" style="display:none;font-size:12px;color:#f87171;">⚠ Carregue um período antes de usar a IA.</span>
+    </div>
+    <div id="ia-resultado-wrap" style="display:none;">
+      <div id="ia-loading" style="display:none;padding:20px 0;color:#a78bfa;font-size:13px;">⟳ Consultando IA, aguarde…</div>
+      <div id="ia-resultado" style="background:rgba(255,255,255,0.04);border:1px solid rgba(124,58,237,0.25);border-radius:10px;padding:18px 20px;font-size:13px;line-height:1.75;color:var(--ink);white-space:pre-wrap;max-height:440px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+      <button id="ia-copy-btn" class="ghost" style="font-size:11px;padding:4px 10px;">📋 Copiar</button>
+        <button id="ia-nova-btn" class="ghost" style="font-size:11px;padding:4px 10px;color:#a78bfa;border-color:rgba(124,58,237,0.4);">✨ Nova consulta</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section id="filters" class="panel filters">
+      <div class="filters-top">
+        <div class="field">
+          <label for="search">Busca rápida</label>
+          <input id="search" type="text" placeholder="Busque em todos os campos: entidade, programa, ação, valor..." />
+        </div>
+        <div class="field inline">
+          <label for="numDespesa">Nº da despesa</label>
+          <input id="numDespesa" type="text" placeholder="Ex: 00001" data-tooltip="Filtra pelo número exato ou parcial da despesa" style="width:110px;" />
+        </div>
+        <div class="field inline">
+          <label for="minValue">Saldo mínimo</label>
+          <input id="minValue" type="number" step="0.01" placeholder="0" />
+        </div>
+        <div class="field inline">
+          <label for="maxValue">Saldo máximo</label>
+          <input id="maxValue" type="number" step="0.01" placeholder="-" />
+        </div>
+        <button id="printView" class="ghost">Imprimir/PDF</button>
+        <button id="toggleFilters" class="ghost" aria-expanded="true">Recolher filtros</button>
+        <button id="resetFilters" class="ghost is-hidden">Limpar tudo</button>
+      </div>
+      <div id="filterChips" class="filter-chips"></div>
+
+      <!-- Filtros rápidos por natureza de despesa -->
+      <div id="quickFilters" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px 0;align-items:center;">
+        <span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">Filtro rápido:</span>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.14" data-tooltip="Filtra despesas de Diárias (código 3.3.90.14)">🧳 Diárias Civil</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.30" data-tooltip="Filtra despesas de Material de Consumo (código 3.3.90.30)">🛒 Material de Consumo</button>
+        <button type="button" class="qf-btn" data-qf-prefix="4.4.90.52" data-tooltip="Filtra despesas de Material Permanente (código 4.4.90.52)">🏗 Material Permanente</button>
+        <button type="button" class="qf-btn" data-qf-prefix="4.4.90.51" data-tooltip="Filtra despesas de Obras e Instalações (código 4.4.90.51)">🏛 Obras</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.1." data-tooltip="Filtra todas as despesas de Pessoal (códigos 3.1.xx)">👥 Pessoal</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.36,3.3.90.39" data-tooltip="Filtra Serviços de Terceiros PF e PJ (3.3.90.36 e 3.3.90.39)">🔧 Serviços de Terceiros</button>
+        <button type="button" class="qf-btn" data-qf-prefix="3.3.90.33" data-tooltip="Filtra despesas de Passagens e Locomoção (código 3.3.90.33)">✈ Passagens</button>
+        <button type="button" id="qfClear" style="margin-left:4px;" class="ghost" data-tooltip="Limpa o filtro rápido de natureza de despesa">✕ Limpar Filtro Rápido</button>
+        <span style="width:1px;background:var(--line);height:20px;margin:0 6px;display:inline-block;"></span>
+        <span style="font-size:12px;color:var(--muted);font-weight:600;margin-right:2px;">⚠ Saldo crítico:</span>
+        <input id="saldoCriticoThreshold" type="number" value="1000" min="0" step="100"
+          style="width:90px;padding:3px 7px;font-size:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:6px;color:var(--ink);"
+          data-tooltip="Valor limite: despesas com saldo abaixo deste valor são destacadas em laranja" />
+        <button type="button" id="qfSaldoCritico" class="qf-btn" data-tooltip="Mostra apenas despesas com saldo abaixo do limite configurado">⚠ Ver Saldo Crítico</button>
+        <button type="button" class="qf-btn qf-saldo-at" data-saldo-threshold="1000" data-tooltip="Mostra despesas com saldo abaixo de R$ 1.000">&lt; R$ 1.000</button>
+        <button type="button" class="qf-btn qf-saldo-at" data-saldo-threshold="10000" data-tooltip="Mostra despesas com saldo abaixo de R$ 10.000">&lt; R$ 10.000</button>
+        <button type="button" class="qf-btn qf-saldo-at" data-saldo-threshold="50000" data-tooltip="Mostra despesas com saldo abaixo de R$ 50.000">&lt; R$ 50.000</button>
+        <button type="button" class="qf-btn qf-saldo-at" data-saldo-threshold="100000" data-tooltip="Mostra despesas com saldo abaixo de R$ 100.000">&lt; R$ 100.000</button>
+      </div>
+      <style>
+        .qf-btn {
+          background: var(--surface, #f5f5f5);
+          border: 1.5px solid var(--border, #ccc);
+          border-radius: 20px;
+          padding: 4px 12px;
+          font-size: 12px;
+          cursor: pointer;
+          color: var(--ink, #222);
+          transition: background .15s, border-color .15s;
+          white-space: nowrap;
+        }
+        .qf-btn:hover { background: var(--accent, #0066cc); color: #fff; border-color: var(--accent, #0066cc); }
+        .qf-btn.active { background: var(--accent, #0066cc); color: #fff; border-color: var(--accent, #0066cc); font-weight: 700; }
+      </style>
+
+      <div class="filters-grid">
+        <div class="field filter-box" data-column="Recurso">
+          <div class="filter-head">
+            <label>Recurso</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição da função">
+          <div class="filter-head">
+            <label>Função</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição do programa">
+          <div class="filter-head">
+            <label>Programa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição da ação">
+          <div class="filter-head">
+            <label>Ação</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Secretaria/Órgão">
+          <div class="filter-head">
+            <label>Secretaria/Órgão</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Descrição do organograma">
+          <div class="filter-head">
+            <label>Departamento</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Área de Atuação">
+          <div class="filter-head">
+            <label>Área de Atuação</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Natureza de Despesa">
+          <div class="filter-head">
+            <label>Natureza de despesa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Origem do Recurso">
+          <div class="filter-head">
+            <label>Origem do Recurso</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Tipo de Gasto">
+          <div class="filter-head">
+            <label>Tipo de Gasto</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+        <div class="field filter-box" data-column="Tipo de Despesa">
+          <div class="filter-head">
+            <label>Tipo de Despesa</label>
+            <div class="filter-actions">
+              <button type="button" data-action="all">Tudo</button>
+              <button type="button" data-action="none">Nada</button>
+            </div>
+            <button type="button" class="filter-toggle" aria-expanded="true">Fechar</button>
+          </div>
+          <input class="filter-search" type="text" placeholder="Filtrar por texto" />
+          <div class="filter-options"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-column">
+      <section class="panel" id="stats">
+        <div class="card">
+          <h3>Total</h3>
+          <p id="totalValue">-</p>
+        </div>
+        <div class="card">
+          <h3>Itens</h3>
+          <p id="totalRows">-</p>
+        </div>
+        <div class="card">
+          <h3>Média por despesa</h3>
+          <p id="avgValue">-</p>
+        </div>
+        <div class="card">
+          <h3>Maior valor</h3>
+          <p id="maxValueStat">-</p>
+        </div>
+      </section>
+
+      <section class="panel table">
+        <div class="table-header">
+          <h2>Detalhamento</h2>
+          <div class="table-actions">
+            <div class="view-toggle">
+              <button id="viewList" class="view-btn active" title="Visualização em Lista">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"></line>
+                  <line x1="8" y1="12" x2="21" y2="12"></line>
+                  <line x1="8" y1="18" x2="21" y2="18"></line>
+                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+              </button>
+              <button id="viewGrid" class="view-btn" title="Visualização em Grade">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="3" width="7" height="7"></rect>
+                  <rect x="14" y="14" width="7" height="7"></rect>
+                  <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+              </button>
+            </div>
+            <div class="pager">
+              <button id="prevPage" class="ghost">Anterior</button>
+              <span id="pageInfo">Página 1 de 1</span>
+              <button id="nextPage" class="ghost">Próxima</button>
+            </div>
+            <label class="page-size">
+              <span>Linhas</span>
+              <select id="pageSize">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+            </label>
+            <button id="exportCsv" class="ghost">Exportar CSV</button>
+            <button id="printSelected" class="ghost">Imprimir selecionada</button>
+            <span id="tableCount">0 linhas</span>
+          </div>
+        </div>
+        <div id="printCard" class="print-card"></div>
+        <div class="table-wrap">
+          <table id="dataTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span class="footer-dev">DEV <strong>ALEKSANDRO ALVES</strong></span>
+    </div>
+  </footer>
+
+  <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>Detalhes da Despesa</h2>
+        <div class="modal-actions">
+          <button id="printModalBtn" class="ghost" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Imprimir</button>
+          <button id="closeModal" class="close-modal" aria-label="Fechar">&times;</button>
+        </div>
+      </div>
+      <div class="modal-content" id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/despesa/state.js"></script>
+  <script src="/static/js/despesa/utils.js"></script>
+  <script src="/static/js/despesa/csv.js"></script>
+  <script src="/static/js/despesa/ui.js"></script>
+  <script src="/static/js/document-autosave.js"></script>
+  <script src="/static/js/despesa/logic.js"></script>
+  <script src="/static/js/despesa/historico.js"></script>
+  <script src="/static/js/despesa/main.js"></script>
+  <script>
+  // Histórico UI
+  (function () {
+    const btnHistorico      = document.getElementById('btn-historico');
+    const painelHistorico   = document.getElementById('historico-painel');
+    const btnFecharHistorico= document.getElementById('btn-fechar-historico');
+    const salvarWrap        = document.getElementById('salvar-banco-wrap');
+    const btnSalvar         = document.getElementById('btn-salvar-banco');
+    const inputPeriodo      = document.getElementById('input-periodo');
+    const inputDesc         = document.getElementById('input-descricao');
+    const csvFileInput      = document.getElementById('csvFile');
+
+    // Mostrar painel de histórico
+    btnHistorico.addEventListener('click', () => {
+      const visible = painelHistorico.style.display === 'block';
+      painelHistorico.style.display = visible ? 'none' : 'block';
+      if (!visible) window.DespesaHistorico.renderPainel();
+    });
+    btnFecharHistorico.addEventListener('click', () => {
+      painelHistorico.style.display = 'none';
+    });
+
+      // Carregar período passado via sessionStorage (vindo da página de Relatórios)
+    const carregarIdPendente = sessionStorage.getItem('despesa_carregar_id');
+    if (carregarIdPendente) {
+      sessionStorage.removeItem('despesa_carregar_id');
+      // Aguarda os módulos carregarem
+      setTimeout(async () => {
+        try {
+          const imp = await window.DespesaHistorico.carregar(Number(carregarIdPendente));
+          const label = document.getElementById('periodo-ativo');
+          if (label && imp) label.textContent = `📂 ${imp.periodo}${imp.descricao ? ' – ' + imp.descricao : ''}`;
+        } catch(e) { console.warn('Erro ao carregar período:', e); }
+      }, 500);
+    }
+
+    // Mostrar formulário de salvar ao carregar CSV
+    const origHandleFile = window.__despesaHandleFile;
+    csvFileInput.addEventListener('change', () => {
+      salvarWrap.style.display = 'flex';
+      // Pre-preenche o período com o nome do arquivo
+      if (csvFileInput.files[0]) {
+        const name = csvFileInput.files[0].name.replace(/\.csv$/i, '');
+        if (!inputPeriodo.value) inputPeriodo.value = name.substring(0, 30);
+      }
+    });
+
+    // Salvar no banco
+    btnSalvar.addEventListener('click', async () => {
+      const periodo = inputPeriodo.value.trim();
+      if (!periodo) { inputPeriodo.focus(); inputPeriodo.style.borderColor = 'var(--accent)'; return; }
+      inputPeriodo.style.borderColor = 'var(--line)';
+
+      const arquivo = csvFileInput.files[0] ? csvFileInput.files[0].name : '';
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = 'Salvando…';
+
+      try {
+        const result = await window.DespesaHistorico.salvar(periodo, inputDesc.value.trim(), arquivo);
+        btnSalvar.textContent = '✓ Salvo!';
+        btnSalvar.style.background = 'rgba(16,185,129,0.15)';
+        btnSalvar.style.borderColor = '#10b981';
+        btnSalvar.style.color = '#10b981';
+        // Atualiza histórico se estiver aberto
+        if (painelHistorico.style.display === 'block') window.DespesaHistorico.renderPainel();
+        setTimeout(() => {
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no banco`;
+          btnSalvar.style.background = 'rgba(201,169,97,0.15)';
+          btnSalvar.style.borderColor = 'var(--accent-2)';
+          btnSalvar.style.color = 'var(--accent-2)';
+        }, 3000);
+      } catch (e) {
+        alert('Erro ao salvar: ' + e.message);
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no banco`;
+      }
+    });
+  })();
+  </script>
+
+  <style>
+  /* Histórico de importações */
+  .hist-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    transition: background 0.2s;
+  }
+  .hist-item:hover { background: rgba(255,255,255,0.08); }
+  .hist-item.active { border-color: var(--accent-2); background: rgba(201,169,97,0.08); }
+  .hist-item-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+  .hist-periodo { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .hist-desc    { font-size: 11px; color: var(--accent-2); }
+  .hist-meta    { font-size: 11px; color: var(--muted); }
+  .hist-arquivo { font-size: 10px; color: var(--muted); opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+  .hist-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .hist-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .hist-btn:hover { background: rgba(255,255,255,0.08); }
+  .hist-btn-load { color: var(--accent-2); border-color: var(--accent-2); }
+  .hist-btn-del  { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+  .hist-btn-del:hover { background: rgba(239,68,68,0.1); }
+  .hist-loading, .hist-empty { text-align: center; padding: 32px; font-size: 13px; color: var(--muted); }
+  </style>
+  <script>
+  // Filtros Rápidos por Natureza de Despesa
+  (function () {
+    function setQuickFilterFromButton(button) {
+      const prefixes = (button?.dataset.qfPrefix || "")
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+      const label = button ? button.textContent.trim() : "";
+      if (window.App.logic && typeof window.App.logic.setQuickFilter === 'function') {
+        window.App.logic.setQuickFilter(prefixes, label);
+      }
+    }
+
+    function initQuickFilters() {
+      document.querySelectorAll('.qf-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const { state, logic } = window.App;
+          if (!state || !logic) return;
+
+          const prefixes = (btn.dataset.qfPrefix || "")
+            .split(',')
+            .map(item => item.trim())
+            .filter(Boolean);
+
+          const isSameFilter = prefixes.length === state.quickFilterPrefixes.length
+            && prefixes.every((prefix, index) => prefix === state.quickFilterPrefixes[index]);
+
+          if (isSameFilter) {
+            logic.setQuickFilter([], "");
+          } else {
+            setQuickFilterFromButton(btn);
+          }
+          logic.applyFilters();
+        });
+      });
+
+      const clearBtn = document.getElementById('qfClear');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          if (window.App.logic && typeof window.App.logic.setQuickFilter === 'function') {
+            window.App.logic.setQuickFilter([], "");
+            window.App.logic.applyFilters();
+          }
+        });
+      }
+
+      // Saldo Crítico
+      const btnSaldoCritico = document.getElementById('qfSaldoCritico');
+      const thresholdInput  = document.getElementById('saldoCriticoThreshold');
+      if (btnSaldoCritico) {
+        btnSaldoCritico.addEventListener('click', () => {
+          const { state, logic } = window.App;
+          if (!state || !logic || typeof logic.setSaldoCritico !== 'function') return;
+          logic.setSaldoCritico(!state.saldoCriticoAtivo);
+          logic.applyFilters();
+        });
+      }
+      if (thresholdInput) {
+        thresholdInput.addEventListener('change', () => {
+          const { state, logic } = window.App;
+          if (!state || !logic || typeof logic.setSaldoCritico !== 'function') return;
+          logic.setSaldoCritico(state.saldoCriticoAtivo);
+          if (state.saldoCriticoAtivo) logic.applyFilters();
+        });
+      }
+
+      document.querySelectorAll('.qf-saldo-at').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (!thresholdInput) return;
+          thresholdInput.value = btn.dataset.saldoThreshold || '1000';
+          thresholdInput.dispatchEvent(new Event('change', { bubbles: true }));
+          const { state, logic } = window.App;
+          if (!state || !logic || typeof logic.setSaldoCritico !== 'function') return;
+          logic.setSaldoCritico(true);
+          logic.applyFilters();
+        });
+      });
+    }
+
+    // Wait for App to be ready (main.js initializes on DOMContentLoaded)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(initQuickFilters, 400));
+    } else {
+      setTimeout(initQuickFilters, 400);
+    }
+  })();
+  </script>
+
+  <script>
+  (function(){
+    const o=document.getElementById('comparativo-overlay'),ba=document.getElementById('btn-comparativo'),bf=document.getElementById('btn-fechar-comparativo'),bc=document.getElementById('btn-comparar'),bx=document.getElementById('btn-exportar-comparativo'),sa=document.getElementById('comp-periodo-a'),sb=document.getElementById('comp-periodo-b'),r=document.getElementById('comp-resultado'),q=document.getElementById('comp-busca'),rs=document.getElementById('comp-resumo'),mr=document.getElementById('comp-mini-resumo'),cx=document.getElementById('comp-contexto'),gb=document.getElementById('comp-toggle-grupo');
+    const fmt=window.App?.utils?.formatter||new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2}),pc=window.App?.utils?.parseCurrency||((v)=>{if(!v)return 0;v=String(v).replace(/\./g,'').replace(/,/g,'.');v=Number.parseFloat(v);return Number.isNaN(v)?0:v;}),nt=window.App?.utils?.normalizeText||((v)=>String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+    const st={all:[],vis:[],a:'',b:'',sk:'abs',sd:'desc',f:'all',s:'',g:false,eg:new Set(),sel:'',last:null,max:0};
+    const esc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const pick=(...a)=>{for(const v of a) if(v!==undefined&&v!==null&&String(v).trim()!=='') return v; return '';};
+    const num=r=>String(pick(r['Número da despesa'],r['Numero da despesa'],r.numero,r.num)||'').trim();
+    const nat=r=>String(pick(r['Natureza de Despesa'],r['Natureza da Despesa'],r.natureza)||'').trim();
+    const desc=r=>String(pick(r['Descrição da natureza de despesa'],r['Descricao da natureza de despesa'],r['Natureza de Despesa'],r['Natureza da Despesa'])||'').trim();
+    const grp=n=>{n=String(n||'').trim(); if(!n) return 'Sem natureza'; const p=n.replace(/[^\d.]/g,'').split('.').filter(Boolean); return p.length>=3?p.slice(0,3).join('.'):(p.length?p.join('.') : n);};
+    const cmp=(a,b)=>a==null&&b==null?0:a==null?1:b==null?-1:a<b?-1:a>b?1:0;
+    const rank=s=>({nova:0,removida:1,alta:2,baixa:3,igual:4}[s]??9);
+    const sf=(v)=>v==null?'—':(v>0?'+':'')+fmt.format(v), sp=(v)=>v==null||Number.isNaN(v)?'—':(v>0?'+':'')+v.toFixed(1)+'%';
+    const info=s=>({nova:['🆕 Nova','nova'],removida:['🗑 Removida','removida'],alta:['📈 Alta','alta'],baixa:['📉 Baixa','baixa'],igual:['= Igual','igual']}[s]||['= Igual','igual']);
+    const trunc=(t,m)=>{t=String(t||''); return t.length>m?t.slice(0,m-1)+'…':t;};
+    function build(a,b){const ref=a||b||{},N=num(ref),G=grp(nat(ref)),D=desc(ref)||nat(ref)||'(Sem descrição)',A=a?pc(a['Saldo atual da despesa']):null,B=b?pc(b['Saldo atual da despesa']):null,H=!!a,X=!!b,d=A!=null&&B!=null?B-A:null,P=A!=null&&A!==0&&d!=null?(d/Math.abs(A))*100:null,S=!H&&X?'nova':H&&!X?'removida':d>0?'alta':d<0?'baixa':'igual'; return{key:N||nt(D)+'-'+nt(G),num:N,desc:D,nat:nat(ref),gp:G,sA:A,sB:B,diff:d,pct:P,abs:Math.abs(d||0),status:S,search:nt([N,D,G,S].join(' '))};}
+    function mapRows(list){const A=new Map(),B=new Map();(list?.a||[]).forEach(x=>{const k=num(x); if(k&&!A.has(k)) A.set(k,x)});(list?.b||[]).forEach(x=>{const k=num(x); if(k&&!B.has(k)) B.set(k,x)}); return [...new Set([...A.keys(),...B.keys()])].map(k=>build(A.get(k),B.get(k)));}
+    function filt(rows){const s=nt(st.s); return rows.filter(x=>(st.f==='all'||x.status===st.f)&&( !s || x.search.includes(s)));}
+    function sort(rows){return [...rows].sort((a,b)=>{let x=0; switch(st.sk){case'num':x=a.num.localeCompare(b.num,'pt-BR',{numeric:true,sensitivity:'base'});break;case'desc':x=a.desc.localeCompare(b.desc,'pt-BR',{numeric:true,sensitivity:'base'});break;case'status':x=rank(a.status)-rank(b.status);break;case'a':x=cmp(a.sA,b.sA);break;case'b':x=cmp(a.sB,b.sB);break;case'var':x=cmp(a.diff,b.diff);break;case'pct':x=cmp(a.pct,b.pct);break;case'grupo':x=a.gp.localeCompare(b.gp,'pt-BR',{numeric:true,sensitivity:'base'});break;default:x=cmp(a.abs,b.abs)} return st.sd==='asc'?x:-x||a.num.localeCompare(b.num,'pt-BR',{numeric:true,sensitivity:'base'});});}
+    const maxPct=rows=>rows.reduce((m,x)=>x.pct!=null&&Number.isFinite(x.pct)?Math.max(m,Math.abs(x.pct)):m,0);
+    function summary(rows){const tA=rows.reduce((a,x)=>a+(x.sA??0),0),tB=rows.reduce((a,x)=>a+(x.sB??0),0),tV=rows.reduce((a,x)=>a+(x.diff??0),0),n=rows.filter(x=>x.status==='nova').length,rm=rows.filter(x=>x.status==='removida').length,g=(s)=>rows.filter(x=>x.status===s).sort((a,b)=>cmp(s==='baixa'?a.diff:b.diff,s==='baixa'?b.diff:a.diff)).slice(0,3);
+      rs.innerHTML=`<div class=comp-card><div class=label>Total Período A</div><div class=value>${fmt.format(tA)}</div><div class=sub>${st.a||'Base'}</div></div><div class=comp-card><div class=label>Total Período B</div><div class=value>${fmt.format(tB)}</div><div class=sub>${st.b||'Comparação'}</div></div><div class=comp-card><div class=label>Variação Total</div><div class=value style="color:${tV>=0?'#4ade80':'#fb7185'}">${sf(tV)}</div><div class=sub>Diferença consolidada</div></div><div class=comp-card><div class=label>Despesas Comparadas</div><div class=value>${rows.length}</div><div class=sub>Linhas em A ou B</div></div>`;
+      mr.innerHTML=`<div class=comp-mini-card><div class=mini-title><span>Qtd. novas</span><span style="color:#4ade80;">🆕 ${n}</span></div><div class=mini-list><div class=mini-row><span>Somente em B</span><strong>${n}</strong></div><div class=mini-row><span>% do recorte</span><strong>${rows.length?((n/rows.length)*100).toFixed(1):'0.0'}%</strong></div></div></div><div class=comp-mini-card><div class=mini-title><span>Qtd. removidas</span><span style="color:#fb7185;">🗑 ${rm}</span></div><div class=mini-list><div class=mini-row><span>Somente em A</span><strong>${rm}</strong></div><div class=mini-row><span>% do recorte</span><strong>${rows.length?((rm/rows.length)*100).toFixed(1):'0.0'}%</strong></div></div></div><div class=comp-mini-card><div class=mini-title><span>Maiores altas</span><span style="color:#4ade80;">📈 Top 3</span></div><div class=mini-list>${g('alta').map(x=>`<div class=mini-row><span>${esc(x.num||'—')} ${esc(trunc(x.desc,28))}</span><strong style="color:#4ade80;">${sf(x.diff)}</strong></div>`).join('')||'<div class=mini-row><span>Sem altas no recorte</span><strong>—</strong></div>'}</div></div><div class=comp-mini-card><div class=mini-title><span>Maiores quedas</span><span style="color:#fb7185;">📉 Top 3</span></div><div class=mini-list>${g('baixa').map(x=>`<div class=mini-row><span>${esc(x.num||'—')} ${esc(trunc(x.desc,28))}</span><strong style="color:#fb7185;">${sf(x.diff)}</strong></div>`).join('')||'<div class=mini-row><span>Sem quedas no recorte</span><strong>—</strong></div>'}</div></div>`;
+    }
+    function ph(msg){r.innerHTML=`<div class=comp-empty>${esc(msg||'Selecione os dois períodos e clique em Comparar.')}</div>`; rs.innerHTML=''; mr.innerHTML=''; cx.textContent=''; bx.style.display='none';}
+    function rowHTML(x, hidden){const [lab,cls]=info(x.status),w=x.pct!=null&&st.max?Math.min(100,(Math.abs(x.pct)/st.max)*100):0,bc=x.pct==null?'neutral':x.pct>0?'positive':x.pct<0?'negative':'neutral',h=x.status==='nova'?'Nova no período B':x.status==='removida'?'Removida no período B':x.status==='alta'?'Aumento em relação ao período A':x.status==='baixa'?'Queda em relação ao período A':'Sem alteração'; return `<tr class="comp-row comp-group-children${hidden?' hidden':''}" data-row-key="${esc(x.key)}"><td style="padding-left:${hidden?24:10}px"><span class="comp-badge ${cls}">${lab}</span></td><td class=comp-num>${esc(x.num||'—')}</td><td><div class=comp-desc title="${esc(x.desc)}">${esc(x.desc)}</div><div style="margin-top:4px;font-size:11px;color:var(--muted);">${esc(x.gp||'Sem grupo')}</div></td><td style="text-align:right;">${x.sA!=null?fmt.format(x.sA):'<span style="color:var(--muted)">—</span>'}</td><td style="text-align:right;">${x.sB!=null?fmt.format(x.sB):'<span style="color:var(--muted)">—</span>'}</td><td style="text-align:right;font-weight:800;color:${x.diff>0?'#4ade80':x.diff<0?'#fb7185':'var(--ink)'};">${x.diff!=null?sf(x.diff):'—'}</td><td style="text-align:right;"><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;"><div style="font-weight:800;color:${x.pct==null?'var(--muted)':x.pct>0?'#4ade80':x.pct<0?'#fb7185':'var(--ink)'};" title="${esc(h)}">${esc(x.pct!=null?sp(x.pct):'—')}</div><div class=comp-bar title="${esc(h)}"><span class="${bc}" style="width:${w}%;"></span></div></div></td></tr>`;}
+    function table(rows, a, b){const H=[['status','Status'],['num','Nº despesa'],['desc','Descrição'],['a',a],['b',b],['var','Variação R$'],['pct','Variação %']]; r.innerHTML=`<div class=comp-table-wrap><table class=comp-table><thead><tr>${H.map(h=>`<th class=comp-th-sort data-sort="${h[0]}" style="text-align:${h[0]==='a'||h[0]==='b'||h[0]==='var'||h[0]==='pct'?'right':'left'};">${esc(h[1])}<span class=sort-mark>${st.sk===h[0]?(st.sd==='asc'?'▲':'▼'):''}</span></th>`).join('')}</tr></thead><tbody>${rows.length?rows.map(x=>{const [lab,cls]=info(x.status),w=x.pct!=null&&st.max?Math.min(100,(Math.abs(x.pct)/st.max)*100):0,bc=x.pct==null?'neutral':x.pct>0?'positive':x.pct<0?'negative':'neutral',h=x.status==='nova'?'Nova no período B':x.status==='removida'?'Removida no período B':x.status==='alta'?'Aumento em relação ao período A':x.status==='baixa'?'Queda em relação ao período A':'Sem alteração'; return `<tr class="comp-row${st.sel===x.key?' is-selected':''}" data-row-key="${esc(x.key)}"><td><span class="comp-badge ${cls}">${lab}</span></td><td class=comp-num>${esc(x.num||'—')}</td><td><div class=comp-desc title="${esc(x.desc)}">${esc(x.desc)}</div><div style="margin-top:4px;font-size:11px;color:var(--muted);">${esc(x.gp||'Sem grupo')}</div></td><td style="text-align:right;">${x.sA!=null?fmt.format(x.sA):'<span style="color:var(--muted)">—</span>'}</td><td style="text-align:right;">${x.sB!=null?fmt.format(x.sB):'<span style="color:var(--muted)">—</span>'}</td><td style="text-align:right;font-weight:800;color:${x.diff>0?'#4ade80':x.diff<0?'#fb7185':'var(--ink)'};">${x.diff!=null?sf(x.diff):'—'}</td><td style="text-align:right;"><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;"><div style="font-weight:800;color:${x.pct==null?'var(--muted)':x.pct>0?'#4ade80':x.pct<0?'#fb7185':'var(--ink)'};" title="${esc(h)}">${esc(x.pct!=null?sp(x.pct):'—')}</div><div class=comp-bar title="${esc(h)}"><span class="${bc}" style="width:${w}%;"></span></div></div></td></tr>`}).join(''):`<tr><td colspan=7><div class=comp-empty>Nenhuma linha encontrada com os filtros atuais.</div></td></tr>`}</tbody></table></div>`}
+    function grouped(rows,a,b){const m=new Map(); rows.forEach(x=>{const k=x.gp||'Sem natureza'; (m.get(k)||m.set(k,[]).get(k)).push(x)}); const gs=[...m.entries()].map(([k,v])=>({k,v:sort(v),a:v.reduce((s,x)=>s+(x.sA??0),0),b:v.reduce((s,x)=>s+(x.sB??0),0),d:v.reduce((s,x)=>s+(x.diff??0),0)})); gs.sort((x,y)=>{let z=0; if(st.sk==='a')z=cmp(x.a,y.a); else if(st.sk==='b')z=cmp(x.b,y.b); else if(st.sk==='var'||st.sk==='abs')z=cmp(x.d,y.d); else z=x.k.localeCompare(y.k,'pt-BR',{numeric:true,sensitivity:'base'}); return st.sd==='asc'?z:-z;}); r.innerHTML=`<div class=comp-table-wrap><table class=comp-table><thead><tr><th class=comp-th-sort data-sort=grupo>Grupo<span class=sort-mark>${st.sk==='grupo'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=status>Status<span class=sort-mark>${st.sk==='status'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=num>Nº despesa<span class=sort-mark>${st.sk==='num'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=desc>Descrição<span class=sort-mark>${st.sk==='desc'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=a style="text-align:right;">${esc(a)}<span class=sort-mark>${st.sk==='a'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=b style="text-align:right;">${esc(b)}<span class=sort-mark>${st.sk==='b'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=var style="text-align:right;">Variação R$<span class=sort-mark>${st.sk==='var'?(st.sd==='asc'?'▲':'▼'):''}</span></th><th class=comp-th-sort data-sort=pct style="text-align:right;">Variação %<span class=sort-mark>${st.sk==='pct'?(st.sd==='asc'?'▲':'▼'):''}</span></th></tr></thead>${gs.length?gs.map(g=>{const ex=st.eg.has(nt(g.k)),[lab,cls]=g.d>0?['📈 Grupo em alta','alta']:g.d<0?['📉 Grupo em queda','baixa']:['= Grupo estável','igual']; return `<tbody data-group="${esc(nt(g.k))}"><tr class="comp-row comp-group-row comp-toggle-inline" data-group-toggle="${esc(nt(g.k))}"><td><span style="display:inline-flex;align-items:center;gap:8px;"><span style="font-size:13px;color:var(--accent-2);">${ex?'▾':'▸'}</span><span class="comp-badge igual">${esc(g.k)}</span></span></td><td colspan=2><div style="display:flex;flex-direction:column;gap:4px;"><span>${esc(g.k)} - Subtotal do grupo</span><span style="font-size:11px;color:var(--muted);">Clique para ${ex?'recolher':'abrir'} as ${g.v.length} linhas</span></div></td><td style="text-align:right;">${fmt.format(g.a)}</td><td style="text-align:right;">${fmt.format(g.b)}</td><td style="text-align:right;color:${g.d>0?'#4ade80':g.d<0?'#fb7185':'var(--ink)'};font-weight:800;">${sf(g.d)}</td><td style="text-align:right;"><span style="color:${g.d>0?'#4ade80':g.d<0?'#fb7185':'#cbd5e1'};font-weight:800;">${lab}</span></td></tr>${g.v.map(x=>rowHTML(x,!ex)).join('')}</tbody>`}).join(''):`<tbody><tr><td colspan=8><div class=comp-empty>Nenhuma linha encontrada com os filtros atuais.</div></td></tr></tbody>`}</table></div>`;}
+    function apply(){const rows=sort(filt(st.all)); st.vis=rows; st.max=maxPct(st.all); cx.textContent=rows.length?`${rows.length} linhas visíveis de ${st.all.length} no recorte atual.`:'Nenhuma linha corresponde aos filtros atuais.'; summary(rows); st.g?grouped(rows,st.a||'Período A',st.b||'Período B'):table(rows,st.a||'Período A',st.b||'Período B'); bx.style.display=st.all.length?'inline-flex':'none'; document.querySelectorAll('#comparativo-overlay .comp-filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===st.f)); if(gb){gb.textContent=st.g?'Ver lista':'Ver por grupo'; gb.style.borderColor=st.g?'var(--accent-2)':'var(--line)'; gb.style.color=st.g?'var(--accent-2)':'var(--ink)';} if(!st.sel&&rows.length)st.sel=rows[0].key; document.querySelectorAll('#comparativo-overlay .comp-row[data-row-key]').forEach(x=>x.classList.toggle('is-selected',x.dataset.rowKey===st.sel));}
+    async function loadPeriods(){try{const list=await fetch('/api/despesas/importacoes').then(r=>r.json()); [sa,sb].forEach(sel=>{const cur=sel.value; sel.innerHTML='<option value="">Selecione...</option>'; list.forEach(i=>{const o=document.createElement('option'); o.value=i.id; o.textContent=`${i.periodo}${i.descricao?' - '+i.descricao:''} (${i.total_rows} linhas)`; sel.appendChild(o)}); sel.value=cur;});}catch(e){ph(`Erro ao carregar períodos: ${e.message}`);}}
+    async function compare(){const idA=sa.value,idB=sb.value; if(!idA||!idB){alert('Selecione os dois períodos para comparar.');return;} if(idA===idB){alert('Selecione períodos diferentes.');return;} r.innerHTML='<div class=comp-empty>⏳ Carregando dados...</div>'; bc.disabled=true; bx.style.display='none'; try{const [A,B]=await Promise.all([fetch(`/api/despesas/importacoes/${idA}`).then(r=>r.json()),fetch(`/api/despesas/importacoes/${idB}`).then(r=>r.json())]); st.all=mapRows({a:Array.isArray(A.linhas)?A.linhas:[],b:Array.isArray(B.linhas)?B.linhas:[]}); st.a=A?.importacao?.periodo||'Período A'; st.b=B?.importacao?.periodo||'Período B'; st.last={rows:[...st.all],periodoA:st.a,periodoB:st.b}; st.max=maxPct(st.all); st.sel=st.all[0]?.key||''; st.eg=new Set(); cx.textContent=`${st.a} x ${st.b}`; apply();}catch(e){ph(`Erro ao comparar: ${e.message}`);}finally{bc.disabled=false;}}
+    if(ba) ba.addEventListener('click',async()=>{o.style.display='block';o.setAttribute('aria-hidden','false'); await loadPeriods(); if(!st.all.length) ph('Selecione os dois períodos e clique em Comparar.'); else apply(); setTimeout(()=>sa.focus(),0);});
+    const close=()=>{o.style.display='none';o.setAttribute('aria-hidden','true');}; if(bf) bf.addEventListener('click',close); if(o) o.addEventListener('click',e=>{if(e.target===o) close();}); document.addEventListener('keydown',e=>{if(o&&o.style.display!=='none'&&e.key==='Escape') close();}); if(bc) bc.addEventListener('click',compare); if(bx) bx.addEventListener('click',()=>{if(!st.last) return; const {rows,periodoA,periodoB}=st.last; let csv=`Número da despesa,Descrição,Status,${periodoA},${periodoB},Variação R$,Variação %\n`; rows.forEach(x=>csv+=[`"${String(x.num||'').replace(/"/g,'""')}"`,`"${String(x.desc||'').replace(/"/g,'""')}"`,`"${String(x.status||'').replace(/"/g,'""')}"`,x.sA!=null?x.sA.toFixed(2):'',x.sB!=null?x.sB.toFixed(2):'',x.diff!=null?x.diff.toFixed(2):'',x.pct!=null?x.pct.toFixed(2)+'%':''].join(',')+'\n'); const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}),file=`comparativo_${periodoA}_vs_${periodoB}.csv`.replace(/[\/\\:*?"<>|]/g,'-'),save=window.DocumentAutosave?window.DocumentAutosave.saveText('\uFEFF'+csv,{nome:file,categoria:'relatorios_csv',referencia:`${periodoA}_vs_${periodoB}`,descricao:`Comparativo de despesa entre ${periodoA} e ${periodoB}`,mimeType:'text/csv;charset=utf-8;'}).catch(err=>console.warn('Falha no autosave do comparativo:',err)):Promise.resolve(); Promise.resolve(save).finally(()=>{if(window.DocumentAutosave){window.DocumentAutosave.downloadBlob(blob,file);return;} const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=file; a.click();});});
+    if(q) q.addEventListener('input',()=>{st.s=q.value; apply();}); document.querySelectorAll('#comparativo-overlay .comp-filter').forEach(b=>b.addEventListener('click',()=>{st.f=b.dataset.filter||'all'; apply();})); if(gb) gb.addEventListener('click',()=>{st.g=!st.g; apply();}); if(r) r.addEventListener('click',e=>{const tg=e.target.closest('[data-group-toggle]'); if(tg){const k=tg.dataset.groupToggle; st.eg.has(k)?st.eg.delete(k):st.eg.add(k); apply(); return;} const th=e.target.closest('.comp-th-sort'); if(th&&th.dataset.sort){st.sk===th.dataset.sort?st.sd=st.sd==='asc'?'desc':'asc':(st.sk=th.dataset.sort,st.sd=th.dataset.sort==='status'?'asc':'desc'); apply(); return;} const rw=e.target.closest('.comp-row[data-row-key]'); if(rw){st.sel=rw.dataset.rowKey; document.querySelectorAll('#comparativo-overlay .comp-row[data-row-key]').forEach(x=>x.classList.toggle('is-selected',x.dataset.rowKey===st.sel));}});
+    ph('Selecione os dois períodos e clique em Comparar.');
+  })();
+  </script>
+  <style>
+    /* Saldo crítico: linha alaranjada na tabela */
+    tr.saldo-critico td { background: rgba(251,146,60,0.10) !important; }
+    tr.saldo-critico:hover td { background: rgba(251,146,60,0.18) !important; }
+    tr.saldo-critico td:last-child { color: #f97316 !important; font-weight: 700; }
+
+    /* IA Painel */
+    .ia-tab {
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(124,58,237,0.25);
+      color: #c4b5fd;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .ia-tab:hover { background: rgba(124,58,237,0.2); border-color: rgba(124,58,237,0.6); }
+    .ia-tab.active { background: rgba(124,58,237,0.35); border-color: #a78bfa; color: #fff; }
+    #ia-chat-input-wrap { display: flex !important; }
+    #ia-resultado strong, #ia-resultado b { color: #c4b5fd; }
+    #ia-resultado h1, #ia-resultado h2, #ia-resultado h3 { color: #a78bfa; margin: 8px 0 4px; font-size: 13px; }
+    @keyframes ia-spin { to { transform: rotate(360deg); } }
+    #ia-loading { animation: ia-fade 1s ease infinite alternate; }
+    @keyframes ia-fade { from { opacity:.5 } to { opacity:1 } }
+  </style>
+
+  <script>
+  // IA Dotações Orçamentárias
+  (function () {
+    const btnAbrir  = document.getElementById('btn-ia-dotacoes');
+    const painel    = document.getElementById('ia-painel');
+    const btnFechar = document.getElementById('ia-fechar');
+    const tabs      = document.querySelectorAll('.ia-tab');
+    const atalhos   = document.querySelectorAll('.ia-shortcut');
+    const descEl    = document.getElementById('ia-desc');
+    const chatWrap  = document.getElementById('ia-chat-input-wrap');
+    const execWrap  = document.getElementById('ia-exec-wrap');
+    const execBtn   = document.getElementById('ia-exec-btn');
+    const semDados  = document.getElementById('ia-sem-dados');
+    const resWrap   = document.getElementById('ia-resultado-wrap');
+    const loading   = document.getElementById('ia-loading');
+    const resEl     = document.getElementById('ia-resultado');
+    const copyBtn   = document.getElementById('ia-copy-btn');
+    const novaBtn   = document.getElementById('ia-nova-btn');
+    const chatInput = document.getElementById('ia-chat-pergunta');
+    const chatSend  = document.getElementById('ia-chat-send');
+
+    let activeAction = 'analisar';
+
+    const descs = {
+      analisar:     'Análise completa do período: pontos de atenção, destaques por secretaria e recomendações práticas.',
+      chat:         'Faça perguntas em linguagem natural sobre os dados carregados.',
+      anomalias:    'A IA identifica inconsistências, valores suspeitos e situações que merecem investigação.',
+      relatorio:    'Gera um relatório formal de execução orçamentária pronto para arquivamento ou prestação de contas.',
+      remanejamento:'Sugestões de remanejamento orçamentário baseadas nos saldos disponíveis.',
+      prioridades:  'Mostra onde vale priorizar reforço orçamentário e quais áreas exigem atenção imediata.',
+      cortes:       'Aponta onde pode haver espaço para contenção, postergação ou revisão de gasto.',
+    };
+
+    function hasData() {
+      return window.App && window.App.state && window.App.state.rows && window.App.state.rows.length > 0;
+    }
+
+    window.buildContext = function() {
+      const st = window.App.state;
+      const rows = st.rows || [];
+      const cols = st.columns || (rows.length ? Object.keys(rows[0]) : []);
+
+      const saldoCol  = cols.find(c => c.toLowerCase().includes('saldo'));
+      const secCol    = cols.find(c => c.toLowerCase().includes('organograma'));
+      const natCol    = cols.find(c => c.toLowerCase().includes('natureza') && !c.toLowerCase().includes('descri'));
+      const funcCol   = cols.find(c => /fun[çc][ãa]o/.test(c.toLowerCase()));
+      const programaCol = cols.find(c => c.toLowerCase().includes('programa'));
+      const acaoCol   = cols.find(c => c.toLowerCase().includes('ação') || c.toLowerCase().includes('acao'));
+      const numCol    = cols.find(c => /n[úu]mero/.test(c.toLowerCase()) && /despesa/.test(c.toLowerCase()));
+      const descNatCol= cols.find(c => c.toLowerCase().includes('natureza') && c.toLowerCase().includes('descri'));
+
+      function pv(v) {
+        if (!v) return 0;
+        return parseFloat(String(v).replace(/\./g,'').replace(',','.')) || 0;
+      }
+
+      const valCols = cols.filter(c => ['saldo','valor','empenhado','liquidado','pago'].some(k => c.toLowerCase().includes(k)));
+      const totais = {};
+      valCols.forEach(c => { totais[c] = rows.reduce((s, r) => s + pv(r[c]), 0); });
+
+      const filteredRows = Array.isArray(st.filtered) && st.filtered.length ? st.filtered : rows;
+      const totalSaldo = saldoCol ? rows.reduce((sum, row) => sum + pv(row[saldoCol]), 0) : 0;
+      const filteredSaldo = saldoCol ? filteredRows.reduce((sum, row) => sum + pv(row[saldoCol]), 0) : 0;
+
+      const porSec = {};
+      if (secCol && saldoCol) {
+        rows.forEach(r => {
+          const k = r[secCol] || '(Sem secretaria)';
+          porSec[k] = (porSec[k] || 0) + pv(r[saldoCol]);
+        });
+      }
+      const porSecTop = Object.fromEntries(Object.entries(porSec).sort((a,b) => b[1]-a[1]).slice(0,12));
+
+      const porPrograma = {};
+      if (programaCol && saldoCol) {
+        rows.forEach(r => {
+          const k = r[programaCol] || '(Sem programa)';
+          porPrograma[k] = (porPrograma[k] || 0) + pv(r[saldoCol]);
+        });
+      }
+      const porProgramaTop = Object.fromEntries(Object.entries(porPrograma).sort((a,b) => b[1]-a[1]).slice(0,10));
+
+      const porNat = {};
+      if (natCol) rows.forEach(r => { const k = r[natCol]||'?'; porNat[k] = (porNat[k]||0)+1; });
+      const porNatTop = Object.fromEntries(Object.entries(porNat).sort((a,b)=>b[1]-a[1]).slice(0,10));
+
+      const porFunc = {};
+      if (funcCol) rows.forEach(r => { const k = r[funcCol]||'?'; porFunc[k] = (porFunc[k]||0)+1; });
+      const porFuncTop = Object.fromEntries(Object.entries(porFunc).sort((a,b)=>b[1]-a[1]).slice(0,8));
+
+      const maioresSaldos = saldoCol ? rows
+        .slice()
+        .sort((a,b) => pv(b[saldoCol]) - pv(a[saldoCol]))
+        .slice(0,8)
+        .map(r => ({
+          num: r[numCol] || '?',
+          secretaria: secCol ? (r[secCol] || '(Sem secretaria)') : '(Sem secretaria)',
+          programa: programaCol ? (r[programaCol] || '(Sem programa)') : '(Sem programa)',
+          acao: acaoCol ? (r[acaoCol] || '(Sem ação)') : '(Sem ação)',
+          desc: r[descNatCol] || r[natCol] || '?',
+          saldo: r[saldoCol] || '0',
+        })) : [];
+
+      const menoresSaldos = saldoCol ? rows
+        .filter(r => pv(r[saldoCol]) >= 0)
+        .slice()
+        .sort((a,b) => pv(a[saldoCol]) - pv(b[saldoCol]))
+        .slice(0,8)
+        .map(r => ({
+          num: r[numCol] || '?',
+          secretaria: secCol ? (r[secCol] || '(Sem secretaria)') : '(Sem secretaria)',
+          programa: programaCol ? (r[programaCol] || '(Sem programa)') : '(Sem programa)',
+          acao: acaoCol ? (r[acaoCol] || '(Sem ação)') : '(Sem ação)',
+          desc: r[descNatCol] || r[natCol] || '?',
+          saldo: r[saldoCol] || '0',
+        })) : [];
+
+      const limite = st.saldoCriticoThreshold || 1000;
+      const criticos = saldoCol ? rows
+        .filter(r => pv(r[saldoCol]) < limite && pv(r[saldoCol]) >= 0)
+        .sort((a,b) => pv(a[saldoCol]) - pv(b[saldoCol]))
+        .slice(0,10)
+        .map(r => ({
+          num:   r[numCol] || '?',
+          desc:  r[descNatCol] || r[natCol] || '?',
+          saldo: r[saldoCol] || '0',
+        })) : [];
+
+      const periodoLabel = (document.getElementById('periodo-ativo') || {}).textContent || 'Período atual';
+      const activeFilters = [];
+      if (window.App && window.App.state && Array.isArray(window.App.state.filters)) {
+        window.App.state.filters.forEach(filter => {
+          if (filter.selected && filter.selected.size) {
+            activeFilters.push(`${filter.column}: ${Array.from(filter.selected).slice(0,4).join(', ')}${filter.selected.size > 4 ? '…' : ''}`);
+          }
+          if (filter.query) {
+            activeFilters.push(`${filter.column} contém "${filter.query}"`);
+          }
+        });
+      }
+
+      return {
+        periodo:       periodoLabel.replace('📂','').trim(),
+        total_rows:    rows.length,
+        filtered_rows: filteredRows.length,
+        total_saldo: totalSaldo,
+        filtered_saldo: filteredSaldo,
+        filtros_ativos: activeFilters,
+        totais,
+        por_secretaria: porSecTop,
+        por_programa: porProgramaTop,
+        por_natureza:   porNatTop,
+        por_funcao:     porFuncTop,
+        maiores_saldos: maioresSaldos,
+        menores_saldos: menoresSaldos,
+        criticos,
+        limite_critico: limite,
+      };
+    }
+
+    if (window.IaChatWidget) {
+      painel.style.display = 'none';
+      btnAbrir.addEventListener('click', () => {
+        const instances = window.__iaChatWidgetInstances || {};
+        const widget = instances[`page:${location.pathname}`];
+        if (widget) widget.open();
+        else {
+           // Fallback if not yet initialized
+           const open = painel.style.display === 'block';
+           painel.style.display = open ? 'none' : 'block';
+           if (!open) setTab(activeAction);
+        }
+      });
+      return;
+    }
+
+    function setTab(action) {
+      activeAction = action;
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.action === action));
+      descEl.textContent = descs[action] || '';
+      const isChat = action === 'chat';
+      chatWrap.style.display = isChat ? 'flex' : 'none';
+      execWrap.style.display = isChat ? 'none' : 'flex';
+      resWrap.style.display  = 'none';
+    }
+
+    async function callIA(pergunta) {
+      if (!hasData()) { semDados.style.display = 'inline'; return; }
+      semDados.style.display = 'none';
+      resWrap.style.display  = 'block';
+      loading.style.display  = 'block';
+      resEl.textContent = '';
+
+      try {
+        const res = await fetch('/api/despesas/ia', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            action:   activeAction,
+            contexto: buildContext(),
+            pergunta: pergunta || '',
+          }),
+        });
+        const json = await res.json();
+        loading.style.display = 'none';
+        if (json.error) {
+          resEl.textContent = '✖ ' + json.error;
+        } else {
+          // Render markdown-like bold
+          resEl.innerHTML = (json.resultado || '')
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+            .replace(/^### (.+)$/gm,'<strong style="color:#a78bfa;font-size:13px">$1</strong>')
+            .replace(/^## (.+)$/gm,'<strong style="color:#c4b5fd;font-size:14px">$1</strong>')
+            .replace(/^# (.+)$/gm,'<strong style="color:#e9d5ff;font-size:15px">$1</strong>');
+        }
+      } catch (e) {
+        loading.style.display = 'none';
+        resEl.textContent = '✖ Erro de comunicação: ' + e.message;
+      }
+    }
+
+    // Events
+    btnAbrir.addEventListener('click', () => {
+      const open = painel.style.display === 'block';
+      painel.style.display = open ? 'none' : 'block';
+      if (!open) setTab(activeAction);
+    });
+    btnFechar.addEventListener('click', () => { painel.style.display = 'none'; });
+
+    tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.action)));
+    atalhos.forEach(btn => btn.addEventListener('click', () => {
+      setTab(btn.dataset.action);
+      callIA('');
+    }));
+
+    execBtn.addEventListener('click', () => callIA(''));
+    chatSend.addEventListener('click', () => {
+      const q = chatInput.value.trim();
+      if (!q) return;
+      callIA(q);
+      chatInput.value = '';
+    });
+    chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') chatSend.click(); });
+
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(resEl.innerText || resEl.textContent || '');
+      copyBtn.textContent = '✓ Copiado!';
+      setTimeout(() => { copyBtn.textContent = '📋 Copiar'; }, 2000);
+    });
+    novaBtn.addEventListener('click', () => { resWrap.style.display = 'none'; });
+
+    // Inicial
+    setTab('analisar');
+  })();
+  </script>
+</body>
+
+</html>
+
+
+
+

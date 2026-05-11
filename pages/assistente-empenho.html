@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Assistente de Empenho - Prefeitura de Inaja</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+  <script defer src="/static/js/shared-header.js"></script>
+  <style>
+    :root {
+      --ea-ink: #14324d;
+      --ea-accent: #285f93;
+      --ea-accent-soft: rgba(40,95,147,.08);
+      --ea-gold: #b98a2f;
+      --ea-surface-strong: rgba(255,255,255,.92);
+    }
+    .ea-page {
+      max-width: 1380px;
+      margin: 24px auto 72px;
+      padding: 0 20px;
+    }
+    .ea-shell {
+      position: relative;
+    }
+    .ea-shell::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at top left, rgba(40,95,147,.08), transparent 28%),
+        radial-gradient(circle at 85% 10%, rgba(185,138,47,.06), transparent 22%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .ea-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, .9fr);
+      gap: 24px;
+      padding: 34px 36px;
+      border-radius: 32px;
+      background:
+        radial-gradient(circle at top left, rgba(40,95,147,.22), transparent 34%),
+        linear-gradient(135deg, #ffffff 0%, #f4f8fc 56%, #eef4fa 100%);
+      border: 1px solid rgba(40,95,147,.14);
+      box-shadow: 0 24px 60px rgba(24,57,92,.12);
+      margin-bottom: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ea-hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -70px;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.9), rgba(255,255,255,0));
+      pointer-events: none;
+    }
+    .ea-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.84);
+      border: 1px solid rgba(40,95,147,.12);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ea-accent);
+    }
+    .ea-hero h1 {
+      margin-top: 14px;
+      font-size: clamp(32px, 3.4vw, 52px);
+      line-height: .98;
+      letter-spacing: -.04em;
+      color: var(--ea-ink);
+      font-weight: 900;
+      max-width: 760px;
+    }
+    .ea-hero p {
+      max-width: 760px;
+      margin-top: 14px;
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--text-3);
+    }
+    .ea-hero-meta {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+      max-width: 780px;
+    }
+    .ea-meta-card {
+      padding: 14px 15px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.7);
+      border: 1px solid rgba(40,95,147,.1);
+      backdrop-filter: blur(8px);
+    }
+    .ea-meta-card strong {
+      display: block;
+      color: var(--ea-ink);
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .ea-meta-card span {
+      display: block;
+      color: var(--text-3);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .ea-hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .ea-chip-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid rgba(40,95,147,.14);
+      background: rgba(255,255,255,.78);
+      color: var(--ea-ink);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .ea-chip-link:hover {
+      transform: translateY(-1px);
+      border-color: rgba(40,95,147,.26);
+      box-shadow: 0 14px 24px rgba(39,71,116,.1);
+    }
+    .ea-hero-side {
+      display: grid;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+    .ea-side-card {
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.78);
+      border: 1px solid rgba(40,95,147,.1);
+      box-shadow: 0 18px 32px rgba(79,128,200,.08);
+    }
+    .ea-side-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ea-accent);
+      margin-bottom: 8px;
+    }
+    .ea-side-card strong {
+      display: block;
+      color: var(--ea-ink);
+      font-size: 20px;
+      line-height: 1.28;
+    }
+    .ea-side-card p {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-3);
+    }
+    .ea-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.28fr) minmax(320px, .82fr);
+      gap: 22px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
+    }
+    .ea-card {
+      background: var(--ea-surface-strong);
+      border-radius: 26px;
+      border: 1px solid rgba(40,95,147,.1);
+      box-shadow: 0 18px 40px rgba(24,57,92,.08);
+      overflow: hidden;
+    }
+    .ea-card-head {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(40,95,147,.08);
+      background: linear-gradient(180deg, rgba(40,95,147,.05), rgba(40,95,147,0));
+    }
+    .ea-card-head h2 {
+      font-size: 20px;
+      color: var(--ea-ink);
+      font-weight: 800;
+      margin: 0;
+    }
+    .ea-card-head p {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-3);
+      line-height: 1.6;
+    }
+    .ea-card-body {
+      padding: 24px;
+    }
+    .ea-upload-box {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px dashed rgba(40,95,147,.24);
+      background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(244,248,252,.88));
+    }
+    .ea-upload-dropzone {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 170px;
+      padding: 20px;
+      border-radius: 20px;
+      text-align: center;
+      background: rgba(255,255,255,.82);
+      border: 1px dashed rgba(40,95,147,.18);
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+      cursor: pointer;
+    }
+    .ea-upload-dropzone.drag-over {
+      border-color: rgba(40,95,147,.42);
+      box-shadow: 0 0 0 4px rgba(40,95,147,.08);
+      transform: translateY(-1px);
+    }
+    .ea-upload-dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .ea-upload-icon {
+      width: 54px;
+      height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: rgba(40,95,147,.08);
+      color: var(--ea-accent);
+    }
+    .ea-upload-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+    .ea-upload-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ea-ink);
+    }
+    .ea-upload-subtitle {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-3);
+      max-width: 540px;
+    }
+    .ea-upload-meta {
+      font-size: 11px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }
+    .ea-file-row {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(40,95,147,.1);
+    }
+    .ea-file-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ea-file-info strong {
+      font-size: 14px;
+      color: var(--ea-ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ea-file-info span {
+      font-size: 12px;
+      color: var(--text-3);
+    }
+    .ea-form-sections {
+      display: grid;
+      gap: 18px;
+    }
+    .ea-block {
+      padding: 18px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.88), rgba(247,250,253,.92));
+      border: 1px solid rgba(40,95,147,.08);
+    }
+    .ea-block-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .ea-block-title strong {
+      font-size: 15px;
+      color: var(--ea-ink);
+      letter-spacing: -.02em;
+    }
+    .ea-block-title span {
+      font-size: 11px;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }
+    .ea-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .ea-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ea-field-full {
+      grid-column: 1 / -1;
+    }
+    .ea-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ea-ink);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .ea-help {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+    .ea-input,
+    .ea-textarea {
+      width: 100%;
+      border: 1px solid rgba(40,95,147,.12);
+      background: #fff;
+      border-radius: 18px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 8px 18px rgba(24,57,92,.03);
+    }
+    .ea-input:focus,
+    .ea-textarea:focus {
+      border-color: rgba(40,95,147,.35);
+      box-shadow: 0 0 0 4px rgba(40,95,147,.08);
+    }
+    .ea-textarea {
+      min-height: 156px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+    .ea-contextarea {
+      min-height: 220px;
+    }
+    .ea-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .ea-scanner-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-3);
+      line-height: 1.55;
+    }
+    .ea-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(40,95,147,.14);
+      background: rgba(255,255,255,.88);
+      color: var(--ea-ink);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+    .ea-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(39,71,116,.12);
+    }
+    .ea-btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .ea-btn-primary {
+      border-color: transparent;
+      background: linear-gradient(135deg, #2b679d, #183d63);
+      color: #fff;
+      box-shadow: 0 16px 30px rgba(24,61,99,.28);
+    }
+    .ea-btn-danger {
+      color: var(--red);
+    }
+    .ea-inline-note {
+      margin-top: 16px;
+      padding: 15px 16px;
+      border-radius: 18px;
+      background: rgba(40,95,147,.07);
+      color: var(--ea-accent);
+      font-size: 13px;
+      line-height: 1.6;
+      border: 1px solid rgba(40,95,147,.08);
+    }
+    .ea-stack {
+      display: grid;
+      gap: 18px;
+    }
+    .ea-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .ea-result-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(40,95,147,.08);
+      color: var(--ea-accent);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .ea-mini-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .ea-mini-item {
+      padding: 16px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,250,253,.92));
+      border: 1px solid rgba(40,95,147,.08);
+    }
+    .ea-mini-item strong {
+      display: block;
+      font-size: 14px;
+      color: var(--ea-ink);
+      margin-bottom: 4px;
+    }
+    .ea-mini-item p {
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--text-3);
+    }
+    .ea-template-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .ea-template-btn {
+      padding: 10px 12px;
+      border: 1px solid rgba(40,95,147,.1);
+      background: rgba(255,255,255,.88);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ea-ink);
+      cursor: pointer;
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+    .ea-template-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(40,95,147,.24);
+      box-shadow: 0 10px 20px rgba(24,57,92,.08);
+    }
+    .ea-result-box {
+      min-height: 320px;
+      font-family: "Courier New", monospace;
+      text-transform: uppercase;
+    }
+    .ea-result-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .ea-output {
+      white-space: pre-wrap;
+      line-height: 1.65;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .ea-empty {
+      color: var(--text-3);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .ea-keyval {
+      display: grid;
+      gap: 10px;
+    }
+    .ea-kv-row {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      padding: 10px 0;
+      border-bottom: 1px dashed rgba(40,95,147,.12);
+    }
+    .ea-kv-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .ea-kv-key {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .ea-kv-value {
+      font-size: 13px;
+      color: var(--ea-ink);
+      line-height: 1.55;
+      word-break: break-word;
+    }
+    .ea-pendencias {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .ea-pendencia {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(185,138,47,.09);
+      color: #9a6c16;
+      border: 1px solid rgba(185,138,47,.16);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .ea-success {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(86,167,113,.1);
+      color: var(--green-dark);
+      border: 1px solid rgba(86,167,113,.16);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .ea-loader {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      color: var(--text-3);
+      font-size: 13px;
+    }
+    .ea-loader::before {
+      content: "";
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(79,128,200,.18);
+      border-top-color: var(--blue);
+      animation: ea-spin 1s linear infinite;
+    }
+    @keyframes ea-spin {
+      to { transform: rotate(360deg); }
+    }
+    .ea-error {
+      display: none;
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(199,74,74,.08);
+      border: 1px solid rgba(199,74,74,.14);
+      color: var(--red);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .ea-status {
+      display: none;
+      margin-top: 14px;
+      padding: 13px 15px;
+      border-radius: 16px;
+      background: rgba(86,167,113,.1);
+      border: 1px solid rgba(86,167,113,.16);
+      color: var(--green-dark);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    @media (max-width: 980px) {
+      .ea-hero,
+      .ea-layout {
+        grid-template-columns: 1fr;
+      }
+      .ea-hero-meta {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 700px) {
+      .ea-page {
+        padding: 0 12px;
+      }
+      .ea-hero,
+      .ea-card-body,
+      .ea-card-head {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .ea-hero {
+        padding-top: 24px;
+        padding-bottom: 24px;
+      }
+      .ea-grid {
+        grid-template-columns: 1fr;
+      }
+      .ea-actions,
+      .ea-result-tools,
+      .ea-hero-actions {
+        flex-direction: column;
+      }
+      .ea-btn,
+      .ea-chip-link {
+        width: 100%;
+      }
+      .ea-kv-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ea-page ea-shell">
+    <section class="ea-hero">
+      <div>
+        <span class="ea-hero-badge">Assistente com IA</span>
+        <h1>Assistente de Empenho</h1>
+        <p>Texto ou arquivo. Descricao pronta.</p>
+        <div class="ea-hero-meta">
+          <div class="ea-meta-card">
+            <strong>1</strong>
+            <span>enviar ou colar</span>
+          </div>
+          <div class="ea-meta-card">
+            <strong>2</strong>
+            <span>extrair</span>
+          </div>
+          <div class="ea-meta-card">
+            <strong>3</strong>
+            <span>gerar</span>
+          </div>
+        </div>
+        <div class="ea-hero-actions">
+          <a class="ea-chip-link" href="/pages/documentos.html">Centro de documentos</a>
+        </div>
+      </div>
+      <div class="ea-hero-side">
+        <article class="ea-side-card">
+          <span class="ea-side-label">Entrada</span>
+          <strong>Texto, imagem ou PDF.</strong>
+        </article>
+        <article class="ea-side-card">
+          <span class="ea-side-label">Saida</span>
+          <strong>Descricao em caixa alta.</strong>
+        </article>
+      </div>
+    </section>
+
+    <div class="ea-layout">
+      <section class="ea-stack">
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Entrada do Documento</h2>
+            <p>Cole ou envie.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-form-sections">
+              <section class="ea-block">
+                <div class="ea-block-title">
+                  <strong>Arquivo ou scanner</strong>
+                  <span>opcional</span>
+                </div>
+                <div class="ea-upload-box">
+                  <label class="ea-upload-dropzone" id="ea-upload-dropzone">
+                    <input type="file" id="arquivo_documento" accept=".pdf,image/*,application/pdf" />
+                    <div class="ea-upload-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                    </div>
+                    <div class="ea-upload-title" id="ea-upload-title">Clique ou arraste um arquivo</div>
+                    <div class="ea-upload-subtitle">Imagem ou PDF.</div>
+                    <div class="ea-upload-meta">aceita pdf, jpg, jpeg, png, webp e scanner</div>
+                  </label>
+                  <div class="ea-file-row" id="ea-file-row">
+                    <div class="ea-file-info">
+                      <strong id="ea-file-name"></strong>
+                      <span id="ea-file-meta"></span>
+                    </div>
+                    <button class="ea-btn ea-btn-danger" id="btn-clear-file" type="button">Remover arquivo</button>
+                  </div>
+                  <div class="ea-scanner-note">Scanner aceito.</div>
+                </div>
+              </section>
+
+              <section class="ea-block">
+                <div class="ea-block-title">
+                  <strong>Texto base</strong>
+                  <span>obrigatório se não houver arquivo</span>
+                </div>
+                <label class="ea-field ea-field-full">
+                  <span class="ea-label">Texto colado ou conteúdo extraído</span>
+                  <textarea class="ea-textarea ea-contextarea" id="texto_base" placeholder="Cole o texto aqui."></textarea>
+                </label>
+              </section>
+            </div>
+
+              <section class="ea-block">
+                <div class="ea-block-title">
+                  <strong>Dados complementares</strong>
+                  <span>preenchimento manual</span>
+                </div>
+                <div class="ea-grid">
+                  <label class="ea-field">
+                    <span class="ea-label">Secretaria / setor</span>
+                    <input class="ea-input" id="secretaria" placeholder="Secretaria de Saude" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Fornecedor / credor</span>
+                    <input class="ea-input" id="fornecedor" placeholder="Nome do fornecedor" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Tipo da despesa</span>
+                    <input class="ea-input" id="tipo_despesa" placeholder="Material, servico, locacao..." />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Finalidade</span>
+                    <input class="ea-input" id="finalidade" placeholder="Pagamento de..." />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Valor</span>
+                    <input class="ea-input" id="valor" placeholder="R$ 0,00" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Competencia / periodo</span>
+                    <input class="ea-input" id="competencia" placeholder="03/2026" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Processo</span>
+                    <input class="ea-input" id="processo" placeholder="Processo administrativo" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Pregao / licitacao</span>
+                    <input class="ea-input" id="pregao" placeholder="Pregao 012/2026" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Contrato</span>
+                    <input class="ea-input" id="contrato" placeholder="Contrato 123/2026" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Nota fiscal / OS</span>
+                    <input class="ea-input" id="nota_fiscal" placeholder="NF 000123" />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Fonte / origem</span>
+                    <input class="ea-input" id="fonte" placeholder="Empenho, NF, arquivo, etc." />
+                  </label>
+                  <label class="ea-field">
+                    <span class="ea-label">Observacoes</span>
+                    <input class="ea-input" id="observacoes" placeholder="Pontos de atencao" />
+                  </label>
+                </div>
+              </section>
+
+            <div class="ea-actions">
+              <button class="ea-btn" id="btn-read-file" type="button">Ler arquivo</button>
+              <button class="ea-btn" id="btn-extract" type="button">Extrair campos</button>
+              <button class="ea-btn ea-btn-primary" id="btn-generate" type="button">Gerar descricao</button>
+              <button class="ea-btn" id="btn-checklist" type="button">Checklist</button>
+              <button class="ea-btn" id="btn-review" type="button">Revisar tudo</button>
+              <button class="ea-btn" id="btn-improve" type="button">Melhorar descricao</button>
+              <button class="ea-btn ea-btn-danger" id="btn-clear" type="button">Limpar tudo</button>
+            </div>
+
+            <div class="ea-loader" id="ea-loader">Processando arquivo e consultando a IA...</div>
+            <div class="ea-error" id="ea-error"></div>
+            <div class="ea-status" id="ea-status"></div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Descricao da Nota de Empenho</h2>
+            <p>Resultado.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-result-header">
+              <div class="ea-result-badge">saida editavel</div>
+            </div>
+            <textarea class="ea-textarea ea-result-box" id="descricao_resultado" placeholder="A descricao aparecera aqui."></textarea>
+            <div class="ea-result-tools">
+              <button class="ea-btn ea-btn-primary" id="btn-copy">Copiar descricao</button>
+              <button class="ea-btn" id="btn-download">Baixar .txt</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Historico recente</h2>
+            <p>Ultimas execucoes do assistente.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="historico_lista">
+              <div class="ea-mini-item">
+                <strong>Carregando historico...</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <aside class="ea-stack">
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Como usar</h2>
+            <p>3 passos.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list">
+              <div class="ea-mini-item">
+                <strong>1. Envie ou cole</strong>
+              </div>
+              <div class="ea-mini-item">
+                <strong>2. Ler arquivo</strong>
+              </div>
+              <div class="ea-mini-item">
+                <strong>3. Gerar descricao</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Campos extraidos</h2>
+            <p>Resultado da leitura estruturada do documento.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="painel_campos">
+              <div class="ea-mini-item">
+                <strong>Nenhuma extracao ainda.</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Checklist</h2>
+            <p>O que falta conferir antes de finalizar.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="painel_checklist">
+              <div class="ea-mini-item">
+                <strong>Checklist ainda nao gerado.</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>Comparacao</h2>
+            <p>Mostra a diferenca entre a descricao base e a revisada.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-mini-list" id="painel_diff">
+              <div class="ea-mini-item">
+                <strong>Use a revisao para gerar o diff.</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/static/js/assistente-empenho.js"></script>
+
+  <script>
+    if (window.__ASSISTENTE_EMPENHO_CUSTOM__) {} else {
+    'use strict';
+
+    const pdfLib = window.pdfjsLib;
+    if (pdfLib?.GlobalWorkerOptions) {
+      pdfLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
+
+    const fields = {
+      texto_base: document.getElementById('texto_base'),
+      descricao_resultado: document.getElementById('descricao_resultado'),
+    };
+
+    const fileInput = document.getElementById('arquivo_documento');
+    const uploadDropzone = document.getElementById('ea-upload-dropzone');
+    const uploadTitle = document.getElementById('ea-upload-title');
+    const fileRow = document.getElementById('ea-file-row');
+    const fileName = document.getElementById('ea-file-name');
+    const fileMeta = document.getElementById('ea-file-meta');
+    const loader = document.getElementById('ea-loader');
+    const errorBox = document.getElementById('ea-error');
+    const statusBox = document.getElementById('ea-status');
+    let currentFile = null;
+
+    function payloadFromForm() {
+      return {
+        texto_base: fields.texto_base.value.trim(),
+      };
+    }
+
+    function setBusy(isBusy) {
+      loader.style.display = isBusy ? 'flex' : 'none';
+      document.querySelectorAll('.ea-btn').forEach(btn => btn.disabled = isBusy);
+    }
+
+    function showError(message) {
+      hideStatus();
+      errorBox.style.display = 'block';
+      errorBox.textContent = message;
+    }
+
+    function hideError() {
+      errorBox.style.display = 'none';
+      errorBox.textContent = '';
+    }
+
+    function showStatus(message) {
+      statusBox.style.display = 'block';
+      statusBox.textContent = message;
+    }
+
+    function hideStatus() {
+      statusBox.style.display = 'none';
+      statusBox.textContent = '';
+    }
+
+    async function runAction() {
+      hideError();
+      hideStatus();
+      setBusy(true);
+      try {
+        const response = await fetch('/api/empenho-assistente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generate_description', payload: payloadFromForm() })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || `HTTP ${response.status}`);
+        }
+        return data.resultado;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function formatFileSize(size) {
+      if (!Number.isFinite(size)) return '';
+      if (size < 1024) return `${size} B`;
+      if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+      return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function setFile(file) {
+      currentFile = file || null;
+      if (!currentFile) {
+        fileInput.value = '';
+        fileRow.style.display = 'none';
+        uploadTitle.textContent = 'Clique ou arraste um arquivo';
+        return;
+      }
+      fileName.textContent = currentFile.name;
+      fileMeta.textContent = `${currentFile.type || 'arquivo'} • ${formatFileSize(currentFile.size)}`;
+      fileRow.style.display = 'flex';
+      uploadTitle.textContent = 'Arquivo selecionado';
+    }
+
+    function clearFile() {
+      setFile(null);
+    }
+
+    async function extractTextFromFile(file) {
+      if (file.type === 'application/pdf') {
+        const arrayBuffer = await file.arrayBuffer();
+        if (!pdfLib?.getDocument) {
+          throw new Error('Leitor de PDF indisponível no momento.');
+        }
+        const pdf = await pdfLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        const totalPages = Math.min(pdf.numPages, 30);
+        for (let i = 1; i <= totalPages; i++) {
+          showStatus(`Lendo arquivo: página ${i}/${totalPages}...`);
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map(item => item.str).join(' ');
+          if (pageText.trim().length >= 40) {
+            fullText += pageText + '\n';
+            continue;
+          }
+          const viewport = page.getViewport({ scale: 2 });
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: context, viewport }).promise;
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+          const result = await Tesseract.recognize(blob, 'por');
+          fullText += (result?.data?.text || '') + '\n';
+        }
+        return fullText;
+      }
+      if (file.type.startsWith('image/')) {
+        showStatus('Executando OCR da imagem...');
+        const result = await Tesseract.recognize(file, 'por');
+        return result?.data?.text || '';
+      }
+      throw new Error('Tipo de arquivo não suportado. Envie PDF ou imagem.');
+    }
+
+    async function readCurrentFile() {
+      if (!currentFile) {
+        throw new Error('Selecione um arquivo antes de usar a leitura.');
+      }
+      hideError();
+      setBusy(true);
+      try {
+        const extracted = (await extractTextFromFile(currentFile)).trim();
+        if (!extracted) {
+          throw new Error('Não foi possível extrair texto do arquivo enviado.');
+        }
+        fields.texto_base.value = extracted;
+        showStatus('Conteúdo do arquivo extraído com sucesso. Agora gere a descrição.');
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    fileInput.addEventListener('change', event => {
+      if (event.target.files?.[0]) {
+        setFile(event.target.files[0]);
+      }
+    });
+
+    uploadDropzone.addEventListener('dragover', event => {
+      event.preventDefault();
+      uploadDropzone.classList.add('drag-over');
+    });
+
+    uploadDropzone.addEventListener('dragleave', () => {
+      uploadDropzone.classList.remove('drag-over');
+    });
+
+    uploadDropzone.addEventListener('drop', event => {
+      event.preventDefault();
+      uploadDropzone.classList.remove('drag-over');
+      if (event.dataTransfer.files?.[0]) {
+        setFile(event.dataTransfer.files[0]);
+      }
+    });
+
+    document.getElementById('btn-clear-file').addEventListener('click', clearFile);
+    document.getElementById('btn-read-file').addEventListener('click', async () => {
+      try {
+        await readCurrentFile();
+      } catch (err) {
+        showError(err instanceof Error ? err.message : 'Erro ao ler arquivo.');
+      }
+    });
+
+    document.getElementById('btn-generate').addEventListener('click', async () => {
+      const hasText = fields.texto_base.value.trim();
+      if (!hasText && currentFile) {
+        try {
+          await readCurrentFile();
+        } catch (err) {
+          showError(err instanceof Error ? err.message : 'Erro ao ler arquivo.');
+          return;
+        }
+      }
+      if (!fields.texto_base.value.trim()) {
+        showError('Cole um texto ou envie um arquivo antes de gerar a descrição.');
+        return;
+      }
+      try {
+        const result = await runAction();
+        fields.descricao_resultado.value = (result || '').toUpperCase();
+        fields.descricao_resultado.focus();
+        showStatus('Descricao gerada com sucesso. Revise o texto final antes de usar.');
+      } catch (err) {
+        showError(err instanceof Error ? err.message : 'Erro ao gerar descricao.');
+      }
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      Object.values(fields).forEach(el => { el.value = ''; });
+      clearFile();
+      hideError();
+      hideStatus();
+    });
+
+    document.getElementById('btn-copy').addEventListener('click', async () => {
+      const text = fields.descricao_resultado.value.trim();
+      if (!text) {
+        showError('Nao ha descricao para copiar.');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        showStatus('Descricao copiada para a area de transferencia.');
+      } catch (err) {
+        showError('Nao foi possivel copiar automaticamente.');
+      }
+    });
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      const text = fields.descricao_resultado.value.trim();
+      if (!text) {
+        showError('Nao ha descricao para baixar.');
+        return;
+      }
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'descricao_empenho_assistida.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showStatus('Arquivo .txt preparado para download.');
+    });
+
+    fields.descricao_resultado.addEventListener('input', () => {
+      const pos = fields.descricao_resultado.selectionStart;
+      fields.descricao_resultado.value = fields.descricao_resultado.value.toUpperCase();
+      fields.descricao_resultado.setSelectionRange(pos, pos);
+    });
+
+    }
+    </script>
+</body>
+</html>

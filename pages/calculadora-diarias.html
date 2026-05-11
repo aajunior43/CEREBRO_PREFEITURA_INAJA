@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Diárias – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    .calc-page { min-height: calc(100vh - 64px); padding: 20px 16px 60px; max-width: 860px; margin: 0 auto; }
+
+    /* ── Hero ── */
+    .calc-hero { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .calc-hero-icon { width: 48px; height: 48px; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--blue-dark)); border-radius: 13px; display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 10px rgba(79,128,200,.3); }
+    .calc-hero-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2; }
+    .calc-hero h2 { font-size: clamp(17px,4vw,22px); font-weight: 800; color: var(--text); margin: 0; }
+    .calc-hero p  { font-size: 12px; color: var(--text-3); margin: 2px 0 0; }
+
+    /* ── Card ── */
+    .calc-card { background: var(--bg); border-radius: var(--radius); box-shadow: var(--neo); padding: 22px; margin-bottom: 20px; }
+    .calc-card h3 { font-size: 14px; font-weight: 700; color: var(--text); margin: 0 0 18px; display: flex; align-items: center; gap: 8px; }
+    .calc-card h3 svg { width: 17px; height: 17px; stroke: var(--blue); fill: none; stroke-width: 2; }
+
+    /* ── Formulário ── */
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
+    .fg input[type="date"],
+    .fg input[type="time"] {
+      background: var(--bg); border: none; border-radius: var(--radius-sm);
+      box-shadow: var(--neo-in-sm); padding: 10px 12px; font-family: inherit;
+      font-size: 13px; color: var(--text); outline: none; transition: box-shadow .2s;
+      width: 100%; box-sizing: border-box;
+    }
+    .fg input:focus { box-shadow: var(--neo-in); }
+    .fg input.input-invalid { box-shadow: 0 0 0 2px var(--red, #e53e3e); }
+    .input-error-message { font-size: 11px; color: var(--red, #e53e3e); margin-top: 2px; min-height: 14px; display: block; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media(max-width:600px) { .grid2 { grid-template-columns: 1fr; } }
+
+    /* ── KPIs ── */
+    .result-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    @media(max-width:600px) { .result-kpis { grid-template-columns: 1fr; } }
+    .kpi-card { background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-sm); padding: 14px 16px; }
+    .kpi-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+    .kpi-value { font-size: 16px; font-weight: 800; color: var(--text); }
+
+    /* ── Seções do relatório ── */
+    .report-section { margin-bottom: 14px; padding: 14px 16px; background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); }
+    .report-section h3 { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid rgba(0,0,0,.06); }
+    [data-theme="dark"] .report-section h3 { border-bottom-color: rgba(255,255,255,.07); }
+    .report-field { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; flex-wrap: wrap; }
+    .report-field strong { color: var(--text-3); font-weight: 600; min-width: 110px; }
+    .report-field span { color: var(--text); }
+
+    .report-conclusion { margin-top: 10px; padding: 12px 14px; background: var(--blue-light, rgba(79,128,200,.08)); border-radius: var(--radius-sm); border-left: 3px solid var(--blue); font-size: 13px; color: var(--text); line-height: 1.6; }
+    .report-conclusion strong { color: var(--blue); }
+
+    /* ── Erro ── */
+    .error-card { display: none; padding: 12px 16px; margin-bottom: 16px; background: var(--bg); border-radius: var(--radius-sm); box-shadow: var(--neo-sm); border-left: 3px solid var(--red, #e53e3e); font-size: 13px; color: var(--text); }
+    .error-card.visible { display: block; }
+
+    /* ── Resultado oculto ── */
+    .result-hidden { display: none; }
+
+    /* ── Upload ── */
+    .upload-area {
+      border: 2px dashed var(--border, rgba(0,0,0,.12));
+      border-radius: var(--radius-sm);
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: var(--bg);
+    }
+    .upload-area:hover, .upload-area.drag-over {
+      border-color: var(--blue);
+      background: var(--blue-light, rgba(79,128,200,.06));
+    }
+    .upload-area-icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-area-label { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .upload-area-sub { font-size: 11px; color: var(--text-3); }
+    .upload-status { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 13px; }
+    .upload-status.loading { background: var(--blue-light, rgba(79,128,200,.08)); color: var(--blue); display: flex; align-items: center; gap: 10px; }
+    .upload-status.success { background: var(--green-bg, rgba(34,197,94,.08)); color: var(--text); border-left: 3px solid var(--green, #22c55e); }
+    .upload-status.error   { background: rgba(239,68,68,.07); color: var(--text); border-left: 3px solid var(--red, #e53e3e); }
+    .upload-spinner { width: 16px; height: 16px; border: 2px solid rgba(79,128,200,.25); border-top-color: var(--blue); border-radius: 50%; animation: spin-up .7s linear infinite; flex-shrink: 0; }
+    @keyframes spin-up { to { transform: rotate(360deg); } }
+    .upload-fields { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .upload-field-tag { font-size: 11px; font-weight: 700; background: var(--bg); border-radius: 20px; padding: 3px 10px; box-shadow: var(--neo-sm); color: var(--text-3); }
+    .upload-field-tag.found { color: var(--blue); box-shadow: 0 0 0 1.5px var(--blue); }
+
+    /* ── Print ── */
+    .print-only { display: none; }
+    @media print {
+      .calc-hero, form, #mensagemErroGlobal, header, #shd-header, .btn, footer { display: none !important; }
+      .print-only { display: block !important; margin-bottom: 16px; }
+      .result-hidden { display: block !important; }
+      .calc-card { box-shadow: none !important; border: 1px solid #ccc; }
+      .kpi-card { box-shadow: none !important; border: 1px solid #ccc; }
+      .report-section { box-shadow: none !important; border: 1px solid #ccc; }
+    }
+  </style>
+</head>
+<body>
+<div class="calc-page">
+
+  <!-- Hero -->
+  <div class="calc-hero">
+    <div class="calc-hero-icon">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+    </div>
+    <div>
+      <h2>Calculadora de Diárias</h2>
+      <p>Prefeitura Municipal de Inajá, PR · Legislação Municipal Vigente</p>
+    </div>
+  </div>
+
+  <!-- Upload de documento -->
+  <div class="calc-card">
+    <h3>
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Preencher via Documento
+    </h3>
+    <p style="font-size:12px;color:var(--text-3);margin:-8px 0 14px;">Suba um Word, PDF ou imagem — a IA lê e preenche os campos automaticamente.</p>
+    <div class="upload-area" id="upload-area">
+      <div class="upload-area-icon">📄</div>
+      <div class="upload-area-label">Arraste o arquivo ou clique para selecionar</div>
+      <div class="upload-area-sub">Aceita .docx, PDF com texto, PDF escaneado e imagens (JPG, PNG)</div>
+      <input type="file" id="upload-input" accept=".pdf,.docx,image/jpeg,image/png,image/webp" style="display:none" />
+    </div>
+    <div class="upload-status" id="upload-status" style="display:none;"></div>
+  </div>
+
+  <!-- Formulário -->
+  <div class="calc-card">
+    <h3>
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Informações da Viagem
+    </h3>
+    <form id="calculadoraForm">
+      <div class="grid2" style="margin-bottom:16px;">
+        <div class="fg">
+          <label>Data de Partida</label>
+          <input type="date" id="dataPartida" required />
+          <span class="input-error-message" id="dataPartidaError"></span>
+        </div>
+        <div class="fg">
+          <label>Hora de Partida</label>
+          <input type="time" id="horaPartida" required />
+          <span class="input-error-message" id="horaPartidaError"></span>
+        </div>
+        <div class="fg">
+          <label>Data de Retorno</label>
+          <input type="date" id="dataRetorno" required />
+          <span class="input-error-message" id="dataRetornoError"></span>
+        </div>
+        <div class="fg">
+          <label>Hora de Retorno</label>
+          <input type="time" id="horaRetorno" required />
+          <span class="input-error-message" id="horaRetornoError"></span>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-blue" style="width:100%;justify-content:center;" id="calculateButton">
+        Calcular Diárias
+      </button>
+    </form>
+  </div>
+
+  <!-- Erro global -->
+  <div class="error-card" id="mensagemErroGlobal"></div>
+
+  <!-- Resultado -->
+  <div class="calc-card result-hidden" id="resultadoWrapper">
+
+    <!-- Cabeçalho de impressão -->
+    <div class="print-only">
+      <h1 style="font-size:15pt;margin:0 0 4px;font-weight:800;">RELATÓRIO DE CÁLCULO DE DIÁRIAS</h1>
+      <p style="margin:0;font-size:9pt;">Prefeitura Municipal de Inajá – PR</p>
+      <p style="margin:0;font-size:8pt;" id="printTimestamp"></p>
+    </div>
+
+    <!-- Toolbar do resultado -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;">Resultado do cálculo</div>
+        <div style="font-size:12px;color:var(--text-3);">Resumo pronto para consulta e impressão.</div>
+      </div>
+      <button class="btn btn-blue" id="downloadPdfButton">📄 Imprimir / PDF</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="result-kpis">
+      <div class="kpi-card">
+        <div class="kpi-label">Duração total</div>
+        <div class="kpi-value" id="duracaoTotal">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Diárias devidas</div>
+        <div class="kpi-value" id="numDiariasResumo">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Gerado em</div>
+        <div class="kpi-value" style="font-size:12px;font-weight:600;" id="resultadoTimestamp">—</div>
+      </div>
+    </div>
+
+    <!-- Período -->
+    <div class="report-section">
+      <h3>Período do Afastamento</h3>
+      <div class="report-field"><strong>Partida:</strong> <span id="printDataPartida"></span> às <span id="printHoraPartida"></span></div>
+      <div class="report-field"><strong>Retorno:</strong> <span id="printDataRetorno"></span> às <span id="printHoraRetorno"></span></div>
+      <div class="report-field"><strong>Duração Total:</strong> <span id="duracaoResumo" style="font-weight:700;color:var(--blue);"></span></div>
+    </div>
+
+    <!-- Conclusão -->
+    <div class="report-section">
+      <h3>Conclusão</h3>
+      <div class="report-conclusion">
+        Com base na legislação vigente, para o período de <strong id="duracaoConclusao"></strong>,
+        entre <strong id="partidaConclusao"></strong> e <strong id="retornoConclusao"></strong>,
+        faz jus a <strong id="numDiariasConclusao" style="font-size:15px;"></strong> diária(s).
+      </div>
+    </div>
+
+    <!-- Base legal / explicação -->
+    <div class="report-section" id="explicacao"></div>
+
+  </div>
+</div>
+
+<script>
+  const form               = document.getElementById('calculadoraForm');
+  const calculateButton    = document.getElementById('calculateButton');
+  const resultadoWrapper   = document.getElementById('resultadoWrapper');
+  const erroGlobal         = document.getElementById('mensagemErroGlobal');
+  const duracaoTotalEl     = document.getElementById('duracaoTotal');
+  const duracaoResumoEl    = document.getElementById('duracaoResumo');
+  const numDiariasEl       = document.getElementById('numDiariasResumo');
+  const timestampEl        = document.getElementById('resultadoTimestamp');
+  const explicacaoEl       = document.getElementById('explicacao');
+  const dataPartidaInput   = document.getElementById('dataPartida');
+  const horaPartidaInput   = document.getElementById('horaPartida');
+  const dataRetornoInput   = document.getElementById('dataRetorno');
+  const horaRetornoInput   = document.getElementById('horaRetorno');
+  const printDataP         = document.getElementById('printDataPartida');
+  const printHoraP         = document.getElementById('printHoraPartida');
+  const printDataR         = document.getElementById('printDataRetorno');
+  const printHoraR         = document.getElementById('printHoraRetorno');
+  const printTS            = document.getElementById('printTimestamp');
+  const duracaoConcEl      = document.getElementById('duracaoConclusao');
+  const partidaConcEl      = document.getElementById('partidaConclusao');
+  const retornoConcEl      = document.getElementById('retornoConclusao');
+  const numDiariasConcEl   = document.getElementById('numDiariasConclusao');
+  const errorSpans         = {
+    dataPartida:  document.getElementById('dataPartidaError'),
+    horaPartida:  document.getElementById('horaPartidaError'),
+    dataRetorno:  document.getElementById('dataRetornoError'),
+    horaRetorno:  document.getElementById('horaRetornoError'),
+  };
+
+  function erroInput(id, msg) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('input-invalid'); el.setAttribute('aria-invalid', 'true'); }
+    if (errorSpans[id]) errorSpans[id].textContent = msg;
+  }
+  function limpaInput(id) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('input-invalid'); el.removeAttribute('aria-invalid'); }
+    if (errorSpans[id]) errorSpans[id].textContent = '';
+  }
+  function validaCampo(id, val) {
+    const el = document.getElementById(id);
+    if (el && el.hasAttribute('required') && (!val || val.trim() === '')) {
+      erroInput(id, 'Este campo é obrigatório.'); return false;
+    }
+    limpaInput(id); return true;
+  }
+  function validaForm() {
+    limpaInput('dataRetorno');
+    let ok = true, first = null;
+    ['dataPartida','horaPartida','dataRetorno','horaRetorno'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.hasAttribute('required') && !validaCampo(id, el.value)) {
+        ok = false; if (!first) first = el;
+      }
+    });
+    const dp = dataPartidaInput.value, hp = horaPartidaInput.value;
+    const dr = dataRetornoInput.value, hr = horaRetornoInput.value;
+    if (dp && hp && dr && hr) {
+      const p = new Date(`${dp}T${hp}`), r = new Date(`${dr}T${hr}`);
+      if (isNaN(p) || isNaN(r)) {
+        mostrarErroGlobal('Datas ou horas inválidas.'); ok = false;
+      } else if (r <= p) {
+        erroInput('dataRetorno', 'Retorno deve ser após a partida.'); ok = false;
+        if (!first) first = dataRetornoInput;
+      }
+    }
+    if (!ok && first) first.focus();
+    return ok;
+  }
+
+  [dataPartidaInput, horaPartidaInput, dataRetornoInput, horaRetornoInput].forEach(inp => {
+    if (!inp) return;
+    inp.addEventListener('input', () => validaCampo(inp.id, inp.value));
+    inp.addEventListener('blur',  () => validaCampo(inp.id, inp.value));
+  });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    calculateButton.disabled = true;
+    resultadoWrapper.classList.add('result-hidden');
+    erroGlobal.classList.remove('visible');
+
+    setTimeout(() => {
+      if (!validaForm()) {
+        mostrarErroGlobal('Corrija os erros indicados.');
+        calculateButton.disabled = false;
+        return;
+      }
+
+      const p = new Date(`${dataPartidaInput.value}T${horaPartidaInput.value}`);
+      const r = new Date(`${dataRetornoInput.value}T${horaRetornoInput.value}`);
+      const totalHoras = (r - p) / 3600000;
+      let numDiarias = 0, explicacao = '';
+
+      if (totalHoras < 12) {
+        numDiarias = 0;
+        explicacao = 'Nenhuma diária é devida, pois o afastamento é inferior a 12 horas.';
+      } else {
+        numDiarias = Math.floor(totalHoras / 24);
+        const resto = totalHoras % 24;
+        if (resto >= 12) numDiarias += 1;
+        if (numDiarias === 0 && totalHoras >= 12) numDiarias = 1;
+        const pC = Math.floor(totalHoras / 24);
+        if (numDiarias > 0) {
+          explicacao = 'Cálculo baseado na Legislação Municipal Vigente. ';
+          if (pC > 0) explicacao += `${pC} diária(s) por período(s) completo(s) de 24h. `;
+          if (numDiarias > pC && !(numDiarias === 1 && pC === 0 && totalHoras < 24)) {
+            explicacao += 'Uma diária adicional foi concedida devido à fração de horas restante ser igual ou superior a 12 horas.';
+          } else if (numDiarias === 1 && pC === 0 && totalHoras >= 12 && totalHoras < 24) {
+            explicacao = `Uma diária integral é devida pois o afastamento de ${totalHoras.toFixed(1)}h está entre 12h e 24h.`;
+          } else if (numDiarias === pC && pC > 0 && (totalHoras % 24) > 0 && (totalHoras % 24) < 12) {
+            explicacao += `A fração restante de ${(totalHoras % 24).toFixed(1)}h é inferior a 12 horas e não gera diária adicional.`;
+          }
+        } else {
+          explicacao = 'Nenhuma diária devida para o período informado.';
+        }
+      }
+
+      const dur = `${totalHoras.toFixed(1)} horas`;
+      duracaoTotalEl.textContent  = dur;
+      duracaoResumoEl.textContent = dur;
+      numDiariasEl.textContent    = `${numDiarias} diária(s)`;
+      timestampEl.textContent     = new Date().toLocaleString('pt-BR');
+      duracaoConcEl.textContent   = dur;
+      partidaConcEl.textContent   = `${p.toLocaleDateString('pt-BR')} às ${p.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+      retornoConcEl.textContent   = `${r.toLocaleDateString('pt-BR')} às ${r.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+      numDiariasConcEl.textContent = numDiarias;
+      explicacaoEl.innerHTML       = `<h3>Base Legal</h3><p style="font-size:13px;color:var(--text);line-height:1.6;">${explicacao}</p>`;
+      printDataP.textContent = p.toLocaleDateString('pt-BR');
+      printHoraP.textContent = p.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      printDataR.textContent = r.toLocaleDateString('pt-BR');
+      printHoraR.textContent = r.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      printTS.textContent    = `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
+
+      resultadoWrapper.classList.remove('result-hidden');
+      resultadoWrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      calculateButton.disabled = false;
+    }, 150);
+  });
+
+  function mostrarErroGlobal(msg) {
+    erroGlobal.textContent = msg;
+    erroGlobal.classList.add('visible');
+  }
+
+  document.getElementById('downloadPdfButton').addEventListener('click', () => window.print());
+
+  /* ═══════════ UPLOAD & LEITURA DE DOCUMENTO ═══════════ */
+  const uploadArea   = document.getElementById('upload-area');
+  const uploadInput  = document.getElementById('upload-input');
+  const uploadStatus = document.getElementById('upload-status');
+
+  const PDF_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // ── UI helpers ────────────────────────────────────────
+  function setStatus(type, html) {
+    uploadStatus.style.display = '';
+    uploadStatus.className = 'upload-status ' + type;
+    uploadStatus.innerHTML = html;
+  }
+  function statusLoading(msg) {
+    setStatus('loading', `<div class="upload-spinner"></div><span>${msg}</span>`);
+  }
+  function statusOk(msg, tags) {
+    const tagsHtml = tags.map(t =>
+      `<span class="upload-field-tag ${t.found ? 'found' : ''}">${t.label}: ${t.value || '—'}</span>`
+    ).join('');
+    setStatus('success', `<div>${msg}</div><div class="upload-fields">${tagsHtml}</div>`);
+  }
+  function statusErr(msg) { setStatus('error', '⚠ ' + msg); }
+
+  // ── Drag & drop ───────────────────────────────────────
+  uploadArea.addEventListener('click', () => uploadInput.click());
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) processarArquivo(e.dataTransfer.files[0]);
+  });
+  uploadInput.addEventListener('change', () => {
+    if (uploadInput.files[0]) processarArquivo(uploadInput.files[0]);
+    uploadInput.value = '';
+  });
+
+  // ── Extração de texto: PDF com texto ─────────────────
+  async function extrairTextoPDF(file) {
+    const lib = window['pdfjs-dist/build/pdf'];
+    lib.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+    const buf = await file.arrayBuffer();
+    const pdf = await lib.getDocument({ data: buf }).promise;
+    let txt = '';
+    const max = Math.min(pdf.numPages, 6);
+    for (let i = 1; i <= max; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      txt += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    return txt.trim();
+  }
+
+  // ── Extração de texto: Word (.docx) ──────────────────
+  async function extrairTextoWord(file) {
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return result.value.trim();
+  }
+
+  // ── Renderiza páginas de PDF como canvas (para OCR) ───
+  async function pdfParaCanvas(file) {
+    const lib = window['pdfjs-dist/build/pdf'];
+    lib.GlobalWorkerOptions.workerSrc = PDF_WORKER;
+    const buf = await file.arrayBuffer();
+    const pdf = await lib.getDocument({ data: buf }).promise;
+    const canvases = [];
+    const max = Math.min(pdf.numPages, 3);
+    for (let i = 1; i <= max; i++) {
+      const page = await pdf.getPage(i);
+      const vp = page.getViewport({ scale: 2.0 });
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      canvases.push(canvas);
+    }
+    return canvases;
+  }
+
+  // ── OCR com Tesseract.js (local, sem API) ─────────────
+  async function extrairTextoOCR(fonte) {
+    // fonte: canvas, File de imagem, ou array de canvas
+    const fontes = Array.isArray(fonte) ? fonte : [fonte];
+    let textoTotal = '';
+    for (const f of fontes) {
+      const { data: { text } } = await Tesseract.recognize(f, 'por+eng', {
+        logger: () => {} // silencia logs internos
+      });
+      textoTotal += text + '\n';
+      if (textoTotal.length > 4000) break;
+    }
+    return textoTotal.trim();
+  }
+
+  // ── Extração via texto com IA ─────────────────────────
+  async function callIaTexto(texto) {
+    const prompt = `Leia o texto abaixo e extraia: data de partida, hora de partida, data de retorno e hora de retorno de uma viagem/afastamento.
+Responda APENAS com JSON válido, sem texto extra:
+{"data_partida":"YYYY-MM-DD","hora_partida":"HH:MM","data_retorno":"YYYY-MM-DD","hora_retorno":"HH:MM"}
+Se um campo não existir use null.
+
+TEXTO:
+${texto.substring(0, 4000)}`;
+    return await window.callIaFree([
+      { role: 'system', content: 'Você extrai datas e horas de documentos. Responda APENAS com o JSON pedido, nada mais.' },
+      { role: 'user', content: prompt }
+    ], { temperature: 0, max_tokens: 200 });
+  }
+
+  // ── Parseia resposta da IA ─────────────────────────────
+  function parsearJSON(raw) {
+    const m = raw.match(/\{[\s\S]*?\}/);
+    if (!m) throw new Error('A IA não retornou dados no formato esperado.');
+    return JSON.parse(m[0]);
+  }
+
+  // ── Preenche o formulário ─────────────────────────────
+  function preencherCampos(dados) {
+    let n = 0;
+    if (dados.data_partida)  { dataPartidaInput.value  = dados.data_partida;  validaCampo('dataPartida',  dados.data_partida);  n++; }
+    if (dados.hora_partida)  { horaPartidaInput.value  = dados.hora_partida;  validaCampo('horaPartida',  dados.hora_partida);  n++; }
+    if (dados.data_retorno)  { dataRetornoInput.value  = dados.data_retorno;  validaCampo('dataRetorno',  dados.data_retorno);  n++; }
+    if (dados.hora_retorno)  { horaRetornoInput.value  = dados.hora_retorno;  validaCampo('horaRetorno',  dados.hora_retorno);  n++; }
+    return n;
+  }
+
+  // ── Orquestrador principal ────────────────────────────
+  async function processarArquivo(file) {
+    const MAX_MB = 10;
+    if (file.size > MAX_MB * 1024 * 1024) { statusErr(`Arquivo muito grande. Máximo ${MAX_MB} MB.`); return; }
+
+    const tipo = file.type;
+    let iaRaw = '';
+
+    try {
+      // ── Word ──
+      if (tipo === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        statusLoading('Lendo Word…');
+        const texto = await extrairTextoWord(file);
+        if (!texto) throw new Error('Não foi possível extrair texto do arquivo Word.');
+        statusLoading('IA analisando o documento…');
+        iaRaw = await callIaTexto(texto);
+
+      // ── PDF ──
+      } else if (tipo === 'application/pdf') {
+        statusLoading('Lendo PDF…');
+        const texto = await extrairTextoPDF(file);
+
+        if (texto.length > 80) {
+          // PDF com texto extraível
+          statusLoading('IA analisando o texto do PDF…');
+          iaRaw = await callIaTexto(texto);
+        } else {
+          // PDF escaneado → OCR local com Tesseract
+          statusLoading('PDF escaneado detectado. Executando OCR local…');
+          const canvases = await pdfParaCanvas(file);
+          statusLoading('OCR em andamento… (pode levar alguns segundos)');
+          const textoOCR = await extrairTextoOCR(canvases);
+          if (!textoOCR) throw new Error('OCR não extraiu texto. Tente um arquivo mais nítido.');
+          statusLoading('IA analisando o texto extraído…');
+          iaRaw = await callIaTexto(textoOCR);
+        }
+
+      // ── Imagem ──
+      } else if (tipo.startsWith('image/')) {
+        statusLoading('Executando OCR na imagem…');
+        const textoOCR = await extrairTextoOCR(file);
+        if (!textoOCR) throw new Error('OCR não extraiu texto. Tente uma imagem mais nítida.');
+        statusLoading('IA analisando o texto extraído…');
+        iaRaw = await callIaTexto(textoOCR);
+
+      } else {
+        statusErr('Tipo de arquivo não suportado. Use .docx, .pdf ou imagem (JPG/PNG).');
+        return;
+      }
+
+      const dados = parsearJSON(iaRaw);
+      const n = preencherCampos(dados);
+
+      const fmt = v => v ? v.split('-').reverse().join('/') : null;
+      statusOk(
+        n === 4 ? '✅ Todos os campos preenchidos! Verifique e calcule.' :
+        n > 0   ? `⚠ ${n} de 4 campos encontrados. Complete os que faltam.` :
+                  '⚠ Nenhum campo encontrado. Preencha manualmente.',
+        [
+          { label: 'Partida',  value: dados.data_partida ? fmt(dados.data_partida) + ' ' + (dados.hora_partida||'') : null, found: !!dados.data_partida },
+          { label: 'Retorno',  value: dados.data_retorno ? fmt(dados.data_retorno) + ' ' + (dados.hora_retorno||'') : null, found: !!dados.data_retorno },
+        ]
+      );
+
+      if (n === 4) calculateButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    } catch (err) {
+      statusErr(err.message || 'Erro ao processar o arquivo.');
+    }
+  }
+
+  /* ── IA de Diárias ─────────────────────────────────────── */
+  function getContextoDiarias() {
+    const dp = dataPartidaInput.value, hp = horaPartidaInput.value;
+    const dr = dataRetornoInput.value, hr = horaRetornoInput.value;
+    const temResultado = !resultadoWrapper.classList.contains('result-hidden');
+    const ctx = {
+      pagina: 'Calculadora de Diárias – Prefeitura de Inajá, PR',
+      data_partida: dp && hp ? `${dp} ${hp}` : null,
+      data_retorno: dr && hr ? `${dr} ${hr}` : null,
+      resultado_calculado: temResultado ? {
+        duracao: duracaoTotalEl.textContent,
+        num_diarias: numDiariasEl.textContent,
+        gerado_em: timestampEl.textContent,
+      } : null,
+    };
+    return ctx;
+  }
+
+  async function askIaDiarias(action, question) {
+    const ctx = getContextoDiarias();
+    const prompts = {
+      verificar:
+        'Com base nos dados da viagem e no resultado do cálculo, verifique se o número de diárias está correto conforme a legislação municipal de Inajá-PR. Explique o raciocínio passo a passo.',
+      legislacao:
+        'Explique de forma clara as regras de concessão de diárias para servidores da Prefeitura de Inajá-PR: quando são devidas, como é feito o cálculo (regra das 12h), frações, casos especiais e vedações.',
+      documentacao:
+        'Quais documentos são necessários para formalizar a concessão de diárias na Prefeitura de Inajá-PR? Liste o que o servidor deve apresentar antes da viagem, durante e após o retorno, e os requisitos para prestação de contas.',
+      redigir:
+        'Redija um despacho/memorando de concessão de diárias com base nos dados da viagem informados, seguindo o padrão de comunicação oficial da administração pública municipal.',
+      chat:
+        question || 'Responda à pergunta sobre diárias de viagem na administração pública municipal.',
+    };
+
+    const userPrompt = [
+      prompts[action] || prompts.chat,
+      '',
+      'Contexto atual:',
+      JSON.stringify(ctx, null, 2),
+      question && action !== 'chat' ? `Pergunta adicional: ${question}` : '',
+    ].filter(Boolean).join('\n');
+
+    return await window.callIaFree([
+      {
+        role: 'system',
+        content: 'Você é o assessor jurídico-administrativo da Prefeitura Municipal de Inajá-PR, especialista em diárias de viagem para servidores públicos. Conhece a legislação municipal vigente, a Lei 8.112/90 como referência federal, as normas do TCE-PR e as boas práticas de controle interno. Responda de forma prática, clara e objetiva.',
+      },
+      { role: 'user', content: userPrompt },
+    ], { temperature: 0.3, max_tokens: 1400 });
+  }
+
+  function initIaDiarias() {
+    if (!window.IaChatWidget) { setTimeout(initIaDiarias, 300); return; }
+    window.IaChatWidget.create({
+      singletonKey: 'page:/pages/calculadora-diarias.html',
+      title: 'IA de Diárias',
+      subtitle: 'Assessoria em concessão de diárias – Inajá PR',
+      buttonLabel: 'IA',
+      buttonTitle: 'Abrir Assistente de IA de Diárias',
+      chatPlaceholder: 'Ex: A fração de 10h gera direito a diária?',
+      emptyMessage: 'Preencha os dados da viagem para usar a IA.',
+      actions: [
+        { id: 'verificar',    label: 'Verificar cálculo',  description: 'Confere se o número de diárias calculado está correto pela legislação.' },
+        { id: 'legislacao',   label: 'Legislação',          description: 'Regras de concessão, cálculo por frações de 12h e casos especiais.' },
+        { id: 'documentacao', label: 'Documentação',        description: 'Quais documentos exigir antes, durante e após a viagem.' },
+        { id: 'redigir',      label: 'Redigir despacho',    description: 'Gera um despacho de concessão de diárias com os dados da viagem.' },
+        { id: 'chat',         label: 'Chat',                description: 'Pergunta livre sobre diárias na administração pública municipal.' },
+      ],
+      shortcuts: [
+        { label: 'Verificar cálculo',   action: 'verificar' },
+        { label: 'Regras de diárias',   action: 'legislacao' },
+        { label: 'Documentos exigidos', action: 'documentacao' },
+        { label: 'Redigir despacho',    action: 'redigir' },
+      ],
+      hasData: () => true,
+      onRun: ({ action, question }) => askIaDiarias(action, question),
+    });
+  }
+  initIaDiarias();
+</script>
+</body>
+</html>
