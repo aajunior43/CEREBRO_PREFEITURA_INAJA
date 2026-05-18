@@ -7,7 +7,7 @@ Ou duplo clique em iniciar.bat
 
 Arquitetura:
   server.py          → app factory, DB, cache estático, middlewares, startup
-  routes/credores.py → CRUD credores, lixeira, telegram
+  routes/credores.py → CRUD credores, lixeira
   routes/empenhos.py → empenhos mensais, histórico
   routes/kanban.py   → tarefas, IA, anexos
   routes/documentos.py → centro de documentos, autentique
@@ -31,7 +31,7 @@ from collections import defaultdict
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from flask import Flask, g, request, Response, send_file, send_from_directory
+from flask import Flask, g, request, Response, jsonify, send_file, send_from_directory
 
 from config import settings
 

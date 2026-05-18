@@ -444,73 +444,6 @@
         .kb-cat-resolver  { background: color-mix(in srgb, var(--red) 16%, transparent); color: var(--red) }
         .kb-cat-outros    { background: color-mix(in srgb, var(--purple) 16%, transparent); color: var(--purple) }
 
-        /* ── Filtro de categoria na toolbar ───────────────────────────────── */
-        .kb-cat-filter {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-            margin: 0 auto 14px;
-            max-width: 1680px;
-            padding: 14px 16px;
-            border-radius: 18px;
-            background: rgba(255,255,255,.68);
-            border: 1px solid rgba(148, 163, 184, .14);
-            box-shadow: 0 14px 36px rgba(15, 23, 42, .06);
-        }
-        .kb-cat-filter-label { font-size: 11px; color: var(--text-3); font-weight: 600; white-space: nowrap; }
-        .kb-cat-filter-btn {
-            font-size: 11px;
-            font-weight: 700;
-            padding: 7px 12px;
-            border-radius: 20px;
-            border: 1.5px solid transparent;
-            cursor: pointer;
-            background: color-mix(in srgb, var(--surface-2) 92%, transparent);
-            color: var(--text-2);
-            transition: all .15s;
-            letter-spacing: .3px;
-        }
-        .kb-cat-filter-btn:hover { opacity: .85 }
-        .kb-cat-filter-btn.active { border-color: currentColor; box-shadow: 0 0 0 2px color-mix(in srgb, var(--border-hover) 55%, transparent) }
-        .kb-cat-filter-all.active { background: var(--text); color: var(--surface) }
-        .kb-cat-f-empenhar { color: var(--blue-dark) }
-        .kb-cat-f-empenhar.active { background: color-mix(in srgb, var(--blue) 14%, transparent) }
-        .kb-cat-f-liquidar  { color: var(--orange) }
-        .kb-cat-f-liquidar.active  { background: color-mix(in srgb, var(--orange) 14%, transparent) }
-        .kb-cat-f-pagar     { color: var(--green-dark) }
-        .kb-cat-f-pagar.active     { background: color-mix(in srgb, var(--green) 14%, transparent) }
-        .kb-cat-f-obs       { color: var(--text-2) }
-        .kb-cat-f-obs.active       { background: color-mix(in srgb, var(--surface-2) 80%, transparent) }
-        .kb-cat-f-resolver  { color: var(--red) }
-        .kb-cat-f-resolver.active  { background: color-mix(in srgb, var(--red) 14%, transparent) }
-        .kb-cat-f-outros    { color: var(--purple) }
-        .kb-cat-f-outros.active    { background: color-mix(in srgb, var(--purple) 14%, transparent) }
-
-        /* ── Banner de alertas ───────────────────────────────────────────────── */
-        .kb-alert-banner {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(90deg, color-mix(in srgb, var(--red) 12%, transparent), color-mix(in srgb, var(--orange) 10%, transparent));
-            border: 1.5px solid color-mix(in srgb, var(--red) 30%, var(--border));
-            border-radius: 10px;
-            padding: 9px 14px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #dc2626;
-            cursor: pointer;
-            transition: background .15s;
-            flex-wrap: wrap;
-        }
-        .kb-alert-banner:hover { background: color-mix(in srgb, var(--red) 18%, transparent); }
-        .kb-alert-banner.visible { display: flex; }
-        .kb-alert-icon { font-size: 18px; flex-shrink: 0; }
-        .kb-alert-text { flex: 1; }
-        .kb-alert-close { background: none; border: none; color: var(--red); font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px; opacity:.7; }
-        .kb-alert-close:hover { opacity: 1; }
-
         /* ── Barra de progresso ──────────────────────────────────────────────── */
         .kb-progress-wrap {
             margin: 6px 0 0;
@@ -1216,43 +1149,6 @@
         .empty-ext p { margin: 0; }
         .path-input { flex: 1; background: var(--bg); border: none; border-radius: var(--radius-sm); box-shadow: var(--neo-in-sm); padding: 10px 14px; font-family: inherit; font-size: 13px; color: var(--text); outline: none; transition: box-shadow 0.2s; }
         .path-input:focus { box-shadow: var(--neo-in); }
-        /* ── AI MODALS ── */
-        .ai-modal-overlay { position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:6000;padding:16px }
-        .ai-modal { background:var(--bg);border-radius:var(--radius);box-shadow:0 12px 50px rgba(0,0,0,.28);width:100%;max-width:520px;overflow:hidden;position:relative }
-        .ai-modal-wide { max-width:620px }
-        .ai-modal-head { padding:18px 20px 14px;border-bottom:1px solid rgba(0,0,0,.07);display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,rgba(124,58,237,.08),rgba(6,182,212,.06)) }
-        .ai-modal-head h3 { font-size:16px;font-weight:800;margin:0;color:var(--text);display:flex;align-items:center;gap:8px }
-        .ai-modal-body { padding:16px 20px;display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow-y:auto }
-        .ai-modal-foot { padding:12px 20px;border-top:1px solid rgba(0,0,0,.07);display:flex;gap:8px;align-items:center }
-        .ai-chips { display:flex;flex-wrap:wrap;gap:6px;margin-top:6px }
-        .ai-chip { padding:5px 11px;border-radius:20px;border:1.5px solid rgba(124,58,237,.3);background:rgba(124,58,237,.07);color:var(--text-2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit }
-        .ai-chip:hover { border-color:#7c3aed;background:rgba(124,58,237,.14);color:var(--text) }
-        .ai-spinner { width:36px;height:36px;border:3px solid rgba(124,58,237,.2);border-top-color:#7c3aed;border-radius:50%;animation:ai-spin .8s linear infinite;margin:0 auto }
-        @keyframes ai-spin { to { transform:rotate(360deg) } }
-        .ai-loading-box { text-align:center;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px }
-        .ai-loading-box p { color:var(--text-3);font-size:13px;margin:0 }
-        .ai-model-badge { font-size:11px;color:var(--text-3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap }
-        .ai-char-counter { text-align:right;font-size:11px;color:var(--text-3);margin-top:3px }
-        .ai-char-over { color:#ef4444 }
-        .ai-task-context { background:rgba(6,182,212,.07);border:1.5px solid rgba(6,182,212,.2);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--text-2) }
-        .ai-task-context strong { color:var(--text);display:block;margin-bottom:3px;font-size:12px }
-        /* Subtask preview cards */
-        .ai-subtask-list { display:flex;flex-direction:column;gap:8px }
-        .ai-subtask-card { display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid rgba(0,0,0,.08);background:var(--bg);cursor:pointer;transition:border-color .15s }
-        .ai-subtask-card:hover { border-color:rgba(124,58,237,.4) }
-        .ai-subtask-card.selected { border-color:#7c3aed;background:rgba(124,58,237,.05) }
-        .ai-subtask-check { width:18px;height:18px;flex-shrink:0;accent-color:#7c3aed;margin-top:2px;cursor:pointer }
-        .ai-subtask-info { flex:1;min-width:0 }
-        .ai-subtask-title { font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px }
-        .ai-subtask-desc { font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
-        .ai-prio-badge { font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;margin-top:2px }
-        .ai-prio-high { background:rgba(239,68,68,.12);color:#dc2626 }
-        .ai-prio-medium { background:rgba(245,158,11,.12);color:#d97706 }
-        .ai-prio-low { background:rgba(16,185,129,.12);color:#059669 }
-        .ai-select-all-bar { display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);margin-bottom:4px }
-        .ai-select-all-bar a { cursor:pointer;color:#7c3aed;font-weight:600;text-decoration:none }
-        .ai-select-all-bar a:hover { text-decoration:underline }
-
         /* ── PRINT STYLES ─────────────────────────────────────────────────────── */
         @media print {
             @page { size: A4 portrait; margin: 14mm 12mm 14mm 12mm; }
@@ -1491,40 +1387,28 @@
                 </svg></div>
             <div>
                 <h2>Tarefas • Kanban</h2>
-                <p>Organize seu dia com arrastar e soltar · Prioridades · Dados salvos no servidor</p>
+                <p>Organize seu trabalho com arrastar e soltar · Prioridades · Dados salvos no servidor</p>
                 <div class="kb-progress-wrap">
                     <div class="kb-progress-bar"><div class="kb-progress-fill" id="kb-progress-fill" style="width:0%"></div></div>
                     <span class="kb-progress-label" id="kb-progress-label">0 / 0 concluídas</span>
                 </div>
-                <p style="font-size:11px;color:var(--text-3);margin-top:4px">⌨️ <kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">N</kbd> nova &nbsp;<kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">/</kbd> buscar &nbsp;<kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">P</kbd> imprimir &nbsp;<kbd style="background:var(--bg-2);border-radius:3px;padding:1px 5px;font-size:10px">Esc</kbd> fechar</p>
             </div>
-        </div>
-
-        <!-- Banner de alertas -->
-        <div class="kb-alert-banner" id="kb-alert-banner" onclick="setCatFilterAndAlert()">
-            <span class="kb-alert-icon">⚠️</span>
-            <span class="kb-alert-text" id="kb-alert-text">Você tem tarefas vencidas!</span>
-            <span style="font-size:11px;opacity:.8">Clique para ver</span>
-            <button class="kb-alert-close" onclick="event.stopPropagation();dismissAlert()" title="Fechar">✕</button>
         </div>
 
         <!-- Toolbar -->
         <div class="kb-toolbar">
             <button class="kb-btn kb-btn-cyan" onclick="openTaskModal()">➕ Nova Tarefa</button>
-            <button class="kb-btn kb-btn-violet" onclick="openAiCreate()">✨ Criar com IA</button>
-            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="printKanban()">🖨️ Imprimir PDF</button>
-            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="exportCSV()">📥 Exportar CSV</button>
+            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="printKanban()">🖨️ Imprimir</button>
+            <button class="kb-btn" style="background:var(--bg-2);color:var(--text-2);box-shadow:var(--neo-sm)" onclick="exportCSV()">📥 CSV</button>
             <div class="kb-stats">
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-todo" style="color:#06b6d4">0</div>
                     <div class="kb-stat-l">A Fazer</div>
                 </div>
-
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-progress" style="color:var(--orange)">0</div>
-                    <div class="kb-stat-l">Em andamento</div>
+                    <div class="kb-stat-l">Andamento</div>
                 </div>
-
                 <div class="kb-stat">
                     <div class="kb-stat-v" id="st-done" style="color:#10b981">0</div>
                     <div class="kb-stat-l">Concluídas</div>
@@ -1532,20 +1416,10 @@
             </div>
         </div>
         
-        <div class="kb-cat-filter">
-            <span class="kb-cat-filter-label">🔖 Filtrar:</span>
-            <button class="kb-cat-filter-btn kb-cat-filter-all active" onclick="setCatFilter('')">Todas <span id="cnt-cat-all"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-empenhar" onclick="setCatFilter('EMPENHAR')">EMPENHAR <span id="cnt-cat-empenhar"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-liquidar"  onclick="setCatFilter('LIQUIDAR')">LIQUIDAR <span id="cnt-cat-liquidar"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-pagar"     onclick="setCatFilter('PAGAR')">PAGAR <span id="cnt-cat-pagar"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-obs"       onclick="setCatFilter('OBS')">OBS <span id="cnt-cat-obs"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-resolver"  onclick="setCatFilter('RESOLVER')">RESOLVER <span id="cnt-cat-resolver"></span></button>
-            <button class="kb-cat-filter-btn kb-cat-f-outros"    onclick="setCatFilter('OUTROS')">OUTROS <span id="cnt-cat-outros"></span></button>
-        </div>
         <div class="kb-toolbar2">
             <div class="kb-search-wrap">
                 <span>🔍</span>
-                <input class="kb-search-input" id="kb-search" type="text" placeholder="Buscar tarefas…" oninput="onSearch()" />
+                <input class="kb-search-input" id="kb-search" type="text" placeholder="Buscar…" oninput="onSearch()" />
             </div>
             <select class="kb-sort-select" id="kb-sort" onchange="renderBoard()">
                 <option value="priority">↑ Prioridade</option>
@@ -1554,8 +1428,8 @@
                 <option value="title">🔤 Título</option>
             </select>
             <div class="kb-view-toggle">
-                <button class="kb-view-btn active" id="btn-view-kanban" onclick="setView('kanban')" title="Visão Kanban">⬛⬛</button>
-                <button class="kb-view-btn" id="btn-view-list" onclick="setView('list')" title="Visão Lista">☰</button>
+                <button class="kb-view-btn active" id="btn-view-kanban" onclick="setView('kanban')" title="Kanban">⬛⬛</button>
+                <button class="kb-view-btn" id="btn-view-list" onclick="setView('list')" title="Lista">☰</button>
             </div>
         </div>
 
@@ -1604,90 +1478,71 @@
 
     </div>
 
-    <!-- Task Modal -->
-    <div class="kb-overlay" id="task-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;align-items:center;justify-content:center;z-index:5000" onclick="if(event.target===this)closeTaskModal()">
-        <div class="kb-modal">
-            <div class="kb-modal-head">
-                <h3 id="modal-title">✏️ Nova Tarefa</h3><button class="kb-close" onclick="closeTaskModal()">✕</button>
-            </div>
-            <div class="kb-modal-body">
-                <div><label class="kb-label">Título *</label><input class="kb-input" id="t-title"
-                        placeholder="Ex: Revisar relatório mensal" /></div>
-                <div><label class="kb-label">Descrição</label><textarea class="kb-textarea" id="t-desc"
-                        placeholder="Detalhes opcionais…"></textarea></div>
-                <div class="ai-plan-panel" id="task-ai-plan-panel" style="display:none">
-                    <div class="ai-plan-head">
-                        <strong>✨ Planejamento com IA</strong>
-                        <span class="ai-plan-model" id="task-ai-plan-model"></span>
-                    </div>
-                    <div class="ai-plan-summary" id="task-ai-plan-summary"></div>
-                    <div class="ai-plan-next" id="task-ai-plan-next"></div>
-                    <div class="ai-plan-classification" id="task-ai-plan-classification" style="display:none"></div>
-                    <div class="ai-plan-stale" id="task-ai-plan-stale" style="display:none"></div>
-                    <div class="ai-plan-checklist">
-                        <div class="ai-plan-block-title">Checklist sugerido</div>
-                        <ul id="task-ai-plan-checklist"></ul>
-                    </div>
-                    <div class="ai-plan-subtasks">
-                        <div class="ai-plan-block-title">Subtarefas sugeridas</div>
-                        <div id="task-ai-plan-subtasks"></div>
-                    </div>
+        <!-- Task Modal - Simplified -->
+        <div class="kb-overlay" id="task-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;align-items:center;justify-content:center;z-index:5000" onclick="if(event.target===this)closeTaskModal()">
+            <div class="kb-modal" style="width:min(480px,100%)">
+                <div class="kb-modal-head">
+                    <h3 id="modal-title">Nova Tarefa</h3><button class="kb-close" onclick="closeTaskModal()">✕</button>
                 </div>
-                <div style="display:flex;gap:12px">
-                    <div style="flex:1"><label class="kb-label">Status</label>
-                        <select class="kb-select" id="t-status">
-                            <option value="todo">A Fazer</option>
-                            <option value="in-progress">Em andamento</option>
-                            <option value="done">Concluído</option>
-                        </select>
+                <div class="kb-modal-body">
+                    <div><label class="kb-label">Título *</label><input class="kb-input" id="t-title"
+                            placeholder="O que precisa ser feito?" /></div>
+                    <div><label class="kb-label">Descrição</label><textarea class="kb-textarea" id="t-desc"
+                            placeholder="Detalhes (opcional)…"></textarea></div>
+                    <div style="display:flex;gap:10px">
+                        <div style="flex:1"><label class="kb-label">Prioridade</label>
+                            <select class="kb-select" id="t-prio">
+                                <option value="low">🟢 Baixa</option>
+                                <option value="medium" selected>🟡 Média</option>
+                                <option value="high">🔴 Alta</option>
+                            </select>
+                        </div>
+                        <div style="flex:1"><label class="kb-label">Vencimento</label>
+                            <input class="kb-input" id="t-due" type="date" style="cursor:pointer" />
+                        </div>
                     </div>
-                    <div style="flex:1"><label class="kb-label">Prioridade</label>
-                        <select class="kb-select" id="t-prio">
-                            <option value="high">🔴 Alta</option>
-                            <option value="medium" selected>🟡 Média</option>
-                            <option value="low">🟢 Baixa</option>
-                        </select>
+                    <div><label class="kb-label">👤 Responsável</label>
+                        <input class="kb-input" id="t-resp" type="text" placeholder="Quem vai fazer?" maxlength="60" />
                     </div>
+                    <details style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--surface) 60%,transparent)">
+                        <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text-3)">Opções avançadas</summary>
+                        <div style="display:flex;gap:10px;margin-top:12px">
+                            <div style="flex:1"><label class="kb-label">Status</label>
+                                <select class="kb-select" id="t-status">
+                                    <option value="todo">A Fazer</option>
+                                    <option value="in-progress">Em andamento</option>
+                                    <option value="done">Concluído</option>
+                                </select>
+                            </div>
+                            <div style="flex:1"><label class="kb-label">Categoria</label>
+                                <select class="kb-select" id="t-cat">
+                                    <option value="">— Nenhuma —</option>
+                                    <option value="EMPENHAR">💼 EMPENHAR</option>
+                                    <option value="LIQUIDAR">📋 LIQUIDAR</option>
+                                    <option value="PAGAR">💰 PAGAR</option>
+                                    <option value="OBS">📝 OBS</option>
+                                    <option value="RESOLVER">🔧 RESOLVER</option>
+                                    <option value="OUTROS">📌 OUTROS</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="margin-top:12px">
+                            <label class="kb-label">Anexar arquivo</label>
+                            <input class="kb-input" id="t-file" type="file" />
+                            <div class="kb-dropzone" id="t-dropzone">
+                                Arraste e solte um arquivo aqui
+                                <div class="kb-dropzone-file" id="t-dropzone-file">Nenhum arquivo selecionado</div>
+                            </div>
+                            <div class="kb-file-help">Máx 10 MB. Enviado após salvar.</div>
+                        </div>
+                    </details>
                 </div>
-                <div><label class="kb-label">Categoria</label>
-                    <select class="kb-select" id="t-cat">
-                        <option value="">— Sem categoria —</option>
-                        <option value="EMPENHAR">💼 EMPENHAR</option>
-                        <option value="LIQUIDAR">📋 LIQUIDAR</option>
-                        <option value="PAGAR">💰 PAGAR</option>
-                        <option value="OBS">📝 OBS</option>
-                        <option value="RESOLVER">🔧 RESOLVER</option>
-                        <option value="OUTROS">📌 OUTROS</option>
-                    </select>
+                <div class="kb-modal-foot">
+                    <button class="kb-btn kb-btn-ghost" onclick="closeTaskModal()">Cancelar</button>
+                    <button class="kb-btn kb-btn-cyan" id="modal-save-btn" onclick="saveTask()">Salvar</button>
                 </div>
-                <div><label class="kb-label">📅 Data de Vencimento</label>
-                    <input class="kb-input" id="t-due" type="date" style="cursor:pointer" />
-                </div>
-                <div><label class="kb-label">👤 Responsável</label>
-                    <input class="kb-input" id="t-resp" type="text" placeholder="Nome de quem vai executar" maxlength="60" />
-                </div>
-                <div>
-                    <label class="kb-label">Anexar arquivo</label>
-                    <input class="kb-input" id="t-file" type="file" />
-                    <div class="kb-dropzone" id="t-dropzone">
-                        Arraste e solte um arquivo aqui
-                        <div class="kb-dropzone-file" id="t-dropzone-file">Nenhum arquivo selecionado</div>
-                    </div>
-                    <div class="kb-file-help">Após salvar a tarefa, o arquivo será enviado e ficará guardado no banco de dados.</div>
-                </div>
-            </div>
-            <div class="kb-modal-foot">
-                <button class="kb-btn kb-btn-violet" id="modal-ai-plan-btn" onclick="planCurrentTaskWithAi()" style="display:none">🧠 Planejar com IA</button>
-                <button class="kb-btn kb-btn-violet" id="modal-ai-improve-btn" onclick="improveCurrentTaskWithAi()" style="display:none">✨ Melhorar com IA</button>
-                <button class="kb-btn kb-btn-violet" id="modal-ai-professional-btn" onclick="professionalRewriteCurrentTask()" style="display:none">🏛️ Reescrita profissional</button>
-                <button class="kb-btn kb-btn-violet" id="modal-ai-classify-btn" onclick="classifyCurrentTaskWithAi()" style="display:none">🏷️ Classificar tipo</button>
-                <button class="kb-btn kb-btn-violet" id="modal-ai-stale-btn" onclick="analyzeCurrentTaskStale()" style="display:none">⏳ Detectar parada</button>
-                <button class="kb-btn kb-btn-violet" id="modal-ai-breakdown-btn" onclick="breakdownCurrentTaskWithAi()" style="display:none">🧩 Quebrar em subtarefas</button>
-                <button class="kb-btn kb-btn-ghost" onclick="closeTaskModal()">Cancelar</button>
-                <button class="kb-btn kb-btn-cyan" id="modal-save-btn" onclick="saveTask()">Salvar</button>
             </div>
         </div>
-    </div>
 
     <!-- Confirm Delete Modal -->
     <div class="kb-overlay" id="confirm-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;align-items:center;justify-content:center;z-index:5000">
@@ -1707,183 +1562,6 @@
         </div>
     </div>
 
-    <!-- ✨ AI Create Task Modal -->
-    <div class="ai-modal-overlay" id="ai-create-modal" style="display:none" onclick="if(event.target===this)closeAiCreateModal()">
-        <div class="ai-modal">
-            <div class="ai-modal-head">
-                <h3>✨ Criar Tarefa com IA</h3>
-                <button class="kb-close" onclick="closeAiCreateModal()">✕</button>
-            </div>
-            <div class="ai-modal-body" id="ai-create-body">
-                <div>
-                    <label class="kb-label">Sugestões rápidas</label>
-                    <div class="ai-chips">
-                        <button class="ai-chip" onclick="setAiChip('Reunião de alinhamento com a equipe')">📅 Reunião</button>
-                        <button class="ai-chip" onclick="setAiChip('Elaborar relatório mensal de empenhos')">📄 Relatório</button>
-                        <button class="ai-chip" onclick="setAiChip('Revisar documentos e contratos pendentes')">🔍 Revisão</button>
-                        <button class="ai-chip" onclick="setAiChip('Enviar ofício para fornecedor sobre pagamento')">📮 Ofício</button>
-                        <button class="ai-chip" onclick="setAiChip('Atualizar cadastro de credores fixos')">⚙️ Cadastro</button>
-                        <button class="ai-chip" onclick="setAiChip('Verificar empenhos vencidos e providenciar pagamento')">💰 Pagamento</button>
-                    </div>
-                </div>
-                <div>
-                    <label class="kb-label">Descreva a tarefa *</label>
-                    <textarea class="kb-textarea" id="ai-create-prompt" rows="4" maxlength="600"
-                        placeholder="Ex: Preciso organizar os empenhos do mês de março com os credores, verificar pendências e agendar reunião de alinhamento..."
-                        oninput="updateAiCharCount()"></textarea>
-                    <div class="ai-char-counter"><span id="ai-char-count">0</span> / 600</div>
-                </div>
-                <div style="display:flex;gap:12px">
-                    <div style="flex:1">
-                        <label class="kb-label">Coluna inicial</label>
-                        <select class="kb-select" id="ai-create-status">
-                            <option value="">IA decide</option>
-                            <option value="todo">A Fazer</option>
-                            <option value="in-progress">Em andamento</option>
-                            <option value="done">Concluído</option>
-                        </select>
-                    </div>
-                    <div style="flex:1">
-                        <label class="kb-label">Prioridade</label>
-                        <select class="kb-select" id="ai-create-priority">
-                            <option value="">IA decide</option>
-                            <option value="high">🔴 Alta</option>
-                            <option value="medium">🟡 Média</option>
-                            <option value="low">🟢 Baixa</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="ai-modal-body" id="ai-create-loading" style="display:none">
-                <div class="ai-loading-box">
-                    <div class="ai-spinner"></div>
-                    <p>A IA está criando sua tarefa…<br><small>Pode levar alguns segundos</small></p>
-                </div>
-            </div>
-            <div class="ai-modal-foot">
-                <span class="ai-model-badge" id="ai-create-model-label"></span>
-                <button class="kb-btn kb-btn-ghost" onclick="closeAiCreateModal()">Cancelar</button>
-                <button class="kb-btn kb-btn-violet" id="ai-create-submit-btn" onclick="submitAiCreate()">✨ Gerar com IA</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ✨ AI Improve Task Modal -->
-    <div class="ai-modal-overlay" id="ai-improve-modal" style="display:none" onclick="if(event.target===this)closeAiImproveModal()">
-        <div class="ai-modal">
-            <div class="ai-modal-head">
-                <h3>✨ Melhorar Tarefa com IA</h3>
-                <button class="kb-close" onclick="closeAiImproveModal()">✕</button>
-            </div>
-            <div class="ai-modal-body" id="ai-improve-body">
-                <div class="ai-task-context">
-                    <strong>🗂 Tarefa atual</strong>
-                    <span id="ai-improve-task-title">—</span>
-                </div>
-                <div>
-                    <label class="kb-label">O que você quer melhorar?</label>
-                    <textarea class="kb-textarea" id="ai-improve-prompt" rows="3"
-                        placeholder="Ex: Deixe a descrição mais clara e ajuste a prioridade..."></textarea>
-                </div>
-                <div>
-                    <label class="kb-label">Ações rápidas</label>
-                    <div class="ai-chips">
-                        <button class="ai-chip" onclick="setAiImproveChip('Melhore a clareza do título e da descrição')">✏️ Clareza</button>
-                        <button class="ai-chip" onclick="setAiImproveChip('Aumente a prioridade e justifique')">🔴 Prioridade</button>
-                        <button class="ai-chip" onclick="setAiImproveChip('Adicione mais detalhes e passos práticos na descrição')">📝 Mais detalhes</button>
-                        <button class="ai-chip" onclick="setAiImproveChip('Simplifique o título e torne a tarefa mais objetiva')">⚡ Simplificar</button>
-                        <button class="ai-chip" onclick="setAiImproveChip('Reescreva de forma profissional para uso administrativo')">🏛️ Profissional</button>
-                    </div>
-                </div>
-            </div>
-            <div class="ai-modal-body" id="ai-improve-loading" style="display:none">
-                <div class="ai-loading-box">
-                    <div class="ai-spinner"></div>
-                    <p>A IA está melhorando sua tarefa…</p>
-                </div>
-            </div>
-            <div class="ai-modal-foot">
-                <span class="ai-model-badge" id="ai-improve-model-label"></span>
-                <button class="kb-btn kb-btn-ghost" onclick="closeAiImproveModal()">Cancelar</button>
-                <button class="kb-btn kb-btn-violet" id="ai-improve-submit-btn" onclick="submitAiImprove()">✨ Melhorar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 🧩 AI Breakdown Preview Modal -->
-    <div class="ai-modal-overlay" id="ai-breakdown-modal" style="display:none" onclick="if(event.target===this)closeAiBreakdownModal()">
-        <div class="ai-modal ai-modal-wide">
-            <div class="ai-modal-head">
-                <h3>🧩 Subtarefas Sugeridas pela IA</h3>
-                <button class="kb-close" onclick="closeAiBreakdownModal()">✕</button>
-            </div>
-            <div class="ai-modal-body" id="ai-breakdown-input-body">
-                <div class="ai-task-context">
-                    <strong>🗂 Tarefa a dividir</strong>
-                    <span id="ai-breakdown-task-title">—</span>
-                </div>
-                <div>
-                    <label class="kb-label">Como a IA deve dividir?</label>
-                    <textarea class="kb-textarea" id="ai-breakdown-prompt" rows="2"
-                        placeholder="Ex: Quebre em passos práticos e sequenciais..."></textarea>
-                </div>
-                <div>
-                    <label class="kb-label">Sugestões rápidas</label>
-                    <div class="ai-chips">
-                        <button class="ai-chip" onclick="setAiBreakdownChip('Quebre em passos menores e práticos')">🔢 Passos práticos</button>
-                        <button class="ai-chip" onclick="setAiBreakdownChip('Divida em fases: planejamento, execução e revisão')">📋 Fases</button>
-                        <button class="ai-chip" onclick="setAiBreakdownChip('Crie subtarefas para cada responsável diferente')">👥 Por responsável</button>
-                        <button class="ai-chip" onclick="setAiBreakdownChip('Gere checklist detalhado com prioridades')">✅ Checklist</button>
-                    </div>
-                </div>
-            </div>
-            <div class="ai-modal-body" id="ai-breakdown-loading" style="display:none">
-                <div class="ai-loading-box">
-                    <div class="ai-spinner"></div>
-                    <p>A IA está gerando as subtarefas…</p>
-                </div>
-            </div>
-            <div class="ai-modal-body" id="ai-breakdown-preview-body" style="display:none">
-                <div class="ai-select-all-bar">
-                    <span id="ai-breakdown-count-label">0 subtarefas geradas</span>
-                    <a onclick="aiBreakdownSelectAll(true)">Selecionar todas</a>
-                    <span>·</span>
-                    <a onclick="aiBreakdownSelectAll(false)">Limpar</a>
-                </div>
-                <div class="ai-subtask-list" id="ai-breakdown-list"></div>
-            </div>
-            <div class="ai-modal-foot">
-                <span class="ai-model-badge" id="ai-breakdown-model-label"></span>
-                <button class="kb-btn kb-btn-ghost" id="ai-breakdown-back-btn" onclick="aiBreakdownBack()" style="display:none">← Voltar</button>
-                <button class="kb-btn kb-btn-ghost" onclick="closeAiBreakdownModal()">Cancelar</button>
-                <button class="kb-btn kb-btn-violet" id="ai-breakdown-submit-btn" onclick="submitAiBreakdown()">🧩 Gerar subtarefas</button>
-                <button class="kb-btn kb-btn-emerald" id="ai-breakdown-confirm-btn" onclick="confirmAiBreakdown()" style="display:none">✅ Criar selecionadas (<span id="ai-breakdown-selected-count">0</span>)</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de Modelos OpenRouter -->
-    <div class="browser-modal" id="modelos-modal">
-        <div class="browser-box">
-            <div class="browser-header">
-                <h4>📋 Modelos Disponíveis – OpenRouter</h4>
-                <button class="browser-close" onclick="fecharModelos()">✕</button>
-            </div>
-            <div style="padding:10px 16px;border-bottom:1px solid rgba(184,194,204,0.15);display:flex;gap:10px;align-items:center;">
-                <span style="font-size:12px;color:var(--text-3);">🔍</span>
-                <input type="text" id="modelos-filtro" class="path-input" placeholder="Filtrar por nome ou id..." style="flex:1;" oninput="filtrarModelos()" />
-                <span id="modelos-count" style="font-size:11px;color:var(--text-3);white-space:nowrap;"></span>
-            </div>
-            <div class="browser-list" id="modelos-lista" style="max-height:55vh;">
-                <div class="empty-ext"><p>Carregando...</p></div>
-            </div>
-            <div class="browser-footer" style="justify-content:space-between;align-items:center;">
-                <span style="font-size:11px;color:var(--text-3);">Clique para selecionar o modelo</span>
-                <button class="kb-btn kb-btn-ghost" onclick="fecharModelos()">Fechar</button>
-            </div>
-        </div>
-    </div>
-
     <div id="kb-toast"></div>
     <div id="print-area"></div>
 
@@ -1899,9 +1577,6 @@
         let deletingId = null;
         let dragTaskId = null;
         let pendingModalFile = null;
-        let aiBusy = false;
-        let aiCooldownUntil = 0;
-        let aiModelsFetchedAt = 0;
         let activeCatFilter = '';
         let activeSearch = '';
         let kanbanReportDate = '';
@@ -1911,7 +1586,7 @@
             try {
                 const res = await fetch('/api/kanban');
                 const data = await res.json();
-                tasks = Array.isArray(data) ? data : [];
+                tasks = Array.isArray(data) ? data : (data.items || []);
             } catch (e) { tasks = []; showToast('Erro ao carregar tarefas', 'error'); }
             try {
                 renderBoard();
@@ -2059,7 +1734,6 @@
         <div class="kb-card-actions">
           ${_avatarBadge(task.responsavel)}
           <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar">✏️</button>
-          <button class="kb-icon-btn" onclick="breakdownTaskWithAi('${task.id}')" title="Quebrar em subtarefas com IA">✨</button>
           <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${task.id}')" title="Excluir">🗑</button>
         </div>
       </div>
@@ -2108,7 +1782,6 @@
             });
             renderKanbanReport();
             updateProgressBar();
-            updateAlertBanner();
         }
 
         function getTodayIsoDate() {
@@ -2279,29 +1952,6 @@
             const label = document.getElementById('kb-progress-label');
             if (fill) fill.style.width = pct + '%';
             if (label) label.textContent = `${done} / ${total} concluídas (${pct}%)`;
-        }
-
-        // ── ALERT BANNER ───────────────────────────────────────────────────────────
-        let alertDismissed = false;
-        function updateAlertBanner() {
-            if (alertDismissed) return;
-            const today = new Date(); today.setHours(0,0,0,0);
-            const overdue = tasks.filter(t => t.status !== 'done' && t.data_vencimento && new Date(t.data_vencimento + 'T00:00:00') < today);
-            const banner = document.getElementById('kb-alert-banner');
-            const text = document.getElementById('kb-alert-text');
-            if (!banner) return;
-            if (overdue.length > 0) {
-                text.textContent = `⚠️ ${overdue.length} tarefa${overdue.length > 1 ? 's' : ''} vencida${overdue.length > 1 ? 's' : ''}! Clique para ver.`;
-                banner.classList.add('visible');
-            } else {
-                banner.classList.remove('visible');
-            }
-        }
-        function dismissAlert() { alertDismissed = true; document.getElementById('kb-alert-banner').classList.remove('visible'); }
-        function setCatFilterAndAlert() {
-            // Sort by due so overdue appear first
-            document.getElementById('kb-sort').value = 'due';
-            renderBoard();
         }
 
         // ── QUICK MOVE ─────────────────────────────────────────────────────────────
@@ -2586,611 +2236,19 @@
             document.getElementById('t-resp').value = task.responsavel || '';
         }
 
-        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = '✏️ Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); resetTaskAiPlanPanel(); updateTaskModalAiButtons(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
-        function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; resetTaskAiPlanPanel(); }
+        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = 'Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
+        function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; }
 
         function openEdit(id) {
             const task = tasks.find(t => t.id === id); if (!task) return;
             editingId = id;
-            document.getElementById('modal-title').textContent = '✏️ Editar Tarefa';
+            document.getElementById('modal-title').textContent = 'Editar Tarefa';
             fillTaskModal(task);
             document.getElementById('t-file').value = '';
             pendingModalFile = null;
             syncDropzoneLabel();
-            resetTaskAiPlanPanel();
-            updateTaskModalAiButtons();
             document.getElementById('task-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('t-title').focus(), 100);
-        }
-
-        async function callKanbanAi(url, payload) {
-            if (aiBusy) throw new Error('A IA do Kanban já está processando outra solicitação');
-            _assertAiCooldown(url);
-            aiBusy = true;
-            try {
-                const candidates = await _getPreferredFreeModels();
-                let lastError = null;
-                let sawRateLimit = false;
-                for (const model of candidates) {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...payload, model })
-                    });
-                    const data = await res.json().catch(() => ({}));
-                    if (res.ok) {
-                        _persistWorkingAiModel(model);
-                        return data;
-                    }
-                    const message = data.error || 'Erro ao consultar IA do Kanban';
-                    lastError = new Error(message);
-                    if (_isRetryableAiModelError(res.status, message)) {
-                        if (res.status === 429) sawRateLimit = true;
-                        continue;
-                    }
-                    throw lastError;
-                }
-                if (sawRateLimit && lastError) {
-                    _activateAiCooldown(url, lastError.message || 'A IA está temporariamente sobrecarregada.');
-                }
-                _maybePromptFreeModelSelection((lastError && lastError.message) || 'Erro ao consultar IA do Kanban');
-                throw lastError || new Error('Erro ao consultar IA do Kanban');
-            } finally {
-                aiBusy = false;
-            }
-        }
-
-        // ── AI MODAL HELPERS ──────────────────────────────────────────────────────
-        function _getAiModelLabel() {
-            const m = _normalizeFreeModelId((localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim());
-            return m ? `🤖 ${m}` : '🤖 modelo padrão';
-        }
-
-        function _normalizeFreeModelId(model) {
-            const value = String(model || '').trim();
-            if (!value) return 'openrouter/free';
-            if (value === 'openrouter/free' || value.endsWith(':free')) return value;
-            return 'openrouter/free';
-        }
-
-        function _persistWorkingAiModel(model) {
-            const freeId = _normalizeFreeModelId(model);
-            localStorage.setItem('api_openrouter_modelo', freeId);
-            localStorage.setItem('ext_ia_modelo', freeId);
-        }
-
-        function _isRetryableAiModelError(status, message) {
-            const text = String(message || '').toLowerCase();
-            if ([408, 409, 425, 429, 500, 502, 503, 504].includes(Number(status))) return true;
-            if (text.includes('rate limit') || text.includes('limite') || text.includes('sobrecarreg') || text.includes('cooldown') || text.includes('temporariamente')) return true;
-            if (text.includes('conteúdo vazio') || text.includes('resposta inválida') || text.includes('resposta vazia')) return true;
-            return false;
-        }
-
-        async function _ensureFreeModelsLoaded(forceReload = false) {
-            const cacheAgeMs = Date.now() - aiModelsFetchedAt;
-            if (!forceReload && Array.isArray(todosModelos) && todosModelos.length && cacheAgeMs < 5 * 60 * 1000) {
-                return todosModelos;
-            }
-            try {
-                const res = await fetch('/api/extratos/modelos-openrouter', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) return todosModelos || [];
-                todosModelos = (data.modelos || []).filter(m => {
-                    const prec = m.pricing || {};
-                    return parseFloat(prec.prompt || 0) === 0 && parseFloat(prec.completion || 0) === 0;
-                });
-                aiModelsFetchedAt = Date.now();
-                return todosModelos;
-            } catch (_) {
-                return todosModelos || [];
-            }
-        }
-
-        async function _getPreferredFreeModels() {
-            const current = _normalizeFreeModelId((localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '').trim());
-            const freeModels = await _ensureFreeModelsLoaded();
-            const ordered = [];
-            const seen = new Set();
-            [current, 'openrouter/free', ...(freeModels || []).map(m => _normalizeFreeModelId(m.id))].forEach(model => {
-                const id = _normalizeFreeModelId(model);
-                if (!id || seen.has(id)) return;
-                seen.add(id);
-                ordered.push(id);
-            });
-            return ordered.length ? ordered : ['openrouter/free'];
-        }
-
-        function _getAiCooldownStorageKey(url) {
-            return `kanban_ai_cooldown:${url || 'global'}`;
-        }
-
-        function _getActiveAiCooldownUntil(url) {
-            const localValue = Number(localStorage.getItem(_getAiCooldownStorageKey(url)) || '0');
-            const activeUntil = Math.max(aiCooldownUntil || 0, localValue || 0);
-            if (activeUntil <= Date.now()) {
-                aiCooldownUntil = 0;
-                localStorage.removeItem(_getAiCooldownStorageKey(url));
-                return 0;
-            }
-            return activeUntil;
-        }
-
-        function _extractRetryAfterSeconds(message) {
-            const text = String(message || '').toLowerCase();
-            const match = text.match(/(\d+)\s*(s|sec|secs|seg|segundos|min|mins|minutos)/i);
-            if (match) {
-                const amount = parseInt(match[1], 10) || 0;
-                const unit = (match[2] || '').toLowerCase();
-                if (unit.startsWith('m')) return Math.min(Math.max(amount * 60, 15), 900);
-                return Math.min(Math.max(amount, 15), 900);
-            }
-            if (text.includes('per-day') || text.includes('por dia')) return 600;
-            if (text.includes('per-min') || text.includes('por minuto')) return 90;
-            return 60;
-        }
-
-        function _activateAiCooldown(url, message) {
-            const cooldownSeconds = _extractRetryAfterSeconds(message);
-            const until = Date.now() + (cooldownSeconds * 1000);
-            aiCooldownUntil = until;
-            localStorage.setItem(_getAiCooldownStorageKey(url), String(until));
-        }
-
-        function _assertAiCooldown(url) {
-            const until = _getActiveAiCooldownUntil(url);
-            if (!until) return;
-            const seconds = Math.max(1, Math.ceil((until - Date.now()) / 1000));
-            throw new Error(`A IA está em cooldown para evitar bloqueio. Aguarde ${seconds}s e tente novamente.`);
-        }
-
-        function _maybePromptFreeModelSelection(errorMessage) {
-            const msg = String(errorMessage || '').toLowerCase();
-            const shouldPrompt = !msg.includes('já está processando');
-            if (!shouldPrompt) return;
-            setTimeout(() => {
-                consultarModelosEExibirModal();
-            }, 50);
-        }
-
-        function _collectTaskModalPayload() {
-            return {
-                title: document.getElementById('t-title').value.trim(),
-                description: document.getElementById('t-desc').value.trim(),
-                status: document.getElementById('t-status').value,
-                priority: document.getElementById('t-prio').value,
-                categoria: document.getElementById('t-cat').value,
-                data_vencimento: document.getElementById('t-due').value,
-                responsavel: document.getElementById('t-resp').value.trim()
-            };
-        }
-
-        function _renderTaskPlan(plan) {
-            const panel = document.getElementById('task-ai-plan-panel');
-            if (!panel) return;
-            document.getElementById('task-ai-plan-model').textContent = _getAiModelLabel();
-            document.getElementById('task-ai-plan-summary').textContent = plan.summary ? `Resumo: ${plan.summary}` : 'Resumo não informado.';
-            document.getElementById('task-ai-plan-next').textContent = plan.next_action ? `Próxima ação: ${plan.next_action}` : 'Próxima ação não informada.';
-            document.getElementById('task-ai-plan-checklist').innerHTML = (plan.checklist || []).map(item => `<li>${esc(item)}</li>`).join('');
-            document.getElementById('task-ai-plan-subtasks').innerHTML = `<div class="ai-plan-subtasks-list">${(plan.subtarefas || []).map(item => `
-                <div class="ai-plan-subtask">
-                    <div class="ai-plan-subtask-title">${esc(item.title || '')}</div>
-                    ${item.description ? `<div class="ai-plan-subtask-desc">${esc(item.description)}</div>` : ''}
-                </div>
-            `).join('')}</div>`;
-            panel.style.display = 'grid';
-        }
-
-        function _renderTaskClassification(result) {
-            const panel = document.getElementById('task-ai-plan-panel');
-            const box = document.getElementById('task-ai-plan-classification');
-            if (!panel || !box) return;
-            const confidence = typeof result.confianca === 'number' ? Math.round(result.confianca * 100) : 0;
-            box.textContent = `Tipo sugerido: ${(result.categoria_ia || 'documento').toUpperCase()}${result.justificativa ? ` · ${result.justificativa}` : ''}${confidence ? ` · confiança ${confidence}%` : ''}`;
-            box.style.display = 'block';
-            panel.style.display = 'grid';
-        }
-
-        function _renderTaskStale(result) {
-            const panel = document.getElementById('task-ai-plan-panel');
-            const box = document.getElementById('task-ai-plan-stale');
-            if (!panel || !box) return;
-            const suggestions = Array.isArray(result.sugestoes) && result.sugestoes.length ? ` · sugestões: ${result.sugestoes.join(', ')}` : '';
-            box.textContent = `Situação: ${(result.status || 'normal').toUpperCase()} · ${result.resumo || 'Sem observações.'}${suggestions}`;
-            box.style.display = 'block';
-            panel.style.display = 'grid';
-        }
-
-        async function planCurrentTaskWithAi() {
-            if (!editingId) return;
-            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
-            if (!task || !(task.title || '').trim()) {
-                showToast('Informe pelo menos o título da tarefa para planejar com IA', 'error');
-                return;
-            }
-            const planBtn = document.getElementById('modal-ai-plan-btn');
-            const originalText = planBtn.textContent;
-            planBtn.disabled = true;
-            planBtn.textContent = '⏳ Planejando...';
-            try {
-                const plan = await callKanbanAi('/api/kanban/ai/plan-task', {
-                    task: {
-                        ...task,
-                        ..._collectTaskModalPayload(),
-                    },
-                    prompt: 'Gere checklist, prioridade sugerida, próxima ação e subtarefas práticas para esta tarefa.'
-                });
-                fillTaskModal(plan.task || task);
-                _renderTaskPlan(plan);
-                showToast('✅ Planejamento com IA pronto. Revise e salve.', 'success');
-            } catch (e) {
-                const msg = e.message || 'Erro ao planejar tarefa com IA';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            } finally {
-                planBtn.disabled = false;
-                planBtn.textContent = originalText;
-            }
-        }
-
-        async function professionalRewriteCurrentTask() {
-            if (!editingId) return;
-            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
-            const btn = document.getElementById('modal-ai-professional-btn');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '⏳ Reescrevendo...';
-            try {
-                const rewritten = await callKanbanAi('/api/kanban/ai/professional-rewrite', {
-                    task: {
-                        ...task,
-                        ..._collectTaskModalPayload(),
-                    },
-                    prompt: 'Reescreva em tom profissional, administrativo e objetivo.'
-                });
-                fillTaskModal({ ...task, ...rewritten });
-                showToast('✅ Reescrita profissional aplicada. Revise e salve.', 'success');
-            } catch (e) {
-                const msg = e.message || 'Erro ao reescrever tarefa com IA';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        }
-
-        async function classifyCurrentTaskWithAi() {
-            if (!editingId) return;
-            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
-            const btn = document.getElementById('modal-ai-classify-btn');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '⏳ Classificando...';
-            try {
-                const result = await callKanbanAi('/api/kanban/ai/classify-task', {
-                    task: {
-                        ...task,
-                        ..._collectTaskModalPayload(),
-                    },
-                    prompt: 'Classifique o tipo principal desta tarefa.'
-                });
-                _renderTaskClassification(result);
-                showToast('✅ Classificação sugerida pela IA.', 'success');
-            } catch (e) {
-                const msg = e.message || 'Erro ao classificar tarefa com IA';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        }
-
-        async function analyzeCurrentTaskStale() {
-            if (!editingId) return;
-            const task = tasks.find(t => t.id === editingId) || _collectTaskModalPayload();
-            const btn = document.getElementById('modal-ai-stale-btn');
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '⏳ Analisando...';
-            try {
-                const result = await callKanbanAi('/api/kanban/ai/stale-task', {
-                    task: {
-                        ...task,
-                        ..._collectTaskModalPayload(),
-                    },
-                    prompt: 'Analise se a tarefa está parada e sugira cobrar responsável, arquivar, redefinir prazo ou mover de coluna.'
-                });
-                _renderTaskStale(result);
-                showToast('✅ Análise de tarefa parada concluída.', 'success');
-            } catch (e) {
-                const msg = e.message || 'Erro ao analisar tarefa parada com IA';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            } finally {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        }
-
-        // ── AI CREATE MODAL ───────────────────────────────────────────────────────
-        function openAiCreate() {
-            document.getElementById('ai-create-prompt').value = '';
-            document.getElementById('ai-create-status').value = '';
-            document.getElementById('ai-create-priority').value = '';
-            document.getElementById('ai-char-count').textContent = '0';
-            document.getElementById('ai-create-model-label').textContent = _getAiModelLabel();
-            document.getElementById('ai-create-body').style.display = 'flex';
-            document.getElementById('ai-create-loading').style.display = 'none';
-            document.getElementById('ai-create-submit-btn').disabled = false;
-            document.getElementById('ai-create-modal').style.display = 'flex';
-            setTimeout(() => document.getElementById('ai-create-prompt').focus(), 80);
-        }
-
-        function closeAiCreateModal() {
-            if (aiBusy) return;
-            document.getElementById('ai-create-modal').style.display = 'none';
-        }
-
-        function setAiChip(text) {
-            const ta = document.getElementById('ai-create-prompt');
-            ta.value = text;
-            ta.focus();
-            updateAiCharCount();
-        }
-
-        function updateAiCharCount() {
-            const len = document.getElementById('ai-create-prompt').value.length;
-            const el = document.getElementById('ai-char-count');
-            el.textContent = len;
-            el.classList.toggle('ai-char-over', len > 600);
-        }
-
-        async function submitAiCreate() {
-            const promptText = document.getElementById('ai-create-prompt').value.trim();
-            if (!promptText) { showToast('Descreva a tarefa antes de gerar', 'error'); return; }
-            const statusHint = document.getElementById('ai-create-status').value;
-            const priorityHint = document.getElementById('ai-create-priority').value;
-            document.getElementById('ai-create-body').style.display = 'none';
-            document.getElementById('ai-create-loading').style.display = 'flex';
-            document.getElementById('ai-create-submit-btn').disabled = true;
-            try {
-                const task = await callKanbanAi('/api/kanban/ai/create-from-text', {
-                    prompt: promptText,
-                    status_hint: statusHint || null,
-                    priority_hint: priorityHint || null
-                });
-                document.getElementById('ai-create-modal').style.display = 'none';
-                openTaskModal();
-                fillTaskModal(task);
-                showToast('✅ Sugestão da IA pronta. Revise e salve.', 'success');
-            } catch (e) {
-                document.getElementById('ai-create-body').style.display = 'flex';
-                document.getElementById('ai-create-loading').style.display = 'none';
-                document.getElementById('ai-create-submit-btn').disabled = false;
-                const msg = e.message || 'Erro ao usar IA no Kanban';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            }
-        }
-
-        // ── AI IMPROVE MODAL ──────────────────────────────────────────────────────
-        function openAiImproveModal() {
-            if (!editingId) return;
-            const task = tasks.find(t => t.id === editingId);
-            if (!task) return;
-            document.getElementById('ai-improve-task-title').textContent = task.title || '—';
-            document.getElementById('ai-improve-prompt').value = '';
-            document.getElementById('ai-improve-model-label').textContent = _getAiModelLabel();
-            document.getElementById('ai-improve-body').style.display = 'flex';
-            document.getElementById('ai-improve-loading').style.display = 'none';
-            document.getElementById('ai-improve-submit-btn').disabled = false;
-            document.getElementById('ai-improve-modal').style.display = 'flex';
-            setTimeout(() => document.getElementById('ai-improve-prompt').focus(), 80);
-        }
-
-        function closeAiImproveModal() {
-            if (aiBusy) return;
-            document.getElementById('ai-improve-modal').style.display = 'none';
-        }
-
-        function setAiImproveChip(text) {
-            document.getElementById('ai-improve-prompt').value = text;
-            document.getElementById('ai-improve-prompt').focus();
-        }
-
-        async function improveCurrentTaskWithAi() {
-            openAiImproveModal();
-        }
-
-        async function submitAiImprove() {
-            if (!editingId) return;
-            const task = tasks.find(t => t.id === editingId);
-            if (!task) return;
-            const promptText = document.getElementById('ai-improve-prompt').value.trim() || 'Melhore a clareza, prioridade e descrição desta tarefa.';
-            document.getElementById('ai-improve-body').style.display = 'none';
-            document.getElementById('ai-improve-loading').style.display = 'flex';
-            document.getElementById('ai-improve-submit-btn').disabled = true;
-            try {
-                const improved = await callKanbanAi('/api/kanban/ai/improve-task', { task, prompt: promptText });
-                document.getElementById('ai-improve-modal').style.display = 'none';
-                fillTaskModal(improved);
-                showToast('✅ Sugestão aplicada. Revise e salve.', 'success');
-            } catch (e) {
-                document.getElementById('ai-improve-body').style.display = 'flex';
-                document.getElementById('ai-improve-loading').style.display = 'none';
-                document.getElementById('ai-improve-submit-btn').disabled = false;
-                const msg = e.message || 'Erro ao melhorar tarefa com IA';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            }
-        }
-
-        // ── AI BREAKDOWN MODAL ────────────────────────────────────────────────────
-        let _breakdownItems = [];
-
-        function _resetBreakdownModal() {
-            _breakdownItems = [];
-            document.getElementById('ai-breakdown-input-body').style.display = 'flex';
-            document.getElementById('ai-breakdown-loading').style.display = 'none';
-            document.getElementById('ai-breakdown-preview-body').style.display = 'none';
-            document.getElementById('ai-breakdown-submit-btn').style.display = 'inline-flex';
-            document.getElementById('ai-breakdown-confirm-btn').style.display = 'none';
-            document.getElementById('ai-breakdown-back-btn').style.display = 'none';
-            document.getElementById('ai-breakdown-submit-btn').disabled = false;
-        }
-
-        function openAiBreakdownModal(taskId) {
-            const task = tasks.find(t => t.id === taskId);
-            if (!task) return;
-            _resetBreakdownModal();
-            document.getElementById('ai-breakdown-task-title').textContent = task.title || '—';
-            document.getElementById('ai-breakdown-prompt').value = '';
-            document.getElementById('ai-breakdown-model-label').textContent = _getAiModelLabel();
-            document.getElementById('ai-breakdown-modal').style.display = 'flex';
-            setTimeout(() => document.getElementById('ai-breakdown-prompt').focus(), 80);
-        }
-
-        function closeAiBreakdownModal() {
-            if (aiBusy) return;
-            document.getElementById('ai-breakdown-modal').style.display = 'none';
-        }
-
-        function setAiBreakdownChip(text) {
-            document.getElementById('ai-breakdown-prompt').value = text;
-            document.getElementById('ai-breakdown-prompt').focus();
-        }
-
-        function aiBreakdownBack() {
-            _resetBreakdownModal();
-        }
-
-        function _renderBreakdownPreview(items) {
-            _breakdownItems = items;
-            const list = document.getElementById('ai-breakdown-list');
-            list.innerHTML = '';
-            items.forEach((item, i) => {
-                const prioCls = item.priority === 'high' ? 'ai-prio-high' : item.priority === 'low' ? 'ai-prio-low' : 'ai-prio-medium';
-                const prioLabel = item.priority === 'high' ? '🔴 Alta' : item.priority === 'low' ? '🟢 Baixa' : '🟡 Média';
-                const card = document.createElement('div');
-                card.className = 'ai-subtask-card selected';
-                card.dataset.idx = i;
-                card.innerHTML = `
-                    <input type="checkbox" class="ai-subtask-check" id="ai-st-${i}" checked onchange="aiBreakdownUpdateCount()">
-                    <div class="ai-subtask-info">
-                        <div class="ai-subtask-title">${item.title || '(sem título)'}</div>
-                        ${item.description ? `<div class="ai-subtask-desc">${item.description}</div>` : ''}
-                    </div>
-                    <span class="ai-prio-badge ${prioCls}">${prioLabel}</span>`;
-                card.addEventListener('click', function(e) {
-                    if (e.target.tagName === 'INPUT') return;
-                    const cb = card.querySelector('input[type=checkbox]');
-                    cb.checked = !cb.checked;
-                    card.classList.toggle('selected', cb.checked);
-                    aiBreakdownUpdateCount();
-                });
-                list.appendChild(card);
-            });
-            document.getElementById('ai-breakdown-count-label').textContent = `${items.length} subtarefa(s) gerada(s)`;
-            aiBreakdownUpdateCount();
-        }
-
-        function aiBreakdownSelectAll(state) {
-            document.querySelectorAll('.ai-subtask-check').forEach(cb => {
-                cb.checked = state;
-                cb.closest('.ai-subtask-card').classList.toggle('selected', state);
-            });
-            aiBreakdownUpdateCount();
-        }
-
-        function aiBreakdownUpdateCount() {
-            const n = document.querySelectorAll('.ai-subtask-check:checked').length;
-            document.getElementById('ai-breakdown-selected-count').textContent = n;
-            document.getElementById('ai-breakdown-confirm-btn').disabled = n === 0;
-        }
-
-        async function submitAiBreakdown() {
-            const taskTitleEl = document.getElementById('ai-breakdown-task-title');
-            const taskTitle = taskTitleEl.textContent;
-            const task = tasks.find(t => t.title === taskTitle) ||
-                         (editingId ? tasks.find(t => t.id === editingId) : null);
-            if (!task) { showToast('Tarefa não encontrada', 'error'); return; }
-            const promptText = document.getElementById('ai-breakdown-prompt').value.trim() || 'Quebre em passos menores e práticos.';
-            document.getElementById('ai-breakdown-input-body').style.display = 'none';
-            document.getElementById('ai-breakdown-loading').style.display = 'flex';
-            document.getElementById('ai-breakdown-submit-btn').disabled = true;
-            try {
-                const result = await callKanbanAi('/api/kanban/ai/breakdown-task', { task, prompt: promptText });
-                const items = Array.isArray(result.tasks) ? result.tasks.filter(t => t && t.title) : [];
-                if (!items.length) throw new Error('Nenhuma subtarefa válida foi gerada pela IA');
-                document.getElementById('ai-breakdown-loading').style.display = 'none';
-                document.getElementById('ai-breakdown-preview-body').style.display = 'flex';
-                document.getElementById('ai-breakdown-submit-btn').style.display = 'none';
-                document.getElementById('ai-breakdown-confirm-btn').style.display = 'inline-flex';
-                document.getElementById('ai-breakdown-back-btn').style.display = 'inline-flex';
-                _renderBreakdownPreview(items);
-            } catch (e) {
-                document.getElementById('ai-breakdown-input-body').style.display = 'flex';
-                document.getElementById('ai-breakdown-loading').style.display = 'none';
-                document.getElementById('ai-breakdown-submit-btn').disabled = false;
-                const msg = e.message || 'Erro ao quebrar tarefa com IA';
-                showToast(msg, 'error');
-                if (msg.includes('429') || msg.includes('Limite de requisi')) consultarModelosEExibirModal();
-            }
-        }
-
-        async function confirmAiBreakdown() {
-            const selected = [];
-            document.querySelectorAll('.ai-subtask-check:checked').forEach(cb => {
-                const idx = parseInt(cb.closest('.ai-subtask-card').dataset.idx);
-                if (_breakdownItems[idx]) selected.push(_breakdownItems[idx]);
-            });
-            if (!selected.length) { showToast('Selecione pelo menos uma subtarefa', 'error'); return; }
-            document.getElementById('ai-breakdown-preview-body').style.display = 'none';
-            document.getElementById('ai-breakdown-loading').style.display = 'flex';
-            document.getElementById('ai-breakdown-confirm-btn').disabled = true;
-            try {
-                for (const task of selected) {
-                    const payload = { id: uid(), title: task.title, description: task.description || '', status: task.status || 'todo', priority: task.priority || 'medium' };
-                    const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!res.ok) throw new Error('Erro ao criar subtarefa');
-                }
-                await loadAll();
-                document.getElementById('ai-breakdown-modal').style.display = 'none';
-                showToast(`${selected.length} subtarefa(s) criada(s) com ajuda da IA ✅`, 'success');
-            } catch (e) {
-                document.getElementById('ai-breakdown-preview-body').style.display = 'flex';
-                document.getElementById('ai-breakdown-loading').style.display = 'none';
-                document.getElementById('ai-breakdown-confirm-btn').disabled = false;
-                showToast(e.message || 'Erro ao criar subtarefas', 'error');
-            }
-        }
-
-        async function breakdownTaskWithAi(taskId) {
-            openAiBreakdownModal(taskId);
-        }
-
-        async function breakdownCurrentTaskWithAi() {
-            if (!editingId) return;
-            openAiBreakdownModal(editingId);
-        }
-
-        async function confirmAndCreateSubtasks(items) {
-            // Legacy fallback — now handled by the modal preview
-            const tasksToCreate = Array.isArray(items) ? items.filter(t => t && t.title) : [];
-            if (!tasksToCreate.length) throw new Error('Nenhuma subtarefa válida foi gerada pela IA');
-            for (const task of tasksToCreate) {
-                const payload = { id: uid(), title: task.title, description: task.description || '', status: task.status || 'todo', priority: task.priority || 'medium' };
-                const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw new Error('Erro ao criar subtarefas sugeridas pela IA');
-            }
-            await loadAll();
-            showToast(`${tasksToCreate.length} subtarefa(s) criada(s) com ajuda da IA`, 'success');
         }
 
         async function uploadAttachment(taskId, file) {

@@ -106,7 +106,6 @@ function Install-Dependencies {
     foreach ($pkg in $packages) {
         # mapear nomes de pacote para modulos importaveis
         $moduleMap = @{
-            "python-telegram-bot" = "telegram"
             "pillow"              = "PIL"
             "beautifulsoup4"      = "bs4"
             "scikit-learn"        = "sklearn"

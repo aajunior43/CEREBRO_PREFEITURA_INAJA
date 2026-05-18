@@ -1895,40 +1895,9 @@ body {
   color: var(--green);
 }
 
-.btn-telegram {
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface);
-  color: #2AABEE;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.btn-telegram:hover {
-  border-color: #2AABEE;
-  color: #229ED9;
-  background: rgba(42, 171, 238, 0.08);
-  box-shadow: 0 0 12px rgba(42, 171, 238, 0.15);
-}
-
-.btn-telegram:active {
-  transform: scale(0.9);
-}
-
-[data-theme="dark"] .btn-telegram:hover {
-  background: rgba(42, 171, 238, 0.12);
-}
-
 .btn-expand svg,
 .btn-edit svg,
-.btn-print svg,
-.btn-telegram svg {
+.btn-print svg {
   width: 13px;
   height: 13px;
   pointer-events: none;
@@ -5395,4 +5364,78 @@ body.home-page.home-active .adm-panel {
 }
 .dashboard-subtitle {
   color: rgba(255,255,255,0.85) !important;
+}
+
+/* Dashboard principal: corrige sobrescritas antigas que quebravam a grade */
+body.home-page .dashboard-area {
+  margin-left: 236px;
+  width: calc(100% - 236px);
+  max-width: none;
+  transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+body.home-page.sidebar-collapsed .dashboard-area {
+  margin-left: 0;
+  width: 100%;
+}
+
+#dashboard-area .hs-modules {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+#dashboard-area .hs-group-header {
+  margin-bottom: 0;
+}
+
+#dashboard-area .hs-cards {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+#dashboard-area .hs-card {
+  min-height: 86px;
+  padding: 14px;
+  align-items: center;
+  transform: translateY(0);
+}
+
+#dashboard-area .hs-card:hover {
+  transform: translateY(-2px);
+}
+
+#dashboard-area .hs-card-icon {
+  width: 40px;
+  height: 40px;
+}
+
+#dashboard-area .hs-card-name,
+#dashboard-area .hs-card-desc,
+#dashboard-area .hs-group-title,
+#dashboard-area .hs-group-subtitle {
+  overflow-wrap: anywhere;
+}
+
+#dashboard-area .hs-card--documentos {
+  border-left-color: var(--orange);
+}
+
+@media (max-width: 860px) {
+  body.home-page .dashboard-area {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  #dashboard-area .hs-modules {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  #dashboard-area .dashboard-header {
+    padding: 22px 18px;
+    margin-bottom: 18px;
+  }
 }

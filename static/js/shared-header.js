@@ -451,7 +451,9 @@
     // Sincroniza chaves do banco → localStorage (garante que módulos de IA funcionem mesmo após limpeza de cache)
     if (!localStorage.getItem('api_openrouter_key')) {
       fetch('/api/config').then(r => r.json()).then(cfg => {
-        if (cfg.api_openrouter_key)    { localStorage.setItem('api_openrouter_key',    cfg.api_openrouter_key);    localStorage.setItem('ext_ia_key',    cfg.api_openrouter_key); }
+        const model = cfg.api_openrouter_modelo || '';
+        const iaKey = model.startsWith('opencode-go/') ? (cfg.api_opencode_go_key || cfg.api_openrouter_key) : cfg.api_openrouter_key;
+        if (iaKey)                     { localStorage.setItem('api_openrouter_key',    iaKey);                    localStorage.setItem('ext_ia_key',    iaKey); }
         if (cfg.api_openrouter_modelo) { localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); localStorage.setItem('ext_ia_modelo', cfg.api_openrouter_modelo); }
         if (cfg.api_cnpja_key)         { localStorage.setItem('api_cnpja_key',          cfg.api_cnpja_key); }
       }).catch(() => {});
@@ -867,7 +869,7 @@
     async function runGenericIaRequest(pageConfig, action, question) {
       const apiKey = localStorage.getItem('api_openrouter_key') || localStorage.getItem('ext_ia_key') || '';
       if (!apiKey && !pageConfig.endpoint) throw new Error('Configure a chave OpenRouter em ADM antes de usar a IA.');
-      const model = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || 'openrouter/free';
+      const model = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || 'opencode-go/deepseek-v4-flash';
       const context = typeof pageConfig.contextBuilder === 'function' ? pageConfig.contextBuilder() : buildGenericIaContext();
 
       if (pageConfig.endpoint) {
@@ -1024,6 +1026,7 @@ window.callIaFree = async function callIaFree(messages, { temperature = 0.2, max
     'mistralai/mistral-7b-instruct:free',
     'google/gemma-2-9b-it:free',
     'qwen/qwen-2-7b-instruct:free',
+    'opencode-go/deepseek-v4-flash',
     'openrouter/free'
   ].filter((v, i, a) => v && a.indexOf(v) === i); // deduplica e remove vazios
 

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="/static/img/brasao.png" />
   <link rel="stylesheet" href="/static/css/index.css" />
   <link rel="stylesheet" href="/static/css/toast.css" />
-  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}());</script>
+  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='cosmos'){localStorage.setItem('theme','light');t='light';}if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <script>
     // Verificar autenticação ao carregar
     (async function checkAuth() {
@@ -953,23 +953,23 @@
         <h3>🔑 Chaves de API</h3>
         <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Configure as integrações utilizadas nos módulos do sistema.</p>
 
-        <!-- OpenRouter -->
+        <!-- OpenRouter / OpenCode Go -->
         <div class="adm-card">
           <div class="adm-card__header">
-            <span>🤖 OpenRouter</span>
+            <span>🤖 OpenRouter / OpenCode Go</span>
             <span style="font-size:10px;background:rgba(79,128,200,.15);color:var(--blue);padding:2px 8px;border-radius:20px;font-weight:700;">IA</span>
             <span style="font-size:11px;color:var(--text-3);margin-left:4px;">Usado em: Extratos</span>
           </div>
 
           <label for="adm-or-key" class="adm-label">Chave API</label>
           <div class="adm-input-row">
-            <input type="password" id="adm-or-key" class="adm-input" placeholder="sk-or-v1-..." />
+            <input type="password" id="adm-or-key" class="adm-input" placeholder="OpenRouter ou OpenCode Go" />
             <button onclick="admToggleKey()" title="Mostrar/ocultar chave" class="adm-btn-icon" aria-label="Mostrar ou ocultar chave">👁</button>
           </div>
 
           <label for="adm-or-modelo" class="adm-label">Modelo Padrão</label>
           <div class="adm-input-row adm-input-row--lg">
-            <input type="text" id="adm-or-modelo" class="adm-input" placeholder="openai/gpt-4o-mini" />
+            <input type="text" id="adm-or-modelo" class="adm-input" placeholder="opencode-go/deepseek-v4-flash" />
             <button onclick="admVerModelos()" id="adm-btn-modelos" class="adm-btn-icon" style="padding:0 14px;font-size:12px;font-weight:600;color:var(--text-2);white-space:nowrap;" aria-label="Ver modelos disponíveis">📋 Ver Modelos</button>
           </div>
 
@@ -981,7 +981,7 @@
           <div id="adm-key-status" style="display:none;margin-top:12px;font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);font-weight:600;"></div>
 
           <p style="font-size:11px;color:var(--text-3);margin-top:12px;">
-            Obtenha sua chave em <strong>openrouter.ai</strong> → Dashboard → API Keys
+            Para OpenCode Go, use o modelo <strong>opencode-go/deepseek-v4-flash</strong> e a chave obtida em <strong>opencode.ai/auth</strong>.
           </p>
         </div>
 
@@ -1253,10 +1253,14 @@
       try {
         const r = await fetch('/api/config');
         const cfg = await r.json();
-        if (cfg.api_openrouter_key) { keyEl.value = cfg.api_openrouter_key; localStorage.setItem('api_openrouter_key', cfg.api_openrouter_key); }
-        else keyEl.value = localStorage.getItem('api_openrouter_key') || '';
         if (cfg.api_openrouter_modelo) { modEl.value = cfg.api_openrouter_modelo; localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); }
-        else modEl.value = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+        else modEl.value = localStorage.getItem('api_openrouter_modelo') || 'opencode-go/deepseek-v4-flash';
+        const savedModel = modEl.value || '';
+        if (savedModel.startsWith('opencode-go/')) {
+          if (cfg.api_opencode_go_key) { keyEl.value = cfg.api_opencode_go_key; localStorage.setItem('api_openrouter_key', cfg.api_opencode_go_key); }
+          else keyEl.value = localStorage.getItem('api_openrouter_key') || '';
+        } else if (cfg.api_openrouter_key) { keyEl.value = cfg.api_openrouter_key; localStorage.setItem('api_openrouter_key', cfg.api_openrouter_key); }
+        else keyEl.value = localStorage.getItem('api_openrouter_key') || '';
         if (cnpjaEl) {
           if (cfg.api_cnpja_key) { cnpjaEl.value = cfg.api_cnpja_key; localStorage.setItem('api_cnpja_key', cfg.api_cnpja_key); }
           else cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
@@ -1271,7 +1275,7 @@
         }
       } catch (e) {
         keyEl.value = localStorage.getItem('api_openrouter_key') || '';
-        modEl.value = localStorage.getItem('api_openrouter_modelo') || 'meta-llama/llama-3.2-3b-instruct:free';
+        modEl.value = localStorage.getItem('api_openrouter_modelo') || 'opencode-go/deepseek-v4-flash';
         if (cnpjaEl) cnpjaEl.value = localStorage.getItem('api_cnpja_key') || '';
         if (autentiqueEl) autentiqueEl.value = localStorage.getItem('api_autentique_key') || '';
         if (tavilyEl) tavilyEl.value = localStorage.getItem('api_tavily_key') || '';
@@ -1280,11 +1284,14 @@
     
     async function admSalvarChaves() {
       const k = document.getElementById('adm-or-key').value.trim();
-      const m = document.getElementById('adm-or-modelo').value.trim() || 'meta-llama/llama-3.2-3b-instruct:free';
+      const m = document.getElementById('adm-or-modelo').value.trim() || 'opencode-go/deepseek-v4-flash';
+      const payload = { api_openrouter_modelo: m };
+      if (m.startsWith('opencode-go/')) payload.api_opencode_go_key = k;
+      else payload.api_openrouter_key = k;
       try {
         await fetch('/api/config', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ api_openrouter_key: k, api_openrouter_modelo: m })
+          body: JSON.stringify(payload)
         });
       } catch (e) { console.warn('Falha ao salvar no banco:', e); }
       localStorage.setItem('api_openrouter_key', k);
@@ -1303,6 +1310,7 @@
     
     async function admTestarChave() {
       const k = document.getElementById('adm-or-key').value.trim();
+      const m = document.getElementById('adm-or-modelo').value.trim() || 'opencode-go/deepseek-v4-flash';
       if (!k) { showToast('Preencha a chave primeiro', 'error'); return; }
       const btn = document.getElementById('adm-btn-testar');
       btn.textContent = '⏳ Testando...';
@@ -1312,7 +1320,7 @@
         const res = await fetch('/api/extratos/modelos-openrouter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: k })
+          body: JSON.stringify({ api_key: k, model: m })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro na resposta');
@@ -1331,6 +1339,7 @@
     
     async function admVerModelos() {
       const k = document.getElementById('adm-or-key').value.trim();
+      const m = document.getElementById('adm-or-modelo').value.trim() || 'opencode-go/deepseek-v4-flash';
       if (!k) { showToast('Preencha a chave API primeiro', 'error'); return; }
       const btn = document.getElementById('adm-btn-modelos');
       btn.textContent = '⏳...';
@@ -1339,7 +1348,7 @@
         const res = await fetch('/api/extratos/modelos-openrouter', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: k })
+          body: JSON.stringify({ api_key: k, model: m })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro');
@@ -1564,7 +1573,7 @@
   
   <script src="/static/js/document-autosave.js" defer></script>
   <script src="/static/js/toast.js" defer></script>
-  <script src="/static/js/app.js" defer></script>
+  <script src="/static/js/app.js?v=20260511-0959" defer></script>
   
   <script>
   (function() {

@@ -10,6 +10,13 @@ from typing import Any, Iterable
 import requests
 
 
+OPENROUTER_CHAT_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions'
+OPENROUTER_MODELS_ENDPOINT = 'https://openrouter.ai/api/v1/models'
+OPENCODE_GO_CHAT_ENDPOINT = 'https://opencode.ai/zen/go/v1/chat/completions'
+OPENCODE_GO_MODELS_ENDPOINT = 'https://opencode.ai/zen/go/v1/models'
+OPENCODE_GO_PREFIX = 'opencode-go/'
+
+
 class AIServiceError(Exception):
     def __init__(self, message: str, *, user_message: str | None = None, status_code: int = 500, code: str = 'ai_service_error', details: dict[str, Any] | None = None):
         super().__init__(message)
@@ -136,8 +143,9 @@ class OpenRouterService:
 
     def list_models(self) -> list[dict[str, Any]]:
         self._validate_api_key()
+        models_url = OPENCODE_GO_MODELS_ENDPOINT if is_opencode_go_model(self.default_model) else OPENROUTER_MODELS_ENDPOINT
         try:
-            response = requests.get('https://openrouter.ai/api/v1/models', headers=self._build_headers(), timeout=min(self.timeout_seconds, 20))
+            response = requests.get(models_url, headers=self._build_headers(), timeout=min(self.timeout_seconds, 20))
             response.raise_for_status()
             data = response.json()
         except requests.Timeout as exc:
@@ -147,13 +155,15 @@ class OpenRouterService:
         return data.get('data', []) if isinstance(data, dict) else []
 
     def _call_model(self, *, model: str, messages: list[dict[str, Any]], temperature: float, max_tokens: int, timeout_seconds: int | None, extra_payload: dict[str, Any], stream: bool, metadata: dict[str, Any]) -> AIResponse:
-        payload = {'model': model, 'messages': messages, 'temperature': temperature, 'max_tokens': max_tokens, 'stream': stream}
+        endpoint = self._endpoint_for_model(model)
+        provider_model = normalize_provider_model(model)
+        payload = {'model': provider_model, 'messages': messages, 'temperature': temperature, 'max_tokens': max_tokens, 'stream': stream}
         payload.update(extra_payload)
         self.logger.info('ia.request task=%s model=%s payload=%s', metadata.get('task_type', 'default'), model, json.dumps(self._safe_log_payload(payload), ensure_ascii=False))
         started_at = time.perf_counter()
         for attempt in range(1, self.max_retries + 1):
             try:
-                response = requests.post('https://openrouter.ai/api/v1/chat/completions', headers=self._build_headers(), json=payload, timeout=timeout_seconds or self.timeout_seconds)
+                response = requests.post(endpoint, headers=self._build_headers(), json=payload, timeout=timeout_seconds or self.timeout_seconds)
                 if response.status_code >= 400:
                     raise self._translate_http_error(response)
                 data = response.json()
@@ -228,7 +238,11 @@ class OpenRouterService:
 
     def _validate_api_key(self):
         if not self.api_key:
-            raise AIServiceError('Chave da API OpenRouter ausente.', user_message='Chave do OpenRouter não configurada. Acesse ADM -> Configurações -> Chaves de API.', status_code=400, code='missing_api_key')
+            provider_name = 'OpenCode Go' if is_opencode_go_model(self.default_model) else 'OpenRouter'
+            raise AIServiceError(f'Chave da API {provider_name} ausente.', user_message=f'Chave do {provider_name} não configurada. Acesse ADM -> Configurações -> Chaves de API.', status_code=400, code='missing_api_key')
+
+    def _endpoint_for_model(self, model: str) -> str:
+        return OPENCODE_GO_CHAT_ENDPOINT if is_opencode_go_model(model) else OPENROUTER_CHAT_ENDPOINT
 
     def _build_cache_key(self, messages: list[dict[str, Any]], models: list[str], temperature: float, max_tokens: int, extra_payload: dict[str, Any]) -> str:
         canonical = json.dumps({'messages': messages, 'models': models, 'temperature': temperature, 'max_tokens': max_tokens, 'extra_payload': extra_payload}, ensure_ascii=False, sort_keys=True)
@@ -309,6 +323,23 @@ class OpenRouterService:
 
 
 def build_default_model_policies(default_model: str) -> dict[str, ModelPolicy]:
+    if is_opencode_go_model(default_model):
+        go_fallbacks = tuple(
+            model for model in (
+                'opencode-go/qwen3.6-plus',
+                'opencode-go/deepseek-v4-flash',
+                'opencode-go/qwen3.5-plus',
+            )
+            if model != default_model
+        )
+        return {
+            'default': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=1200),
+            'chat': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=2000),
+            'empenho': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=14000, max_tokens=1400),
+            'auditoria_documento': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=15000, max_tokens=1800),
+            'extrato': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=600),
+            'renomeacao_arquivo': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=400),
+        }
     free_fallbacks = ('openrouter/free', 'google/gemma-3-27b-it:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'meta-llama/llama-3.2-3b-instruct:free')
     return {
         'default': ModelPolicy(primary=default_model, fallbacks=free_fallbacks, max_input_chars=12000, max_tokens=1200),
@@ -332,6 +363,17 @@ def chat_completion(api_key: str, model: str, messages: list[dict[str, Any]], ma
     service = build_openrouter_service(api_key=api_key, default_model=model, referer=referer, title=title, timeout_seconds=kwargs.pop('timeout_seconds', 60), max_retries=kwargs.pop('max_retries', 1), cache_ttl_seconds=1)
     response = service.chat_completion(messages=messages, models_to_try=[model], max_tokens=max_tokens, temperature=temperature, extra_payload=kwargs, use_cache=False)
     return response.payload
+
+
+def is_opencode_go_model(model: str) -> bool:
+    return (model or '').strip().startswith(OPENCODE_GO_PREFIX)
+
+
+def normalize_provider_model(model: str) -> str:
+    model = (model or '').strip()
+    if is_opencode_go_model(model):
+        return model[len(OPENCODE_GO_PREFIX):]
+    return model
 
 
 def parse_http_error(error) -> dict[str, Any]:

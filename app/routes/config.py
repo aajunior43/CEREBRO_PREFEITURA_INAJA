@@ -11,6 +11,7 @@ bp = Blueprint('config', __name__)
 ALLOWED_CONFIG_KEYS = {
     'api_openrouter_key',
     'api_openrouter_modelo',
+    'api_opencode_go_key',
     'api_cnpja_key',
     'api_autentique_key',
 }

@@ -304,7 +304,7 @@ const CREDORES_FIXOS = [
   },
   {
     "id": 24,
-    "NOME": "CAMILA RODRIGUES",
+    "NOME": "C. F. BASSO & CIA LTDA",
     "VALOR": 2167.00,
     "DESCRIÇÃO": "OFICINA DE YOGA",
     "CNPJ": "07.910.317/0001-04",

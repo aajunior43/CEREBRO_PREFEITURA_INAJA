@@ -381,9 +381,6 @@ function buildCard(c, done, idx) {
         <button class="btn-expand" data-action="expand" title="Ver detalhes">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
         </button>
-        <button class="btn-telegram" data-action="telegram" title="Enviar solicitação pelo Telegram">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.693-1.653-1.124-2.678-1.8-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.484-.429-.008-1.252-.242-1.865-.442-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.12.098.153.23.168.332.016.101.036.332.02.512z"/></svg>
-        </button>
         <button class="btn-edit" data-action="edit" title="Editar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
@@ -702,7 +699,7 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
         <div class="doc-header-text">
           <h1>Estado do Paraná</h1>
           <h2>Prefeitura Municipal de Inajá</h2>
-          <h3>Solicitação de Empenho de Despesa Fixa / Contínua</h3>
+          <h3>Solicitação de Empenho</h3>
         </div>
         <div class="doc-header-right">
           <div>Referência</div>
@@ -731,9 +728,6 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
           </div>
         </div>
         
-        <div class="doc-footer">
-           Documento gerado eletronicamente pelo módulo de Controle de Despesas Fixas.
-        </div>
       </div>
     </div>`;
 }
@@ -892,50 +886,6 @@ async function onToggle(id, nome) {
     console.error(e);
   } finally {
     setLoading(false);
-  }
-}
-
-// ── Enviar Credor pelo Telegram ──────────────────────────────
-async function sendToTelegram(credor) {
-  let btn = null;
-  try {
-    btn = document.querySelector(`.empenho-card[data-id="${credor.id}"] .btn-telegram`);
-    if (btn) {
-      btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
-    }
-
-    const done = !!state.empenhados[credor.id];
-    const mesNome = MESES[state.month];
-    const ano = state.year;
-
-    try { await ensureBrasaoB64(); } catch (_) {}
-
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Solicitacao - ${credor.nome}</title>
-  <style>${_printCSS()}</style>
-</head>
-<body>
-  ${_buildDocPage(credor, done, mesNome, ano, true)}
-</body></html>`;
-
-    const res = await apiPost(`/credores/${credor.id}/enviar-telegram`, { html });
-    if (res.ok) {
-      showToast(`📤 PDF enviado para ${res.sent} chat(s) no Telegram`, 'success');
-    } else {
-      showToast(res.error || 'Erro ao enviar', 'error');
-    }
-  } catch (e) {
-    showToast('Erro ao enviar pelo Telegram', 'error');
-    console.error(e);
-  } finally {
-    if (btn) {
-      btn.style.opacity = '';
-      btn.style.pointerEvents = '';
-    }
   }
 }
 
@@ -1184,9 +1134,8 @@ function attachEvents() {
     if (action === 'toggle') onToggle(credor.id, credor.nome);
     else if (action === 'expand') handleCardExpand(cardEl, credor.id);
     else if (action === 'edit') openModal(credor.id);
-    else if (action === 'print') printCredor(credor);
     else if (action === 'duplicate') duplicateCredor(credor);
-    else if (action === 'telegram') sendToTelegram(credor);
+    else if (action === 'print') printCredor(credor);
   });
 
   document.getElementById('btn-prev-month').addEventListener('click', async () => {
@@ -1615,12 +1564,11 @@ async function init() {
 // ── Theme Toggle ───────────────────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('theme');
-  if (saved === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
+  if (saved === 'dark' || saved === 'cosmos') {
+    localStorage.setItem('theme', 'light');
+    document.documentElement.removeAttribute('data-theme');
   } else if (saved === 'vintage') {
     document.documentElement.setAttribute('data-theme', 'vintage');
-  } else if (saved === 'cosmos') {
-    document.documentElement.setAttribute('data-theme', 'cosmos');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -1630,9 +1578,8 @@ function syncThemeLabel() {
   const label = document.querySelector('.theme-label');
   if (!label) return;
   const current = document.documentElement.getAttribute('data-theme') || 'light';
-  if (current === 'light') label.textContent = 'Tema Escuro';
-  else if (current === 'dark') label.textContent = 'Tema Vintage';
-  else if (current === 'vintage') label.textContent = 'Tema Cosmos';
+  if (current === 'light') label.textContent = 'Tema Vintage';
+  else if (current === 'vintage') label.textContent = 'Tema Claro';
   else label.textContent = 'Tema Claro';
 }
 
@@ -1718,14 +1665,11 @@ function toggleTheme() {
   const html = document.documentElement;
   const current = html.getAttribute('data-theme') || 'light';
   if (current === 'light') {
-    html.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-  } else if (current === 'dark') {
     html.setAttribute('data-theme', 'vintage');
     localStorage.setItem('theme', 'vintage');
   } else if (current === 'vintage') {
-    html.setAttribute('data-theme', 'cosmos');
-    localStorage.setItem('theme', 'cosmos');
+    html.removeAttribute('data-theme');
+    localStorage.setItem('theme', 'light');
   } else {
     html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
@@ -1738,8 +1682,7 @@ document.addEventListener('DOMContentLoaded', () => {
   syncThemeLabel();
   const syncExtraThemeLabels = () => {
     const current = document.documentElement.getAttribute('data-theme') || 'light';
-    let text = 'Tema Escuro';
-    if (current === 'dark') text = 'Tema Vintage';
+    let text = 'Tema Vintage';
     if (current === 'vintage') text = 'Tema Claro';
     
     const sidebarLabel = document.querySelector('.theme-label-sidebar');

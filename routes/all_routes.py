@@ -37,15 +37,10 @@ def row_to_dict(row):
 
 def _get_openrouter_config(conn, api_key_override: str = "", model_override: str = ""):
     rows = conn.execute(
-        "SELECT chave,valor FROM configuracoes WHERE chave IN (?,?)",
-        ("api_openrouter_key", "api_openrouter_modelo"),
+        "SELECT chave,valor FROM configuracoes WHERE chave IN (?,?,?)",
+        ("api_openrouter_key", "api_openrouter_modelo", "api_opencode_go_key"),
     ).fetchall()
     cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
-    api_key = (
-        (api_key_override or "").strip()
-        or cfg.get("api_openrouter_key", "")
-        or (os.environ.get("OPENROUTER_API_KEY") or "").strip()
-    )
     raw_model = (
         (model_override or "").strip()
         or cfg.get("api_openrouter_modelo", "")
@@ -57,6 +52,18 @@ def _get_openrouter_config(conn, api_key_override: str = "", model_override: str
         if not raw_model.endswith(":free") and raw_model != "openrouter/free"
         else raw_model.strip()
     )
+    if model.startswith("opencode-go/"):
+        api_key = (
+            (api_key_override or "").strip()
+            or cfg.get("api_opencode_go_key", "")
+            or (os.environ.get("OPENCODE_GO_API_KEY") or "").strip()
+        )
+    else:
+        api_key = (
+            (api_key_override or "").strip()
+            or cfg.get("api_openrouter_key", "")
+            or (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+        )
     return api_key, model
 
 
@@ -956,6 +963,7 @@ def proxy_ia_chat():
 ALLOWED_CONFIG_KEYS = {
     "api_openrouter_key",
     "api_openrouter_modelo",
+    "api_opencode_go_key",
     "api_cnpja_key",
     "api_autentique_key",
     "api_tavily_key",
@@ -996,10 +1004,11 @@ def admin_summary():
     try:
         conn = get_db()
         rows = conn.execute(
-            "SELECT chave,valor,atualizado_em FROM configuracoes WHERE chave IN (?,?,?,?)",
+            "SELECT chave,valor,atualizado_em FROM configuracoes WHERE chave IN (?,?,?,?,?)",
             (
                 "api_openrouter_key",
                 "api_openrouter_modelo",
+                "api_opencode_go_key",
                 "api_cnpja_key",
                 "api_autentique_key",
             ),
@@ -1050,6 +1059,7 @@ def admin_summary():
                 "config_status": {
                     "openrouter_key_configured": bool(
                         cfg.get("api_openrouter_key", {}).get("valor", "").strip()
+                        or cfg.get("api_opencode_go_key", {}).get("valor", "").strip()
                     ),
                     "openrouter_model": cfg.get("api_openrouter_modelo", {}).get(
                         "valor", settings.openrouter_default_model
@@ -1154,6 +1164,16 @@ def auth_adm():
     if hashlib.sha256(d.get("senha", "").encode()).hexdigest() == _ADM_HASH:
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Senha incorreta"}), 401
+
+
+@bp_auth.route("/api/auth/verificar", methods=["GET"])
+def verificar_auth():
+    return jsonify({"autenticado": True})
+
+
+@bp_auth.route("/api/auth/sair", methods=["POST"])
+def logout_auth():
+    return jsonify({"ok": True})
 
 
 @bp_auth.route("/api/ping", methods=["GET"])
