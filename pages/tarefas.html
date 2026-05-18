@@ -1733,6 +1733,7 @@
         <div class="kb-card-title">${esc(task.title)}</div>
         <div class="kb-card-actions">
           ${_avatarBadge(task.responsavel)}
+          <button class="kb-icon-btn" onclick="duplicateTask('${task.id}')" title="Duplicar">📋</button>
           <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar">✏️</button>
           <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${task.id}')" title="Excluir">🗑</button>
         </div>
@@ -2004,6 +2005,7 @@
                     <td>${t.responsavel ? `${_avatarBadge(t.responsavel)} <span style="font-size:12px;margin-left:4px">${esc(t.responsavel)}</span>` : '<span style="color:var(--text-3);font-size:11px">—</span>'}</td>
                     <td>${statusLabel[t.status]||''} ${qmBtn}</td>
                     <td style="white-space:nowrap">
+                        <button class="kb-icon-btn" onclick="duplicateTask('${t.id}')" title="Duplicar">📋</button>
                         <button class="kb-icon-btn" onclick="openEdit('${t.id}')" title="Editar">✏️</button>
                         <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${t.id}')" title="Excluir">🗑</button>
                     </td>
@@ -2309,6 +2311,29 @@
                 } catch (e) { showToast('Erro ao excluir tarefa', 'error'); }
             }
             closeConfirm();
+        }
+
+        async function duplicateTask(id) {
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+            const copy = {
+                id: uid(),
+                title: task.title + ' (cópia)',
+                description: task.description || '',
+                status: 'todo',
+                priority: task.priority || 'medium',
+                categoria: (task.categoria || '').toUpperCase(),
+                data_vencimento: task.data_vencimento || '',
+                responsavel: task.responsavel || ''
+            };
+            try {
+                const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(copy) });
+                if (!res.ok) throw new Error('Erro ao duplicar tarefa');
+                const created = await res.json();
+                tasks.push(created);
+                renderBoard();
+                showToast('Tarefa duplicada!', 'success');
+            } catch (e) { showToast(e.message || 'Erro ao duplicar', 'error'); }
         }
 
         async function deleteAttachment(taskId, attachmentId) {
