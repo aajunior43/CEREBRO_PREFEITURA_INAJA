@@ -1586,12 +1586,7 @@
         if (credBtn) credBtn.click();
       });
     }
-    if (bnavMenu) {
-      bnavMenu.addEventListener('click', () => {
-        const hamburger = document.getElementById('hamburger');
-        if (hamburger) hamburger.click();
-      });
-    }
+
   
     let touchStartX = 0;
     let touchStartY = 0;
@@ -1760,37 +1755,6 @@
   <script>
   (function() {
     'use strict';
-
-    /* ---------- Toggle de grupos ao clicar no título ---------- */
-    document.querySelectorAll('.sidebar-group-toggle').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var group = btn.closest('.nav-group');
-        if (!group) return;
-        group.classList.toggle('open');
-        var isOpen = group.classList.contains('open');
-        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      });
-    });
-
-    /* ---------- Botão Expandir/Recolher tudo ---------- */
-    var expandBtn = document.getElementById('btn-sidebar-expand-all');
-    if (expandBtn) {
-      expandBtn.addEventListener('click', function() {
-        var groups = document.querySelectorAll('.nav-group-sidebar');
-        var allOpen = Array.prototype.every.call(groups, function(g) {
-          return g.classList.contains('open');
-        });
-        groups.forEach(function(g) {
-          g.classList.toggle('open', !allOpen);
-          var btn = g.querySelector('.sidebar-group-toggle');
-          if (btn) btn.setAttribute('aria-expanded', !allOpen ? 'true' : 'false');
-        });
-        var label = document.getElementById('sidebar-expand-label');
-        var icon = document.getElementById('sidebar-expand-icon');
-        if (label) label.textContent = allOpen ? 'Expandir tudo' : 'Recolher tudo';
-        if (icon) icon.style.transform = allOpen ? 'rotate(0deg)' : 'rotate(180deg)';
-      });
-    }
 
     /* ---------- Busca na sidebar ---------- */
     var searchInput = document.getElementById('sidebarSearch');

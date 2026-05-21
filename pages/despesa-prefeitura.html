@@ -1,9 +1,10 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Consulta e análise de dotações orçamentárias da Prefeitura Municipal de Inajá. Filtre, compare períodos e gere relatórios com IA." />
   <title>Dotações Orçamentárias – Prefeitura de Inajá</title>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <link rel="stylesheet" href="/static/css/index.css" />
@@ -32,6 +33,7 @@
     <div class="upload" style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
       <label class="file">
         <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.9"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <span>Selecionar CSV</span>
       </label>
       <!-- Salvar no banco -->
@@ -48,15 +50,15 @@
         </button>
       </div>
       <!-- Botão para abrir histórico -->
-      <button id="btn-historico" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;">
+      <button id="btn-historico" class="ghost" data-glow-btn data-glow-btn-color="orange" style="display:flex;align-items:center;gap:6px;font-size:12px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Histórico
       </button>
-      <button id="btn-comparativo" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;" data-tooltip="Compare dois períodos importados e veja a variação de saldo por despesa">
+      <button id="btn-comparativo" class="ghost" data-glow-btn data-glow-btn-color="blue" style="display:flex;align-items:center;gap:6px;font-size:12px;" data-tooltip="Compare dois períodos importados e veja a variação de saldo por despesa">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Comparar Períodos
       </button>
-      <button id="btn-ia-dotacoes" class="ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.5);color:#a78bfa;" data-tooltip="Assistente de IA para análise de dotações orçamentárias">
+      <button id="btn-ia-dotacoes" class="ghost" data-glow-btn data-glow-btn-color="purple" style="display:flex;align-items:center;gap:6px;font-size:12px;background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.5);color:#a78bfa;" data-tooltip="Assistente de IA para análise de dotações orçamentárias">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
         ✨ IA
       </button>
@@ -343,18 +345,30 @@
     <div class="main-column">
       <section class="panel" id="stats">
         <div class="card">
-          <h3>Total</h3>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3>Total dotado</h3>
           <p id="totalValue">-</p>
         </div>
         <div class="card">
-          <h3>Itens</h3>
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <h3>Itens filtrados</h3>
           <p id="totalRows">-</p>
         </div>
         <div class="card">
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
           <h3>Média por despesa</h3>
           <p id="avgValue">-</p>
         </div>
         <div class="card">
+          <div class="card-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
           <h3>Maior valor</h3>
           <p id="maxValueStat">-</p>
         </div>

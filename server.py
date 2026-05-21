@@ -139,7 +139,7 @@ def create_app() -> Flask:
             db = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=10.0)
             db.row_factory = sqlite3.Row
             db.execute("PRAGMA foreign_keys=ON")
-            db.execute("PRAGMA journal_mode=DELETE")
+            db.execute("PRAGMA journal_mode=WAL")
             db.execute("PRAGMA synchronous=NORMAL")
             db.execute("PRAGMA cache_size=-8000")
             db.execute("PRAGMA temp_store=MEMORY")
@@ -190,6 +190,14 @@ def create_app() -> Flask:
             "CREATE INDEX IF NOT EXISTS idx_empenhos_importacoes_periodo ON empenhos_importacoes(periodo)",
             "CREATE INDEX IF NOT EXISTS idx_empenhos_linhas_importacao ON empenhos_linhas(importacao_id)",
             "CREATE INDEX IF NOT EXISTS idx_kanban_attach_task ON kanban_attachments(task_id)",
+            "CREATE INDEX IF NOT EXISTS idx_kanban_tasks_dates ON kanban_tasks(atualizado_em, criado_em)",
+            "CREATE INDEX IF NOT EXISTS idx_protocolos_status ON protocolos(status)",
+            "CREATE INDEX IF NOT EXISTS idx_protocolos_tipo ON protocolos(tipo)",
+            "CREATE INDEX IF NOT EXISTS idx_protocolos_direcao ON protocolos(direcao)",
+            "CREATE INDEX IF NOT EXISTS idx_prazos_filtro ON prazos(resolvido, data_limite)",
+            "CREATE INDEX IF NOT EXISTS idx_prazos_data_limite ON prazos(data_limite)",
+            "CREATE INDEX IF NOT EXISTS idx_classificador_despesa_item ON classificador_despesa_historico(item)",
+            "CREATE INDEX IF NOT EXISTS idx_classificador_despesa_created ON classificador_despesa_historico(criado_em)",
         ]:
             try:
                 cur.execute(sql)
@@ -199,22 +207,136 @@ def create_app() -> Flask:
     def migrate_db():
         conn = get_db()
         cur = conn.cursor()
+        
+        # 1. Base Table Creation (without _contents tables)
         for sql in [
-            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
             "CREATE TABLE IF NOT EXISTS rpas (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_rpa TEXT, nome_prestador TEXT NOT NULL, cpf_prestador TEXT, endereco_prestador TEXT, descricao_servico TEXT, periodo_referencia TEXT, carga_horaria TEXT, local_execucao TEXT, valor_bruto REAL DEFAULT 0, num_dependentes INTEGER DEFAULT 0, pensao_alimenticia REAL DEFAULT 0, inss REAL DEFAULT 0, iss REAL DEFAULT 0, deducao_dependentes REAL DEFAULT 0, base_calculo_irrf REAL DEFAULT 0, aliquota_irrf REAL DEFAULT 0, parcela_deduzir_irrf REAL DEFAULT 0, ir REAL DEFAULT 0, valor_liquido REAL DEFAULT 0, observacoes TEXT, data_emissao TEXT, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS empenhos_importacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, periodo TEXT NOT NULL, descricao TEXT, arquivo TEXT, total_rows INTEGER DEFAULT 0, importado_em TEXT)",
             "CREATE TABLE IF NOT EXISTS empenhos_linhas (id INTEGER PRIMARY KEY AUTOINCREMENT, importacao_id INTEGER NOT NULL REFERENCES empenhos_importacoes(id) ON DELETE CASCADE, dados TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS documentos_centro (id INTEGER PRIMARY KEY AUTOINCREMENT, nome_original TEXT NOT NULL, nome_arquivo TEXT NOT NULL, categoria TEXT NOT NULL, referencia TEXT DEFAULT '', descricao TEXT DEFAULT '', tamanho INTEGER DEFAULT 0, extensao TEXT DEFAULT '', caminho_relativo TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
-            "CREATE TABLE IF NOT EXISTS autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(documento_centro_id) REFERENCES documentos_centro(id) ON DELETE CASCADE, FOREIGN KEY(assinado_doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
             "CREATE TABLE IF NOT EXISTS autentique_contatos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, phone TEXT NOT NULL UNIQUE, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS despesas_importacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, periodo TEXT NOT NULL, descricao TEXT, arquivo TEXT, total_rows INTEGER DEFAULT 0, colunas TEXT, importado_em TEXT)",
             "CREATE TABLE IF NOT EXISTS despesas_linhas (id INTEGER PRIMARY KEY AUTOINCREMENT, importacao_id INTEGER NOT NULL REFERENCES despesas_importacoes(id) ON DELETE CASCADE, dados TEXT NOT NULL)",
-            "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, content BLOB NOT NULL, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
-            "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido', origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL, prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')))",
-            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, content BLOB NOT NULL, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido', origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL, prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
+            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
         ]:
             cur.execute(sql)
+
+        # Helper for migrating foreign keys
+        def migrate_table_foreign_keys(table_name, create_sql, check_key_column=None, expected_on_delete=None):
+            cur.execute(f"PRAGMA foreign_key_list({table_name})")
+            fks = [dict(r) for r in cur.fetchall()]
+            
+            needs_migration = False
+            if not fks:
+                needs_migration = True
+            elif check_key_column and expected_on_delete:
+                fk_match = [f for f in fks if f['from'] == check_key_column]
+                if not fk_match or fk_match[0]['on_delete'] != expected_on_delete:
+                    needs_migration = True
+                    
+            if needs_migration:
+                cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+                if cur.fetchone():
+                    try:
+                        cur.execute(f"ALTER TABLE {table_name} RENAME TO {table_name}_old")
+                        cur.execute(create_sql)
+                        cur.execute(f"PRAGMA table_info({table_name}_old)")
+                        old_cols = [r["name"] for r in cur.fetchall()]
+                        cols_str = ", ".join(old_cols)
+                        cur.execute(f"INSERT INTO {table_name} ({cols_str}) SELECT {cols_str} FROM {table_name}_old")
+                        cur.execute(f"DROP TABLE {table_name}_old")
+                    except Exception as e:
+                        app.logger.warning(f"Erro ao migrar foreign keys da tabela {table_name}: {e}")
+
+        # Migrate empenhos (ON DELETE CASCADE)
+        migrate_table_foreign_keys(
+            "empenhos",
+            "CREATE TABLE empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL, mes INTEGER NOT NULL, empenhado INTEGER DEFAULT 1, timestamp TEXT, UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE CASCADE)",
+            "credor_id",
+            "CASCADE"
+        )
+
+        # Migrate autentique_envios (referential integrity)
+        migrate_table_foreign_keys(
+            "autentique_envios",
+            "CREATE TABLE autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(documento_centro_id) REFERENCES documentos_centro(id) ON DELETE CASCADE, FOREIGN KEY(assinado_doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
+            "documento_centro_id",
+            "CASCADE"
+        )
+
+        # Migrate protocolos (referential integrity)
+        migrate_table_foreign_keys(
+            "protocolos",
+            "CREATE TABLE protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido', origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL, prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
+            "doc_id",
+            "SET NULL"
+        )
+
+        # Migrate logs (referential integrity)
+        migrate_table_foreign_keys(
+            "logs",
+            "CREATE TABLE logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
+            "credor_id",
+            "SET NULL"
+        )
+
+        # Split BLOB table: kanban_attachments
+        cur.execute("PRAGMA table_info(kanban_attachments)")
+        cols = [r["name"] for r in cur.fetchall()]
+        if "content" in cols:
+            try:
+                cur.execute("ALTER TABLE kanban_attachments RENAME TO kanban_attachments_old")
+                cur.execute("CREATE TABLE kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))")
+                cur.execute("CREATE TABLE IF NOT EXISTS kanban_attachment_contents (attachment_id INTEGER PRIMARY KEY REFERENCES kanban_attachments(id) ON DELETE CASCADE, content BLOB NOT NULL)")
+                cur.execute("INSERT INTO kanban_attachments (id, task_id, file_name, mime_type, file_size, criado_em) SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments_old")
+                cur.execute("INSERT OR IGNORE INTO kanban_attachment_contents (attachment_id, content) SELECT id, content FROM kanban_attachments_old WHERE content IS NOT NULL")
+                cur.execute("DROP TABLE kanban_attachments_old")
+            except Exception as e:
+                app.logger.warning(f"Erro ao dividir tabela kanban_attachments: {e}")
+        else:
+            cur.execute("CREATE TABLE IF NOT EXISTS kanban_attachment_contents (attachment_id INTEGER PRIMARY KEY REFERENCES kanban_attachments(id) ON DELETE CASCADE, content BLOB NOT NULL)")
+            cur.execute("PRAGMA foreign_key_list(kanban_attachment_contents)")
+            fks = [dict(r) for r in cur.fetchall()]
+            if any(fk["table"] == "kanban_attachments_old" for fk in fks):
+                try:
+                    cur.execute("ALTER TABLE kanban_attachment_contents RENAME TO kanban_attachment_contents_old")
+                    cur.execute("CREATE TABLE kanban_attachment_contents (attachment_id INTEGER PRIMARY KEY REFERENCES kanban_attachments(id) ON DELETE CASCADE, content BLOB NOT NULL)")
+                    cur.execute("INSERT INTO kanban_attachment_contents (attachment_id, content) SELECT attachment_id, content FROM kanban_attachment_contents_old")
+                    cur.execute("DROP TABLE kanban_attachment_contents_old")
+                except Exception as e:
+                    app.logger.warning(f"Erro ao corrigir FK de kanban_attachment_contents: {e}")
+
+        # Split BLOB table: protocolo_anexos
+        cur.execute("PRAGMA table_info(protocolo_anexos)")
+        cols = [r["name"] for r in cur.fetchall()]
+        if "content" in cols:
+            try:
+                cur.execute("ALTER TABLE protocolo_anexos RENAME TO protocolo_anexos_old")
+                cur.execute("CREATE TABLE protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))")
+                cur.execute("CREATE TABLE IF NOT EXISTS protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)")
+                cur.execute("INSERT INTO protocolo_anexos (id, protocolo_id, file_name, mime_type, file_size, criado_em) SELECT id, protocolo_id, file_name, mime_type, file_size, criado_em FROM protocolo_anexos_old")
+                cur.execute("INSERT OR IGNORE INTO protocolo_anexo_contents (anexo_id, content) SELECT id, content FROM protocolo_anexos_old WHERE content IS NOT NULL")
+                cur.execute("DROP TABLE protocolo_anexos_old")
+            except Exception as e:
+                app.logger.warning(f"Erro ao dividir tabela protocolo_anexos: {e}")
+        else:
+            cur.execute("CREATE TABLE IF NOT EXISTS protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)")
+            cur.execute("PRAGMA foreign_key_list(protocolo_anexo_contents)")
+            fks = [dict(r) for r in cur.fetchall()]
+            if any(fk["table"] == "protocolo_anexos_old" for fk in fks):
+                try:
+                    cur.execute("ALTER TABLE protocolo_anexo_contents RENAME TO protocolo_anexo_contents_old")
+                    cur.execute("CREATE TABLE protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)")
+                    cur.execute("INSERT INTO protocolo_anexo_contents (anexo_id, content) SELECT anexo_id, content FROM protocolo_anexo_contents_old")
+                    cur.execute("DROP TABLE protocolo_anexo_contents_old")
+                except Exception as e:
+                    app.logger.warning(f"Erro ao corrigir FK de protocolo_anexo_contents: {e}")
+
         ensure_db_indexes(cur)
         for alter in [
             "ALTER TABLE credores ADD COLUMN atualizado_em TEXT DEFAULT (datetime('now','localtime'))",
@@ -234,18 +356,21 @@ def create_app() -> Flask:
         cur = conn.cursor()
         for sql in [
             "CREATE TABLE IF NOT EXISTS credores (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, valor REAL DEFAULT 0, descricao TEXT, cnpj TEXT, email TEXT, tipo_valor TEXT DEFAULT 'FIXO', solicitacao TEXT, pagamento TEXT, validade TEXT, departamento TEXT, obs TEXT, ativo INTEGER DEFAULT 1)",
-            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')))",
-            "CREATE TABLE IF NOT EXISTS empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL, mes INTEGER NOT NULL, empenhado INTEGER DEFAULT 1, timestamp TEXT, UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id))",
+            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
+            "CREATE TABLE IF NOT EXISTS empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL, mes INTEGER NOT NULL, empenhado INTEGER DEFAULT 1, timestamp TEXT, UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE CASCADE)",
             "CREATE TABLE IF NOT EXISTS rpas (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_rpa TEXT, nome_prestador TEXT NOT NULL, cpf_prestador TEXT, endereco_prestador TEXT, descricao_servico TEXT, periodo_referencia TEXT, carga_horaria TEXT, local_execucao TEXT, valor_bruto REAL DEFAULT 0, num_dependentes INTEGER DEFAULT 0, pensao_alimenticia REAL DEFAULT 0, inss REAL DEFAULT 0, iss REAL DEFAULT 0, deducao_dependentes REAL DEFAULT 0, base_calculo_irrf REAL DEFAULT 0, aliquota_irrf REAL DEFAULT 0, parcela_deduzir_irrf REAL DEFAULT 0, ir REAL DEFAULT 0, valor_liquido REAL DEFAULT 0, observacoes TEXT, data_emissao TEXT, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS kanban_tasks (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT '', status TEXT DEFAULT 'todo', priority TEXT DEFAULT 'medium', concluido_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
-            "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, content BLOB NOT NULL, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS fornecimento_dados (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, valor TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')), UNIQUE(tipo, valor))",
             "CREATE TABLE IF NOT EXISTS configuracoes (chave TEXT PRIMARY KEY, valor TEXT NOT NULL DEFAULT '', atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS documentos_centro (id INTEGER PRIMARY KEY AUTOINCREMENT, nome_original TEXT NOT NULL, nome_arquivo TEXT NOT NULL, categoria TEXT NOT NULL, referencia TEXT DEFAULT '', descricao TEXT DEFAULT '', tamanho INTEGER DEFAULT 0, extensao TEXT DEFAULT '', caminho_relativo TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
-            "CREATE TABLE IF NOT EXISTS autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(documento_centro_id) REFERENCES documentos_centro(id) ON DELETE CASCADE, FOREIGN KEY(assinado_doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
             "CREATE TABLE IF NOT EXISTS autentique_contatos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, phone TEXT NOT NULL UNIQUE, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS empenho_assistente_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, payload_json TEXT NOT NULL DEFAULT '{}', resultado_json TEXT NOT NULL DEFAULT '{}', campos_json TEXT NOT NULL DEFAULT '{}', checklist_json TEXT NOT NULL DEFAULT '{}', descricao_base TEXT DEFAULT '', descricao_melhorada TEXT DEFAULT '', diff_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS classificador_despesa_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT NOT NULL, codigo_completo TEXT NOT NULL DEFAULT '', grupo TEXT DEFAULT '', modalidade TEXT DEFAULT '', elemento TEXT DEFAULT '', subelemento TEXT DEFAULT '', justificativa TEXT DEFAULT '', ponto_atencao TEXT DEFAULT '', confianca REAL DEFAULT 0.0, resultado_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido', origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL, prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
+            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
         ]:
             cur.execute(sql)
 
@@ -255,6 +380,11 @@ def create_app() -> Flask:
             _seed_from_data_js(cur)
         ensure_db_indexes(cur)
         conn.commit()
+
+        try:
+            conn.execute("VACUUM")
+        except Exception:
+            pass
 
     def _seed_from_data_js(cur):
         with open(DATA_JS, encoding="utf-8") as f:

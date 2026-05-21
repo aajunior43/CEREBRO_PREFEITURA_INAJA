@@ -105,12 +105,16 @@ svg {
 /* @import Google Fonts removido — já carregado via <link> em cada página HTML */
 
 :root {
+  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(79, 128, 200, 0.08) 0%, #f0f4f8 95%);
   /* ── Backgrounds ────────────────────────────────────────── */
   --bg: #f0f4f8;
   --surface: #ffffff;
   --surface-2: #f7f9fc;
   --border: rgba(0, 0, 0, 0.07);
   --border-hover: rgba(0, 0, 0, 0.14);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
 
   /* ── Sombras modernas (flat) ─────────────────────────────── */
   --shadow-xs:  0 1px 3px rgba(0,0,0,0.07);
@@ -162,12 +166,16 @@ svg {
 }
 
 [data-theme="dark"] {
+  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(24, 40, 69, 0.35) 0%, #0d0f1a 95%);
   /* ── Backgrounds dark ────────────────────────────────────── */
   --bg: #0d0f1a;
   --surface: #161929;
   --surface-2: #1e2237;
   --border: rgba(255, 255, 255, 0.09);
   --border-hover: rgba(255, 255, 255, 0.20);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.32);
 
   /* ── Sombras dark ────────────────────────────────────────── */
   --shadow-xs:  0 1px 3px rgba(0,0,0,0.55);
@@ -204,6 +212,52 @@ svg {
 
   --text-secondary: #a0aec0;
   --text-muted: #8896a8;
+}
+
+[data-theme="cosmos"] {
+  /* ── Backgrounds cosmos ── */
+  --bg: #060812;
+  --bg-gradient: radial-gradient(circle at 20% 30%, rgba(30, 16, 58, 0.45) 0%, rgba(10, 15, 30, 0.3) 50%, #060812 100%);
+  --surface: #0b0e1e;
+  --surface-2: #12162d;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.36);
+
+  /* ── Sombras cosmos ── */
+  --shadow-xs:  0 1px 3px rgba(0,0,0,0.65);
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.65);
+  --shadow:     0 4px 16px rgba(0,0,0,0.75);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.80);
+  --shadow-xl:  0 16px 48px rgba(0,0,0,0.85);
+
+  --shadow-dark: #020308;
+  --shadow-lite: #12162d;
+  --neo: var(--shadow);
+  --neo-sm: var(--shadow-sm);
+  --neo-lg: var(--shadow-lg);
+  --neo-in: inset 0 1px 4px rgba(0,0,0,0.7);
+  --neo-in-sm: inset 0 1px 3px rgba(0,0,0,0.6);
+
+  /* ── Cores cosmos ── */
+  --blue: #5a9aff;
+  --blue-dark: #3b7ae0;
+  --blue-light: #0d1a38;
+  --green: #4ad49b;
+  --green-bg: #07201a;
+  --green-dark: #32b881;
+  --orange: #f0a060;
+  --orange-bg: #1e1006;
+  --red: #f87878;
+  --red-bg: #220e0e;
+  --purple: #b090f8;
+  --purple-bg: #140a2a;
+
+  --text: #e2e8f0;
+  --text-2: #cbd5e1;
+  --text-3: #94a3b8;
 }
 
 /* ── Dark theme: structural overrides ─────────────────────── */
@@ -258,9 +312,7 @@ svg {
   color: #90bcf8;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-track { background: #0d0f1a; }
-[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2a2e4a; border-radius: var(--radius-sm); }
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3a3f60; }
+
 
 /* ── Cosmos theme: structural overrides ─────────────────────── */
 [data-theme="cosmos"] .hs-group {
@@ -289,12 +341,16 @@ svg {
 [data-theme="cosmos"] .hs-accent-purple .hs-card-icon { background: rgba(160,120,250,0.13); color: #b090f8; }
 
 [data-theme="vintage"] {
+  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(230, 218, 196, 0.45) 0%, #f5f1e6 95%);
   /* ── Backgrounds vintage (Papiro/Amarelado) ── */
   --bg: #f5f1e6;
   --surface: #fffcf5;
   --surface-2: #ece5d8;
   --border: #dbd0ba;
   --border-hover: #a67c52;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(74, 63, 53, 0.18);
+  --scrollbar-thumb-hover: rgba(74, 63, 53, 0.35);
 
   /* ── Sombras vintage (mais sépia/marrom) ── */
   --shadow-xs:  0 1px 3px rgba(74, 63, 53, 0.08);
@@ -343,7 +399,7 @@ html {
 html,
 body {
   min-height: 100vh;
-  background: var(--bg);
+  background: var(--bg-gradient, var(--bg));
   color: var(--text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
@@ -360,17 +416,25 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg);
+  background: var(--scrollbar-track, transparent);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--shadow-dark);
-  border-radius: var(--radius-sm);
+  background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.15));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.3));
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 /* ============================================================
@@ -3444,6 +3508,18 @@ body.home-page[data-theme="cosmos"] .nav-group-btn:hover {
   color: #e2e8f0;
 }
 
+[data-theme="cosmos"] body.home-page .nav-group-sidebar.open .nav-group-btn,
+body.home-page[data-theme="cosmos"] .nav-group-sidebar.open .nav-group-btn {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.12));
+  border-color: rgba(99, 102, 241, 0.28);
+  color: #a5b4fc;
+}
+
+[data-theme="cosmos"] body.home-page .nav-group.open .nav-group-menu-sidebar,
+body.home-page[data-theme="cosmos"] .nav-group.open .nav-group-menu-sidebar {
+  border-left-color: rgba(99, 102, 241, 0.3);
+}
+
 [data-theme="cosmos"] body.home-page .nav-group-item,
 [data-theme="cosmos"] body.home-page .nav-group-item-inline,
 body.home-page[data-theme="cosmos"] .nav-group-item,
@@ -4354,6 +4430,8 @@ body.home-page.home-active .adm-panel {
 
 /* Card */
 .hs-card {
+  --glow-color: rgba(79, 128, 200, 0.06);
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -4394,6 +4472,90 @@ body.home-page.home-active .adm-panel {
   box-shadow: var(--shadow-lg);
   border-color: var(--border-hover);
   background: color-mix(in srgb, var(--surface) 95%, transparent);
+}
+
+/* ── Custom hover glow color mapping ── */
+.hs-card.hs-accent-blue   { --glow-color: rgba(79, 128, 200, 0.14); }
+.hs-card.hs-accent-green  { --glow-color: rgba(58, 170, 110, 0.14); }
+.hs-card.hs-accent-orange { --glow-color: rgba(217, 124, 58, 0.14); }
+.hs-card.hs-accent-purple { --glow-color: rgba(124, 95, 200, 0.14); }
+
+[data-theme="dark"] .hs-card.hs-accent-blue   { --glow-color: rgba(111, 165, 245, 0.16); }
+[data-theme="dark"] .hs-card.hs-accent-green  { --glow-color: rgba(85, 204, 136, 0.15); }
+[data-theme="dark"] .hs-card.hs-accent-orange { --glow-color: rgba(245, 154, 80, 0.15); }
+[data-theme="dark"] .hs-card.hs-accent-purple { --glow-color: rgba(173, 136, 240, 0.15); }
+
+[data-theme="cosmos"] .hs-card.hs-accent-blue   { --glow-color: rgba(90, 150, 255, 0.22); }
+[data-theme="cosmos"] .hs-card.hs-accent-green  { --glow-color: rgba(60, 200, 150, 0.20); }
+[data-theme="cosmos"] .hs-card.hs-accent-orange { --glow-color: rgba(230, 140, 60, 0.20); }
+[data-theme="cosmos"] .hs-card.hs-accent-purple { --glow-color: rgba(160, 120, 250, 0.20); }
+
+/* Spotlight Glow element */
+.hs-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    180px circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    var(--glow-color),
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hs-card:hover::before {
+  opacity: 1;
+}
+
+/* Shimmer sweep effect on hover */
+.hs-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.10) 50%,
+    transparent 100%
+  );
+  transform: skewX(-25deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+[data-theme="dark"] .hs-card::after {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+}
+
+.hs-card:hover::after {
+  animation: hsCardShimmer 0.85s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes hsCardShimmer {
+  100% {
+    left: 200%;
+  }
+}
+
+/* Ensure card body and elements are relative with z-index to overlay correctly */
+.hs-card-icon,
+.hs-card-body,
+.hs-card-arrow,
+.hs-card__badge {
+  position: relative;
+  z-index: 2;
 }
 .hs-card-icon {
   width: 42px;

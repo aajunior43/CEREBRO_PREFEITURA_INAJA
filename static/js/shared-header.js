@@ -296,6 +296,17 @@
     initCosmosEffects();
     document.body.insertAdjacentHTML('afterbegin', headerHTML);
 
+    // Global dynamic glow tracking for buttons and cards on subpages
+    document.addEventListener('mousemove', (e) => {
+      const el = e.target.closest('[data-glow-btn], .hs-card, .nav-group-item');
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      el.style.setProperty('--glow-x', `${x}px`);
+      el.style.setProperty('--glow-y', `${y}px`);
+    });
+
     /* ── Breadcrumb ──────────────────────────────────────────── */
     const allPages = [
       ...NAV_ITEMS.documentos.map(i => ({...i, cat: 'Documentos'})),

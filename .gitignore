@@ -48,5 +48,7 @@ server_monolitico.py
 server_novo.py
 server_modular.py
 
-empenhos.db
-data.db
+*.db
+*.csv
+documentos_centro/relatorios_html/
+

@@ -27,11 +27,19 @@
   };
 
   window.App.utils.decodeBuffer = function (buffer) {
-    const utf8 = new TextDecoder("utf-8").decode(buffer);
-    if (utf8.includes("\uFFFD")) {
-      return new TextDecoder("iso-8859-1").decode(buffer);
+    // Tenta UTF-8 estrito primeiro (fatal=true lança erro se inválido)
+    try {
+      const strictDecoder = new TextDecoder("utf-8", { fatal: true });
+      return strictDecoder.decode(buffer);
+    } catch (_) {
+      // Não é UTF-8 válido — tenta Windows-1252 (ANSI, padrão dos sistemas brasileiros)
+      try {
+        return new TextDecoder("windows-1252").decode(buffer);
+      } catch (_2) {
+        // Último recurso: iso-8859-1
+        return new TextDecoder("iso-8859-1").decode(buffer);
+      }
     }
-    return utf8;
   };
 
   window.App.utils.parseCurrency = function (value) {

@@ -275,7 +275,7 @@
   window.App.logic.loadCSV = function (text) {
     const { state } = window.App;
     const { detectDelimiter, parseCSV } = window.App.csv;
-    const { parseCurrency } = window.App.utils;
+    const { parseCurrency, normalizeText } = window.App.utils;
     const { renderFilterOptions } = window.App.ui;
     const { applyFilters } = window.App.logic;
 

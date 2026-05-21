@@ -359,57 +359,133 @@
     if (!elements.printCard) return;
     const row = state.rows.find((item) => item.__id === state.selectedId);
     if (!row) return;
-    const visibleColumns = window.App.ui.getVisibleColumns();
-    elements.printCard.innerHTML = "";
 
-    const header = document.createElement("div");
-    header.className = "print-card-header";
-    const title = document.createElement("h3");
-    title.textContent = "Detalhamento da Despesa";
-    header.appendChild(title);
-    elements.printCard.appendChild(header);
+    // Build a doc ID from hash of numero+natureza
+    const numDespesa = row['Número da despesa'] || row['Numero da despesa'] || '-';
+    const natureza   = row['Natureza de Despesa'] || '';
+    const docId = `DOT-${numDespesa.replace(/\D/g, '').padStart(5,'0')}-${new Date().getFullYear()}`;
 
-    const grid = document.createElement("div");
-    grid.className = "print-grid";
+    const areaInfo = window.App.utils.getAreaInfo(row['Descrição da função'] || '');
 
-    visibleColumns.forEach((col) => {
-      const wrapper = document.createElement("div");
-      wrapper.className = "field-row";
+    // All printable columns (excluding internal __ keys and virtual group cols)
+    const skipCols = new Set(['Tipo de Gasto','Tipo de Despesa','Origem do Recurso','Secretaria/Órgão','Área de Atuação']);
+    const printCols = (state.columns || []).filter(c => !c.startsWith('__') && !skipCols.has(c) && c !== 'Saldo atual da despesa');
 
-      const lowerCol = col.toLowerCase();
-      const isMoney = lowerCol.includes("valor") ||
-        lowerCol.includes("saldo") ||
-        lowerCol.includes("empenhado") ||
-        lowerCol.includes("pago") ||
-        lowerCol.includes("liquidado");
+    // Group into two columns for layout
+    const half = Math.ceil(printCols.length / 2);
+    const col1 = printCols.slice(0, half);
+    const col2 = printCols.slice(half);
 
-      const label = document.createElement("span");
-      label.textContent = col;
+    function fieldRow(col) {
+      let val = row[col] || '—';
+      return `<div class="pc-field">
+        <span class="pc-label">${col}</span>
+        <strong class="pc-value">${val}</strong>
+      </div>`;
+    }
 
-      const value = document.createElement("strong");
-      if (isMoney) {
-        wrapper.classList.add("is-money");
-        // Try to parse if not already a number? 
-        // Assuming row[col] is the raw string from CSV usually, 
-        // but for 'Saldo atual da despesa' we have __saldo.
-        // The CSV might have pre-formatted strings for others.
-        // Let's stick to simple display for now or use formatter if it matches known money column
-        if (col === "Saldo atual da despesa") {
-          value.textContent = formatter.format(row.__saldo || 0);
-        } else {
-          value.textContent = row[col] || "";
-        }
-      } else {
-        value.textContent = row[col] || "";
-      }
+    elements.printCard.innerHTML = `
+      <div class="pc-wrap">
 
-      wrapper.appendChild(label);
-      wrapper.appendChild(value);
-      grid.appendChild(wrapper);
-    });
+        <!-- Cabeçalho institucional -->
+        <div class="pc-header">
+          <div class="pc-header-logo">
+            <img src="/static/img/brasao.png" alt="Brasão" />
+          </div>
+          <div class="pc-header-text">
+            <div class="pc-header-title">Prefeitura Municipal de Inajá</div>
+            <div class="pc-header-sub">Estado de Pernambuco — Secretaria de Finanças</div>
+            <div class="pc-header-doc">Dotação Orçamentária — Ficha de Detalhamento</div>
+          </div>
+          <div class="pc-header-id">
+            <div class="pc-id-label">Documento</div>
+            <div class="pc-id-value">${docId}</div>
+          </div>
+        </div>
 
-    elements.printCard.appendChild(grid);
+        <!-- Destaque financeiro -->
+        <div class="pc-saldo-box">
+          <div class="pc-saldo-left">
+            <span class="pc-saldo-label">Saldo Atual da Despesa</span>
+            <span class="pc-saldo-num">${formatter.format(row.__saldo || 0)}</span>
+          </div>
+          <div class="pc-saldo-right">
+            <div class="pc-saldo-meta">
+              <span class="pc-meta-label">Nº Despesa</span>
+              <span class="pc-meta-val">${numDespesa}</span>
+            </div>
+            <div class="pc-saldo-meta">
+              <span class="pc-meta-label">Natureza</span>
+              <span class="pc-meta-val">${natureza}</span>
+            </div>
+            <div class="pc-saldo-meta">
+              <span class="pc-meta-label">Área</span>
+              <span class="pc-meta-val pc-area">${areaInfo.label || 'Outros'}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divisor -->
+        <div class="pc-section-title">Dados da Dotação</div>
+
+        <!-- Grid de campos em duas colunas -->
+        <div class="pc-grid">
+          <div class="pc-col">
+            ${col1.map(fieldRow).join('')}
+          </div>
+          <div class="pc-col">
+            ${col2.map(fieldRow).join('')}
+          </div>
+        </div>
+
+        <!-- Classificação orçamentária -->
+        <div class="pc-section-title">Classificação</div>
+        <div class="pc-classif">
+          <div class="pc-classif-row">
+            <span class="pc-label">Tipo de Gasto</span>
+            <strong>${row['Tipo de Gasto'] || '—'}</strong>
+          </div>
+          <div class="pc-classif-row">
+            <span class="pc-label">Tipo de Despesa</span>
+            <strong>${row['Tipo de Despesa'] || '—'}</strong>
+          </div>
+          <div class="pc-classif-row">
+            <span class="pc-label">Origem do Recurso</span>
+            <strong>${row['Origem do Recurso'] || '—'}</strong>
+          </div>
+          <div class="pc-classif-row">
+            <span class="pc-label">Secretaria/Órgão</span>
+            <strong>${row['Secretaria/Órgão'] || '—'}</strong>
+          </div>
+          <div class="pc-classif-row">
+            <span class="pc-label">Área de Atuação</span>
+            <strong>${row['Área de Atuação'] || '—'}</strong>
+          </div>
+        </div>
+
+        <!-- Rodapé -->
+        <div class="pc-footer">
+          <div class="pc-footer-left">
+            <div>Prefeitura Municipal de Inajá — PE</div>
+            <div>Documento gerado pelo Sistema CÉREBRO</div>
+          </div>
+          <div class="pc-footer-right">
+            <div id="pc-print-date"></div>
+            <div class="pc-doc-ref">${docId}</div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    // Set date inside the card
+    const dateEl = elements.printCard.querySelector('#pc-print-date');
+    if (dateEl) {
+      const now = new Date();
+      dateEl.textContent = 'Emitido em ' + now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    }
   };
+
 
   window.App.ui.setPrintDate = function () {
     const el = document.getElementById("printDate");

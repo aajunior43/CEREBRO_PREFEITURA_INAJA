@@ -4,7 +4,7 @@ import json
 import os
 import re
 import time as _time
-from io import BytesIO as _io
+import io as _io
 from flask import Blueprint, request, jsonify, send_file
 
 from config import settings
@@ -431,14 +431,18 @@ def protocolo_anexos_upload(prot_id):
         if len(content) > 20 * 1024 * 1024:
             return jsonify({"error": "Arquivo excede 20 MB"}), 413
         cur = conn.execute(
-            "INSERT INTO protocolo_anexos (protocolo_id,file_name,mime_type,file_size,content) VALUES (?,?,?,?,?)",
+            "INSERT INTO protocolo_anexos (protocolo_id,file_name,mime_type,file_size) VALUES (?,?,?,?)",
             (
                 prot_id,
                 file.filename,
                 file.mimetype or "application/octet-stream",
                 len(content),
-                content,
             ),
+        )
+        anexo_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO protocolo_anexo_contents (anexo_id, content) VALUES (?, ?)",
+            (anexo_id, content),
         )
         conn.commit()
         return jsonify(
@@ -460,7 +464,10 @@ def protocolo_anexo_download(prot_id, anexo_id):
     try:
         conn = get_db()
         row = conn.execute(
-            "SELECT file_name,mime_type,content FROM protocolo_anexos WHERE id=? AND protocolo_id=?",
+            "SELECT a.file_name, a.mime_type, c.content "
+            "FROM protocolo_anexos a "
+            "JOIN protocolo_anexo_contents c ON a.id = c.anexo_id "
+            "WHERE a.id=? AND a.protocolo_id=?",
             (anexo_id, prot_id),
         ).fetchone()
         if not row:

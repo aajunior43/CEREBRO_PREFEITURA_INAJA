@@ -4,7 +4,7 @@ import json
 import re
 from collections import defaultdict
 from flask import Blueprint, request, jsonify, send_file
-from io import BytesIO as _io
+import io as _io
 
 bp = Blueprint("kanban", __name__)
 
@@ -633,14 +633,18 @@ def anexos_enviar(task_id):
         ).fetchone():
             return jsonify({"error": "Tarefa não encontrada"}), 404
         cur = conn.execute(
-            "INSERT INTO kanban_attachments (task_id,file_name,mime_type,file_size,content,criado_em) VALUES (?,?,?,?,?,datetime('now','localtime'))",
+            "INSERT INTO kanban_attachments (task_id,file_name,mime_type,file_size,criado_em) VALUES (?,?,?,?,datetime('now','localtime'))",
             (
                 task_id,
                 file.filename,
                 file.mimetype or "application/octet-stream",
                 len(content),
-                content,
             ),
+        )
+        attachment_id = cur.lastrowid
+        conn.execute(
+            "INSERT INTO kanban_attachment_contents (attachment_id, content) VALUES (?, ?)",
+            (attachment_id, content),
         )
         conn.commit()
         row = conn.execute(
@@ -659,7 +663,10 @@ def anexo_download(task_id, attachment_id):
     try:
         conn = get_db()
         row = conn.execute(
-            "SELECT id,task_id,file_name,mime_type,content FROM kanban_attachments WHERE id=? AND task_id=?",
+            "SELECT a.id, a.task_id, a.file_name, a.mime_type, c.content "
+            "FROM kanban_attachments a "
+            "JOIN kanban_attachment_contents c ON a.id = c.attachment_id "
+            "WHERE a.id=? AND a.task_id=?",
             (attachment_id, task_id),
         ).fetchone()
         if not row:

@@ -554,6 +554,18 @@ function renderPagination() {
 function _printCSS() {
   return `
     @page { margin: 12mm 15mm; size: A4 portrait; }
+    @media print {
+      * { margin:0 !important; padding:0 !important; box-sizing:border-box !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color: #000 !important;
+          background-color: transparent !important;
+          visibility: visible !important;
+          opacity: 1 !important; }
+      body { background: #fff !important; color: #000 !important; }
+      table.doc-table th { background: #f0f0f0 !important; }
+      .valor-box { background: #fdfdfd !important; }
+    }
     * { margin:0; padding:0; box-sizing:border-box;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important; }
@@ -794,16 +806,24 @@ async function printCredor(c) {
   const mesNome = MESES[state.month];
   const ano = state.year;
 
+  const css = _printCSS();
+  const body = _buildDocPage(c, done, mesNome, ano, true);
+
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <title>Solicita&#231;&#227;o &ndash; ${c.nome}</title>
-  <style>${_printCSS()}</style>
+  <style>${css}</style>
 </head>
-<body>
-  ${_buildDocPage(c, done, mesNome, ano, true)}
-  <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
+<body>${body}
+<script>
+(function(){
+  var t=600;
+  var check=function(){if(document.readyState==='complete'){setTimeout(function(){window.print();},t);}else{setTimeout(check,50);}};
+  check();
+})();
+<\/script>
 </body></html>`;
 
   await autosaveGeneratedText(html, {
@@ -819,6 +839,7 @@ async function printCredor(c) {
     showToast('Bloqueador de popups ativado. Permita popups para imprimir.', 'error');
     return;
   }
+  win.document.open();
   win.document.write(html);
   win.document.close();
 }
@@ -836,16 +857,23 @@ async function printLote() {
     _buildDocPage(c, !!state.empenhados[c.id], mesNome, ano, i === lista.length - 1)
   ).join('');
 
+  const css = _printCSS();
+
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <title>Lote &ndash; ${mesNome} ${ano}</title>
-  <style>${_printCSS()}</style>
+  <style>${css}</style>
 </head>
-<body>
-  ${pages}
-  <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};};<\/script>
+<body>${pages}
+<script>
+(function(){
+  var t=800;
+  var check=function(){if(document.readyState==='complete'){setTimeout(function(){window.print();},t);}else{setTimeout(check,50);}};
+  check();
+})();
+<\/script>
 </body></html>`;
 
   await autosaveGeneratedText(html, {
@@ -861,6 +889,7 @@ async function printLote() {
     showToast('Bloqueador de popups ativado. Permita popups para imprimir.', 'error');
     return;
   }
+  win.document.open();
   win.document.write(html);
   win.document.close();
 }
@@ -1564,11 +1593,12 @@ async function init() {
 // ── Theme Toggle ───────────────────────────────────────────────
 function initTheme() {
   const saved = localStorage.getItem('theme');
-  if (saved === 'dark' || saved === 'cosmos') {
-    localStorage.setItem('theme', 'light');
-    document.documentElement.removeAttribute('data-theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
   } else if (saved === 'vintage') {
     document.documentElement.setAttribute('data-theme', 'vintage');
+  } else if (saved === 'cosmos') {
+    document.documentElement.setAttribute('data-theme', 'cosmos');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -1578,9 +1608,10 @@ function syncThemeLabel() {
   const label = document.querySelector('.theme-label');
   if (!label) return;
   const current = document.documentElement.getAttribute('data-theme') || 'light';
-  if (current === 'light') label.textContent = 'Tema Vintage';
-  else if (current === 'vintage') label.textContent = 'Tema Claro';
-  else label.textContent = 'Tema Claro';
+  if (current === 'light') label.textContent = 'Tema Escuro';
+  else if (current === 'dark') label.textContent = 'Tema Vintage';
+  else if (current === 'vintage') label.textContent = 'Tema Cosmos';
+  else if (current === 'cosmos') label.textContent = 'Tema Claro';
 }
 
 function initCosmosEffects() {
@@ -1665,25 +1696,30 @@ function toggleTheme() {
   const html = document.documentElement;
   const current = html.getAttribute('data-theme') || 'light';
   if (current === 'light') {
+    html.setAttribute('data-theme', 'dark');
+    localStorage.setItem('theme', 'dark');
+  } else if (current === 'dark') {
     html.setAttribute('data-theme', 'vintage');
     localStorage.setItem('theme', 'vintage');
   } else if (current === 'vintage') {
-    html.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
+    html.setAttribute('data-theme', 'cosmos');
+    localStorage.setItem('theme', 'cosmos');
   } else {
     html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function initAppDOM() {
   initTheme();
   initCosmosEffects();
   syncThemeLabel();
   const syncExtraThemeLabels = () => {
     const current = document.documentElement.getAttribute('data-theme') || 'light';
-    let text = 'Tema Vintage';
-    if (current === 'vintage') text = 'Tema Claro';
+    let text = 'Tema Escuro';
+    if (current === 'dark') text = 'Tema Vintage';
+    if (current === 'vintage') text = 'Tema Cosmos';
+    if (current === 'cosmos') text = 'Tema Claro';
     
     const sidebarLabel = document.querySelector('.theme-label-sidebar');
     if (sidebarLabel) sidebarLabel.textContent = text;
@@ -1691,6 +1727,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobileLabel) mobileLabel.textContent = text;
   };
   syncExtraThemeLabels();
+
+  // Global dynamic glow tracking for buttons and cards on dashboard
+  document.addEventListener('mousemove', (e) => {
+    const el = e.target.closest('[data-glow-btn], .hs-card');
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    el.style.setProperty('--glow-x', `${x}px`);
+    el.style.setProperty('--glow-y', `${y}px`);
+  });
   
   // Hamburger menu
   const hamburger = document.getElementById('hamburger');
@@ -1778,15 +1825,18 @@ document.addEventListener('DOMContentLoaded', () => {
   function syncSidebarExpandBtn() {
     const btn = document.getElementById('btn-sidebar-expand-all');
     const label = document.getElementById('sidebar-expand-label');
+    const icon = document.getElementById('sidebar-expand-icon');
     if (!btn || !label) return;
     const sidebarGroups = document.querySelectorAll('.nav-group-sidebar');
     const allOpen = [...sidebarGroups].every(g => g.classList.contains('open'));
     if (allOpen) {
       label.textContent = 'Recolher tudo';
       btn.classList.add('expanded');
+      if (icon) icon.style.transform = 'rotate(180deg)';
     } else {
       label.textContent = 'Expandir tudo';
       btn.classList.remove('expanded');
+      if (icon) icon.style.transform = 'rotate(0deg)';
     }
   }
 
@@ -1798,11 +1848,11 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSidebarExpandAll.addEventListener('click', () => {
       const sidebarGroups = document.querySelectorAll('.nav-group-sidebar');
       const allOpen = [...sidebarGroups].every(g => g.classList.contains('open'));
-      if (allOpen) {
-        sidebarGroups.forEach(g => g.classList.remove('open'));
-      } else {
-        sidebarGroups.forEach(g => g.classList.add('open'));
-      }
+      sidebarGroups.forEach(g => {
+        g.classList.toggle('open', !allOpen);
+        const toggleBtn = g.querySelector('.sidebar-group-toggle');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', !allOpen ? 'true' : 'false');
+      });
       syncSidebarExpandBtn();
     });
   }
@@ -1812,11 +1862,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const group = btn.closest('.nav-group');
+      if (!group) return;
       const isSidebar = group.classList.contains('nav-group-sidebar');
 
       if (isSidebar) {
         // Na sidebar: toggle independente (não fecha os outros)
         group.classList.toggle('open');
+        const isOpen = group.classList.contains('open');
+        btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         // Sincroniza o botão expandir tudo
         syncSidebarExpandBtn();
       } else {
@@ -1982,4 +2035,10 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelector('.nav-tab[data-tab="adm"]')?.click();
     }
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppDOM);
+} else {
+  initAppDOM();
+}
