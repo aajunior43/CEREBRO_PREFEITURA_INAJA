@@ -1997,6 +1997,11 @@ function initAppDOM() {
     sessionStorage.removeItem('user_nivel');
     window.location.href = '/login.html';
   });
+  document.getElementById('header-logout-btn')?.addEventListener('click', async () => {
+    await fetch('/api/auth/sair', { method: 'POST' }).catch(() => {});
+    sessionStorage.clear();
+    window.location.href = '/login.html';
+  });
   
   init().then(() => {
     // Auto-open ADM tab when navigated via /#adm
