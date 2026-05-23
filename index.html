@@ -9,12 +9,18 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='cosmos'){localStorage.setItem('theme','light');t='light';}if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <script>
-    // Verificar autenticação ao carregar
-    // Sincronizar sessao ADM com sessionStorage
+    // Sincronizar sessao com sessionStorage
     (function checkAuth() {
       fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
-        if (d.autenticado) sessionStorage.setItem('adm_auth', '1');
-        else sessionStorage.removeItem('adm_auth');
+        if (d.autenticado) {
+          sessionStorage.setItem('adm_auth', '1');
+          sessionStorage.setItem('user_nome', d.nome || '');
+          sessionStorage.setItem('user_nivel', d.nivel || '');
+        } else {
+          sessionStorage.removeItem('adm_auth');
+          sessionStorage.removeItem('user_nome');
+          sessionStorage.removeItem('user_nivel');
+        }
       }).catch(function(){});
     })();
   </script>
@@ -267,7 +273,7 @@
       <a href="/pages/manual.html" class="mobile-nav-item" style="text-decoration:none;">📖 Manual</a>
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Administração</div>
-      <button class="mobile-nav-item" data-tab="adm" data-requires-auth="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>ADM</button>
+      <button class="mobile-nav-item" data-tab="adm" data-nivel="admin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>ADM</button>
       <button class="mobile-nav-item" id="mobile-logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Logs</button>
     </div>
   </div>
@@ -825,20 +831,63 @@
     </div>
   </div>
 
-  <!-- MODAL: Password for ADM -->
-  <div class="modal-overlay" id="password-overlay" style="display:none;">
-    <div class="modal" style="max-width: 360px;">
+  <!-- MODAL: Gerenciar Usuarios (dentro do ADM) -->
+  <div class="modal-overlay" id="usuarios-overlay" style="display:none;">
+    <div class="modal" style="max-width: 500px;">
       <div class="modal-header">
-        <h2>Acesso ADM</h2>
-        <button class="modal-close" id="password-close">&times;</button>
+        <h2>Gerenciar Usuarios</h2>
+        <button class="modal-close" onclick="document.getElementById('usuarios-overlay').style.display='none'">&times;</button>
       </div>
-      <div class="modal-body" style="text-align:center;">
-        <p style="color:var(--text-2);margin-bottom:16px;">Digite a senha para acessar a área administrativa</p>
-        <input type="password" id="password-input" placeholder="Senha" style="width:100%;padding:12px;border:none;border-radius:var(--radius-sm);background:var(--bg);box-shadow:var(--neo-in-sm);color:var(--text);font-size:14px;text-align:center;outline:none;" />
-        <p id="password-error" style="color:var(--red);font-size:12px;margin-top:10px;display:none;">Senha incorreta</p>
-        <button class="btn btn-primary btn-ripple" id="password-submit" style="width:100%;margin-top:16px;">Entrar</button>
+      <div class="modal-body" id="usuarios-list" style="max-height:400px;overflow-y:auto;">
+        <p style="color:var(--text-2)">Carregando...</p>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-primary btn-ripple" onclick="admShowCriarUsuario()">+ Novo Usuario</button>
       </div>
     </div>
+  </div>
+
+  <!-- MODAL: Criar/Editar Usuario -->
+  <div class="modal-overlay" id="usuario-form-overlay" style="display:none;">
+    <div class="modal" style="max-width: 420px;">
+      <div class="modal-header">
+        <h2 id="usuario-form-title">Novo Usuario</h2>
+        <button class="modal-close" onclick="document.getElementById('usuario-form-overlay').style.display='none'">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="usuario-form-id" />
+        <div style="margin-bottom:10px;">
+          <label class="login-label" for="uf-nome">Nome</label>
+          <input type="text" id="uf-nome" class="login-input" placeholder="Nome completo" />
+        </div>
+        <div style="margin-bottom:10px;">
+          <label class="login-label" for="uf-email">Email</label>
+          <input type="email" id="uf-email" class="login-input" placeholder="Email (opcional)" />
+        </div>
+        <div style="margin-bottom:10px;">
+          <label class="login-label" for="uf-login">Login</label>
+          <input type="text" id="uf-login" class="login-input" placeholder="Login unico" />
+        </div>
+        <div style="margin-bottom:10px;">
+          <label class="login-label" for="uf-senha">Senha</label>
+          <input type="password" id="uf-senha" class="login-input" placeholder="Minimo 4 caracteres" />
+        </div>
+        <div style="margin-bottom:10px;">
+          <label class="login-label" for="uf-nivel">Nivel de Acesso</label>
+          <select id="uf-nivel" class="login-input">
+            <option value="admin">Admin — acesso total</option>
+            <option value="operador" selected>Operador — usa o sistema</option>
+            <option value="leitor">Leitor — apenas visualizacao</option>
+          </select>
+        </div>
+        <div id="usuario-form-error" style="color:var(--red);font-size:12px;display:none;"></div>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-secondary btn-ripple" onclick="document.getElementById('usuario-form-overlay').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary btn-ripple" id="usuario-form-salvar">Salvar</button>
+      </div>
+    </div>
+  </div>
   </div>
 
   <!-- ADM Panel -->
@@ -872,6 +921,16 @@
             <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;">Logs</div>
             <div id="adm-overview-logs" style="font-size:28px;font-weight:800;color:var(--text);margin-top:6px;">—</div>
           </div>
+        </div>
+      </div>
+
+      <div class="adm-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h3>👥 Usuarios</h3>
+            <p style="font-size:13px;color:var(--text-2);margin-top:4px;margin-bottom:18px;">Gerenciar usuarios do sistema.</p>
+          </div>
+          <button class="btn btn-primary btn-ripple" onclick="admListarUsuarios()" style="padding:8px 16px;font-size:12px;">Gerenciar</button>
         </div>
       </div>
 
@@ -1545,6 +1604,116 @@
       el.style.background = bg;
       el.style.color = fg;
     }
+    
+    // ── Gerenciamento de Usuarios ────────────────────────────
+    function admListarUsuarios() {
+      fetch('/api/auth/usuarios')
+        .then(function(r){return r.json()})
+        .then(function(usuarios){
+          var el = document.getElementById('usuarios-list');
+          if (!usuarios || usuarios.error) {
+            el.innerHTML = '<p style="color:var(--red)">Erro ao carregar usuarios.</p>';
+          } else {
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            html += '<thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Login</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nome</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nivel</th><th style="text-align:center;padding:8px;font-weight:700;color:var(--text-2);">Ativo</th><th style="padding:8px;"></th></tr></thead><tbody>';
+            usuarios.forEach(function(u){
+              var nivelClass = u.nivel === 'admin' ? 'var(--red)' : u.nivel === 'operador' ? 'var(--green)' : 'var(--blue)';
+              html += '<tr style="border-bottom:1px solid var(--border);">';
+              html += '<td style="padding:8px;"><strong>'+u.login+'</strong></td>';
+              html += '<td style="padding:8px;">'+u.nome+'</td>';
+              html += '<td style="padding:8px;color:'+nivelClass+';font-weight:600;">'+u.nivel+'</td>';
+              html += '<td style="text-align:center;padding:8px;">'+(u.ativo ? '✅' : '❌')+'</td>';
+              html += '<td style="padding:8px;text-align:right;">';
+              html += '<button class="btn btn-secondary btn-sm btn-ripple" onclick="admEditarUsuario('+u.id+')" style="margin-right:4px;">Editar</button>';
+              if (u.ativo) html += '<button class="btn btn-danger btn-sm btn-ripple" onclick="admDesativarUsuario('+u.id+')">Desativar</button>';
+              html += '</td></tr>';
+            });
+            html += '</tbody></table>';
+            el.innerHTML = html;
+          }
+          document.getElementById('usuarios-overlay').style.display = 'flex';
+        })
+        .catch(function(){
+          document.getElementById('usuarios-list').innerHTML = '<p style="color:var(--red)">Erro de conexao.</p>';
+          document.getElementById('usuarios-overlay').style.display = 'flex';
+        });
+    }
+
+    function admEditarUsuario(id) {
+      fetch('/api/auth/usuarios')
+        .then(function(r){return r.json()})
+        .then(function(usuarios){
+          var u = usuarios.find(function(x){return x.id === id});
+          if (!u) return;
+          document.getElementById('usuario-form-id').value = u.id;
+          document.getElementById('uf-nome').value = u.nome;
+          document.getElementById('uf-email').value = u.email || '';
+          document.getElementById('uf-login').value = u.login;
+          document.getElementById('uf-senha').value = '';
+          document.getElementById('uf-senha').placeholder = 'Deixe vazio para manter';
+          document.getElementById('uf-nivel').value = u.nivel;
+          document.getElementById('usuario-form-title').textContent = 'Editar Usuario';
+          document.getElementById('usuario-form-error').style.display = 'none';
+          document.getElementById('usuario-form-overlay').style.display = 'flex';
+          document.getElementById('usuarios-overlay').style.display = 'none';
+        });
+    }
+
+    function admShowCriarUsuario() {
+      document.getElementById('usuario-form-id').value = '';
+      document.getElementById('uf-nome').value = '';
+      document.getElementById('uf-email').value = '';
+      document.getElementById('uf-login').value = '';
+      document.getElementById('uf-senha').value = '';
+      document.getElementById('uf-senha').placeholder = 'Minimo 4 caracteres';
+      document.getElementById('uf-nivel').value = 'operador';
+      document.getElementById('usuario-form-title').textContent = 'Novo Usuario';
+      document.getElementById('usuario-form-error').style.display = 'none';
+      document.getElementById('usuario-form-overlay').style.display = 'flex';
+    }
+
+    function admDesativarUsuario(id) {
+      if (!confirm('Desativar este usuario?')) return;
+      fetch('/api/auth/usuarios/' + id, { method: 'DELETE' })
+        .then(function(r){return r.json()})
+        .then(function(d){
+          if (d.ok) { admListarUsuarios(); showToast('Usuario desativado', 'info'); }
+          else showToast(d.error || 'Erro', 'error');
+        })
+        .catch(function(){ showToast('Erro de conexao', 'error'); });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Salvar/atualizar usuario
+      document.getElementById('usuario-form-salvar')?.addEventListener('click', function(){
+        var id = document.getElementById('usuario-form-id').value;
+        var data = {
+          nome: document.getElementById('uf-nome').value.trim(),
+          email: document.getElementById('uf-email').value.trim(),
+          login: document.getElementById('uf-login').value.trim(),
+          senha: document.getElementById('uf-senha').value,
+          nivel: document.getElementById('uf-nivel').value,
+        };
+        var url = id ? '/api/auth/usuarios/' + id : '/api/auth/usuarios';
+        var method = id ? 'PUT' : 'POST';
+        fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) })
+          .then(function(r){return r.json()})
+          .then(function(d){
+            if (d.ok || d.usuario) {
+              document.getElementById('usuario-form-overlay').style.display = 'none';
+              admListarUsuarios();
+              showToast(id ? 'Usuario atualizado' : 'Usuario criado', 'success');
+            } else {
+              document.getElementById('usuario-form-error').textContent = d.error || 'Erro';
+              document.getElementById('usuario-form-error').style.display = 'block';
+            }
+          })
+          .catch(function(){
+            document.getElementById('usuario-form-error').textContent = 'Erro de conexao';
+            document.getElementById('usuario-form-error').style.display = 'block';
+          });
+      });
+    });
     
     document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('adm-open-full-logs')?.addEventListener('click', () => {

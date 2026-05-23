@@ -358,6 +358,23 @@ def create_app() -> Flask:
                 pass
         conn.commit()
 
+        # Multi-user auth table
+        cur.execute("""CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            login TEXT NOT NULL UNIQUE,
+            senha_hash TEXT NOT NULL,
+            nivel TEXT NOT NULL DEFAULT 'operador'
+                CHECK (nivel IN ('admin','operador','leitor')),
+            ativo INTEGER NOT NULL DEFAULT 1,
+            criado_em TEXT DEFAULT (datetime('now','localtime')),
+            atualizado_em TEXT DEFAULT (datetime('now','localtime'))
+        )""")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_login ON usuarios(login)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_nivel ON usuarios(nivel)")
+        conn.commit()
+
     def init_db():
         conn = get_db()
         cur = conn.cursor()
@@ -734,10 +751,11 @@ def create_app() -> Flask:
     app.register_blueprint(bp_empenho_assistente)
     app.register_blueprint(bp_classificador)
 
-    # Init auth hash
+    # Init auth hash (compat) + multi-user auth
     from routes.all_routes import init_auth_hash
-
     init_auth_hash(settings.admin_password)
+    from routes.auth import init_auth_system
+    init_auth_system(settings.admin_password, app)
 
     return app, _preload_static_files, init_db, migrate_db
 

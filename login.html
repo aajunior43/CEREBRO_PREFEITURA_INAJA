@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Prefeitura de Inajá</title>
+  <link rel="icon" type="image/png" href="/static/img/brasao.png" />
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh;
+           background:var(--bg); padding:20px; font-family:inherit; margin:0; }
+    .login-card { width:100%; max-width:380px; background:var(--bg-card,var(--bg));
+                  border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,.12);
+                  padding:40px 32px; text-align:center; border:1px solid var(--border); }
+    .login-brasao { width:72px; height:auto; margin-bottom:12px; opacity:.9; }
+    .login-title { font-size:20px; font-weight:800; color:var(--text); margin-bottom:2px; }
+    .login-subtitle { font-size:12px; color:var(--text-2); margin-bottom:24px; }
+    .login-input { width:100%; padding:12px 14px; border:1px solid var(--border);
+                   border-radius:8px; background:var(--bg); color:var(--text);
+                   font-size:14px; font-family:inherit; outline:none; box-sizing:border-box;
+                   transition:border-color .15s; }
+    .login-input:focus { border-color:var(--blue); }
+    .login-input-wrap { margin-bottom:14px; text-align:left; }
+    .login-label { display:block; font-size:11px; font-weight:600; color:var(--text-2);
+                   margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px; }
+    .login-btn { width:100%; padding:12px; border:none; border-radius:8px;
+                 background:var(--blue); color:#fff; font-size:14px; font-weight:700;
+                 font-family:inherit; cursor:pointer; transition:opacity .15s; margin-top:4px; }
+    .login-btn:hover { opacity:.9; }
+    .login-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .login-error { color:var(--red); font-size:13px; margin-top:12px; display:none; }
+    .login-footer { margin-top:24px; font-size:11px; color:var(--text-3); }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <img class="login-brasao" src="/static/img/brasao.png" alt="Brasao" />
+    <h1 class="login-title">Sistema de Empenhos</h1>
+    <p class="login-subtitle">Prefeitura Municipal de Inaja</p>
+
+    <form id="login-form" autocomplete="off">
+      <div class="login-input-wrap">
+        <label class="login-label" for="login-input">Usuario</label>
+        <input type="text" id="login-input" class="login-input" placeholder="Seu login"
+               autocomplete="username" required />
+      </div>
+      <div class="login-input-wrap">
+        <label class="login-label" for="senha-input">Senha</label>
+        <input type="password" id="senha-input" class="login-input" placeholder="Sua senha"
+               autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="login-btn" id="login-btn">Entrar</button>
+      <div class="login-error" id="login-error"></div>
+    </form>
+
+    <p class="login-footer">&copy; Prefeitura Municipal de Inaja</p>
+  </div>
+
+  <script>
+    (function() {
+      var form = document.getElementById('login-form');
+      var loginInput = document.getElementById('login-input');
+      var senhaInput = document.getElementById('senha-input');
+      var btn = document.getElementById('login-btn');
+      var errorEl = document.getElementById('login-error');
+
+      // Se ja autenticado, redireciona
+      fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
+        if (d.autenticado) window.location.replace('/');
+      }).catch(function(){});
+
+      // Tentar login com /api/auth/login, fallback /api/auth/adm
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        errorEl.style.display = 'none';
+        btn.disabled = true;
+        btn.textContent = 'Entrando...';
+
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            login: loginInput.value.trim(),
+            senha: senhaInput.value
+          })
+        })
+        .then(function(r){ return r.json().then(function(d){ return {status:r.status, body:d}; }); })
+        .then(function(resp) {
+          if (resp.body.ok) {
+            window.location.replace('/');
+          } else {
+            // Fallback: tentar /api/auth/adm (compat)
+            return fetch('/api/auth/adm', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ senha: senhaInput.value })
+            })
+            .then(function(r){ return r.json().then(function(d){ return {status:r.status, body:d}; }); })
+            .then(function(resp2) {
+              if (resp2.body.ok) {
+                window.location.replace('/');
+              } else {
+                errorEl.textContent = resp2.body.error || 'Login ou senha invalidos';
+                errorEl.style.display = 'block';
+              }
+            });
+          }
+        })
+        .catch(function() {
+          errorEl.textContent = 'Erro de conexao. Tente novamente.';
+          errorEl.style.display = 'block';
+        })
+        .finally(function() {
+          btn.disabled = false;
+          btn.textContent = 'Entrar';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

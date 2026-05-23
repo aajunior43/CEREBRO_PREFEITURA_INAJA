@@ -1906,50 +1906,14 @@ function initAppDOM() {
   // ADM Authentication — restored from session on page load
   let isAdmAuthenticated = sessionStorage.getItem('adm_auth') === '1';
   
-  function showPasswordModal() {
-    document.getElementById('password-overlay').style.display = 'flex';
-    document.getElementById('password-input').value = '';
-    document.getElementById('password-error').style.display = 'none';
-    document.getElementById('password-input').focus();
-  }
-  
-  function hidePasswordModal() {
-    document.getElementById('password-overlay').style.display = 'none';
-  }
-  
-  async function checkPassword() {
-    const password = document.getElementById('password-input').value;
-    const submitBtn = document.getElementById('password-submit');
-    const errorEl  = document.getElementById('password-error');
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = '…';
-    errorEl.style.display = 'none';
-
-    try {
-      const resp = await fetch('/api/auth/adm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senha: password })
-      });
-      const data = await resp.json();
-
-      if (data.ok) {
-        isAdmAuthenticated = true;
-        sessionStorage.setItem('adm_auth', '1');
-        hidePasswordModal();
-        showAdmPanel();
-        showToast('Bem-vindo à área administrativa!', 'success');
-      } else {
-        errorEl.style.display = 'block';
-      }
-    } catch (e) {
-      errorEl.textContent = 'Erro de conexão. Tente novamente.';
-      errorEl.style.display = 'block';
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Entrar';
-    }
+  // Atualizar info do usuario no header
+  var userNome = sessionStorage.getItem('user_nome');
+  var userNivel = sessionStorage.getItem('user_nivel');
+  var nomeEl = document.getElementById('header-usuario-nome');
+  var adminBtns = document.querySelectorAll('[data-nivel="admin"]');
+  if (userNome && nomeEl) nomeEl.textContent = userNome;
+  if (userNivel !== 'admin') {
+    adminBtns.forEach(function(el){ el.style.display = 'none'; });
   }
   
   function showAdmPanel() {
@@ -1979,9 +1943,12 @@ function initAppDOM() {
   }
 
   async function handleTabClick(tabName, requiresAuth) {
-    if (requiresAuth && !isAdmAuthenticated) {
-      showPasswordModal();
-      return;
+    if (requiresAuth) {
+      var nivel = sessionStorage.getItem('user_nivel');
+      if (nivel !== 'admin') {
+        window.location.href = '/login.html';
+        return;
+      }
     }
     if (tabName !== 'adm') {
       await ensureMainAppLoaded();
@@ -1999,8 +1966,12 @@ function initAppDOM() {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.tab;
       if (!tabName) return;
-      const requiresAuth = tab.dataset.requiresAuth === 'true';
-      handleTabClick(tabName, requiresAuth);
+      const nivelRequerido = tab.dataset.nivel;
+      if (nivelRequerido && sessionStorage.getItem('user_nivel') !== nivelRequerido) {
+        window.location.href = '/login.html';
+        return;
+      }
+      handleTabClick(tabName, false);
     });
   });
   
@@ -2008,27 +1979,23 @@ function initAppDOM() {
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(item => {
     item.addEventListener('click', () => {
       const tabName = item.dataset.tab;
-      const requiresAuth = item.dataset.requiresAuth === 'true';
-      handleTabClick(tabName, requiresAuth);
+      const nivelRequerido = item.dataset.nivel;
+      if (nivelRequerido && sessionStorage.getItem('user_nivel') !== nivelRequerido) {
+        window.location.href = '/login.html';
+        return;
+      }
+      handleTabClick(tabName, false);
       closeMobileNav();
     });
   });
   
-  // Password modal events
-  document.getElementById('password-close')?.addEventListener('click', hidePasswordModal);
-  document.getElementById('password-submit')?.addEventListener('click', checkPassword);
-  document.getElementById('password-input')?.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') checkPassword();
-  });
-  
   // ADM logout
-  document.getElementById('adm-logout')?.addEventListener('click', () => {
-    isAdmAuthenticated = false;
+  document.getElementById('adm-logout')?.addEventListener('click', async () => {
+    await fetch('/api/auth/sair', { method: 'POST' }).catch(() => {});
     sessionStorage.removeItem('adm_auth');
-    fetch('/api/auth/sair', { method: 'POST' }).catch(() => {});
-    hideAdmPanel();
-    document.querySelector('.nav-tab[data-tab="credores-fixos"]')?.click();
-    showToast('Saiu da área administrativa', 'info');
+    sessionStorage.removeItem('user_nome');
+    sessionStorage.removeItem('user_nivel');
+    window.location.href = '/login.html';
   });
   
   init().then(() => {
