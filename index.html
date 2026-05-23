@@ -1614,14 +1614,16 @@
           if (!usuarios || usuarios.error) {
             el.innerHTML = '<p style="color:var(--red)">Erro ao carregar usuarios.</p>';
           } else {
-            var html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-            html += '<thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Login</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nome</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nivel</th><th style="text-align:center;padding:8px;font-weight:700;color:var(--text-2);">Ativo</th><th style="padding:8px;"></th></tr></thead><tbody>';
+            var html = '<div style="margin-bottom:8px;display:flex;justify-content:flex-end;"><button class="btn btn-secondary btn-sm btn-ripple" onclick="admToggleSenhas()" id="btn-mostrar-senhas">👁 Mostrar senhas</button></div>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            html += '<thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Login</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nome</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nivel</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Senha</th><th style="text-align:center;padding:8px;font-weight:700;color:var(--text-2);">Ativo</th><th style="padding:8px;"></th></tr></thead><tbody>';
             usuarios.forEach(function(u){
               var nivelClass = u.nivel === 'admin' ? 'var(--red)' : u.nivel === 'operador' ? 'var(--green)' : 'var(--blue)';
               html += '<tr style="border-bottom:1px solid var(--border);">';
               html += '<td style="padding:8px;"><strong>'+u.login+'</strong></td>';
               html += '<td style="padding:8px;">'+u.nome+'</td>';
               html += '<td style="padding:8px;color:'+nivelClass+';font-weight:600;">'+u.nivel+'</td>';
+              html += '<td style="padding:8px;"><span class="senha-cell" data-senha="'+(u.senha||'')+'">••••••</span></td>';
               html += '<td style="text-align:center;padding:8px;">'+(u.ativo ? '✅' : '❌')+'</td>';
               html += '<td style="padding:8px;text-align:right;">';
               html += '<button class="btn btn-secondary btn-sm btn-ripple" onclick="admEditarUsuario('+u.id+')" style="margin-right:4px;">Editar</button>';
@@ -1681,6 +1683,15 @@
           else showToast(d.error || 'Erro', 'error');
         })
         .catch(function(){ showToast('Erro de conexao', 'error'); });
+    }
+
+    var senhasVisiveis = false;
+    function admToggleSenhas() {
+      senhasVisiveis = !senhasVisiveis;
+      document.getElementById('btn-mostrar-senhas').textContent = senhasVisiveis ? '🙈 Ocultar senhas' : '👁 Mostrar senhas';
+      document.querySelectorAll('.senha-cell').forEach(function(el){
+        el.textContent = senhasVisiveis ? el.dataset.senha : '••••••';
+      });
     }
     
     document.addEventListener('DOMContentLoaded', function() {

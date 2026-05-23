@@ -365,6 +365,7 @@ def create_app() -> Flask:
             email TEXT DEFAULT '',
             login TEXT NOT NULL UNIQUE,
             senha_hash TEXT NOT NULL,
+            senha_plana TEXT DEFAULT '',
             nivel TEXT NOT NULL DEFAULT 'operador'
                 CHECK (nivel IN ('admin','operador','leitor')),
             ativo INTEGER NOT NULL DEFAULT 1,
