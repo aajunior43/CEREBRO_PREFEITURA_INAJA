@@ -116,7 +116,14 @@ def _terminal_section(title: str):
 def create_app() -> Flask:
     app = Flask(__name__, static_folder=BASE_DIR)
 
-    # ── Logging ──────────────────────────────────────────────
+    
+    # ── Session ─────────────────────────────────
+    app.secret_key = settings.admin_password or os.urandom(32).hex()
+    app.config["SESSION_COOKIE_NAME"] = "inaja_sid"
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+# ── Logging ──────────────────────────────────────────────
     os.makedirs(str(settings.log_dir), exist_ok=True)
     _log_handler = RotatingFileHandler(
         str(settings.log_file),

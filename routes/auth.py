@@ -1,7 +1,8 @@
-"""Blueprint: Autenticação"""
+"""Blueprint: Autenticação — com sessão real via cookie assinado"""
 
 import hashlib
-from flask import Blueprint, request, jsonify
+import os
+from flask import Blueprint, request, jsonify, session
 from routes._shared import get_db
 from routes.helpers import rate_limited
 
@@ -12,9 +13,10 @@ _ADM_HASH = ""
 
 def init_auth_hash(admin_password: str):
     global _ADM_HASH
-    _ADM_HASH = (
-        hashlib.sha256(admin_password.encode()).hexdigest() if admin_password else ""
-    )
+    if admin_password:
+        _ADM_HASH = hashlib.sha256(admin_password.encode()).hexdigest()
+    else:
+        _ADM_HASH = ""
 
 
 @bp.route("/api/auth/adm", methods=["POST"])
@@ -30,17 +32,20 @@ def auth_adm():
         ), 429
     d = request.get_json(force=True) or {}
     if hashlib.sha256(d.get("senha", "").encode()).hexdigest() == _ADM_HASH:
+        session["adm"] = True
+        session.permanent = False
         return jsonify({"ok": True})
     return jsonify({"ok": False, "error": "Senha incorreta"}), 401
 
 
 @bp.route("/api/auth/verificar", methods=["GET"])
 def verificar_auth():
-    return jsonify({"autenticado": True})
+    return jsonify({"autenticado": session.get("adm", False)})
 
 
 @bp.route("/api/auth/sair", methods=["POST"])
 def logout_auth():
+    session.pop("adm", None)
     return jsonify({"ok": True})
 
 

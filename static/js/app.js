@@ -1903,8 +1903,8 @@ function initAppDOM() {
     syncExtraThemeLabels();
   });
   
-  // ADM Authentication — resets on every page load (never persisted)
-  let isAdmAuthenticated = false;
+  // ADM Authentication — restored from session on page load
+  let isAdmAuthenticated = sessionStorage.getItem('adm_auth') === '1';
   
   function showPasswordModal() {
     document.getElementById('password-overlay').style.display = 'flex';
@@ -1936,6 +1936,7 @@ function initAppDOM() {
 
       if (data.ok) {
         isAdmAuthenticated = true;
+        sessionStorage.setItem('adm_auth', '1');
         hidePasswordModal();
         showAdmPanel();
         showToast('Bem-vindo à área administrativa!', 'success');
@@ -2023,6 +2024,8 @@ function initAppDOM() {
   // ADM logout
   document.getElementById('adm-logout')?.addEventListener('click', () => {
     isAdmAuthenticated = false;
+    sessionStorage.removeItem('adm_auth');
+    fetch('/api/auth/sair', { method: 'POST' }).catch(() => {});
     hideAdmPanel();
     document.querySelector('.nav-tab[data-tab="credores-fixos"]')?.click();
     showToast('Saiu da área administrativa', 'info');

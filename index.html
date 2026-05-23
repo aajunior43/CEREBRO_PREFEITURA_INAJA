@@ -10,17 +10,12 @@
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='cosmos'){localStorage.setItem('theme','light');t='light';}if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <script>
     // Verificar autenticação ao carregar
-    (async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/verificar');
-        const data = await res.json();
-        if (!data.autenticado) {
-          window.location.href = '/login.html';
-          return;
-        }
-      } catch (e) {
-        console.error('Erro ao verificar autenticação:', e);
-      }
+    // Sincronizar sessao ADM com sessionStorage
+    (function checkAuth() {
+      fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
+        if (d.autenticado) sessionStorage.setItem('adm_auth', '1');
+        else sessionStorage.removeItem('adm_auth');
+      }).catch(function(){});
     })();
   </script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
