@@ -52,3 +52,13 @@ server_modular.py
 *.csv
 documentos_centro/relatorios_html/
 
+# IDEs (CommandCode, Claude, Kilo, Qwen)
+.commandcode/
+.claude/
+.kilo/
+.qwen/
+
+# Logs do servidor
+stdout.log
+stderr.log
+
