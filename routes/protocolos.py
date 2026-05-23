@@ -39,6 +39,8 @@ def protocolo_proximo_numero():
 @bp.route("/api/protocolos", methods=["GET"])
 def protocolos_listar():
     try:
+        limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
+        offset = max(0, request.args.get("offset", 0, type=int))
         conn = get_db()
         clauses, params = [], []
         for field in ("tipo", "status", "direcao"):
@@ -48,16 +50,26 @@ def protocolos_listar():
                 params.append(val)
         busca = request.args.get("busca", "").strip()
         if busca:
-            like = f"%{busca.lower()}%"
-            clauses.append(
-                "(LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? OR numero LIKE ?)"
-            )
-            params.extend([like, like, like])
+            # Try FTS5 first
+            fts_exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='protocolos_fts'").fetchone()
+            if fts_exists:
+                clauses.append("id IN (SELECT rowid FROM protocolos_fts WHERE protocolos_fts MATCH ?)")
+                params.append(busca)
+            else:
+                like = f"%{busca.lower()}%"
+                clauses.append(
+                    "(LOWER(assunto) LIKE ? OR LOWER(origem_destino) LIKE ? OR numero LIKE ?)"
+                )
+                params.extend([like, like, like])
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM protocolos {where}", params
+        ).fetchone()[0]
         rows = conn.execute(
-            f"SELECT * FROM protocolos {where} ORDER BY id DESC", params
+            f"SELECT * FROM protocolos {where} ORDER BY id DESC LIMIT ? OFFSET ?",
+            params + [limit, offset],
         ).fetchall()
-        return jsonify([dict(r) for r in rows])
+        return jsonify({"items": [dict(r) for r in rows], "total": total, "limit": limit, "offset": offset})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

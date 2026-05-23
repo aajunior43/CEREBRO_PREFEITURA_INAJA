@@ -14,6 +14,8 @@ def get_db():
 @bp.route("/api/prazos", methods=["GET"])
 def prazos_listar():
     try:
+        limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
+        offset = max(0, request.args.get("offset", 0, type=int))
         conn = get_db()
         status_f = request.args.get("status", "ativos")
         categoria = request.args.get("categoria", "")
@@ -26,10 +28,14 @@ def prazos_listar():
             clauses.append("categoria=?")
             params.append(categoria)
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM prazos {where}", params
+        ).fetchone()[0]
         rows = conn.execute(
-            f"SELECT * FROM prazos {where} ORDER BY data_limite ASC", params
+            f"SELECT * FROM prazos {where} ORDER BY data_limite ASC LIMIT ? OFFSET ?",
+            params + [limit, offset],
         ).fetchall()
-        return jsonify([dict(r) for r in rows])
+        return jsonify({"items": [dict(r) for r in rows], "total": total, "limit": limit, "offset": offset})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -3,6 +3,9 @@ Blueprint: Credores
 CRUD, lixeira, restaurar, duplicar
 """
 
+import json
+import time as _time
+
 from flask import Blueprint, request, jsonify
 
 from routes.helpers import (
@@ -13,6 +16,9 @@ from routes.helpers import (
 )
 
 bp = Blueprint("credores", __name__)
+
+# Summary cache (TTL 60s)
+_summary_cache = {"data": None, "timestamp": 0}
 
 
 def get_db():
@@ -28,6 +34,30 @@ def row_to_dict(row):
 def _should_include_summary(args) -> bool:
     raw = (args.get("include_summary") or "").strip().lower()
     return raw in {"1", "true", "yes", "on"}
+
+
+def _invalidate_summary_cache():
+    _summary_cache["data"] = None
+    _summary_cache["timestamp"] = 0
+
+
+def _get_summary(conn):
+    now = _time.time()
+    if _summary_cache["data"] is not None and (now - _summary_cache["timestamp"]) < 60:
+        return _summary_cache["data"]
+    resumo = conn.execute(
+        """SELECT COUNT(*) AS total,
+            SUM(CASE WHEN COALESCE(tipo_valor,'FIXO') LIKE 'VAR%' THEN 1 ELSE 0 END) AS variaveis,
+            SUM(CASE WHEN COALESCE(tipo_valor,'FIXO') NOT LIKE 'VAR%' THEN 1 ELSE 0 END) AS fixos,
+            SUM(CASE WHEN COALESCE(cnpj,'')='' THEN 1 ELSE 0 END) AS sem_cnpj,
+            SUM(CASE WHEN COALESCE(email,'')='' THEN 1 ELSE 0 END) AS sem_email,
+            SUM(CASE WHEN COALESCE(validade,'')<>'' AND date(validade)<date('now','localtime') THEN 1 ELSE 0 END) AS vencidos,
+            SUM(CASE WHEN COALESCE(validade,'')<>'' AND date(validade)>=date('now','localtime') AND date(validade)<=date('now','localtime','+30 day') THEN 1 ELSE 0 END) AS vencendo_30
+        FROM credores WHERE ativo=1"""
+    ).fetchone()
+    _summary_cache["data"] = row_to_dict(resumo)
+    _summary_cache["timestamp"] = now
+    return _summary_cache["data"]
 
 
 @bp.route("/api/credores", methods=["GET"])
@@ -61,16 +91,7 @@ def get_credores():
         itens = [row_to_dict(r) for r in rows]
         resumo = None
         if _should_include_summary(request.args):
-            resumo = conn.execute(
-                """SELECT COUNT(*) AS total,
-                    SUM(CASE WHEN COALESCE(tipo_valor,'FIXO') LIKE 'VAR%' THEN 1 ELSE 0 END) AS variaveis,
-                    SUM(CASE WHEN COALESCE(tipo_valor,'FIXO') NOT LIKE 'VAR%' THEN 1 ELSE 0 END) AS fixos,
-                    SUM(CASE WHEN COALESCE(cnpj,'')='' THEN 1 ELSE 0 END) AS sem_cnpj,
-                    SUM(CASE WHEN COALESCE(email,'')='' THEN 1 ELSE 0 END) AS sem_email,
-                    SUM(CASE WHEN COALESCE(validade,'')<>'' AND date(validade)<date('now','localtime') THEN 1 ELSE 0 END) AS vencidos,
-                    SUM(CASE WHEN COALESCE(validade,'')<>'' AND date(validade)>=date('now','localtime') AND date(validade)<=date('now','localtime','+30 day') THEN 1 ELSE 0 END) AS vencendo_30
-                FROM credores WHERE ativo=1"""
-            ).fetchone()
+            resumo = _get_summary(conn)
         return jsonify(
             {
                 "items": itens,
@@ -114,15 +135,18 @@ def add_credor():
         )
         new_id = cur.lastrowid
         conn.execute(
-            "INSERT INTO logs (acao,credor_id,credor_nome,detalhes) VALUES (?,?,?,?)",
+            "INSERT INTO logs (acao,credor_id,credor_nome,credor_departamento,credor_cnpj,detalhes) VALUES (?,?,?,?,?,?)",
             (
                 "CRIAR",
                 new_id,
                 payload.get("nome", ""),
+                payload.get("departamento", ""),
+                payload.get("cnpj", ""),
                 payload.get("departamento", "") or "Cadastro de credor",
             ),
         )
         conn.commit()
+        _invalidate_summary_cache()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
@@ -168,6 +192,7 @@ def update_credor(cid):
             ),
         )
         detalhes = []
+        mudancas = {}
         for key, label in (
             ("nome", "Nome"),
             ("departamento", "Departamento"),
@@ -181,16 +206,21 @@ def update_credor(cid):
             novo = payload.get(key, "")
             if str(anterior or "") != str(novo or ""):
                 detalhes.append(f"{label}: {anterior or '—'} → {novo or '—'}")
+                mudancas[key] = {"antes": str(anterior or ""), "depois": str(novo or "")}
         conn.execute(
-            "INSERT INTO logs (acao,credor_id,credor_nome,detalhes) VALUES (?,?,?,?)",
+            "INSERT INTO logs (acao,credor_id,credor_nome,credor_departamento,credor_cnpj,detalhes,mudancas_json) VALUES (?,?,?,?,?,?,?)",
             (
                 "EDITAR",
                 cid,
                 payload.get("nome", ""),
+                payload.get("departamento", ""),
+                payload.get("cnpj", ""),
                 " | ".join(detalhes) or "Cadastro atualizado",
+                json.dumps(mudancas, ensure_ascii=False),
             ),
         )
         conn.commit()
+        _invalidate_summary_cache()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
         return jsonify(row_to_dict(row))
     except Exception as e:
@@ -207,9 +237,10 @@ def delete_credor(cid):
         if not row:
             return jsonify({"error": "Credor não encontrado"}), 404
         conn.execute("UPDATE credores SET ativo=0 WHERE id=?", (cid,))
+        _invalidate_summary_cache()
         conn.execute(
-            "INSERT INTO logs (acao,credor_id,credor_nome,detalhes) VALUES (?,?,?,?)",
-            ("EXCLUIR", cid, row["nome"], row["departamento"] or "Exclusão lógica"),
+            "INSERT INTO logs (acao,credor_id,credor_nome,credor_departamento,credor_cnpj,detalhes) VALUES (?,?,?,?,?,?)",
+            ("EXCLUIR", cid, row["nome"], row["departamento"] or "", row["cnpj"] or "", row["departamento"] or "Exclusão lógica"),
         )
         conn.commit()
         return jsonify({"ok": True})
@@ -250,12 +281,15 @@ def restaurar_credor(cid):
             "UPDATE credores SET ativo=1, atualizado_em=datetime('now','localtime') WHERE id=?",
             (cid,),
         )
+        _invalidate_summary_cache()
         conn.execute(
-            "INSERT INTO logs (acao,credor_id,credor_nome,detalhes) VALUES (?,?,?,?)",
+            "INSERT INTO logs (acao,credor_id,credor_nome,credor_departamento,credor_cnpj,detalhes) VALUES (?,?,?,?,?,?)",
             (
                 "RESTAURAR",
                 cid,
                 row["nome"],
+                row["departamento"] or "",
+                row["cnpj"] or "",
                 row["departamento"] or "Restaurado da lixeira",
             ),
         )
@@ -303,15 +337,18 @@ def duplicate_credor(cid):
         )
         new_id = cur.lastrowid
         conn.execute(
-            "INSERT INTO logs (acao,credor_id,credor_nome,detalhes) VALUES (?,?,?,?)",
+            "INSERT INTO logs (acao,credor_id,credor_nome,credor_departamento,credor_cnpj,detalhes) VALUES (?,?,?,?,?,?)",
             (
                 "CRIAR",
                 new_id,
                 novo_nome,
+                orig["departamento"] or "",
+                orig["cnpj"] or "",
                 f"Duplicado a partir do credor #{cid} ({orig['nome']})",
             ),
         )
         conn.commit()
+        _invalidate_summary_cache()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:

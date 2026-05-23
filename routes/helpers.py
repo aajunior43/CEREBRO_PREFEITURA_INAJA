@@ -157,14 +157,8 @@ def montar_filtros_credores(args):
     params: list = []
 
     if search:
-        like = f"%{search.lower()}%"
-        clauses.append("""(
-            LOWER(nome) LIKE ?
-            OR LOWER(COALESCE(descricao, '')) LIKE ?
-            OR LOWER(COALESCE(cnpj, '')) LIKE ?
-            OR LOWER(COALESCE(email, '')) LIKE ?
-        )""")
-        params.extend([like, like, like, like])
+        clauses.append("id IN (SELECT rowid FROM credores_fts WHERE credores_fts MATCH ?)")
+        params.append(search)
 
     if departamento:
         clauses.append("COALESCE(departamento, '')=?")

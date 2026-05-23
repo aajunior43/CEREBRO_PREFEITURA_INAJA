@@ -15,10 +15,25 @@ bp = Blueprint("despesas", __name__)
 @bp.route("/api/despesas/importacoes", methods=["GET"])
 def despesas_listar_importacoes():
     conn = get_db()
-    rows = conn.execute(
-        "SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM despesas_importacoes ORDER BY importado_em DESC"
-    ).fetchall()
-    return jsonify([row_to_dict(r) for r in rows])
+    tipo = (request.args.get("tipo") or "despesa").strip()
+    if tipo not in ("despesa", "empenho"):
+        return jsonify({"error": "tipo deve ser 'despesa' ou 'empenho'"}), 400
+    table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
+    try:
+        rows = conn.execute(
+            f"SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM {table} ORDER BY importado_em DESC"
+        ).fetchall()
+        result = [row_to_dict(r) for r in rows]
+        for r in result:
+            r["tipo"] = tipo
+        return jsonify(result)
+    except Exception:
+        # Fallback to unified table
+        rows = conn.execute(
+            "SELECT id,tipo,periodo,descricao,arquivo,total_rows,importado_em FROM csv_importacoes WHERE tipo=? ORDER BY importado_em DESC",
+            (tipo,),
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
 
 
 @bp.route("/api/despesas/importar", methods=["POST"])
@@ -29,6 +44,9 @@ def despesas_importar():
             return jsonify({"error": "JSON inválido"}), 400
         periodo = (d.get("periodo") or "").strip()
         linhas = d.get("linhas", [])
+        tipo = (d.get("tipo") or "despesa").strip()
+        if tipo not in ("despesa", "empenho"):
+            return jsonify({"error": "tipo deve ser 'despesa' ou 'empenho'"}), 400
         if not periodo:
             return jsonify({"error": "Período obrigatório"}), 400
         if not linhas:
@@ -38,31 +56,75 @@ def despesas_importar():
         now = _dt_now.now().strftime("%Y-%m-%d %H:%M:%S")
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO despesas_importacoes (periodo,descricao,arquivo,total_rows,colunas,importado_em) VALUES (?,?,?,?,?,?)",
-            (
-                periodo,
-                (d.get("descricao") or "").strip(),
-                (d.get("arquivo") or "").strip(),
-                len(linhas),
-                json.dumps(d.get("colunas", []), ensure_ascii=False),
-                now,
-            ),
-        )
-        imp_id = cur.lastrowid
-        cur.executemany(
-            "INSERT INTO despesas_linhas (importacao_id,dados) VALUES (?,?)",
-            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
-        )
-        conn.commit()
-        return jsonify(
-            row_to_dict(
-                conn.execute(
-                    "SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM despesas_importacoes WHERE id=?",
-                    (imp_id,),
-                ).fetchone()
+        
+        # Use unified tables if available, fallback to old ones
+        unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+        if unified:
+            cur.execute(
+                "INSERT INTO csv_importacoes (tipo,periodo,descricao,arquivo,total_rows,colunas,importado_em) VALUES (?,?,?,?,?,?,?)",
+                (
+                    tipo, periodo,
+                    (d.get("descricao") or "").strip(),
+                    (d.get("arquivo") or "").strip(),
+                    len(linhas),
+                    json.dumps(d.get("colunas", []), ensure_ascii=False),
+                    now,
+                ),
             )
-        ), 201
+            imp_id = cur.lastrowid
+            cur.executemany(
+                "INSERT INTO csv_linhas (importacao_id,dados) VALUES (?,?)",
+                [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
+            )
+            conn.commit()
+            return jsonify(
+                row_to_dict(
+                    conn.execute(
+                        "SELECT id,tipo,periodo,descricao,arquivo,total_rows,importado_em FROM csv_importacoes WHERE id=?",
+                        (imp_id,),
+                    ).fetchone()
+                )
+            ), 201
+        else:
+            old_table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
+            old_lines = "empenhos_linhas" if tipo == "empenho" else "despesas_linhas"
+            if tipo == "empenho":
+                cur.execute(
+                    f"INSERT INTO {old_table} (periodo,descricao,arquivo,total_rows,importado_em) VALUES (?,?,?,?,?)",
+                    (
+                        periodo,
+                        (d.get("descricao") or "").strip(),
+                        (d.get("arquivo") or "").strip(),
+                        len(linhas),
+                        now,
+                    ),
+                )
+            else:
+                cur.execute(
+                    f"INSERT INTO {old_table} (periodo,descricao,arquivo,total_rows,colunas,importado_em) VALUES (?,?,?,?,?,?)",
+                    (
+                        periodo,
+                        (d.get("descricao") or "").strip(),
+                        (d.get("arquivo") or "").strip(),
+                        len(linhas),
+                        json.dumps(d.get("colunas", []), ensure_ascii=False),
+                        now,
+                    ),
+                )
+            imp_id = cur.lastrowid
+            cur.executemany(
+                f"INSERT INTO {old_lines} (importacao_id,dados) VALUES (?,?)",
+                [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
+            )
+            conn.commit()
+            return jsonify(
+                row_to_dict(
+                    conn.execute(
+                        f"SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM {old_table} WHERE id=?",
+                        (imp_id,),
+                    ).fetchone()
+                )
+            ), 201
     except Exception as e:
         return jsonify({"error": "Erro ao salvar", "detail": str(e)}), 500
 
@@ -70,8 +132,34 @@ def despesas_importar():
 @bp.route("/api/despesas/importacoes/<int:imp_id>", methods=["GET"])
 def despesas_carregar(imp_id):
     conn = get_db()
+    tipo = (request.args.get("tipo") or "despesa").strip()
+    if tipo not in ("despesa", "empenho"):
+        return jsonify({"error": "tipo deve ser 'despesa' ou 'empenho'"}), 400
+    
+    # Try unified first
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        imp = conn.execute(
+            "SELECT id,tipo,periodo,descricao,arquivo,total_rows,colunas,importado_em FROM csv_importacoes WHERE id=? AND tipo=?",
+            (imp_id, tipo),
+        ).fetchone()
+        if not imp:
+            return jsonify({"error": "Importação não encontrada"}), 404
+        linhas = [
+            json.loads(r["dados"])
+            for r in conn.execute(
+                "SELECT dados FROM csv_linhas WHERE importacao_id=? ORDER BY id",
+                (imp_id,),
+            ).fetchall()
+        ]
+        imp_dict = row_to_dict(imp)
+        imp_dict["colunas"] = json.loads(imp_dict.get("colunas") or "[]")
+        return jsonify({"importacao": imp_dict, "linhas": linhas})
+    
+    table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
+    lines_table = "empenhos_linhas" if tipo == "empenho" else "despesas_linhas"
     imp = conn.execute(
-        "SELECT id,periodo,descricao,arquivo,total_rows,colunas,importado_em FROM despesas_importacoes WHERE id=?",
+        f"SELECT * FROM {table} WHERE id=?",
         (imp_id,),
     ).fetchone()
     if not imp:
@@ -79,20 +167,34 @@ def despesas_carregar(imp_id):
     linhas = [
         json.loads(r["dados"])
         for r in conn.execute(
-            "SELECT dados FROM despesas_linhas WHERE importacao_id=? ORDER BY id",
+            f"SELECT dados FROM {lines_table} WHERE importacao_id=? ORDER BY id",
             (imp_id,),
         ).fetchall()
     ]
     imp_dict = row_to_dict(imp)
-    imp_dict["colunas"] = json.loads(imp_dict["colunas"] or "[]")
+    if "colunas" in imp_dict:
+        imp_dict["colunas"] = json.loads(imp_dict["colunas"] or "[]")
     return jsonify({"importacao": imp_dict, "linhas": linhas})
 
 
 @bp.route("/api/despesas/importacoes/<int:imp_id>", methods=["DELETE"])
 def despesas_excluir(imp_id):
     conn = get_db()
-    conn.execute("DELETE FROM despesas_linhas WHERE importacao_id=?", (imp_id,))
-    conn.execute("DELETE FROM despesas_importacoes WHERE id=?", (imp_id,))
+    tipo = (request.args.get("tipo") or "despesa").strip()
+    if tipo not in ("despesa", "empenho"):
+        return jsonify({"error": "tipo deve ser 'despesa' ou 'empenho'"}), 400
+    
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        conn.execute("DELETE FROM csv_linhas WHERE importacao_id=?", (imp_id,))
+        conn.execute("DELETE FROM csv_importacoes WHERE id=?", (imp_id,))
+        conn.commit()
+        return jsonify({"ok": True})
+    
+    lines_table = "empenhos_linhas" if tipo == "empenho" else "despesas_linhas"
+    table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
+    conn.execute(f"DELETE FROM {lines_table} WHERE importacao_id=?", (imp_id,))
+    conn.execute(f"DELETE FROM {table} WHERE id=?", (imp_id,))
     conn.commit()
     return jsonify({"ok": True})
 
@@ -100,17 +202,19 @@ def despesas_excluir(imp_id):
 @bp.route("/api/despesas/importacoes/<int:imp_id>/resumo", methods=["GET"])
 def despesas_resumo(imp_id):
     conn = get_db()
-    imp = conn.execute(
-        "SELECT id,periodo,descricao,arquivo,total_rows,colunas,importado_em FROM despesas_importacoes WHERE id=?",
-        (imp_id,),
-    ).fetchone()
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        imp = conn.execute("SELECT * FROM csv_importacoes WHERE id=?", (imp_id,)).fetchone()
+    else:
+        imp = conn.execute("SELECT id,periodo,descricao,arquivo,total_rows,colunas,importado_em FROM despesas_importacoes WHERE id=?", (imp_id,)).fetchone()
     if not imp:
         return jsonify({"error": "Importação não encontrada"}), 404
-    colunas = json.loads(imp["colunas"] or "[]")
+    colunas = json.loads((imp["colunas"] if "colunas" in imp.keys() else imp.get("colunas")) or "[]")
+    lines_table = "csv_linhas" if unified else "despesas_linhas"
     linhas = [
         json.loads(r["dados"])
         for r in conn.execute(
-            "SELECT dados FROM despesas_linhas WHERE importacao_id=?", (imp_id,)
+            f"SELECT dados FROM {lines_table} WHERE importacao_id=?", (imp_id,)
         ).fetchall()
     ]
 
@@ -288,48 +392,46 @@ def despesas_ia():
         return jsonify({"error": str(err)}), 500
 
 
-# ── EMPENHOS CSV ─────────────────────────────────────────
+# ── EMPENHOS CSV (compat) ─────────────────────────────────
 
 
 @bp.route("/api/empenhos-csv/importar", methods=["POST"])
 def empenhos_csv_importar():
     try:
-        d = request.get_json(force=True)
-        if not d:
-            return jsonify({"error": "JSON inválido"}), 400
+        d = request.get_json(force=True) or {}
         periodo = (d.get("periodo") or "").strip()
         linhas = d.get("linhas", [])
         if not periodo or not linhas:
             return jsonify({"error": "Período e linhas obrigatórios"}), 400
         from datetime import datetime as _dt
-
         now = _dt.now().strftime("%Y-%m-%d %H:%M:%S")
         conn = get_db()
         cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO empenhos_importacoes (periodo,descricao,arquivo,total_rows,importado_em) VALUES (?,?,?,?,?)",
-            (
-                periodo,
-                (d.get("descricao") or "").strip(),
-                (d.get("arquivo") or "").strip(),
-                len(linhas),
-                now,
-            ),
-        )
-        imp_id = cur.lastrowid
-        cur.executemany(
-            "INSERT INTO empenhos_linhas (importacao_id,dados) VALUES (?,?)",
-            [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
-        )
-        conn.commit()
-        return jsonify(
-            row_to_dict(
-                conn.execute(
-                    "SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM empenhos_importacoes WHERE id=?",
-                    (imp_id,),
-                ).fetchone()
+        unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+        if unified:
+            cur.execute(
+                "INSERT INTO csv_importacoes (tipo,periodo,descricao,arquivo,total_rows,colunas,importado_em) VALUES (?,?,?,?,?,?,?)",
+                ("empenho", periodo, (d.get("descricao") or "").strip(), (d.get("arquivo") or "").strip(), len(linhas), json.dumps(d.get("colunas", []), ensure_ascii=False), now),
             )
-        ), 201
+            imp_id = cur.lastrowid
+            cur.executemany(
+                "INSERT INTO csv_linhas (importacao_id,dados) VALUES (?,?)",
+                [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
+            )
+            conn.commit()
+            return jsonify(row_to_dict(conn.execute("SELECT * FROM csv_importacoes WHERE id=?", (imp_id,)).fetchone())), 201
+        else:
+            cur.execute(
+                "INSERT INTO empenhos_importacoes (periodo,descricao,arquivo,total_rows,importado_em) VALUES (?,?,?,?,?)",
+                (periodo, (d.get("descricao") or "").strip(), (d.get("arquivo") or "").strip(), len(linhas), now),
+            )
+            imp_id = cur.lastrowid
+            cur.executemany(
+                "INSERT INTO empenhos_linhas (importacao_id,dados) VALUES (?,?)",
+                [(imp_id, json.dumps(row, ensure_ascii=False)) for row in linhas],
+            )
+            conn.commit()
+            return jsonify(row_to_dict(conn.execute("SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM empenhos_importacoes WHERE id=?", (imp_id,)).fetchone())), 201
     except Exception as e:
         return jsonify({"error": "Erro ao salvar", "detail": str(e)}), 500
 
@@ -337,35 +439,42 @@ def empenhos_csv_importar():
 @bp.route("/api/empenhos-csv/importacoes", methods=["GET"])
 def empenhos_csv_listar():
     conn = get_db()
-    rows = conn.execute(
-        "SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM empenhos_importacoes ORDER BY importado_em DESC"
-    ).fetchall()
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        rows = conn.execute(
+            "SELECT id,tipo,periodo,descricao,arquivo,total_rows,importado_em FROM csv_importacoes WHERE tipo='empenho' ORDER BY importado_em DESC"
+        ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM empenhos_importacoes ORDER BY importado_em DESC"
+        ).fetchall()
     return jsonify([row_to_dict(r) for r in rows])
 
 
 @bp.route("/api/empenhos-csv/importacoes/<int:imp_id>", methods=["GET"])
 def empenhos_csv_carregar(imp_id):
     conn = get_db()
-    imp = conn.execute(
-        "SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM empenhos_importacoes WHERE id=?",
-        (imp_id,),
-    ).fetchone()
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        imp = conn.execute("SELECT * FROM csv_importacoes WHERE id=? AND tipo='empenho'", (imp_id,)).fetchone()
+    else:
+        imp = conn.execute("SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM empenhos_importacoes WHERE id=?", (imp_id,)).fetchone()
     if not imp:
         return jsonify({"error": "Importação não encontrada"}), 404
-    linhas = [
-        json.loads(r["dados"])
-        for r in conn.execute(
-            "SELECT dados FROM empenhos_linhas WHERE importacao_id=? ORDER BY id",
-            (imp_id,),
-        ).fetchall()
-    ]
+    lines_table = "csv_linhas" if unified else "empenhos_linhas"
+    linhas = [json.loads(r["dados"]) for r in conn.execute(f"SELECT dados FROM {lines_table} WHERE importacao_id=? ORDER BY id", (imp_id,)).fetchall()]
     return jsonify({"importacao": row_to_dict(imp), "linhas": linhas})
 
 
 @bp.route("/api/empenhos-csv/importacoes/<int:imp_id>", methods=["DELETE"])
 def empenhos_csv_excluir(imp_id):
     conn = get_db()
-    conn.execute("DELETE FROM empenhos_linhas WHERE importacao_id=?", (imp_id,))
-    conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        conn.execute("DELETE FROM csv_linhas WHERE importacao_id=?", (imp_id,))
+        conn.execute("DELETE FROM csv_importacoes WHERE id=?", (imp_id,))
+    else:
+        conn.execute("DELETE FROM empenhos_linhas WHERE importacao_id=?", (imp_id,))
+        conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
     conn.commit()
     return jsonify({"ok": True})

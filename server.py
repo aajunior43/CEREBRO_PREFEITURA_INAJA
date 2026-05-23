@@ -205,6 +205,18 @@ def create_app() -> Flask:
             "CREATE INDEX IF NOT EXISTS idx_prazos_data_limite ON prazos(data_limite)",
             "CREATE INDEX IF NOT EXISTS idx_classificador_despesa_item ON classificador_despesa_historico(item)",
             "CREATE INDEX IF NOT EXISTS idx_classificador_despesa_created ON classificador_despesa_historico(criado_em)",
+            "CREATE INDEX IF NOT EXISTS idx_autentique_envios_signature ON autentique_envios(autentique_signature_public_id)",
+            "CREATE INDEX IF NOT EXISTS idx_autentique_envios_doc_id ON autentique_envios(autentique_document_id)",
+            "CREATE INDEX IF NOT EXISTS idx_protocolo_anexos_protocolo ON protocolo_anexos(protocolo_id)",
+            "CREATE INDEX IF NOT EXISTS idx_credores_ativo_depto_nome ON credores(ativo, departamento, nome)",
+            "CREATE INDEX IF NOT EXISTS idx_credores_ativo_tipo ON credores(ativo, tipo_valor)",
+            "CREATE INDEX IF NOT EXISTS idx_kanban_attach_task_order ON kanban_attachments(task_id, criado_em, id)",
+            "CREATE INDEX IF NOT EXISTS idx_logs_acao_data ON logs(acao, data DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_rpas_criado_em ON rpas(criado_em)",
+            "CREATE INDEX IF NOT EXISTS idx_credores_nome_upper ON credores(UPPER(nome))",
+            "CREATE INDEX IF NOT EXISTS idx_autentique_contatos_nome ON autentique_contatos(nome COLLATE NOCASE)",
+            "CREATE INDEX IF NOT EXISTS idx_usuarios_login ON usuarios(login)",
+            "CREATE INDEX IF NOT EXISTS idx_usuarios_nivel ON usuarios(nivel)",
         ]:
             try:
                 cur.execute(sql)
@@ -217,8 +229,8 @@ def create_app() -> Flask:
         
         # 1. Base Table Creation (without _contents tables)
         for sql in [
-            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
-            "CREATE TABLE IF NOT EXISTS rpas (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_rpa TEXT, nome_prestador TEXT NOT NULL, cpf_prestador TEXT, endereco_prestador TEXT, descricao_servico TEXT, periodo_referencia TEXT, carga_horaria TEXT, local_execucao TEXT, valor_bruto REAL DEFAULT 0, num_dependentes INTEGER DEFAULT 0, pensao_alimenticia REAL DEFAULT 0, inss REAL DEFAULT 0, iss REAL DEFAULT 0, deducao_dependentes REAL DEFAULT 0, base_calculo_irrf REAL DEFAULT 0, aliquota_irrf REAL DEFAULT 0, parcela_deduzir_irrf REAL DEFAULT 0, ir REAL DEFAULT 0, valor_liquido REAL DEFAULT 0, observacoes TEXT, data_emissao TEXT, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, credor_departamento TEXT DEFAULT '', credor_cnpj TEXT DEFAULT '', detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
+            "CREATE TABLE IF NOT EXISTS rpas (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_rpa TEXT, nome_prestador TEXT NOT NULL, cpf_prestador TEXT NOT NULL DEFAULT '', endereco_prestador TEXT, descricao_servico TEXT, periodo_referencia TEXT, carga_horaria TEXT, local_execucao TEXT, valor_bruto REAL DEFAULT 0 CHECK (valor_bruto >= 0), num_dependentes INTEGER DEFAULT 0, pensao_alimenticia REAL DEFAULT 0, inss REAL DEFAULT 0, iss REAL DEFAULT 0, deducao_dependentes REAL DEFAULT 0, base_calculo_irrf REAL DEFAULT 0, aliquota_irrf REAL DEFAULT 0, parcela_deduzir_irrf REAL DEFAULT 0, ir REAL DEFAULT 0, valor_liquido REAL DEFAULT 0 CHECK (valor_liquido >= 0), observacoes TEXT, data_emissao TEXT, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS empenhos_importacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, periodo TEXT NOT NULL, descricao TEXT, arquivo TEXT, total_rows INTEGER DEFAULT 0, importado_em TEXT)",
             "CREATE TABLE IF NOT EXISTS empenhos_linhas (id INTEGER PRIMARY KEY AUTOINCREMENT, importacao_id INTEGER NOT NULL REFERENCES empenhos_importacoes(id) ON DELETE CASCADE, dados TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS documentos_centro (id INTEGER PRIMARY KEY AUTOINCREMENT, nome_original TEXT NOT NULL, nome_arquivo TEXT NOT NULL, categoria TEXT NOT NULL, referencia TEXT DEFAULT '', descricao TEXT DEFAULT '', tamanho INTEGER DEFAULT 0, extensao TEXT DEFAULT '', caminho_relativo TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
@@ -227,8 +239,8 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS despesas_importacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, periodo TEXT NOT NULL, descricao TEXT, arquivo TEXT, total_rows INTEGER DEFAULT 0, colunas TEXT, importado_em TEXT)",
             "CREATE TABLE IF NOT EXISTS despesas_linhas (id INTEGER PRIMARY KEY AUTOINCREMENT, importacao_id INTEGER NOT NULL REFERENCES despesas_importacoes(id) ON DELETE CASCADE, dados TEXT NOT NULL)",
             "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
-            "CREATE TABLE IF NOT EXISTS prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
-            "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido', origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL, prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
+            "CREATE TABLE IF NOT EXISTS prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL CHECK (data_limite GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0 CHECK (resolvido IN (0,1)), criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido' CHECK (direcao IN ('recebido','enviado')), origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL CHECK (data_protocolo GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
             "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
         ]:
             cur.execute(sql)
@@ -356,6 +368,40 @@ def create_app() -> Flask:
                 cur.execute(alter)
             except Exception:
                 pass
+        # Add snapshot columns to logs
+        for alter_extra in [
+            "ALTER TABLE logs ADD COLUMN credor_departamento TEXT DEFAULT ''",
+            "ALTER TABLE logs ADD COLUMN credor_cnpj TEXT DEFAULT ''",
+        ]:
+            try:
+                cur.execute(alter_extra)
+            except Exception:
+                pass
+
+        # Drop senha_plana column if it still exists
+        cur.execute("PRAGMA table_info(usuarios)")
+        user_cols = [r["name"] for r in cur.fetchall()]
+        if "senha_plana" in user_cols:
+            try:
+                cur.execute("ALTER TABLE usuarios RENAME TO usuarios_migration_temp")
+                cur.execute("""CREATE TABLE usuarios (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL,
+                    email TEXT DEFAULT '',
+                    login TEXT NOT NULL UNIQUE,
+                    senha_hash TEXT NOT NULL,
+                    nivel TEXT NOT NULL DEFAULT 'operador'
+                        CHECK (nivel IN ('admin','operador','leitor')),
+                    ativo INTEGER NOT NULL DEFAULT 1,
+                    criado_em TEXT DEFAULT (datetime('now','localtime')),
+                    atualizado_em TEXT DEFAULT (datetime('now','localtime'))
+                )""")
+                cur.execute("INSERT INTO usuarios (id,nome,email,login,senha_hash,nivel,ativo,criado_em,atualizado_em) SELECT id,nome,email,login,senha_hash,nivel,ativo,criado_em,atualizado_em FROM usuarios_migration_temp")
+                cur.execute("DROP TABLE usuarios_migration_temp")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_login ON usuarios(login)")
+                cur.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_nivel ON usuarios(nivel)")
+            except Exception:
+                pass
         conn.commit()
 
         # Multi-user auth table
@@ -365,7 +411,7 @@ def create_app() -> Flask:
             email TEXT DEFAULT '',
             login TEXT NOT NULL UNIQUE,
             senha_hash TEXT NOT NULL,
-            senha_plana TEXT DEFAULT '',
+
             nivel TEXT NOT NULL DEFAULT 'operador'
                 CHECK (nivel IN ('admin','operador','leitor')),
             ativo INTEGER NOT NULL DEFAULT 1,
@@ -380,11 +426,11 @@ def create_app() -> Flask:
         conn = get_db()
         cur = conn.cursor()
         for sql in [
-            "CREATE TABLE IF NOT EXISTS credores (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, valor REAL DEFAULT 0, descricao TEXT, cnpj TEXT, email TEXT, tipo_valor TEXT DEFAULT 'FIXO', solicitacao TEXT, pagamento TEXT, validade TEXT, departamento TEXT, obs TEXT, ativo INTEGER DEFAULT 1)",
-            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
-            "CREATE TABLE IF NOT EXISTS empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL, mes INTEGER NOT NULL, empenhado INTEGER DEFAULT 1, timestamp TEXT, UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE CASCADE)",
+            "CREATE TABLE IF NOT EXISTS credores (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, valor REAL DEFAULT 0 CHECK (valor >= 0), descricao TEXT, cnpj TEXT, email TEXT, tipo_valor TEXT DEFAULT 'FIXO' CHECK (tipo_valor IN ('FIXO','VARIÁVEL')), solicitacao TEXT, pagamento TEXT, validade TEXT CHECK (validade IS NULL OR validade GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), departamento TEXT, obs TEXT, ativo INTEGER DEFAULT 1 CHECK (ativo IN (0,1)))",
+            "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, credor_departamento TEXT DEFAULT '', credor_cnpj TEXT DEFAULT '', detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
+            "CREATE TABLE IF NOT EXISTS empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL CHECK (ano >= 2000 AND ano <= 2100), mes INTEGER NOT NULL CHECK (mes >= 1 AND mes <= 12), empenhado INTEGER DEFAULT 1 CHECK (empenhado IN (0,1)), timestamp TEXT NOT NULL DEFAULT (datetime('now','localtime')), UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE CASCADE)",
             "CREATE TABLE IF NOT EXISTS rpas (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_rpa TEXT, nome_prestador TEXT NOT NULL, cpf_prestador TEXT, endereco_prestador TEXT, descricao_servico TEXT, periodo_referencia TEXT, carga_horaria TEXT, local_execucao TEXT, valor_bruto REAL DEFAULT 0, num_dependentes INTEGER DEFAULT 0, pensao_alimenticia REAL DEFAULT 0, inss REAL DEFAULT 0, iss REAL DEFAULT 0, deducao_dependentes REAL DEFAULT 0, base_calculo_irrf REAL DEFAULT 0, aliquota_irrf REAL DEFAULT 0, parcela_deduzir_irrf REAL DEFAULT 0, ir REAL DEFAULT 0, valor_liquido REAL DEFAULT 0, observacoes TEXT, data_emissao TEXT, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
-            "CREATE TABLE IF NOT EXISTS kanban_tasks (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT '', status TEXT DEFAULT 'todo', priority TEXT DEFAULT 'medium', concluido_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS kanban_tasks (id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT DEFAULT '', status TEXT DEFAULT 'todo' CHECK (status IN ('todo','in-progress','done')), priority TEXT DEFAULT 'medium' CHECK (priority IN ('low','medium','high')), concluido_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS fornecimento_dados (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL, valor TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')), UNIQUE(tipo, valor))",
             "CREATE TABLE IF NOT EXISTS configuracoes (chave TEXT PRIMARY KEY, valor TEXT NOT NULL DEFAULT '', atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
@@ -398,6 +444,99 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
         ]:
             cur.execute(sql)
+
+        # FTS5 virtual tables for full-text search
+        cur.execute("CREATE VIRTUAL TABLE IF NOT EXISTS credores_fts USING fts5(nome, descricao, cnpj, email, content=credores, content_rowid=id)")
+        cur.execute("CREATE VIRTUAL TABLE IF NOT EXISTS protocolos_fts USING fts5(assunto, origem_destino, numero, content=protocolos, content_rowid=id)")
+
+        # Schema version tracking
+        cur.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY, applied_at TEXT DEFAULT (datetime('now','localtime')))")
+        cur.execute("INSERT OR IGNORE INTO schema_version (version) VALUES (2)")
+
+        # View para classificador sem colunas redundantes
+        cur.execute("""
+            CREATE VIEW IF NOT EXISTS v_classificador_despesa AS
+            SELECT 
+                id, item, codigo_completo,
+                json_extract(resultado_json, '$.grupo') AS grupo,
+                json_extract(resultado_json, '$.modalidade') AS modalidade,
+                json_extract(resultado_json, '$.elemento') AS elemento,
+                json_extract(resultado_json, '$.subelemento_codigo') || ' - ' || json_extract(resultado_json, '$.subelemento_nome') AS subelemento,
+                json_extract(resultado_json, '$.justificativa') AS justificativa,
+                json_extract(resultado_json, '$.ponto_atencao') AS ponto_atencao,
+                CAST(COALESCE(json_extract(resultado_json, '$.confianca'), 0) AS REAL) AS confianca,
+                resultado_json, model, cached, criado_em
+            FROM classificador_despesa_historico
+        """)
+
+        # Structured audit changes in logs
+        for alter_extra in [
+            "ALTER TABLE logs ADD COLUMN mudancas_json TEXT DEFAULT '{}'",
+        ]:
+            try:
+                cur.execute(alter_extra)
+            except Exception:
+                pass
+
+        # Unified CSV import tables (replaces despesas_importacoes + empenhos_importacoes)
+        cur.execute("CREATE TABLE IF NOT EXISTS csv_importacoes (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL CHECK (tipo IN ('despesa','empenho')), periodo TEXT NOT NULL, descricao TEXT DEFAULT '', arquivo TEXT DEFAULT '', total_rows INTEGER DEFAULT 0, colunas TEXT DEFAULT '[]', importado_em TEXT DEFAULT (datetime('now','localtime')))")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_csv_importacoes_tipo_periodo ON csv_importacoes(tipo, periodo)")
+        cur.execute("CREATE TABLE IF NOT EXISTS csv_linhas (id INTEGER PRIMARY KEY AUTOINCREMENT, importacao_id INTEGER NOT NULL REFERENCES csv_importacoes(id) ON DELETE CASCADE, dados TEXT NOT NULL)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_csv_linhas_importacao ON csv_linhas(importacao_id)")
+
+        # Migrate data from old tables if they exist
+        old_despesas = cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='despesas_importacoes'").fetchone()
+        if old_despesas:
+            try:
+                cur.execute("INSERT OR IGNORE INTO csv_importacoes (id,tipo,periodo,descricao,arquivo,total_rows,colunas,importado_em) SELECT id,'despesa',periodo,COALESCE(descricao,''),COALESCE(arquivo,''),total_rows,COALESCE(colunas,'[]'),importado_em FROM despesas_importacoes")
+                cur.execute("INSERT OR IGNORE INTO csv_linhas (id,importacao_id,dados) SELECT id,importacao_id,dados FROM despesas_linhas")
+            except Exception:
+                pass
+        
+        old_empenhos_imp = cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='empenhos_importacoes'").fetchone()
+        if old_empenhos_imp:
+            try:
+                max_id = cur.execute("SELECT COALESCE(MAX(id),0) FROM csv_linhas").fetchone()[0]
+                cur.execute("INSERT OR IGNORE INTO csv_importacoes (tipo,periodo,descricao,arquivo,total_rows,colunas,importado_em) SELECT 'empenho',periodo,COALESCE(descricao,''),COALESCE(arquivo,''),total_rows,'[]',importado_em FROM empenhos_importacoes")
+                for imp_row in cur.execute("SELECT id FROM empenhos_importacoes ORDER BY id").fetchall():
+                    old_id = imp_row["id"]
+                    new_id = cur.execute("SELECT id FROM csv_importacoes WHERE tipo='empenho' AND id NOT IN (SELECT id FROM csv_importacoes WHERE tipo='despesa') ORDER BY id").fetchone()
+                    if new_id:
+                        cur.execute("INSERT OR IGNORE INTO csv_linhas (importacao_id,dados) SELECT ?,dados FROM empenhos_linhas WHERE importacao_id=?", (new_id["id"], old_id))
+            except Exception:
+                pass
+
+        # FTS5 sync triggers
+        cur.executescript("""
+            CREATE TRIGGER IF NOT EXISTS credores_fts_ai AFTER INSERT ON credores BEGIN
+                INSERT INTO credores_fts(rowid, nome, descricao, cnpj, email)
+                VALUES (new.id, new.nome, new.descricao, new.cnpj, new.email);
+            END;
+            CREATE TRIGGER IF NOT EXISTS credores_fts_ad AFTER DELETE ON credores BEGIN
+                INSERT INTO credores_fts(credores_fts, rowid, nome, descricao, cnpj, email)
+                VALUES ('delete', old.id, old.nome, old.descricao, old.cnpj, old.email);
+            END;
+            CREATE TRIGGER IF NOT EXISTS credores_fts_au AFTER UPDATE ON credores BEGIN
+                INSERT INTO credores_fts(credores_fts, rowid, nome, descricao, cnpj, email)
+                VALUES ('delete', old.id, old.nome, old.descricao, old.cnpj, old.email);
+                INSERT INTO credores_fts(rowid, nome, descricao, cnpj, email)
+                VALUES (new.id, new.nome, new.descricao, new.cnpj, new.email);
+            END;
+            CREATE TRIGGER IF NOT EXISTS protocolos_fts_ai AFTER INSERT ON protocolos BEGIN
+                INSERT INTO protocolos_fts(rowid, assunto, origem_destino, numero)
+                VALUES (new.id, new.assunto, new.origem_destino, new.numero);
+            END;
+            CREATE TRIGGER IF NOT EXISTS protocolos_fts_ad AFTER DELETE ON protocolos BEGIN
+                INSERT INTO protocolos_fts(protocolos_fts, rowid, assunto, origem_destino, numero)
+                VALUES ('delete', old.id, old.assunto, old.origem_destino, old.numero);
+            END;
+            CREATE TRIGGER IF NOT EXISTS protocolos_fts_au AFTER UPDATE ON protocolos BEGIN
+                INSERT INTO protocolos_fts(protocolos_fts, rowid, assunto, origem_destino, numero)
+                VALUES ('delete', old.id, old.assunto, old.origem_destino, old.numero);
+                INSERT INTO protocolos_fts(rowid, assunto, origem_destino, numero)
+                VALUES (new.id, new.assunto, new.origem_destino, new.numero);
+            END;
+        """)
 
         count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
         if count == 0 and os.path.exists(DATA_JS):

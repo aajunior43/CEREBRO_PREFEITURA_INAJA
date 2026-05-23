@@ -21,7 +21,6 @@ def init_usuarios_table(app):
         email TEXT DEFAULT '',
         login TEXT NOT NULL UNIQUE,
         senha_hash TEXT NOT NULL,
-        senha_plana TEXT DEFAULT '',
         nivel TEXT NOT NULL DEFAULT 'operador'
             CHECK (nivel IN ('admin','operador','leitor')),
         ativo INTEGER NOT NULL DEFAULT 1,
@@ -39,8 +38,8 @@ def _seed_admin(admin_password, app):
     if row:
         return
     conn.execute(
-        "INSERT INTO usuarios (nome,email,login,senha_hash,senha_plana,nivel,ativo) VALUES (?,?,?,?,?,?,1)",
-        ("Administrador", "admin@inaja.pr.gov.br", "admin", _hash(admin_password), admin_password, "admin"),
+        "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
+        ("Administrador", "admin@inaja.pr.gov.br", "admin", _hash(admin_password), "admin"),
     )
     conn.commit()
 
@@ -65,11 +64,6 @@ def _usuario_to_dict(row) -> dict:
         "criado_em": row["criado_em"],
         "atualizado_em": row["atualizado_em"],
     }
-    # So admin ve a senha plana
-    try:
-        d["senha"] = row["senha_plana"] or ""
-    except (IndexError, KeyError):
-        d["senha"] = ""
     return d
 
 
@@ -144,8 +138,8 @@ def auth_adm_legacy():
     row = conn.execute("SELECT * FROM usuarios WHERE login='admin' AND ativo=1").fetchone()
     if not row:
         conn.execute(
-            "INSERT INTO usuarios (nome,email,login,senha_hash,senha_plana,nivel,ativo) VALUES (?,?,?,?,?,?,1)",
-            ("Administrador", "admin@inaja.pr.gov.br", "admin", _hash(admin_password), admin_password, "admin"),
+            "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
+            ("Administrador", "admin@inaja.pr.gov.br", "admin", _hash(admin_password), "admin"),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM usuarios WHERE login='admin' AND ativo=1").fetchone()
@@ -194,8 +188,8 @@ def criar_usuario():
         return jsonify({"ok": False, "error": f"Login '{login}' ja existe"}), 409
 
     conn.execute(
-        "INSERT INTO usuarios (nome,email,login,senha_hash,senha_plana,nivel,ativo) VALUES (?,?,?,?,?,?,1)",
-        (nome, email, login, _hash(senha), senha, nivel),
+        "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
+        (nome, email, login, _hash(senha), nivel),
     )
     conn.commit()
     row = conn.execute("SELECT * FROM usuarios WHERE login=?", (login,)).fetchone()
@@ -224,14 +218,12 @@ def atualizar_usuario(uid: int):
         return jsonify({"error": f"Login '{login}' ja existe"}), 409
 
     senha_hash = row["senha_hash"]
-    senha_plana = row["senha_plana"]
     if d.get("senha"):
         senha_hash = _hash(d["senha"])
-        senha_plana = d["senha"]
 
     conn.execute(
-        "UPDATE usuarios SET nome=?,email=?,login=?,senha_hash=?,senha_plana=?,nivel=?,ativo=?,atualizado_em=datetime('now','localtime') WHERE id=?",
-        (nome, email, login, senha_hash, senha_plana, nivel, 1 if ativo else 0, uid),
+        "UPDATE usuarios SET nome=?,email=?,login=?,senha_hash=?,nivel=?,ativo=?,atualizado_em=datetime('now','localtime') WHERE id=?",
+        (nome, email, login, senha_hash, nivel, 1 if ativo else 0, uid),
     )
     conn.commit()
     row = conn.execute("SELECT * FROM usuarios WHERE id=?", (uid,)).fetchone()
@@ -272,8 +264,8 @@ def alterar_senha():
         return jsonify({"ok": False, "error": "Senha atual incorreta"}), 401
 
     conn.execute(
-        "UPDATE usuarios SET senha_hash=?,senha_plana=?,atualizado_em=datetime('now','localtime') WHERE id=?",
-        (_hash(senha_nova), senha_nova, uid),
+        "UPDATE usuarios SET senha_hash=?,atualizado_em=datetime('now','localtime') WHERE id=?",
+        (_hash(senha_nova), uid),
     )
     conn.commit()
     return jsonify({"ok": True, "mensagem": "Senha alterada com sucesso"})
