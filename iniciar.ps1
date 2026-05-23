@@ -1,10 +1,10 @@
 # =============================================================================
-# iniciar.ps1 — Servidor Web Flask
-# Prefeitura Municipal de Inajá
+# iniciar.ps1 - Servidor Web Flask
+# Prefeitura Municipal de Inaja
 # =============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$host.UI.RawUI.WindowTitle = "Prefeitura de Inajá — Servidor Web"
+$host.UI.RawUI.WindowTitle = "Prefeitura de Inaja - Servidor Web"
 Set-Location $PSScriptRoot
 
 function Write-Step  { Write-Host "[>>] $args" -Fore Yellow }
@@ -26,28 +26,29 @@ function Find-Python {
             }
         } catch {}
     }
-    Write-Fail "Python >= 3.8 não encontrado."
+    Write-Fail "Python >= 3.8 nao encontrado."
     return $null
 }
 
-# ── 2. Instalar dependências ────────────────────────────────────────────────
+# ── 2. Instalar dependencias ────────────────────────────────────────────────
 function Install-Deps {
     param($PythonCmd)
-    Write-Step "Verificando dependências..."
+    Write-Step "Verificando dependencias..."
     $missing = @()
     $packages = (Get-Content requirements.txt) | Where { $_ -match '\S' -and $_ -notmatch '^\s*#' }
+    $modMap = @{ "pillow"="PIL"; "beautifulsoup4"="bs4"; "pyyaml"="yaml"; "scikit-learn"="sklearn" }
     foreach ($pkg in $packages) {
         $mod = $pkg -split '[>=<!]' | Select -First 1
-        $mod = @{ "pillow"="PIL"; "beautifulsoup4"="bs4"; "pyyaml"="yaml"; "scikit-learn"="sklearn" }[$mod] ?? $mod
+        if ($modMap.ContainsKey($mod)) { $mod = $modMap[$mod] }
         & $PythonCmd -c "import $mod" 2>$null
         if ($LASTEXITCODE -ne 0) { $missing += $pkg; Write-Host "    [ ] $pkg" -Fore DarkYellow }
         else { Write-Host "    [v] $pkg" -Fore DarkGreen }
     }
-    if ($missing.Count -eq 0) { Write-OK "Todas as dependências instaladas."; return $true }
+    if ($missing.Count -eq 0) { Write-OK "Todas as dependencias instaladas."; return $true }
     Write-Step "Instalando $($missing.Count) pacote(s)..."
     & $PythonCmd -m pip install @missing --quiet
     if ($LASTEXITCODE -ne 0) { Write-Fail "Falha ao instalar."; return $false }
-    Write-OK "Dependências instaladas."
+    Write-OK "Dependencias instaladas."
     return $true
 }
 

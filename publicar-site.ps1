@@ -1,10 +1,10 @@
 # =============================================================================
-# publicar-site.ps1 — Publicação via Cloudflare Tunnel
-# Prefeitura Municipal de Inajá
+# publicar-site.ps1 - Publicacao via Cloudflare Tunnel
+# Prefeitura Municipal de Inaja
 # =============================================================================
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$host.UI.RawUI.WindowTitle = "Prefeitura de Inajá — Cloudflare Tunnel"
+$host.UI.RawUI.WindowTitle = "Prefeitura de Inaja - Cloudflare Tunnel"
 Set-Location $PSScriptRoot
 
 function Write-Step  { Write-Host "[>>] $args" -Fore Yellow }
@@ -17,10 +17,10 @@ $global:FlaskProc = $null
 function Ensure-Flask {
     $conn = Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue
     if ($conn -and $conn.State -eq "Listen") {
-        Write-OK "Servidor Flask já está rodando na porta 5000."
+        Write-OK "Servidor Flask ja esta rodando na porta 5000."
         return $true
     }
-    Write-Step "Flask não está rodando. Iniciando em segundo plano..."
+    Write-Step "Flask nao esta rodando. Iniciando em segundo plano..."
     # Matar processos na porta primeiro
     Get-NetTCPConnection -LocalPort 5000 -ErrorAction SilentlyContinue | ForEach-Object {
         Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
@@ -31,12 +31,12 @@ function Ensure-Flask {
         $ver = & $cmd --version 2>$null
         if ($ver -match "Python 3") { $py = $cmd; break }
     }
-    if (-not $py) { Write-Fail "Python não encontrado."; return $false }
+    if (-not $py) { Write-Fail "Python nao encontrado."; return $false }
     # Iniciar Flask como processo oculto
     $global:FlaskProc = Start-Process -FilePath $py -ArgumentList "server.py" -WorkingDirectory $PSScriptRoot -PassThru -WindowStyle Hidden
     Start-Sleep 3
     if (-not $global:FlaskProc.HasExited) { Write-OK "Flask iniciado (PID $($global:FlaskProc.Id))."; return $true }
-    Write-Fail "Flask não iniciou."; return $false
+    Write-Fail "Flask nao iniciou."; return $false
 }
 
 # ── 2. Verificar cloudflared.exe ────────────────────────────────────────────
@@ -47,7 +47,7 @@ function Find-Cloudflared {
         (Get-Command "cloudflared" -ErrorAction SilentlyContinue).Source
     )
     foreach ($p in $paths) { if ($p -and (Test-Path $p)) { Write-OK "Encontrado: $p"; return $p } }
-    Write-Fail "cloudflared.exe não encontrado."
+    Write-Fail "cloudflared.exe nao encontrado."
     Write-Info "Baixe em: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/"
     Write-Info "Coloque o .exe na pasta: $PSScriptRoot"
     return $null
@@ -57,7 +57,7 @@ function Find-Cloudflared {
 function Start-Tunnel {
     param($CloudflaredPath)
     Write-Step "Iniciando Cloudflare Tunnel..."
-    Write-Host "  Aguardando URL pública..." -Fore DarkGray
+    Write-Host "  Aguardando URL publica..." -Fore DarkGray
 
     $url = $null
     $job = Start-Job -ScriptBlock { param($exe) & $exe tunnel --url http://localhost:5000 2>&1 } -ArgumentList $CloudflaredPath
@@ -77,7 +77,7 @@ function Start-Tunnel {
     }
 
     if (-not $url) {
-        Write-Fail "Não foi possível obter URL do tunnel."
+        Write-Fail "Nao foi possivel obter URL do tunnel."
         Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue
         return $null
     }
@@ -97,7 +97,7 @@ function Show-URL {
     Write-Host "   Local: http://localhost:5000" -Fore Green
     Write-Host "============================================================" -Fore Green
     Write-Host ""
-    try { Set-Clipboard -Value $Url; Write-OK "URL copiada para área de transferência." } catch {}
+    try { Set-Clipboard -Value $Url; Write-OK "URL copiada para area de transferencia." } catch {}
     Write-Host "  Pressione Ctrl+C para encerrar." -Fore DarkGray
     Write-Host ""
 }
@@ -107,7 +107,7 @@ try {
     Write-Host ""
     Write-Host "============================================================" -Fore Cyan
     Write-Host "   PREFEITURA MUNICIPAL DE INAJÁ" -Fore Cyan
-    Write-Host "   Publicação via Cloudflare Tunnel" -Fore Cyan
+    Write-Host "   Publicacao via Cloudflare Tunnel" -Fore Cyan
     Write-Host "============================================================" -Fore Cyan
     Write-Host ""
 
