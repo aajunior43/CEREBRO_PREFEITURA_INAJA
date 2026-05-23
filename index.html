@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='cosmos'){localStorage.setItem('theme','light');t='light';}if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
   <script>
-    // Sincronizar sessao com sessionStorage
     (function checkAuth() {
       fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
         if (d.autenticado) {
@@ -17,11 +16,12 @@
           sessionStorage.setItem('user_nome', d.nome || '');
           sessionStorage.setItem('user_nivel', d.nivel || '');
         } else {
-          sessionStorage.removeItem('adm_auth');
-          sessionStorage.removeItem('user_nome');
-          sessionStorage.removeItem('user_nivel');
+          sessionStorage.clear();
+          window.location.replace('/login.html');
         }
-      }).catch(function(){});
+      }).catch(function(){
+        window.location.replace('/login.html');
+      });
     })();
   </script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
