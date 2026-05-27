@@ -897,6 +897,19 @@
         }
       });
 
+      // Make card draggable for Kanban column drag & drop
+      card.draggable = true;
+      
+      card.addEventListener('dragstart', (e) => {
+        // Store task ID in dataTransfer
+        e.dataTransfer.setData('text/plain', item.id);
+        card.style.opacity = '0.4';
+      });
+      
+      card.addEventListener('dragend', () => {
+        card.style.opacity = '';
+      });
+
       return card;
     }
 
@@ -993,6 +1006,42 @@
     document.getElementById('filtro-categoria').addEventListener('change', renderMural);
     document.getElementById('filtro-prioridade').addEventListener('change', renderMural);
     document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
+
+    // Setup Column Drop Targets for Kanban Drag & Drop
+    document.querySelectorAll('.mural-col-list').forEach(listEl => {
+      const colEl = listEl.closest('.mural-col');
+      const targetStatus = colEl.getAttribute('data-status');
+      
+      listEl.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        listEl.style.background = 'rgba(255, 255, 255, 0.08)';
+      });
+      
+      listEl.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        listEl.style.background = 'rgba(255, 255, 255, 0.08)';
+      });
+      
+      listEl.addEventListener('dragleave', () => {
+        listEl.style.background = '';
+      });
+      
+      listEl.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        listEl.style.background = '';
+        
+        const taskIdStr = e.dataTransfer.getData('text/plain');
+        if (taskIdStr) {
+          const taskId = parseInt(taskIdStr, 10);
+          if (!isNaN(taskId)) {
+            const task = cacheRecados.find(r => r.id === taskId);
+            if (task && task.status !== targetStatus) {
+              await alterarStatusRecado(taskId, targetStatus);
+            }
+          }
+        }
+      });
+    });
 
     // Attachment JS Handlers
     let currentUploadRecadoId = null;
