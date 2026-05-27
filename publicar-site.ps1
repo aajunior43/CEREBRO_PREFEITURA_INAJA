@@ -60,7 +60,7 @@ function Start-Tunnel {
     Write-Host "  Aguardando URL publica..." -Fore DarkGray
 
     $url = $null
-    $job = Start-Job -ScriptBlock { param($exe) & $exe tunnel --url http://localhost:5000 2>&1 } -ArgumentList $CloudflaredPath
+    $job = Start-Job -ScriptBlock { param($exe) & $exe tunnel --url http://127.0.0.1:5000 2>&1 } -ArgumentList $CloudflaredPath
 
     $elapsed = 0
     while ($elapsed -lt 60) {
