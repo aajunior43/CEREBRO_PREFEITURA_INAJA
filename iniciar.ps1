@@ -40,7 +40,7 @@ function Install-Deps {
     Write-Step "Verificando dependencias..."
     $missing = @()
     $packages = (Get-Content requirements.txt) | Where { $_ -match '\S' -and $_ -notmatch '^\s*#' }
-    $modMap = @{ "pillow"="PIL"; "beautifulsoup4"="bs4"; "pyyaml"="yaml"; "scikit-learn"="sklearn" }
+    $modMap = @{ "Flask"="flask"; "tavily-python"="tavily"; "pillow"="PIL"; "beautifulsoup4"="bs4"; "pyyaml"="yaml"; "scikit-learn"="sklearn" }
     foreach ($pkg in $packages) {
         $mod = $pkg -split '[>=<!]' | Select -First 1
         if ($modMap.ContainsKey($mod)) { $mod = $modMap[$mod] }
