@@ -891,66 +891,247 @@ def create_app() -> Flask:
         <html lang="pt-BR">
         <head>
             <meta charset="UTF-8">
-            <title>Erro do Sistema - Prefeitura de Inajá</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Erro Interno - Prefeitura de Inajá</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
             <style>
+                :root {{
+                    --bg: #030712;
+                    --card-bg: rgba(17, 24, 39, 0.7);
+                    --border: rgba(255, 255, 255, 0.08);
+                    --text: #f9fafb;
+                    --text-secondary: #9ca3af;
+                    --red: #ef4444;
+                    --red-glow: rgba(239, 68, 68, 0.15);
+                    --blue: #3b82f6;
+                    --blue-glow: rgba(59, 130, 246, 0.2);
+                    --purple: #8b5cf6;
+                }}
+
+                * {{
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                }}
+
                 body {{
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    background: #0f172a;
-                    color: #f8fafc;
-                    padding: 40px;
-                    line-height: 1.6;
-                }}
-                .container {{
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background: #1e293b;
-                    padding: 32px;
-                    border-radius: 12px;
-                    border: 1px solid #334155;
-                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
-                }}
-                h1 {{
-                    color: #f43f5e;
-                    margin-top: 0;
+                    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background-color: var(--bg);
+                    background-image: 
+                        radial-gradient(circle at 10% 20%, rgba(239, 68, 68, 0.12) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 45%);
+                    color: var(--text);
+                    min-height: 100vh;
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    font-size: 24px;
+                    justify-content: center;
+                    padding: 24px;
+                    overflow-x: hidden;
                 }}
-                pre {{
-                    background: #020617;
-                    padding: 16px;
-                    border-radius: 8px;
-                    overflow-x: auto;
-                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-                    font-size: 13px;
-                    color: #cbd5e1;
-                    border: 1px solid #334155;
+
+                .error-card {{
+                    max-width: 780px;
+                    width: 100%;
+                    background: var(--card-bg);
+                    border: 1px solid var(--border);
+                    border-radius: 24px;
+                    padding: 40px;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    backdrop-filter: blur(16px);
+                    -webkit-backdrop-filter: blur(16px);
+                    position: relative;
+                    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
                 }}
-                .btn {{
-                    display: inline-block;
-                    background: #3b82f6;
+
+                @keyframes fadeInUp {{
+                    from {{
+                        opacity: 0;
+                        transform: translateY(20px);
+                    }}
+                    to {{
+                        opacity: 1;
+                        transform: translateY(0);
+                    }}
+                }}
+
+                .icon-container {{
+                    width: 72px;
+                    height: 72px;
+                    border-radius: 20px;
+                    background: linear-gradient(135deg, var(--red), #b91c1c);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-bottom: 24px;
+                    box-shadow: 0 8px 24px var(--red-glow), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+                    animation: pulseGlow 2s infinite ease-in-out;
+                }}
+
+                @keyframes pulseGlow {{
+                    0%, 100% {{ box-shadow: 0 8px 24px var(--red-glow); }}
+                    50% {{ box-shadow: 0 8px 32px rgba(239, 68, 68, 0.35); }}
+                }}
+
+                .icon-container svg {{
+                    width: 36px;
+                    height: 36px;
                     color: white;
-                    padding: 10px 20px;
-                    border-radius: 6px;
-                    text-decoration: none;
-                    font-weight: 500;
-                    font-size: 14px;
-                    transition: background 0.2s;
-                    margin-top: 20px;
                 }}
-                .btn:hover {{
-                    background: #2563eb;
+
+                h1 {{
+                    font-family: 'Outfit', sans-serif;
+                    font-size: clamp(24px, 4vw, 32px);
+                    font-weight: 800;
+                    letter-spacing: -0.02em;
+                    background: linear-gradient(to right, #ff8a8a, #ff3b3b);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    margin-bottom: 12px;
+                }}
+
+                .subtitle {{
+                    color: var(--text-secondary);
+                    font-size: 15px;
+                    line-height: 1.6;
+                    margin-bottom: 28px;
+                }}
+
+                .error-details {{
+                    background: rgba(3, 7, 18, 0.6);
+                    border: 1px solid var(--border);
+                    border-radius: 16px;
+                    padding: 20px;
+                    margin-bottom: 28px;
+                }}
+
+                .details-header {{
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 12px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    padding-bottom: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: var(--text-secondary);
+                }}
+
+                .error-class {{
+                    color: var(--red);
+                    background: rgba(239, 68, 68, 0.1);
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    font-family: 'Fira Code', monospace;
+                }}
+
+                .error-traceback {{
+                    max-height: 220px;
+                    overflow-y: auto;
+                    font-family: 'Fira Code', monospace;
+                    font-size: 12px;
+                    color: #d1d5db;
+                    line-height: 1.7;
+                    white-space: pre-wrap;
+                    padding-right: 8px;
+                }}
+
+                /* Scrollbar Customization */
+                .error-traceback::-webkit-scrollbar {{
+                    width: 6px;
+                }}
+                .error-traceback::-webkit-scrollbar-track {{
+                    background: transparent;
+                }}
+                .error-traceback::-webkit-scrollbar-thumb {{
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 10px;
+                }}
+                .error-traceback::-webkit-scrollbar-thumb:hover {{
+                    background: rgba(255, 255, 255, 0.3);
+                }}
+
+                .actions {{
+                    display: flex;
+                    gap: 16px;
+                    flex-wrap: wrap;
+                }}
+
+                .btn {{
+                    font-family: 'Plus Jakarta Sans', sans-serif;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    padding: 12px 24px;
+                    border-radius: 12px;
+                    text-decoration: none;
+                    font-weight: 600;
+                    font-size: 14px;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    border: none;
+                }}
+
+                .btn-primary {{
+                    background: linear-gradient(135deg, var(--blue), #1d4ed8);
+                    color: white;
+                    box-shadow: 0 4px 12px var(--blue-glow);
+                }}
+
+                .btn-primary:hover {{
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+                }}
+
+                .btn-secondary {{
+                    background: rgba(255, 255, 255, 0.05);
+                    color: var(--text);
+                    border: 1px solid var(--border);
+                }}
+
+                .btn-secondary:hover {{
+                    background: rgba(255, 255, 255, 0.1);
+                    transform: translateY(-2px);
                 }}
             </style>
         </head>
         <body>
-            <div class="container">
-                <h1>⚠️ Ocorreu um Erro no Servidor</h1>
-                <p>O sistema encontrou uma falha inesperada ao processar sua solicitação.</p>
-                <h3>Detalhes do erro:</h3>
-                <pre>{html.escape(str(e))}</pre>
-                <a href="/" class="btn">Voltar para o Início</a>
+            <div class="error-card">
+                <div class="icon-container">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h1>Ocorreu um Erro no Servidor</h1>
+                <p class="subtitle">O sistema encontrou um comportamento inesperado ou erro de processamento interno. Os administradores já foram notificados com os detalhes abaixo.</p>
+                
+                <div class="error-details">
+                    <div class="details-header">
+                        <span>DETALHES DO EVENTO</span>
+                        <span class="error-class">500 - Internal Server Error</span>
+                    </div>
+                    <div class="error-traceback">{html.escape(str(e))}<br><br>{html.escape(tb)}</div>
+                </div>
+
+                <div class="actions">
+                    <a href="/" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Ir para o Início
+                    </a>
+                    <button onclick="window.location.reload();" class="btn btn-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                        </svg>
+                        Tentar Novamente
+                    </button>
+                </div>
             </div>
         </body>
         </html>
