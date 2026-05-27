@@ -2,10 +2,28 @@
 
 import time as _time
 import io
-from flask import Blueprint, request, jsonify, g, session, send_file
+import queue
+import json
+from flask import Blueprint, request, jsonify, g, session, send_file, Response
 from routes._shared import get_db
 
 bp = Blueprint("mural", __name__)
+
+_mural_listeners = []
+
+def broadcast_mural_event(event_type, data):
+    global _mural_listeners
+    payload = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+    active_listeners = []
+    for q in _mural_listeners:
+        try:
+            q.put_nowait(payload)
+            active_listeners.append(q)
+        except queue.Full:
+            pass
+        except Exception:
+            pass
+    _mural_listeners = active_listeners
 
 
 @bp.route("/api/mural", methods=["GET"])
@@ -104,6 +122,7 @@ def mural_criar():
         row = conn.execute("SELECT * FROM mural_recados WHERE id=?", (cur.lastrowid,)).fetchone()
         res = dict(row)
         res["attachments"] = []
+        broadcast_mural_event("create", res)
         return jsonify(res), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -168,6 +187,7 @@ def mural_atualizar(recado_id):
         ).fetchall()
         res["attachments"] = [dict(a) for a in attachments]
         
+        broadcast_mural_event("update", res)
         return jsonify(res)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -181,6 +201,7 @@ def mural_excluir(recado_id):
             return jsonify({"error": "Recado não encontrado"}), 404
         conn.execute("DELETE FROM mural_recados WHERE id=?", (recado_id,))
         conn.commit()
+        broadcast_mural_event("delete", {"id": recado_id})
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -266,5 +287,68 @@ def mural_anexo_excluir(recado_id, attachment_id):
         conn.execute("DELETE FROM mural_anexos WHERE id=?", (attachment_id,))
         conn.commit()
         return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Mural Events (SSE) ──
+
+@bp.route("/api/mural/events", methods=["GET"])
+def mural_events():
+    def event_stream():
+        q = queue.Queue(maxsize=100)
+        _mural_listeners.append(q)
+        try:
+            while True:
+                try:
+                    msg = q.get(timeout=20.0)
+                    yield msg
+                except queue.Empty:
+                    yield "event: heartbeat\ndata: {}\n\n"
+        except GeneratorExit:
+            if q in _mural_listeners:
+                _mural_listeners.remove(q)
+                
+    return Response(event_stream(), mimetype="text/event-stream")
+
+
+# ── Mural Comments ──
+
+@bp.route("/api/mural/<int:recado_id>/comments", methods=["GET"])
+def mural_comentarios_listar(recado_id):
+    try:
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT id, recado_id, autor, texto, criado_em FROM mural_comentarios WHERE recado_id=? ORDER BY criado_em ASC",
+            (recado_id,)
+        ).fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/mural/<int:recado_id>/comments", methods=["POST"])
+def mural_comentario_criar(recado_id):
+    try:
+        data = request.get_json(force=True) or {}
+        texto = (data.get("texto") or "").strip()
+        if not texto:
+            return jsonify({"error": "Texto do comentário é obrigatório"}), 400
+            
+        autor = (data.get("autor") or session.get("usuario_nome") or "Servidor").strip()
+        
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO mural_comentarios (recado_id, autor, texto) VALUES (?, ?, ?)",
+            (recado_id, autor, texto)
+        )
+        conn.commit()
+        
+        row = conn.execute("SELECT * FROM mural_comentarios WHERE id=?", (cur.lastrowid,)).fetchone()
+        res = dict(row)
+        
+        broadcast_mural_event("comment", {"recado_id": recado_id, "comment": res})
+        return jsonify(res), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500

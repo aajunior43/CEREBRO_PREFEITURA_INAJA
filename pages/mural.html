@@ -601,6 +601,9 @@
             <option value="alta">Alta</option>
             <option value="urgente">Urgente</option>
           </select>
+          <button class="mural-btn mural-btn-ghost" id="filtro-meus-recados" data-active="false" style="font-weight:700; height:38px; border-radius:14px; padding:0 14px; min-height:38px;">
+            👤 Meus Recados
+          </button>
         </div>
         <div>
           <button class="mural-btn mural-btn-ghost" id="btn-atualizar" title="Atualizar mural">↺ Atualizar</button>
@@ -707,6 +710,18 @@
           <button type="submit" class="mural-btn mural-btn-primary" id="btn-salvar">Salvar no Mural</button>
         </div>
       </form>
+      
+      <!-- Comments Section -->
+      <div id="mural-comments-section" style="display:none; border-top: 1px solid var(--border); padding-top:16px; margin-top:8px;">
+        <h4 style="margin:0 0 10px; font-size:13px; font-weight:800; color:var(--text);">💬 Comentários</h4>
+        <div id="mural-comments-list" style="max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:12px; padding-right:4px;">
+          <!-- Comentários injetados dinamicamente -->
+        </div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="mural-comment-input" class="mural-search-input" placeholder="Escreva um comentário..." style="box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:8px 12px; font-size:12px; flex:1;" />
+          <button type="button" id="btn-mural-send-comment" class="mural-btn mural-btn-primary" style="min-height:36px; height:36px; padding:0 14px; font-size:12px; border-radius:12px;">Enviar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -932,6 +947,7 @@
       const searchVal = document.getElementById('mural-busca').value.toLowerCase().trim();
       const catVal = document.getElementById('filtro-categoria').value;
       const prioVal = document.getElementById('filtro-prioridade').value;
+      const meusRecadosActive = document.getElementById('filtro-meus-recados').dataset.active === 'true';
       
       let filtered = cacheRecados;
       if (searchVal) {
@@ -942,6 +958,16 @@
       }
       if (prioVal) {
         filtered = filtered.filter(r => r.prioridade === prioVal);
+      }
+      if (meusRecadosActive) {
+        const currentUser = (sessionStorage.getItem('user_nome') || '').toLowerCase().trim();
+        if (currentUser) {
+          filtered = filtered.filter(r => {
+            const dest = (r.destinatario || '').toLowerCase().trim();
+            const autor = (r.autor || '').toLowerCase().trim();
+            return dest === currentUser || dest === 'todos' || dest.includes(currentUser) || autor === currentUser;
+          });
+        }
       }
       
       filtered.forEach(item => {
@@ -1197,6 +1223,8 @@
       document.getElementById('form-valor').value = item.valor ? Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       
       document.getElementById('modal-title').textContent = 'Editar Recado / Tarefa';
+      document.getElementById('mural-comments-section').style.display = 'block';
+      carregarComentarios(item.id);
       backdrop.classList.add('active');
     };
 
@@ -1208,6 +1236,7 @@
       document.getElementById('form-id').value = '';
       document.getElementById('form-valor').value = '';
       document.getElementById('modal-title').textContent = 'Novo Recado no Mural';
+      document.getElementById('mural-comments-section').style.display = 'none';
       loadSessionAuthor();
       backdrop.classList.add('active');
     });
@@ -1307,6 +1336,15 @@
     document.getElementById('filtro-prioridade').addEventListener('change', renderMural);
     document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
 
+    document.getElementById('filtro-meus-recados').addEventListener('click', function() {
+      const btn = document.getElementById('filtro-meus-recados');
+      const active = btn.dataset.active === 'true';
+      btn.dataset.active = active ? 'false' : 'true';
+      btn.classList.toggle('mural-btn-primary', !active);
+      btn.classList.toggle('mural-btn-ghost', active);
+      renderMural();
+    });
+
     // Setup Column Drop Targets for Kanban Drag & Drop
     document.querySelectorAll('.mural-col-list').forEach(listEl => {
       const colEl = listEl.closest('.mural-col');
@@ -1395,11 +1433,133 @@
       }
     };
 
+    // Comments Client Handlers
+    async function carregarComentarios(recadoId) {
+      const list = document.getElementById('mural-comments-list');
+      list.innerHTML = '<div style="font-size:11px;color:var(--text-3);text-align:center;padding:8px 0;">Carregando comentários...</div>';
+      try {
+        const res = await fetch(`/api/mural/${recadoId}/comments`);
+        if (res.ok) {
+          const comments = await res.json();
+          if (comments.length === 0) {
+            list.innerHTML = '<div style="font-size:11px;color:var(--text-3);text-align:center;font-style:italic;padding:8px 0;">Nenhum comentário ainda.</div>';
+            return;
+          }
+          list.innerHTML = comments.map(c => `
+            <div style="background:var(--bg-2, var(--surface-2)); padding:8px 10px; border-radius:10px; font-size:11px; line-height:1.3; border: 1px solid var(--border);">
+              <div style="display:flex; justify-content:space-between; font-weight:800; font-size:10px; color:var(--text-2); margin-bottom:2px;">
+                <span>${esc(c.autor)}</span>
+                <span style="font-weight:normal; opacity:0.7; font-size:9px; margin-left:auto;">${esc(c.criado_em.split(' ')[1] || c.criado_em)}</span>
+              </div>
+              <div style="color:var(--text); white-space:pre-wrap;">${esc(c.texto)}</div>
+            </div>
+          `).join('');
+          list.scrollTop = list.scrollHeight;
+        }
+      } catch (e) {
+        list.innerHTML = '<div style="font-size:11px;color:var(--red);text-align:center;">Erro ao carregar comentários.</div>';
+      }
+    }
+
+    document.getElementById('btn-mural-send-comment').addEventListener('click', async () => {
+      const input = document.getElementById('mural-comment-input');
+      const text = input.value.trim();
+      const recadoId = document.getElementById('form-id').value;
+      if (!text || !recadoId) return;
+      
+      const payload = {
+        texto: text,
+        autor: sessionStorage.getItem('user_nome') || 'Servidor'
+      };
+      
+      try {
+        const res = await fetch(`/api/mural/${recadoId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          input.value = '';
+          carregarComentarios(recadoId);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    // Realtime SSE Listener
+    function initMuralSSE() {
+      const source = new EventSource('/api/mural/events');
+      
+      source.addEventListener('create', function(e) {
+        const item = JSON.parse(e.data);
+        if (!cacheRecados.some(r => r.id === item.id)) {
+          cacheRecados.unshift(item);
+          
+          // Sound and toast notification for destinatario
+          const currentUser = (sessionStorage.getItem('user_nome') || '').toLowerCase().trim();
+          if (currentUser) {
+            const dest = (item.destinatario || '').toLowerCase().trim();
+            if (dest === currentUser || dest === 'todos' || dest.includes(currentUser)) {
+              const creator = (item.autor || '').toLowerCase().trim();
+              if (creator !== currentUser) {
+                playNotificationSound();
+                showVisualNotification(item);
+              }
+            }
+          }
+          
+          renderMural();
+        }
+      });
+      
+      source.addEventListener('update', function(e) {
+        const item = JSON.parse(e.data);
+        const index = cacheRecados.findIndex(r => r.id === item.id);
+        if (index !== -1) {
+          cacheRecados[index] = item;
+          renderMural();
+          
+          const openId = document.getElementById('form-id').value;
+          if (openId && parseInt(openId, 10) === item.id && backdrop.classList.contains('active')) {
+            carregarComentarios(item.id);
+          }
+        }
+      });
+      
+      source.addEventListener('delete', function(e) {
+        const data = JSON.parse(e.data);
+        const index = cacheRecados.findIndex(r => r.id === data.id);
+        if (index !== -1) {
+          cacheRecados.splice(index, 1);
+          renderMural();
+          
+          const openId = document.getElementById('form-id').value;
+          if (openId && parseInt(openId, 10) === data.id) {
+            backdrop.classList.remove('active');
+          }
+        }
+      });
+      
+      source.addEventListener('comment', function(e) {
+        const data = JSON.parse(e.data);
+        const openId = document.getElementById('form-id').value;
+        if (openId && parseInt(openId, 10) === data.recado_id && backdrop.classList.contains('active')) {
+          carregarComentarios(data.recado_id);
+        }
+      });
+      
+      source.onerror = function() {
+        console.warn("SSE connection lost. Reconnecting...");
+      };
+    }
+
     // Init Page load
     carregarMural();
+    initMuralSSE();
     
-    // Auto-refresh every 5 seconds to query new tasks and trigger alerts
-    setInterval(carregarMural, 5000);
+    // Auto-refresh fallback every 30 seconds to ensure consistency
+    setInterval(carregarMural, 30000);
   </script>
 </body>
 </html>
