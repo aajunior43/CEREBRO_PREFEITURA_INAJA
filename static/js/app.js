@@ -1728,6 +1728,36 @@ function initAppDOM() {
   };
   syncExtraThemeLabels();
 
+  const syncThemeButtons = () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    document.querySelectorAll('.theme-select-btn').forEach(btn => {
+      const val = btn.getAttribute('data-theme-val');
+      if (val === current) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  };
+  syncThemeButtons();
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-select-btn');
+    if (btn) {
+      const val = btn.getAttribute('data-theme-val');
+      if (val === 'light') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', val);
+        localStorage.setItem('theme', val);
+      }
+      syncThemeButtons();
+      syncExtraThemeLabels();
+    }
+  });
+
+
   // Global dynamic glow tracking for buttons and cards on dashboard
   document.addEventListener('mousemove', (e) => {
     const el = e.target.closest('[data-glow-btn], .hs-card');

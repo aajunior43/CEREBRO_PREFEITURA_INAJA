@@ -242,15 +242,15 @@
           </svg>
         </button>
         <div class="dropdown-menu" id="shd-dropdown-menu">
-          <button class="dropdown-item theme-toggle" id="shd-theme-toggle">
-            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
-            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-            <span class="theme-label shd-theme-label">${themeLabel}</span>
-          </button>
+          <div class="theme-selector-group" style="padding: 10px 14px 6px; border-top: 1px solid var(--border); margin-top: 4px;">
+            <div style="font-size: 10px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">🎨 Aparência</div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+              <button type="button" class="theme-select-btn" data-theme-val="light">☀️ Claro</button>
+              <button type="button" class="theme-select-btn" data-theme-val="dark">🌙 Escuro</button>
+              <button type="button" class="theme-select-btn" data-theme-val="vintage">🍂 Vintage</button>
+              <button type="button" class="theme-select-btn" data-theme-val="cosmos">🌌 Cosmos</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -275,15 +275,15 @@
   <div class="mobile-nav-label">Ferramentas</div>
   ${buildMobileItems(NAV_ITEMS.ferramentas)}
   <div class="mobile-nav-divider"></div>
-  <button class="mobile-nav-item theme-toggle" id="shd-mobile-theme">
-    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;">
-      <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-    </svg>
-    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;">
-      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-    </svg>
-    <span class="shd-theme-label">${themeLabel}</span>
-  </button>
+  <div class="theme-selector-group" style="padding: 10px 16px; border-top: 1px solid var(--border); margin-top: 8px;">
+    <div style="font-size: 10px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">🎨 Aparência</div>
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+      <button type="button" class="theme-select-btn" data-theme-val="light">☀️ Claro</button>
+      <button type="button" class="theme-select-btn" data-theme-val="dark">🌙 Escuro</button>
+      <button type="button" class="theme-select-btn" data-theme-val="vintage">🍂 Vintage</button>
+      <button type="button" class="theme-select-btn" data-theme-val="cosmos">🌌 Cosmos</button>
+    </div>
+  </div>
 </div>
 <div class="mobile-nav-overlay" id="shd-mobile-overlay"></div>`;
 
@@ -1002,14 +1002,35 @@
       ddParent?.classList.remove('open');
     });
 
-    // Theme toggle (desktop + mobile)
-    document.getElementById('shd-theme-toggle')?.addEventListener('click', () => {
-      ddParent?.classList.remove('open');
-      toggleTheme();
-    });
-    document.getElementById('shd-mobile-theme')?.addEventListener('click', () => {
-      closeMobile();
-      toggleTheme();
+    // Theme selector (desktop + mobile)
+    const syncThemeButtons = () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      document.querySelectorAll('.theme-select-btn').forEach(btn => {
+        const val = btn.getAttribute('data-theme-val');
+        if (val === current) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    };
+    syncThemeButtons();
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.theme-select-btn');
+      if (btn) {
+        const val = btn.getAttribute('data-theme-val');
+        if (val === 'light') {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('theme', 'light');
+        } else {
+          document.documentElement.setAttribute('data-theme', val);
+          localStorage.setItem('theme', val);
+        }
+        syncThemeButtons();
+        ddParent?.classList.remove('open');
+        closeMobile();
+      }
     });
   }
 

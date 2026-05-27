@@ -5963,3 +5963,32 @@ body.home-page .hs-card__badge--novo { background: var(--grad-green); color: whi
   body.home-page .hs-card-icon svg { width: 21px; height: 21px; }
   body.home-page .hs-card-name { font-size: 13px; }
 }
+
+/* ---------- THEME CHANGER BUTTONS ---------- */
+.theme-select-btn {
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.theme-select-btn:hover {
+  background: var(--border);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+.theme-select-btn.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
