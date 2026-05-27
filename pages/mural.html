@@ -6,6 +6,22 @@
   <title>Mural de Recados – Prefeitura de Inajá</title>
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
+  <script>
+    (function checkAuth() {
+      fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
+        if (d.autenticado) {
+          sessionStorage.setItem('adm_auth', '1');
+          sessionStorage.setItem('user_nome', d.nome || '');
+          sessionStorage.setItem('user_nivel', d.nivel || '');
+        } else {
+          sessionStorage.clear();
+          window.location.replace('/login.html');
+        }
+      }).catch(function(){
+        window.location.replace('/login.html');
+      });
+    })();
+  </script>
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="/static/js/shared-header.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>
