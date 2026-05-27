@@ -242,15 +242,15 @@
 
     /* PREMIUM STICKY NOTE CARD STYLE */
     .mural-card {
-      border-radius: 8px;
-      padding: 6px 10px;
+      border-radius: 6px;
+      padding: 4px 8px;
       box-shadow: var(--shadow-sm);
       position: relative;
       transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
-      gap: 3px;
-      border-top: 3px solid var(--note-border);
+      gap: 2px;
+      border-top: 2px solid var(--note-border);
       border-left: 1px solid var(--border);
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
@@ -262,37 +262,37 @@
     }
     
     /* Tailored HSL Colors for dark and light matching the system perfectly */
-    .card-color-yellow  { --note-border: var(--orange); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(245, 158, 11, 0.04)); }
-    .card-color-blue    { --note-border: var(--blue); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(59, 130, 246, 0.04)); }
-    .card-color-green   { --note-border: var(--green); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(16, 185, 129, 0.04)); }
-    .card-color-pink    { --note-border: var(--red); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(239, 68, 68, 0.04)); }
-    .card-color-purple  { --note-border: var(--purple); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(139, 92, 246, 0.04)); }
-    .card-color-orange  { --note-border: var(--orange-dark); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(249, 115, 22, 0.04)); }
+    .card-color-yellow  { --note-border: var(--orange); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(245, 158, 11, 0.03)); }
+    .card-color-blue    { --note-border: var(--blue); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(59, 130, 246, 0.03)); }
+    .card-color-green   { --note-border: var(--green); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(16, 185, 129, 0.03)); }
+    .card-color-pink    { --note-border: var(--red); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(239, 68, 68, 0.03)); }
+    .card-color-purple  { --note-border: var(--purple); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(139, 92, 246, 0.03)); }
+    .card-color-orange  { --note-border: var(--orange-dark); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(249, 115, 22, 0.03)); }
 
-    [data-theme="dark"] .card-color-yellow { background: linear-gradient(180deg, var(--surface), rgba(245, 158, 11, 0.02)); }
-    [data-theme="dark"] .card-color-blue   { background: linear-gradient(180deg, var(--surface), rgba(59, 130, 246, 0.02)); }
-    [data-theme="dark"] .card-color-green  { background: linear-gradient(180deg, var(--surface), rgba(16, 185, 129, 0.02)); }
-    [data-theme="dark"] .card-color-pink   { background: linear-gradient(180deg, var(--surface), rgba(239, 68, 68, 0.02)); }
-    [data-theme="dark"] .card-color-purple { background: linear-gradient(180deg, var(--surface), rgba(139, 92, 246, 0.02)); }
-    [data-theme="dark"] .card-color-orange { background: linear-gradient(180deg, var(--surface), rgba(249, 115, 22, 0.02)); }
+    [data-theme="dark"] .card-color-yellow { background: linear-gradient(180deg, var(--surface), rgba(245, 158, 11, 0.015)); }
+    [data-theme="dark"] .card-color-blue   { background: linear-gradient(180deg, var(--surface), rgba(59, 130, 246, 0.015)); }
+    [data-theme="dark"] .card-color-green  { background: linear-gradient(180deg, var(--surface), rgba(16, 185, 129, 0.015)); }
+    [data-theme="dark"] .card-color-pink   { background: linear-gradient(180deg, var(--surface), rgba(239, 68, 68, 0.015)); }
+    [data-theme="dark"] .card-color-purple { background: linear-gradient(180deg, var(--surface), rgba(139, 92, 246, 0.015)); }
+    [data-theme="dark"] .card-color-orange { background: linear-gradient(180deg, var(--surface), rgba(249, 115, 22, 0.015)); }
 
     .mural-card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 6px;
+      gap: 4px;
     }
     .mural-card-title {
-      font-size: 12.5px;
+      font-size: 11.5px;
       font-weight: 850;
       color: var(--text);
-      line-height: 1.25;
+      line-height: 1.15;
       letter-spacing: -0.01em;
     }
     .mural-card-body {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--text-2);
-      line-height: 1.35;
+      line-height: 1.25;
       white-space: pre-wrap;
       flex-grow: 1;
     }
@@ -301,19 +301,19 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 9px;
+      font-size: 8px;
       color: var(--text-3);
-      padding-top: 3px;
+      padding-top: 2px;
       border-top: 1px dashed var(--border);
-      margin-top: 1px;
+      margin-top: 0px;
     }
     .mural-card-meta {
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
       align-items: center;
-      gap: 5px;
-      row-gap: 2px;
+      gap: 4px;
+      row-gap: 1px;
     }
     .mural-card-author {
       font-weight: 800;
@@ -322,15 +322,15 @@
     
     /* Badges */
     .mural-badge {
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: 750;
       text-transform: uppercase;
-      padding: 1px 4px;
-      border-radius: 10px;
+      padding: 0px 3px;
+      border-radius: 6px;
       letter-spacing: 0.1px;
       display: inline-flex;
       align-items: center;
-      height: 14px;
+      height: 12px;
     }
     .badge-prioridade-baixa   { background: rgba(16, 185, 129, .12); color: #059669; }
     .badge-prioridade-media   { background: rgba(245, 158, 11, .12); color: #d97706; }
@@ -351,21 +351,21 @@
     /* Actions Panel inside Card */
     .mural-card-actions {
       display: flex;
-      gap: 3px;
+      gap: 2px;
       align-items: center;
     }
     .mural-card-act {
       background: color-mix(in srgb, var(--surface) 94%, transparent);
       border: 1px solid var(--border);
-      width: 22px;
-      height: 22px;
-      border-radius: 5px;
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--text-2);
-      font-size: 10px;
+      font-size: 8px;
       transition: all 0.15s ease;
       box-shadow: var(--shadow-sm);
     }
