@@ -140,12 +140,11 @@ try {
     Write-Host "  |             SISTEMA DE CONTROLE DE EMPENHOS              |" -Fore Cyan
     Write-Host "  +----------------------------------------------------------+" -Fore Cyan
     Write-Host ""
-    Write-Host "   __  __ _    _ _____          _" -Fore Magenta
-    Write-Host "  |  \/  | |  | |  __ \   /\   | |" -Fore Magenta
-    Write-Host "  | \  / | |  | | |__) | /  \  | |" -Fore Magenta
-    Write-Host "  | |\/| | |  | |  _  / / /\ \ | |" -Fore Magenta
-    Write-Host "  | |  | | |__| | | \ \/ ____ \| |____" -Fore Magenta
-    Write-Host "  |_|  |_|\____/|_|  \_\_/    \_\______|" -Fore Magenta
+    Write-Host "   _   _     _____ _  __ ____    _    _   _ ____  ____   ___     ____  _______     __" -Fore Magenta
+    Write-Host "  / \  | |   | ____| |/ // ___|  / \  | \ | |  _ \|  _ \ / _ \   |  _ \| ____\ \   / /" -Fore Magenta
+    Write-Host " / _ \ | |   |  _| | ' / \___ \ / _ \ |  \| | | | | |_) | | | |  | | | |  _|  \ \ / /" -Fore Magenta
+    Write-Host "/ ___ \| |___| |___| . \  ___) / ___ \| |\  | |_| |  _ <| |_| |  | |_| | |___  \ V /" -Fore Magenta
+    Write-Host "/_/   \_\_____|_____|_|\_\|____/_/   \_\_| \_|____/|_| \_\\___/   |____/|_____|  \_/" -Fore Magenta
     Write-Host ""
 
     $py = Find-Python
