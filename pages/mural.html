@@ -868,6 +868,35 @@
           </div>
         </div>
       `;
+      // Drag & Drop to attach files directly to the card
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        card.style.border = '2px dashed var(--blue)';
+        card.style.transform = 'scale(1.01)';
+      });
+      
+      card.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        card.style.border = '2px dashed var(--blue)';
+        card.style.transform = 'scale(1.01)';
+      });
+      
+      card.addEventListener('dragleave', () => {
+        card.style.border = '';
+        card.style.transform = '';
+      });
+      
+      card.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        card.style.border = '';
+        card.style.transform = '';
+        
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          const file = e.dataTransfer.files[0];
+          await enviarAnexoArquivo(item.id, file);
+        }
+      });
+
       return card;
     }
 
@@ -973,16 +1002,12 @@
       document.getElementById('mural-hidden-file-input').click();
     };
 
-    window.handleAnexoFileChange = async function() {
-      const fileInput = document.getElementById('mural-hidden-file-input');
-      if (!fileInput.files || fileInput.files.length === 0 || !currentUploadRecadoId) return;
-      
-      const file = fileInput.files[0];
+    async function enviarAnexoArquivo(recadoId, file) {
       const formData = new FormData();
       formData.append('file', file);
       
       try {
-        const res = await fetch(`/api/mural/${currentUploadRecadoId}/attachments`, {
+        const res = await fetch(`/api/mural/${recadoId}/attachments`, {
           method: 'POST',
           body: formData
         });
@@ -995,10 +1020,18 @@
       } catch (e) {
         console.error(e);
         alert('Erro ao enviar arquivo');
-      } finally {
-        fileInput.value = '';
-        currentUploadRecadoId = null;
       }
+    }
+
+    window.handleAnexoFileChange = async function() {
+      const fileInput = document.getElementById('mural-hidden-file-input');
+      if (!fileInput.files || fileInput.files.length === 0 || !currentUploadRecadoId) return;
+      
+      const file = fileInput.files[0];
+      await enviarAnexoArquivo(currentUploadRecadoId, file);
+      
+      fileInput.value = '';
+      currentUploadRecadoId = null;
     };
 
     window.excluirAnexo = async function(recadoId, attachmentId) {
