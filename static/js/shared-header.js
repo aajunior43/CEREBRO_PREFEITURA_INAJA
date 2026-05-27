@@ -6,8 +6,8 @@
 (function () {
   'use strict';
 
-  // Não injeta na página principal (ela já tem o header no HTML)
-  if (window.location.pathname === '/' || window.location.pathname === '/index.html') return;
+  // Não injeta se a página principal (index.html) já possuir o header embutido
+  if (document.body && document.body.classList.contains('home-page')) return;
 
   /* ── Detecta página atual para highlight ─────────────────── */
   const path = window.location.pathname;
@@ -210,7 +210,7 @@
     </div>
 
     <nav class="desktop-nav">
-      <a href="/" class="nav-tab" style="text-decoration:none;">
+      <a href="/index.html" class="nav-tab" style="text-decoration:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -267,7 +267,7 @@
     <span>Menu</span>
     <button class="mobile-nav-close" id="shd-mobile-nav-close">&times;</button>
   </div>
-  <a href="/" class="mobile-nav-item" style="text-decoration:none;">Credores Fixos</a>
+  <a href="/index.html" class="mobile-nav-item" style="text-decoration:none;">Credores Fixos</a>
   <a href="/pages/tarefas.html" class="mobile-nav-item${isActive('/pages/tarefas.html') ? ' active' : ''}" style="text-decoration:none;">Tarefas</a>
   <div class="mobile-nav-divider"></div>
   <div class="mobile-nav-label">Documentos</div>
@@ -344,7 +344,7 @@
       bnav.className = 'bottom-nav';
       bnav.innerHTML = `
         <div class="bottom-nav-items">
-          <a class="bottom-nav-item${isActive('/') || isActive('/index.html') ? ' active':''}" href="/">
+          <a class="bottom-nav-item${isActive('/index.html') ? ' active':''}" href="/index.html">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             <span>Credores</span>
             <span class="bottom-nav-indicator"></span>
