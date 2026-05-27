@@ -105,51 +105,51 @@ svg {
 /* @import Google Fonts removido — já carregado via <link> em cada página HTML */
 
 :root {
-  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(79, 128, 200, 0.08) 0%, #f0f4f8 95%);
+  --bg-gradient: radial-gradient(circle at 10% 20%, rgba(79, 128, 200, 0.08) 0%, #edf2f7 95%);
   /* ── Backgrounds ────────────────────────────────────────── */
-  --bg: #f0f4f8;
+  --bg: #edf2f7;
   --surface: #ffffff;
-  --surface-2: #f7f9fc;
-  --border: rgba(0, 0, 0, 0.07);
-  --border-hover: rgba(0, 0, 0, 0.14);
+  --surface-2: #f1f5f9;
+  --border: rgba(0, 0, 0, 0.14);
+  --border-hover: rgba(0, 0, 0, 0.25);
   --scrollbar-track: transparent;
-  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
-  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
 
   /* ── Sombras modernas (flat) ─────────────────────────────── */
-  --shadow-xs:  0 1px 3px rgba(0,0,0,0.07);
-  --shadow-sm:  0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow:     0 4px 16px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
-  --shadow-xl:  0 16px 48px rgba(0,0,0,0.14), 0 6px 12px rgba(0,0,0,0.06);
+  --shadow-xs:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow:     0 4px 16px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.10);
+  --shadow-xl:  0 16px 48px rgba(0,0,0,0.18), 0 6px 12px rgba(0,0,0,0.10);
 
   /* Aliases neo → shadow (retrocompatibilidade) */
-  --shadow-dark: #c8d0da;
+  --shadow-dark: #cbd5e1;
   --shadow-lite: #ffffff;
   --neo: var(--shadow);
   --neo-sm: var(--shadow-sm);
   --neo-lg: var(--shadow-lg);
-  --neo-in: inset 0 1px 4px rgba(0,0,0,0.08);
-  --neo-in-sm: inset 0 1px 3px rgba(0,0,0,0.06);
+  --neo-in: inset 0 1px 4px rgba(0,0,0,0.10);
+  --neo-in-sm: inset 0 1px 3px rgba(0,0,0,0.08);
 
   /* ── Cores ───────────────────────────────────────────────── */
-  --blue: #4f80c8;
-  --blue-dark: #3a67ac;
-  --blue-light: #dde9ff;
-  --green: #3aaa6e;
-  --green-bg: #d4f5e3;
-  --green-dark: #2d8a59;
-  --orange: #d97c3a;
-  --orange-bg: #fde8d4;
-  --red: #c74a4a;
-  --red-bg: #fdd8d8;
-  --purple: #7c5fc8;
-  --purple-bg: #ece5fd;
+  --blue: #2b6cb0;
+  --blue-dark: #1a365d;
+  --blue-light: #ebf8ff;
+  --green: #276749;
+  --green-bg: #f0fff4;
+  --green-dark: #22543d;
+  --orange: #c05621;
+  --orange-bg: #fffaf0;
+  --red: #9b2c2c;
+  --red-bg: #fff5f5;
+  --purple: #553c9a;
+  --purple-bg: #faf5ff;
 
-  /* ── Tipografia ──────────────────────────────────────────── */
-  --text: #1e2a38;
-  --text-2: #3d4f63;
-  --text-3: #6b7f96;
+  /* ── Tipografia (Altíssimo Contraste) ───────────────────── */
+  --text: #0f172a;
+  --text-2: #1e293b;
+  --text-3: #475569;
   --radius: 14px;
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -158,11 +158,11 @@ svg {
   --radius-full: 9999px;
 
   /* ── Gradientes accent ───────────────────────────────────── */
-  --grad-blue:   linear-gradient(135deg, #4f80c8, #3a67ac);
-  --grad-green:  linear-gradient(135deg, #3aaa6e, #2d8a59);
-  --grad-orange: linear-gradient(135deg, #d97c3a, #c06828);
-  --grad-red:    linear-gradient(135deg, #c74a4a, #a83535);
-  --grad-purple: linear-gradient(135deg, #7c5fc8, #6347ae);
+  --grad-blue:   linear-gradient(135deg, #2b6cb0, #1a365d);
+  --grad-green:  linear-gradient(135deg, #276749, #22543d);
+  --grad-orange: linear-gradient(135deg, #c05621, #7b341e);
+  --grad-red:    linear-gradient(135deg, #9b2c2c, #742a2a);
+  --grad-purple: linear-gradient(135deg, #553c9a, #44337a);
 }
 
 [data-theme="dark"] {

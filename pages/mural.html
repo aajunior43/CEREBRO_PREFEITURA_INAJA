@@ -844,6 +844,7 @@
 
       // Actions buttons
       let actButtons = '';
+      actButtons += `<button class="mural-card-act" onclick="editarRecado(${item.id})" title="Editar recado" style="color:var(--orange);">✏️</button>`;
       actButtons += `<button class="mural-card-act" onclick="triggerAnexoUpload(${item.id})" title="Anexar arquivo" style="color:var(--blue);">📎</button>`;
       if (item.status === 'a_fazer') {
         actButtons += `<button class="mural-card-act mural-card-act-done" onclick="alterarStatusRecado(${item.id}, 'em_andamento')" title="Iniciar tarefa">⚡</button>`;
@@ -945,6 +946,23 @@
         console.error(e);
       }
     }
+
+    window.editarRecado = function(id) {
+      const item = cacheRecados.find(r => r.id === id);
+      if (!item) return;
+      
+      document.getElementById('mural-form').reset();
+      document.getElementById('form-id').value = item.id;
+      document.getElementById('form-titulo').value = item.titulo;
+      document.getElementById('form-conteudo').value = item.conteudo;
+      document.getElementById('form-categoria').value = item.categoria;
+      document.getElementById('form-prioridade').value = item.prioridade;
+      document.getElementById('form-autor').value = item.autor;
+      document.getElementById('form-destinatario').value = item.destinatario || 'Todos';
+      
+      document.getElementById('modal-title').textContent = 'Editar Recado / Tarefa';
+      backdrop.classList.add('active');
+    };
 
     // Modal Control
     const backdrop = document.getElementById('modal-backdrop');
