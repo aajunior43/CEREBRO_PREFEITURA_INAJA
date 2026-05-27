@@ -242,15 +242,15 @@
 
     /* PREMIUM STICKY NOTE CARD STYLE */
     .mural-card {
-      border-radius: 12px;
-      padding: 12px 14px;
+      border-radius: 10px;
+      padding: 8px 12px;
       box-shadow: var(--shadow-sm);
       position: relative;
       transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      border-top: 4px solid var(--note-border);
+      gap: 4px;
+      border-top: 3px solid var(--note-border);
       border-left: 1px solid var(--border);
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
@@ -303,9 +303,9 @@
       align-items: center;
       font-size: 10px;
       color: var(--text-3);
-      padding-top: 6px;
+      padding-top: 4px;
       border-top: 1px dashed var(--border);
-      margin-top: 4px;
+      margin-top: 2px;
     }
     .mural-card-meta {
       display: flex;
@@ -839,13 +839,7 @@
         });
         attachmentsList += `</div>`;
       } else {
-        attachmentsList = `
-          <div style="margin-top: 6px; border: 1px dashed rgba(0,0,0,0.15); border-radius: 8px; padding: 4px 6px; text-align: center; background: rgba(255,255,255,0.15); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-            <button onclick="triggerAnexoUpload(${item.id})" style="background:none; border:none; color:var(--blue); font-size:10px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px; font-family:inherit;">
-              📎 Anexar arquivo
-            </button>
-          </div>
-        `;
+        attachmentsList = '';
       }
 
       // Actions buttons
