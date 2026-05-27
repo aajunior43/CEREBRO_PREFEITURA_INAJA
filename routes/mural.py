@@ -1,7 +1,8 @@
 """Blueprint: Mural de Recados e Tarefas Compartilhadas"""
 
 import time as _time
-from flask import Blueprint, request, jsonify, g, session
+import io
+from flask import Blueprint, request, jsonify, g, session, send_file
 from routes._shared import get_db
 
 bp = Blueprint("mural", __name__)
@@ -32,7 +33,27 @@ def mural_listar():
             params
         ).fetchall()
         
-        return jsonify([dict(r) for r in rows])
+        recados = [dict(r) for r in rows]
+        if recados:
+            recado_ids = [r["id"] for r in recados]
+            placeholders = ",".join("?" for _ in recado_ids)
+            attachments = conn.execute(
+                f"SELECT id, recado_id, file_name, mime_type, file_size, criado_em FROM mural_anexos WHERE recado_id IN ({placeholders}) ORDER BY criado_em DESC",
+                recado_ids
+            ).fetchall()
+            
+            from collections import defaultdict
+            attachments_by_recado = defaultdict(list)
+            for att in attachments:
+                attachments_by_recado[att["recado_id"]].append(dict(att))
+                
+            for r in recados:
+                r["attachments"] = attachments_by_recado[r["id"]]
+        else:
+            for r in recados:
+                r["attachments"] = []
+                
+        return jsonify(recados)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -58,16 +79,27 @@ def mural_criar():
         if categoria not in ("aviso", "tarefa", "lembrete", "conquista"):
             categoria = "tarefa"
             
+        valor_raw = data.get("valor")
+        valor = 0.0
+        if valor_raw:
+            try:
+                cleaned = str(valor_raw).replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
+                valor = float(cleaned)
+            except ValueError:
+                valor = 0.0
+
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO mural_recados (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'a_fazer')",
-            (titulo, conteudo, autor, destinatario, prioridade, categoria, cor)
+            "INSERT INTO mural_recados (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, status, valor) VALUES (?, ?, ?, ?, ?, ?, ?, 'a_fazer', ?)",
+            (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, valor)
         )
         conn.commit()
         
         row = conn.execute("SELECT * FROM mural_recados WHERE id=?", (cur.lastrowid,)).fetchone()
-        return jsonify(dict(row)), 201
+        res = dict(row)
+        res["attachments"] = []
+        return jsonify(res), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -82,9 +114,16 @@ def mural_atualizar(recado_id):
             return jsonify({"error": "Recado não encontrado"}), 404
             
         fields = {}
-        for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status"):
+        for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status", "valor"):
             if k in data:
-                fields[k] = (data[k] or "").strip()
+                if k == "valor":
+                    try:
+                        cleaned = str(data[k] or "0").replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
+                        fields[k] = float(cleaned) if cleaned else 0.0
+                    except ValueError:
+                        fields[k] = 0.0
+                else:
+                    fields[k] = (data[k] or "").strip()
                 
         # Status completion logic
         if "status" in data:
@@ -108,7 +147,15 @@ def mural_atualizar(recado_id):
         conn.commit()
         
         updated = conn.execute("SELECT * FROM mural_recados WHERE id=?", (recado_id,)).fetchone()
-        return jsonify(dict(updated))
+        res = dict(updated)
+        
+        attachments = conn.execute(
+            "SELECT id, recado_id, file_name, mime_type, file_size, criado_em FROM mural_anexos WHERE recado_id=? ORDER BY criado_em DESC",
+            (recado_id,)
+        ).fetchall()
+        res["attachments"] = [dict(a) for a in attachments]
+        
+        return jsonify(res)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -120,6 +167,90 @@ def mural_excluir(recado_id):
         if not conn.execute("SELECT id FROM mural_recados WHERE id=?", (recado_id,)).fetchone():
             return jsonify({"error": "Recado não encontrado"}), 404
         conn.execute("DELETE FROM mural_recados WHERE id=?", (recado_id,))
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ── Mural Attachments ──
+
+@bp.route("/api/mural/<int:recado_id>/attachments", methods=["POST"])
+def mural_anexo_criar(recado_id):
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT id FROM mural_recados WHERE id=?", (recado_id,)).fetchone()
+        if not row:
+            return jsonify({"error": "Recado não encontrado"}), 404
+            
+        if "file" not in request.files:
+            return jsonify({"error": "Nenhum arquivo enviado"}), 400
+            
+        f = request.files["file"]
+        if not f or f.filename == "":
+            return jsonify({"error": "Nome de arquivo inválido"}), 400
+            
+        file_name = f.filename
+        content = f.read()
+        file_size = len(content)
+        mime_type = f.mimetype or "application/octet-stream"
+        
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO mural_anexos (recado_id, file_name, mime_type, file_size) VALUES (?, ?, ?, ?)",
+            (recado_id, file_name, mime_type, file_size)
+        )
+        attachment_id = cur.lastrowid
+        cur.execute(
+            "INSERT INTO mural_anexo_contents (attachment_id, content) VALUES (?, ?)",
+            (attachment_id, content)
+        )
+        conn.commit()
+        
+        return jsonify({
+            "id": attachment_id,
+            "recado_id": recado_id,
+            "file_name": file_name,
+            "mime_type": mime_type,
+            "file_size": file_size
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/mural/<int:recado_id>/attachments/<int:attachment_id>/download", methods=["GET"])
+def mural_anexo_download(recado_id, attachment_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT a.file_name, a.mime_type, c.content FROM mural_anexos a "
+            "JOIN mural_anexo_contents c ON a.id = c.attachment_id "
+            "WHERE a.id=? AND a.recado_id=?",
+            (attachment_id, recado_id)
+        ).fetchone()
+        
+        if not row:
+            return "Anexo não encontrado", 404
+            
+        return send_file(
+            io.BytesIO(row["content"]),
+            mimetype=row["mime_type"],
+            as_attachment=True,
+            download_name=row["file_name"]
+        )
+    except Exception as e:
+        return str(e), 500
+
+
+@bp.route("/api/mural/<int:recado_id>/attachments/<int:attachment_id>", methods=["DELETE"])
+def mural_anexo_excluir(recado_id, attachment_id):
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT id FROM mural_anexos WHERE id=? AND recado_id=?", (attachment_id, recado_id)).fetchone()
+        if not row:
+            return jsonify({"error": "Anexo não encontrado"}), 404
+            
+        conn.execute("DELETE FROM mural_anexos WHERE id=?", (attachment_id,))
         conn.commit()
         return jsonify({"ok": True})
     except Exception as e:

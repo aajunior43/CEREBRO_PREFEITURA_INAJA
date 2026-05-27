@@ -583,9 +583,15 @@
 
         <!-- Cor e urgência integradas automaticamente -->
 
-        <div class="mural-form-group">
-          <label class="mural-label" for="form-file">Anexar Arquivo (Opcional)</label>
-          <input type="file" id="form-file" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" />
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="mural-form-group">
+            <label class="mural-label" for="form-valor">Valor R$ (Opcional)</label>
+            <input type="text" id="form-valor" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" placeholder="Ex: 1.500,00" />
+          </div>
+          <div class="mural-form-group">
+            <label class="mural-label" for="form-file">Anexar Arquivo (Opcional)</label>
+            <input type="file" id="form-file" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" />
+          </div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
@@ -853,10 +859,18 @@
       }
       actButtons += `<button class="mural-card-act mural-card-act-delete" onclick="excluirRecado(${item.id})" title="Excluir recado">✕</button>`;
 
+      // Render valor badge if present
+      let valorBadge = '';
+      if (item.valor && item.valor > 0) {
+        const formatted = Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        valorBadge = `<span class="mural-badge" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 800;">💰 ${formatted}</span>`;
+      }
+
       card.innerHTML = `
         <div class="mural-card-header">
           <div class="mural-card-title">${esc(item.titulo)}</div>
           <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
+            ${valorBadge}
             <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
             <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
           </div>
@@ -1000,6 +1014,7 @@
       document.getElementById('form-prioridade').value = item.prioridade;
       document.getElementById('form-autor').value = item.autor;
       document.getElementById('form-destinatario').value = item.destinatario || 'Todos';
+      document.getElementById('form-valor').value = item.valor ? Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       
       document.getElementById('modal-title').textContent = 'Editar Recado / Tarefa';
       backdrop.classList.add('active');
@@ -1011,6 +1026,7 @@
     document.getElementById('btn-novo-recado').addEventListener('click', () => {
       document.getElementById('mural-form').reset();
       document.getElementById('form-id').value = '';
+      document.getElementById('form-valor').value = '';
       document.getElementById('modal-title').textContent = 'Novo Recado no Mural';
       loadSessionAuthor();
       backdrop.classList.add('active');
@@ -1031,6 +1047,17 @@
       else if (prio === 'alta') calculatedColor = 'orange';
       else if (prio === 'urgente') calculatedColor = 'pink';
 
+      const rawValor = document.getElementById('form-valor').value.trim();
+      let valorNum = 0.0;
+      if (rawValor) {
+        try {
+          const cleaned = rawValor.replace("R$", "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".").trim();
+          valorNum = parseFloat(cleaned) || 0.0;
+        } catch (err_val) {
+          valorNum = 0.0;
+        }
+      }
+
       const payload = {
         titulo: document.getElementById('form-titulo').value.trim(),
         conteudo: document.getElementById('form-conteudo').value.trim(),
@@ -1038,7 +1065,8 @@
         prioridade: prio,
         autor: document.getElementById('form-autor').value.trim(),
         destinatario: document.getElementById('form-destinatario').value.trim(),
-        cor: calculatedColor
+        cor: calculatedColor,
+        valor: valorNum
       };
 
       const url = id ? `/api/mural/${id}` : '/api/mural';
