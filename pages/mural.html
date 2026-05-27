@@ -265,7 +265,14 @@
     .card-color-yellow  { --note-border: var(--orange); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(245, 158, 11, 0.03)); }
     .card-color-blue    { --note-border: var(--blue); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(59, 130, 246, 0.03)); }
     .card-color-green   { --note-border: var(--green); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(16, 185, 129, 0.03)); }
-    .card-color-pink    { --note-border: var(--red); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(239, 68, 68, 0.03)); }
+    .card-color-pink    { --note-border: var(--red); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(239, 68, 68, 0.03)); animation: urgente-card-flash 1.4s ease-in-out infinite; }
+
+    @keyframes urgente-card-flash {
+      0%   { box-shadow: 0 0 0px 0px rgba(220, 38, 38, 0), inset 0 0 0px rgba(220,38,38,0); border-color: var(--border); }
+      40%  { box-shadow: 0 0 10px 3px rgba(220, 38, 38, 0.45), inset 0 0 6px rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.6); }
+      55%  { box-shadow: 0 0 18px 5px rgba(220, 38, 38, 0.65), inset 0 0 10px rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.9); }
+      100% { box-shadow: 0 0 0px 0px rgba(220, 38, 38, 0), inset 0 0 0px rgba(220,38,38,0); border-color: var(--border); }
+    }
     .card-color-purple  { --note-border: var(--purple); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(139, 92, 246, 0.03)); }
     .card-color-orange  { --note-border: var(--orange-dark); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(249, 115, 22, 0.03)); }
 
