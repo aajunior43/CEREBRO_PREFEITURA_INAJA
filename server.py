@@ -118,7 +118,9 @@ def create_app() -> Flask:
 
     
     # ── Session ─────────────────────────────────
-    app.secret_key = settings.admin_password or os.urandom(32).hex()
+    _base = settings.admin_password or "inaja-prefeitura-secret-key-2024"
+    import hashlib as _hl
+    app.secret_key = _hl.sha256(f"inaja::sessao::{_base}".encode()).hexdigest()
     app.config["SESSION_COOKIE_NAME"] = "inaja_sid"
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

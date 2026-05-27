@@ -7,12 +7,15 @@
   <link rel="stylesheet" href="/static/css/index.css" />
   <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
   <script>
+    // Bloqueia renderização imediatamente antes de qualquer HTML ser exibido
+    document.documentElement.style.visibility = 'hidden';
     (function checkAuth() {
       fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
         if (d.autenticado) {
           sessionStorage.setItem('adm_auth', '1');
           sessionStorage.setItem('user_nome', d.nome || '');
           sessionStorage.setItem('user_nivel', d.nivel || '');
+          document.documentElement.style.visibility = '';
         } else {
           sessionStorage.clear();
           window.location.replace('/login.html');
