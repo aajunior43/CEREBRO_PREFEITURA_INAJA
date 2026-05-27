@@ -3,6 +3,10 @@
 # Prefeitura Municipal de Inaja
 # =============================================================================
 
+param(
+    [switch]$Tunnel
+)
+
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $host.UI.RawUI.WindowTitle = "Prefeitura de Inaja - Servidor Web"
 Set-Location $PSScriptRoot
@@ -71,6 +75,48 @@ function Show-URLs {
     foreach ($ip in $ips) { Write-Host "    Rede:  http://$($ip.IPAddress):5000" -Fore Green }
 }
 
+# ── 5. Cloudflare Tunnel functions ──────────────────────────────────────────
+function Find-Cloudflared {
+    Write-Step "Procurando cloudflared.exe..."
+    $paths = @(
+        Join-Path $PSScriptRoot "cloudflared.exe"
+        (Get-Command "cloudflared" -ErrorAction SilentlyContinue).Source
+    )
+    foreach ($p in $paths) { if ($p -and (Test-Path $p)) { Write-OK "Encontrado: $p"; return $p } }
+    Write-Fail "cloudflared.exe nao encontrado."
+    Write-Info "Coloque o .exe na pasta: $PSScriptRoot"
+    return $null
+}
+
+function Start-Tunnel {
+    param($CloudflaredPath)
+    Write-Step "Iniciando Cloudflare Tunnel..."
+    Write-Host "  Aguardando URL publica..." -Fore DarkGray
+
+    $url = $null
+    $job = Start-Job -ScriptBlock { param($exe) & $exe tunnel --url http://localhost:5000 2>&1 } -ArgumentList $CloudflaredPath
+
+    $elapsed = 0
+    while ($elapsed -lt 30) {
+        Start-Sleep 1; $elapsed++
+        $lines = Receive-Job -Job $job -Keep 2>&1
+        foreach ($line in $lines) {
+            if ($line -match "(https://[a-zA-Z0-9\-]+\.trycloudflare\.com)") {
+                $url = $Matches[1]; break
+            }
+        }
+        if ($url) { break }
+        if ($job.State -ne "Running") { break }
+    }
+
+    if (-not $url) {
+        Write-Fail "Nao foi possivel obter URL do tunnel."
+        Stop-Job $job -ErrorAction SilentlyContinue; Remove-Job $job -Force -ErrorAction SilentlyContinue
+        return $null
+    }
+    return @{ Url = $url; Job = $job }
+}
+
 # ── MAIN ────────────────────────────────────────────────────────────────────
 try {
     Write-Host ""
@@ -87,6 +133,27 @@ try {
 
     Clear-Port
 
+    $tunnelJob = $null
+    if ($Tunnel) {
+        $cf = Find-Cloudflared
+        if ($cf) {
+            $result = Start-Tunnel $cf
+            if ($result) {
+                $tunnelJob = $result.Job
+                Write-Host ""
+                Write-Host "============================================================" -Fore Green
+                Write-Host "   SITE PÚBLICO DISPONÍVEL (DESENVOLVIMENTO)!" -Fore Green
+                Write-Host "============================================================" -Fore Green
+                Write-Host ""
+                Write-Host "   $($result.Url)" -Fore Cyan
+                Write-Host ""
+                try { Set-Clipboard -Value $result.Url; Write-OK "URL copiada para area de transferencia." } catch {}
+                Write-Host "============================================================" -Fore Green
+                Write-Host ""
+            }
+        }
+    }
+
     Write-Step "Iniciando servidor Flask..."
     Write-Host ""
 
@@ -100,4 +167,13 @@ try {
     Write-Info "Servidor encerrado."
 
 } catch { Write-Fail "Erro: $_" }
-finally { Read-Host "Enter para sair" }
+finally {
+    if ($tunnelJob) {
+        Write-Step "Encerrando Cloudflare Tunnel..."
+        Stop-Job $tunnelJob -ErrorAction SilentlyContinue
+        Remove-Job $tunnelJob -Force -ErrorAction SilentlyContinue
+        Get-Process "cloudflared" -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue }
+        Write-OK "Tunnel encerrado."
+    }
+    Read-Host "Enter para sair"
+}

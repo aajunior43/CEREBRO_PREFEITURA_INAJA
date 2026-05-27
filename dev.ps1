@@ -15,4 +15,5 @@ Write-Host "  MODO DESENVOLVIMENTO" -Fore DarkCyan
 Write-Host "  DEBUG ativado, reloader automatico ligado." -Fore DarkCyan
 Write-Host ""
 
-& "$PSScriptRoot\iniciar.ps1"
+& "$PSScriptRoot\iniciar.ps1" -Tunnel
+
