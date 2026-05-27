@@ -77,6 +77,13 @@
           <button class="dropdown-toggle btn-ripple" id="dropdown-toggle" aria-label="Abrir menu de opções">
           </button>
           <div class="dropdown-menu" id="dropdown-menu">
+            <button class="dropdown-item" id="btn-alterar-senha" data-tooltip="Alterar minha senha">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Alterar Senha
+            </button>
             <button class="dropdown-item" id="btn-logs" data-tooltip="Ver histórico de alterações">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -1348,6 +1355,35 @@
     </div>
   </div>
 
+  <!-- MODAL: Alterar Senha -->
+  <div class="modal-overlay" id="alterar-senha-overlay" style="display:none;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>Alterar Minha Senha</h2>
+        <button class="modal-close" onclick="document.getElementById('alterar-senha-overlay').style.display='none'">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom:12px;">
+          <label class="login-label" for="as-senha-atual">Senha Atual</label>
+          <input type="password" id="as-senha-atual" class="login-input" placeholder="Digite sua senha atual" required />
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="login-label" for="as-senha-nova">Nova Senha</label>
+          <input type="password" id="as-senha-nova" class="login-input" placeholder="Mínimo 4 caracteres" required />
+        </div>
+        <div style="margin-bottom:12px;">
+          <label class="login-label" for="as-senha-confirmar">Confirmar Nova Senha</label>
+          <input type="password" id="as-senha-confirmar" class="login-input" placeholder="Repita a nova senha" required />
+        </div>
+        <div id="alterar-senha-error" style="color:var(--red);font-size:12px;display:none;margin-top:8px;font-weight:600;"></div>
+      </div>
+      <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-secondary btn-ripple" onclick="document.getElementById('alterar-senha-overlay').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary btn-ripple" id="alterar-senha-salvar">Confirmar Alteração</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Criar/Editar Usuario -->
   <div class="modal-overlay" id="usuario-form-overlay" style="display:none;">
     <div class="modal" style="max-width: 420px;">
@@ -2224,6 +2260,70 @@
             document.getElementById('usuario-form-error').textContent = 'Erro de conexao';
             document.getElementById('usuario-form-error').style.display = 'block';
           });
+      });
+
+      // Abrir modal de alterar senha
+      document.getElementById('btn-alterar-senha')?.addEventListener('click', function(e){
+        e.preventDefault();
+        document.getElementById('as-senha-atual').value = '';
+        document.getElementById('as-senha-nova').value = '';
+        document.getElementById('as-senha-confirmar').value = '';
+        document.getElementById('alterar-senha-error').style.display = 'none';
+        document.getElementById('alterar-senha-overlay').style.display = 'flex';
+      });
+
+      // Salvar nova senha
+      document.getElementById('alterar-senha-salvar')?.addEventListener('click', function(){
+        var senhaAtual = document.getElementById('as-senha-atual').value;
+        var senhaNova = document.getElementById('as-senha-nova').value;
+        var senhaConfirmar = document.getElementById('as-senha-confirmar').value;
+        var errorEl = document.getElementById('alterar-senha-error');
+        
+        errorEl.style.display = 'none';
+
+        if (!senhaAtual || !senhaNova || !senhaConfirmar) {
+          errorEl.textContent = 'Preencha todos os campos';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        if (senhaNova.length < 4) {
+          errorEl.textContent = 'A nova senha deve ter pelo menos 4 caracteres';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        if (senhaNova !== senhaConfirmar) {
+          errorEl.textContent = 'A nova senha e a confirmação não conferem';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        var data = {
+          senha_atual: senhaAtual,
+          senha_nova: senhaNova
+        };
+
+        fetch('/api/auth/senha', {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        })
+        .then(function(r) {
+          return r.json().then(function(d) {
+            if (r.ok && (d.ok || d.mensagem)) {
+              document.getElementById('alterar-senha-overlay').style.display = 'none';
+              showToast('✓ Senha alterada com sucesso!', 'success');
+            } else {
+              errorEl.textContent = d.error || 'Erro ao alterar senha';
+              errorEl.style.display = 'block';
+            }
+          });
+        })
+        .catch(function(){
+          errorEl.textContent = 'Erro de conexão';
+          errorEl.style.display = 'block';
+        });
       });
     });
     

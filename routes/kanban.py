@@ -2,6 +2,7 @@
 
 import json
 import re
+import time as _time
 from collections import defaultdict
 from flask import Blueprint, request, jsonify, send_file
 import io as _io
@@ -240,7 +241,7 @@ def kanban_listar():
             "total"
         ]
         rows = conn.execute(
-            "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em "
+            "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em,valor "
             "FROM kanban_tasks ORDER BY atualizado_em DESC, criado_em DESC LIMIT ? OFFSET ?",
             (limit, offset),
         ).fetchall()
@@ -278,12 +279,11 @@ def kanban_criar():
         status = _normalize_status(data.get("status") or "todo")
         priority = _normalize_priority(data.get("priority") or "medium")
         concluido_em = _time.strftime("%Y-%m-%d %H:%M:%S") if status == "done" else ""
-        import time as _time
 
         conn = get_db()
         conn.execute(
-            "INSERT INTO kanban_tasks (id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em) "
-            "VALUES (?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
+            "INSERT INTO kanban_tasks (id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,valor,criado_em,atualizado_em) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,datetime('now','localtime'),datetime('now','localtime'))",
             (
                 task_id,
                 title,
@@ -294,11 +294,12 @@ def kanban_criar():
                 (data.get("data_vencimento") or "").strip(),
                 (data.get("responsavel") or "").strip(),
                 concluido_em,
+                float(data.get("valor") or 0),
             ),
         )
         conn.commit()
         row = conn.execute(
-            "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em FROM kanban_tasks WHERE id=?",
+            "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em,valor FROM kanban_tasks WHERE id=?",
             (task_id,),
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
@@ -311,8 +312,6 @@ def kanban_criar():
 @bp.route("/api/kanban/<task_id>", methods=["PUT"])
 def kanban_atualizar(task_id):
     try:
-        import time as _time
-
         data = request.get_json(force=True) or {}
         title = (data.get("title") or "").strip()
         if not title:
@@ -331,7 +330,7 @@ def kanban_atualizar(task_id):
         elif status != "done":
             concluido_em = ""
         conn.execute(
-            "UPDATE kanban_tasks SET title=?,description=?,status=?,priority=?,categoria=?,data_vencimento=?,responsavel=?,concluido_em=?,atualizado_em=datetime('now','localtime') WHERE id=?",
+            "UPDATE kanban_tasks SET title=?,description=?,status=?,priority=?,categoria=?,data_vencimento=?,responsavel=?,concluido_em=?,valor=?,atualizado_em=datetime('now','localtime') WHERE id=?",
             (
                 title,
                 (data.get("description") or "").strip(),
@@ -341,12 +340,13 @@ def kanban_atualizar(task_id):
                 (data.get("data_vencimento") or "").strip(),
                 (data.get("responsavel") or "").strip(),
                 concluido_em,
+                float(data.get("valor") or 0),
                 task_id,
             ),
         )
         conn.commit()
         row = conn.execute(
-            "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em FROM kanban_tasks WHERE id=?",
+            "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em,valor FROM kanban_tasks WHERE id=?",
             (task_id,),
         ).fetchone()
         return jsonify(row_to_dict(row))

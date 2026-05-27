@@ -368,6 +368,7 @@ def create_app() -> Flask:
             "ALTER TABLE kanban_tasks ADD COLUMN data_vencimento TEXT DEFAULT ''",
             "ALTER TABLE kanban_tasks ADD COLUMN responsavel TEXT DEFAULT ''",
             "ALTER TABLE kanban_tasks ADD COLUMN concluido_em TEXT DEFAULT ''",
+            "ALTER TABLE kanban_tasks ADD COLUMN valor REAL DEFAULT 0",
             "ALTER TABLE mural_recados ADD COLUMN valor REAL DEFAULT 0.0",
         ]:
             try:

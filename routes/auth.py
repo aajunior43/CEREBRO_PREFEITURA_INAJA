@@ -156,7 +156,7 @@ def auth_adm_legacy():
 
 @bp.route("/api/auth/usuarios", methods=["GET"])
 def listar_usuarios():
-    if session.get("usuario_nivel") != "admin":
+    if "usuario_id" not in session:
         return jsonify({"error": "Nao autorizado"}), 403
     rows = get_db().execute(
         "SELECT * FROM usuarios ORDER BY ativo DESC, nome ASC"

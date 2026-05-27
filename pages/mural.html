@@ -645,15 +645,13 @@
           </div>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="mural-form-group">
-            <label class="mural-label" for="form-autor">Autor</label>
-            <input type="text" id="form-autor" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" placeholder="Seu nome" />
-          </div>
-          <div class="mural-form-group">
-            <label class="mural-label" for="form-destinatario">Destinatário</label>
-            <input type="text" id="form-destinatario" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" placeholder="Ex: Todos, Financeiro..." value="Todos" />
-          </div>
+        <!-- Autor preenchido automaticamente pelo usuário logado -->
+        <input type="hidden" id="form-autor" />
+        <div class="mural-form-group">
+          <label class="mural-label" for="form-destinatario">Destinatário</label>
+          <select id="form-destinatario" class="mural-select" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px; min-height:42px;">
+            <option value="Todos">Todos</option>
+          </select>
         </div>
 
         <!-- Cor e urgência integradas automaticamente -->
@@ -715,8 +713,32 @@
       btnSair.style.display = 'inline-flex';
     }
 
+    async function loadDestinatarios() {
+      try {
+        const res = await fetch('/api/auth/usuarios');
+        if (res.ok) {
+          const users = await res.json();
+          const select = document.getElementById('form-destinatario');
+          if (select) {
+            select.innerHTML = '<option value="Todos">Todos</option>';
+            users.forEach(u => {
+              if (u.ativo) {
+                const opt = document.createElement('option');
+                opt.value = u.nome;
+                opt.textContent = `${u.nome} (${u.login})`;
+                select.appendChild(opt);
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar destinatarios:', e);
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       populateUserChip();
+      loadDestinatarios();
 
       document.getElementById('btn-sair').addEventListener('click', function() {
         fetch('/api/auth/sair', { method: 'POST' })
@@ -1046,22 +1068,33 @@
     }
 
     async function alterarStatusRecado(id, novoStatus) {
+      const currentUser = sessionStorage.getItem('user_nome') || '';
       // Optimistic Update: change status instantly in memory cache and re-render
       const item = cacheRecados.find(r => r.id === id);
       const oldStatus = item ? item.status : null;
       if (item) {
         item.status = novoStatus;
+        if (novoStatus === 'concluido' && currentUser) {
+          item.concluido_por = currentUser;
+          item.concluido_em = new Date().toLocaleString('pt-BR');
+        }
+        if (novoStatus === 'em_andamento' && currentUser) {
+          item.iniciado_por = currentUser;
+        }
         renderMural();
       }
+
+      const body = { status: novoStatus };
+      if (novoStatus === 'concluido' && currentUser) body.concluido_por = currentUser;
+      if (novoStatus === 'em_andamento' && currentUser) body.iniciado_por = currentUser;
 
       try {
         const res = await fetch(`/api/mural/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: novoStatus })
+          body: JSON.stringify(body)
         });
         if (!res.ok) {
-          // Rollback on failure
           if (item && oldStatus) {
             item.status = oldStatus;
             renderMural();

@@ -849,6 +849,39 @@
             border-left-color: #10b981
         }
 
+        /* ── Card com VALOR monetário destacado ───────────────────────────────── */
+        .kb-card-has-valor {
+            border-left-color: #f59e0b !important;
+            background: linear-gradient(
+                180deg,
+                color-mix(in srgb, #f59e0b 6%, var(--surface)) 0%,
+                color-mix(in srgb, var(--surface-2) 94%, transparent) 100%
+            ) !important;
+            box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, #f59e0b 28%, transparent) !important;
+        }
+        .kb-card-has-valor:hover {
+            box-shadow: var(--shadow-lg), 0 0 0 2px color-mix(in srgb, #f59e0b 40%, transparent) !important;
+        }
+        .kb-valor-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, color-mix(in srgb, #f59e0b 18%, transparent), color-mix(in srgb, #d97706 12%, transparent));
+            color: #b45309;
+            border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+        }
+        [data-theme="dark"] .kb-valor-badge {
+            background: linear-gradient(135deg, rgba(245,158,11,.22), rgba(217,119,6,.16));
+            color: #fbbf24;
+            border-color: rgba(245,158,11,.32);
+        }
+
         /* ── MODAL ── */
         .kb-overlay {
             position: fixed;
@@ -1504,6 +1537,10 @@
                     <div><label class="kb-label">👤 Responsável</label>
                         <input class="kb-input" id="t-resp" type="text" placeholder="Quem vai fazer?" maxlength="60" />
                     </div>
+                    <div>
+                        <label class="kb-label">💰 Valor (R$) <span style="font-size:10px;font-weight:500;color:var(--text-3)">— deixe 0 se não houver</span></label>
+                        <input class="kb-input" id="t-valor" type="number" min="0" step="0.01" placeholder="0,00" style="font-variant-numeric:tabular-nums" />
+                    </div>
                     <details style="border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--surface) 60%,transparent)">
                         <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--text-3)">Opções avançadas</summary>
                         <div style="display:flex;gap:10px;margin-top:12px">
@@ -1679,7 +1716,7 @@
 
         function updateCatCounts() {
             const cats = ['all','empenhar','liquidar','pagar','obs','resolver','outros'];
-            cats.forEach(c => {
+                            cats.forEach(c => {
                 const el = document.getElementById(`cnt-cat-${c}`);
                 if (!el) return;
                 const count = c === 'all' ? tasks.length : tasks.filter(t => (t.categoria||'').toUpperCase() === c.toUpperCase()).length;
@@ -1728,6 +1765,11 @@
             const attachments = Array.isArray(task.attachments) ? task.attachments : [];
             const qm = _quickMoveLabel(task.status);
             const quickMoveBtn = qm ? `<button class="kb-quick-move ${qm.cls}" onclick="quickMove('${task.id}','${qm.next}')" title="Mover para próxima etapa">${qm.label}</button>` : '';
+            const hasValor = task.valor && parseFloat(task.valor) > 0;
+            if (hasValor) card.classList.add('kb-card-has-valor');
+            const valorBadge = hasValor
+                ? `<span class="kb-valor-badge">💰 ${parseFloat(task.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>`
+                : '';
             card.innerHTML = `
       <div class="kb-card-top">
         <div class="kb-card-title">${esc(task.title)}</div>
@@ -1748,6 +1790,7 @@
         <span class="kb-priority ${prioClass[task.priority]}">${prioLabel[task.priority]}</span>
         ${_catBadge(task.categoria)}
         ${_dueBadge(task.data_vencimento)}
+        ${valorBadge}
         ${quickMoveBtn}
       </div>`;
             card.addEventListener('dragstart', e => { dragTaskId = task.id; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
@@ -2236,6 +2279,7 @@
             document.getElementById('t-cat').value = (task.categoria || '').toUpperCase();
             document.getElementById('t-due').value = task.data_vencimento || '';
             document.getElementById('t-resp').value = task.responsavel || '';
+            document.getElementById('t-valor').value = (task.valor && task.valor > 0) ? task.valor : '';
         }
 
         function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = 'Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
@@ -2274,11 +2318,12 @@
             const categoria = document.getElementById('t-cat').value;
             const data_vencimento = document.getElementById('t-due').value;
             const responsavel = document.getElementById('t-resp').value.trim();
+            const valor = parseFloat(document.getElementById('t-valor').value) || 0;
             const file = pendingModalFile || document.getElementById('t-file').files[0];
             try {
                 if (editingId) {
                     const task = tasks.find(t => t.id === editingId);
-                    const updated = { ...task, title, description: desc, status, priority, categoria, data_vencimento, responsavel };
+                    const updated = { ...task, title, description: desc, status, priority, categoria, data_vencimento, responsavel, valor };
                     const res = await fetch(`/api/kanban/${editingId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
                     if (!res.ok) throw new Error('Erro ao atualizar tarefa');
                     const updatedFromApi = await res.json();
@@ -2287,7 +2332,7 @@
                     if (i > -1) tasks[i] = { ...updatedFromApi, attachments: tasks[i].attachments || [] };
                     showToast('Tarefa atualizada!', 'success');
                 } else {
-                    const newTask = { id: uid(), title, description: desc, status, priority, categoria, data_vencimento, responsavel };
+                    const newTask = { id: uid(), title, description: desc, status, priority, categoria, data_vencimento, responsavel, valor };
                     const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newTask) });
                     if (!res.ok) throw new Error('Erro ao criar tarefa');
                     const created = await res.json();
@@ -2324,7 +2369,8 @@
                 priority: task.priority || 'medium',
                 categoria: (task.categoria || '').toUpperCase(),
                 data_vencimento: task.data_vencimento || '',
-                responsavel: task.responsavel || ''
+                responsavel: task.responsavel || '',
+                valor: task.valor || 0
             };
             try {
                 const res = await fetch('/api/kanban', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(copy) });
