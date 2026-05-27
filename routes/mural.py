@@ -81,10 +81,15 @@ def mural_criar():
             
         valor_raw = data.get("valor")
         valor = 0.0
-        if valor_raw:
+        if valor_raw is not None:
             try:
-                cleaned = str(valor_raw).replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
-                valor = float(cleaned)
+                if isinstance(valor_raw, (int, float)):
+                    valor = float(valor_raw)
+                else:
+                    cleaned = str(valor_raw).replace("R$", "").replace(" ", "")
+                    if "," in cleaned:
+                        cleaned = cleaned.replace(".", "").replace(",", ".")
+                    valor = float(cleaned) if cleaned else 0.0
             except ValueError:
                 valor = 0.0
 
@@ -118,8 +123,16 @@ def mural_atualizar(recado_id):
             if k in data:
                 if k == "valor":
                     try:
-                        cleaned = str(data[k] or "0").replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".").strip()
-                        fields[k] = float(cleaned) if cleaned else 0.0
+                        val_raw = data[k]
+                        if val_raw is None:
+                            fields[k] = 0.0
+                        elif isinstance(val_raw, (int, float)):
+                            fields[k] = float(val_raw)
+                        else:
+                            cleaned = str(val_raw).replace("R$", "").replace(" ", "")
+                            if "," in cleaned:
+                                cleaned = cleaned.replace(".", "").replace(",", ".")
+                            fields[k] = float(cleaned) if cleaned else 0.0
                     except ValueError:
                         fields[k] = 0.0
                 else:

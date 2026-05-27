@@ -264,6 +264,20 @@
       box-shadow: var(--shadow);
     }
     
+    /* Card com VALOR destacado no mural */
+    .mural-card-has-valor {
+      --note-border: #f59e0b !important;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, #f59e0b 6%, var(--surface)) 0%,
+        color-mix(in srgb, var(--surface-2) 94%, transparent) 100%
+      ) !important;
+      box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, #f59e0b 28%, transparent) !important;
+    }
+    .mural-card-has-valor:hover {
+      box-shadow: var(--shadow-lg), 0 0 0 2px color-mix(in srgb, #f59e0b 40%, transparent) !important;
+    }
+    
     /* Tailored HSL Colors for dark and light matching the system perfectly */
     .card-color-yellow  { --note-border: var(--orange); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(245, 158, 11, 0.03)); }
     .card-color-blue    { --note-border: var(--blue); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(59, 130, 246, 0.03)); }
@@ -340,6 +354,27 @@
       align-items: center;
       height: 11px;
     }
+    
+    .mural-valor-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, color-mix(in srgb, #f59e0b 18%, transparent), color-mix(in srgb, #d97706 12%, transparent));
+      color: #b45309;
+      border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+    }
+    [data-theme="dark"] .mural-valor-badge {
+      background: linear-gradient(135deg, rgba(245,158,11,.22), rgba(217,119,6,.16));
+      color: #fbbf24;
+      border-color: rgba(245,158,11,.32);
+    }
+    
     .badge-prioridade-baixa   { background: rgba(16, 185, 129, .12); color: #059669; }
     .badge-prioridade-media   { background: rgba(245, 158, 11, .12); color: #d97706; }
     .badge-prioridade-alta    { background: rgba(249, 115, 22, 0.15); color: #ea580c; }
@@ -943,6 +978,11 @@
       
       card.className = `mural-card card-color-${calculatedColor}`;
       
+      const hasValor = item.valor && parseFloat(item.valor) > 0;
+      if (hasValor) {
+        card.classList.add('mural-card-has-valor');
+      }
+      
       // Build completion tags if done
       let completionMeta = '';
       if (item.status === 'concluido' && item.concluido_em) {
@@ -990,9 +1030,9 @@
 
       // Render valor badge if present
       let valorBadge = '';
-      if (item.valor && item.valor > 0) {
+      if (item.valor && parseFloat(item.valor) > 0) {
         const formatted = Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        valorBadge = `<span class="mural-badge" style="background: rgba(16, 185, 129, 0.12); color: #047857; font-weight: 800;">💰 ${formatted}</span>`;
+        valorBadge = `<span class="mural-valor-badge">💰 ${formatted}</span>`;
       }
 
       card.innerHTML = `
