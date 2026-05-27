@@ -853,12 +853,109 @@ def create_app() -> Flask:
             return jsonify({"error": "Rota não encontrada", "path": request.path}), 404
         return str(e), 404
 
-    @app.errorhandler(500)
-    def server_error(e):
-        app.logger.error("500 em %s: %s", request.path, e)
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        import traceback
+        import html
+        from flask import session
+
+        method = request.method
+        url = request.url
+        ip = getattr(g, "_request_ip", "-")
+        if ip == "-" or not ip:
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr or "-").split(",")[0].strip()
+        user = session.get("usuario_login") or "Anonymous"
+
+        tb = traceback.format_exc()
+        app.logger.error(
+            "Erro do Sistema: %s\n"
+            "Request URL: %s %s\n"
+            "Client IP: %s | Usuário: %s\n"
+            "Traceback:\n%s",
+            str(e), method, url, ip, user, tb
+        )
+
+        if settings.debug:
+            print(f"\033[31m[ERROR] {method} {url} from {ip}\033[0m")
+            print(tb)
+
         if request.path.startswith("/api/"):
-            return jsonify({"error": "Erro interno do servidor", "detail": str(e)}), 500
-        return str(e), 500
+            return jsonify({
+                "error": "Erro interno do servidor",
+                "message": str(e),
+                "path": request.path
+            }), 500
+
+        return f"""
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+            <meta charset="UTF-8">
+            <title>Erro do Sistema - Prefeitura de Inajá</title>
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background: #0f172a;
+                    color: #f8fafc;
+                    padding: 40px;
+                    line-height: 1.6;
+                }}
+                .container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: #1e293b;
+                    padding: 32px;
+                    border-radius: 12px;
+                    border: 1px solid #334155;
+                    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+                }}
+                h1 {{
+                    color: #f43f5e;
+                    margin-top: 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 24px;
+                }}
+                pre {{
+                    background: #020617;
+                    padding: 16px;
+                    border-radius: 8px;
+                    overflow-x: auto;
+                    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+                    font-size: 13px;
+                    color: #cbd5e1;
+                    border: 1px solid #334155;
+                }}
+                .btn {{
+                    display: inline-block;
+                    background: #3b82f6;
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    font-weight: 500;
+                    font-size: 14px;
+                    transition: background 0.2s;
+                    margin-top: 20px;
+                }}
+                .btn:hover {{
+                    background: #2563eb;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>⚠️ Ocorreu um Erro no Servidor</h1>
+                <p>O sistema encontrou uma falha inesperada ao processar sua solicitação.</p>
+                <h3>Detalhes do erro:</h3>
+                <pre>{html.escape(str(e))}</pre>
+                <a href="/" class="btn">Voltar para o Início</a>
+            </div>
+        </body>
+        </html>
+        """, 500
+
 
     # ── Register Blueprints ──────────────────────────────────
     from routes.credores import bp as bp_credores
