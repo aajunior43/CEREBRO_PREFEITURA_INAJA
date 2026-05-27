@@ -925,25 +925,66 @@
     }
 
     async function alterarStatusRecado(id, novoStatus) {
+      // Optimistic Update: change status instantly in memory cache and re-render
+      const item = cacheRecados.find(r => r.id === id);
+      const oldStatus = item ? item.status : null;
+      if (item) {
+        item.status = novoStatus;
+        renderMural();
+      }
+
       try {
         const res = await fetch(`/api/mural/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: novoStatus })
         });
-        if (res.ok) carregarMural();
+        if (!res.ok) {
+          // Rollback on failure
+          if (item && oldStatus) {
+            item.status = oldStatus;
+            renderMural();
+          }
+          carregarMural();
+        }
       } catch (e) {
         console.error(e);
+        if (item && oldStatus) {
+          item.status = oldStatus;
+          renderMural();
+        }
+        carregarMural();
       }
     }
 
     async function excluirRecado(id) {
       if (!confirm("Excluir definitivamente este recado do mural?")) return;
+
+      // Optimistic Delete: remove instantly from cache and re-render
+      const index = cacheRecados.findIndex(r => r.id === id);
+      let tempRemoved = null;
+      if (index !== -1) {
+        tempRemoved = cacheRecados.splice(index, 1)[0];
+        renderMural();
+      }
+
       try {
         const res = await fetch(`/api/mural/${id}`, { method: 'DELETE' });
-        if (res.ok) carregarMural();
+        if (!res.ok) {
+          // Rollback on failure
+          if (tempRemoved) {
+            cacheRecados.push(tempRemoved);
+            renderMural();
+          }
+          carregarMural();
+        }
       } catch (e) {
         console.error(e);
+        if (tempRemoved) {
+          cacheRecados.push(tempRemoved);
+          renderMural();
+        }
+        carregarMural();
       }
     }
 
@@ -1003,14 +1044,32 @@
       const url = id ? `/api/mural/${id}` : '/api/mural';
       const method = id ? 'PUT' : 'POST';
 
+      // Close modal instantly for zero-latency feel
+      backdrop.classList.remove('active');
+
+      // Optimistic update for Edit Mode
+      let originalItem = null;
+      if (id) {
+        const itemId = parseInt(id, 10);
+        originalItem = cacheRecados.find(r => r.id === itemId);
+        if (originalItem) {
+          // Temporarily merge payload
+          Object.assign(originalItem, payload);
+          renderMural();
+        }
+      }
+
       try {
         const res = await fetch(url, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        
         if (res.ok) {
           const createdRecado = await res.json();
+          
+          // Handle file attachment in background if any
           const modalFileInput = document.getElementById('form-file');
           if (modalFileInput.files && modalFileInput.files.length > 0) {
             const formData = new FormData();
@@ -1021,11 +1080,16 @@
               body: formData
             });
           }
-          backdrop.classList.remove('active');
+          
+          // Refresh actual DB data to match background attachment states
+          carregarMural();
+        } else {
+          // If server failed, rollback and reload
           carregarMural();
         }
       } catch (err) {
         console.error(err);
+        carregarMural();
       }
     });
 
