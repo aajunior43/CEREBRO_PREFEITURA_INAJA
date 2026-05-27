@@ -7,7 +7,7 @@
   <title>Controle de Empenhos Mensais – Prefeitura de Inajá</title>
   <link rel="icon" type="image/png" href="/static/img/brasao.png" />
   <link rel="stylesheet" href="/static/css/index.css" />
-  <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||t==='cosmos'){localStorage.setItem('theme','light');t='light';}if(t==='vintage')document.documentElement.setAttribute('data-theme','vintage');}());</script>
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
   <script>
     (function checkAuth() {
       fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
@@ -24,7 +24,9 @@
       });
     })();
   </script>
-  <link rel="stylesheet" href="/static/css/fonts.css" />
+    <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="stylesheet" href="/static/css/home-dashboard.css" />
 </head>
 
 <body class="home-page home-active">
@@ -139,6 +141,10 @@
           <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
           <div class="nav-group-item-text"><span class="nav-group-item-name">Tarefas</span><span class="nav-group-item-desc">Gerenciar atividades</span></div>
         </a>
+        <a href="/pages/mural.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Mural de recados e tarefas compartilhadas">
+          <div class="nav-group-item-icon">📌</div>
+          <div class="nav-group-item-text"><span class="nav-group-item-name">Mural Interativo</span><span class="nav-group-item-desc">Avisos e recados compartilhados</span></div>
+        </a>
         <a href="/pages/calendario.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Histórico mensal">
           <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <div class="nav-group-item-text"><span class="nav-group-item-name">Calendário</span><span class="nav-group-item-desc">Histórico mensal</span></div>
@@ -247,6 +253,7 @@
       <div class="mobile-nav-label">Operação</div>
       <button class="mobile-nav-item active" data-tab="credores-fixos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Credores Fixos</button>
       <a href="/pages/tarefas.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Tarefas</a>
+      <a href="/pages/mural.html" class="mobile-nav-item" style="text-decoration:none;">📌 Mural Interativo</a>
       <a href="/pages/calendario.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendário</a>
       <div class="mobile-nav-divider"></div>
       <div class="mobile-nav-label">Financeiro</div>
@@ -281,172 +288,666 @@
 
   <!-- ═══════════════════ DASHBOARD AREA ═══════════════════ -->
   <section id="dashboard-area" class="dashboard-area">
-    <div class="dashboard-header">
-      <h1 class="dashboard-title">Bem-vindo ao Sistema de Empenhos</h1>
-      <p class="dashboard-subtitle">Prefeitura Municipal de Inajá - Controle e Gestão Financeira</p>
+    <div class="dashboard-head-wrap">
+      <div>
+        <h1 class="dashboard-greeting-title" id="dash-greeting-title">Bom dia.</h1>
+        <div class="dashboard-greeting-subtitle" id="dash-greeting-subtitle">Carregando informações operacionais...</div>
+      </div>
     </div>
 
-    <!-- Modules -->
-    <div class="hs-modules">
-
-      <!-- Operacional -->
-      <div class="hs-group">
-        <div class="hs-group-header hs-group-blue">
-          <div class="hs-group-header-main">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <div>
-              <span class="hs-group-title">Operacional</span>
-              <span class="hs-group-subtitle">Execução diária, acompanhamento e organização interna</span>
-            </div>
+    <div class="dash-hero-grid">
+      <!-- Calendário -->
+      <div class="cal-card">
+        <div class="cal-head">
+          <div class="cal-title">Calendário do Mês</div>
+          <div class="cal-legend">
+            <span><span class="dot" style="background:var(--green)"></span> Empenhos</span>
+            <span><span class="dot" style="background:var(--orange)"></span> Tarefas</span>
+            <span><span class="dot" style="background:var(--red)"></span> Prazos</span>
           </div>
         </div>
-        <div class="hs-cards">
-          <button class="hs-card hs-accent-blue hs-card--operacao hs-card--destaque" data-hs-tab="credores-fixos">
-            <span class="hs-card__badge hs-card__badge--principal">Principal</span>
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Gestão de Credores Fixos</span><span class="hs-card-desc">Cadastro, controle mensal e emissão de empenhos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </button>
-          <a class="hs-card hs-accent-blue hs-card--operacao" href="/pages/tarefas.html">
-            <span class="hs-card__badge hs-card__badge--novo">Novo</span>
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Painel de Tarefas</span><span class="hs-card-desc">Quadro Kanban para execução e acompanhamento</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-blue hs-card--operacao" href="/pages/calendario.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Calendário</span><span class="hs-card-desc">Agenda, histórico e controle mensal</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
+        <div class="cal-grid" id="dash-cal-grid"></div>
+        <div class="day-detail" id="dash-day-detail">
+          <div class="head">
+            <span class="h-num" id="dash-dd-num">—</span>
+            <span class="h-title" id="dash-dd-title">Selecione um dia</span>
+          </div>
+          <ul id="dash-dd-list"></ul>
         </div>
       </div>
 
-      <!-- Empenhos -->
-      <div class="hs-group">
-        <div class="hs-group-header hs-group-green">
-          <div class="hs-group-header-main">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-            <div>
-              <span class="hs-group-title">Empenhos</span>
-              <span class="hs-group-subtitle">Geração, classificação, consulta e acompanhamento orçamentário</span>
-            </div>
-          </div>
+      <!-- Painel Hoje -->
+      <aside class="today-panel">
+        <div class="today-head">
+          <div class="today-eyebrow">Hoje</div>
+          <div class="today-date" id="dash-today-date">Qua, 04 Fev</div>
+          <div class="today-day" id="dash-today-day">Dia — / — · Sem —</div>
         </div>
-        <div class="hs-cards">
-          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/assistente-empenho.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Gerador de Descrição para Empenhos</span><span class="hs-card-desc">Gerar texto e apoiar a conferência do empenho</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/classificador-despesa.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Classificador de Despesas</span><span class="hs-card-desc">Desdobramento correto da despesa via TCE-PR e MCASP</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/visualizador.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Relação de Empenhos Emitidos</span><span class="hs-card-desc">Visualizar, filtrar e detalhar empenhos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/despesa-prefeitura.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Dotação Orçamentária</span><span class="hs-card-desc">Consulta de despesas e análise orçamentária</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-green hs-card--financeiro" href="/pages/despesa-relatorios.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Comparativo Orçamentário</span><span class="hs-card-desc">Relatórios, histórico e comparação entre períodos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
+        <div class="today-list" id="dash-today-list">
+          <!-- Dinâmico via JS -->
+        </div>
+        <div class="today-footer">
+          <a href="/pages/tarefas.html">Ver todas as tarefas <i class="ph ph-arrow-right"></i></a>
+        </div>
+      </aside>
+    </div>
+
+    <div class="dash-section-head">
+      <div class="dash-section-title">Módulos do Sistema</div>
+    </div>
+    
+    <div class="dash-modules-grid">
+      <div class="dash-module-card featured" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <span class="dash-pill">Principal</span>
+        </div>
+        <h3>Gestão de Credores Fixos</h3>
+        <p>Cadastro, controle mensal e emissão de empenhos recorrentes.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat" id="dash-stat-credores">— credores ativos</span>
         </div>
       </div>
 
-      <!-- Documentos e Compras -->
-      <div class="hs-group">
-        <div class="hs-group-header hs-group-orange">
-          <div class="hs-group-header-main">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <div>
-              <span class="hs-group-title">Documentos e Compras</span>
-              <span class="hs-group-subtitle">Arquivos, aquisições, protocolos e tramitação documental</span>
-            </div>
-          </div>
+      <div class="dash-module-card" onclick="window.location.href='/pages/tarefas.html'">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+          <span class="dash-pill neutral">Novo</span>
         </div>
-        <div class="hs-cards">
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/documentos.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Centro de Documentos</span><span class="hs-card-desc">Salvar e organizar arquivos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/fornecimento.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Gerador de Solicitação de Compra ou Serviço</span><span class="hs-card-desc">Pedidos, fornecedores e fluxo de compras</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/rpa.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Gerador de RPAs</span><span class="hs-card-desc">Recibo de Pagamento Autônomo</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/auditor.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Auditor NF</span><span class="hs-card-desc">Auditoria e notas fiscais</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/prazos.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Prazos</span><span class="hs-card-desc">Contratos e prazos críticos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/protocolo.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Protocolo</span><span class="hs-card-desc">Ofícios e memorandos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-orange hs-card--documentos" href="/pages/autentique-assinatura.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Assinatura Digital</span><span class="hs-card-desc">Envio de documentos para assinatura eletrônica</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
+        <h3>Painel de Tarefas</h3>
+        <p>Quadro Kanban para execução e acompanhamento da equipe.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat" id="dash-stat-tarefas">— em aberto</span>
         </div>
       </div>
 
-      <!-- Financeiro e Ferramentas -->
-      <div class="hs-group">
-        <div class="hs-group-header hs-group-purple">
-          <div class="hs-group-header-main">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            <div>
-              <span class="hs-group-title">Financeiro e Ferramentas</span>
-              <span class="hs-group-subtitle">Tarifas, consultas, utilitários e administração do sistema</span>
-            </div>
-          </div>
+      <div class="dash-module-card" onclick="window.location.href='/pages/mural.html'">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><span style="font-size:24px;">📌</span></div>
+          <span class="dash-pill">Mural</span>
         </div>
-        <div class="hs-cards">
-          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/tarifas-bancarias.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Análise de Tarifas Bancárias</span><span class="hs-card-desc">Leitura de extratos e conferência de encargos</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/cnpj.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Consulta de CNPJ</span><span class="hs-card-desc">Consulta cadastral de empresas e fornecedores</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/renomear.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Renomeador de Arquivos</span><span class="hs-card-desc">Padronizar nomes de documentos automaticamente</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
-          <a class="hs-card hs-accent-purple hs-card--ferramentas" href="/pages/calculadora-diarias.html">
-            <div class="hs-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div>
-            <div class="hs-card-body"><span class="hs-card-name">Calculadora de Diárias</span><span class="hs-card-desc">Cálculo administrativo de diárias de viagem</span></div>
-            <span class="hs-card-arrow">›</span>
-          </a>
+        <h3>Mural Interativo</h3>
+        <p>Quadro de recados e tarefas compartilhadas por servidores.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Compartilhado</span>
         </div>
       </div>
 
-    </div><!-- .hs-modules -->
+      <div class="dash-module-card" onclick="window.location.href='/pages/assistente-empenho.html'">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
+        </div>
+        <h3>Gerador de Descrição</h3>
+        <p>Gera texto e apoia a conferência do empenho automaticamente.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Inteligência Artificial</span>
+        </div>
+      </div>
+
+      <div class="dash-module-card" onclick="window.location.href='/pages/despesa-prefeitura.html'">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+        </div>
+        <h3>Dotação Orçamentária</h3>
+        <p>Saldos, desdobramentos e execução orçamentária municipal.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Exercício 2026</span>
+        </div>
+      </div>
+
+      <div class="dash-module-card" onclick="window.location.href='/pages/documentos.html'">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+        </div>
+        <h3>Documentos</h3>
+        <p>Notas fiscais, contratos e comprovantes arquivados.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat" id="dash-stat-documentos">— arquivos</span>
+        </div>
+      </div>
+
+      <div class="dash-module-card" onclick="window.location.href='/pages/renomear.html'">
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+        </div>
+        <h3>Renomeador</h3>
+        <p>Padronização inteligente de nomes de arquivos PDF e extratos.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Automação de Arquivo</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-bottom-grid">
+      <!-- Atividade recente -->
+      <div class="dash-panel">
+        <div class="dash-panel-head">
+          <div class="dash-panel-title">Atividade Recente</div>
+          <span class="dash-panel-link" style="cursor:pointer" onclick="document.querySelector('.nav-tab[data-tab=\'logs\']')?.click();">Ver logs →</span>
+        </div>
+        <div class="dash-activity-list" id="dash-activity-list">
+          <!-- Dinâmico via JS -->
+        </div>
+      </div>
+
+      <!-- Ações rápidas -->
+      <div class="dash-panel">
+        <div class="dash-panel-head">
+          <div class="dash-panel-title">Ações Rápidas</div>
+          <span class="dash-panel-link" style="font-family:monospace;font-size:11px;">Teclado</span>
+        </div>
+        <div class="dash-shortcuts-list">
+          <div class="dash-shortcut" onclick="abrirNovoEmpenhoFast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="dash-shortcut-text">Novo empenho</span><span class="dash-shortcut-kbd">N E</span></div>
+          <div class="dash-shortcut" onclick="abrirNovoCredorFast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg><span class="dash-shortcut-text">Cadastrar credor</span><span class="dash-shortcut-kbd">N C</span></div>
+          <div class="dash-shortcut" onclick="window.location.href=\'/pages/documentos.html\'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span class="dash-shortcut-text">Importar nota fiscal</span><span class="dash-shortcut-kbd">I N</span></div>
+          <div class="dash-shortcut" onclick="window.location.href=\'/pages/tarefas.html\'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span class="dash-shortcut-text">Nova tarefa</span><span class="dash-shortcut-kbd">N T</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCRIPT DE INTEGRAÇÃO DINÂMICA DO DASHBOARD -->
+    <script>
+    (function() {
+      'use strict';
+      
+      const MONTHS_MAP = {
+        "Janeiro": 0, "Fevereiro": 1, "Março": 2, "Abril": 3,
+        "Maio": 4, "Junho": 5, "Julho": 6, "Agosto": 7,
+        "Setembro": 8, "Outubro": 9, "Novembro": 10, "Dezembro": 11
+      };
+      const MONTH_NAMES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      const DOW_NAMES = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+      
+      let currentMonthIndex = new Date().getMonth();
+      let currentYearVal = new Date().getFullYear();
+      let selectedDayActive = null;
+      
+      // Data State
+      let stateTasks = [];
+      let stateCredores = [];
+      let stateEmpenhos = [];
+      
+      async function loadDashboardData() {
+        try {
+          // 1. Fetch Kanban Tasks
+          const resTasks = await fetch('/api/kanban?limit=1000').then(r => r.json()).catch(() => ({ items: [] }));
+          stateTasks = resTasks.items || [];
+          
+          // 2. Fetch Credores (with summary)
+          const resCredores = await fetch('/api/credores?limit=1000&include_summary=true').then(r => r.json()).catch(() => ({ items: [] }));
+          stateCredores = resCredores.items || [];
+          
+          // 3. Fetch Empenhos for current selected month
+          const resEmpenhos = await fetch(`/api/empenhos/${currentYearVal}/${currentMonthIndex + 1}`).then(r => r.json()).catch(() => []);
+          stateEmpenhos = resEmpenhos || [];
+          
+          // Update Stats
+          updateDashboardStats();
+          
+          // Render components
+          renderCal();
+          renderTodayPanel();
+          renderActivityFeed();
+        } catch (e) {
+          console.error("Erro ao carregar dados do dashboard:", e);
+        }
+      }
+      
+      function updateDashboardStats() {
+        // 1. Tasks count (todo + in-progress)
+        const openTasks = stateTasks.filter(t => t.status !== 'done');
+        const tasksCountEl = document.getElementById('dash-stat-tarefas');
+        if (tasksCountEl) tasksCountEl.textContent = `${openTasks.length} em aberto`;
+        
+        // 2. Credores count
+        const activeCredores = stateCredores.filter(c => c.ativo === 1);
+        const credoresCountEl = document.getElementById('dash-stat-credores');
+        if (credoresCountEl) credoresCountEl.textContent = `${activeCredores.length} ativos`;
+        
+        // 3. Documentos count
+        fetch('/api/documentos?limit=1').then(r => r.json()).then(d => {
+          const docStat = document.getElementById('dash-stat-documentos');
+          if (docStat) docStat.textContent = `${d.total || 0} arquivos`;
+        }).catch(() => {});
+        
+        // 4. Update Greeting dynamic subtitle
+        // Count commitments due this month
+        const empenhadosMap = {};
+        stateEmpenhos.forEach(e => { empenhadosMap[e.credor_id] = true; });
+        const pendingCommitments = activeCredores.filter(c => !empenhadosMap[c.id]);
+        
+        const greetingSubtitle = document.getElementById('dash-greeting-subtitle');
+        if (greetingSubtitle) {
+          greetingSubtitle.innerHTML = `Você tem <strong>${openTasks.length} tarefas</strong> em aberto e <strong>${pendingCommitments.length} empenhos</strong> pendentes este mês.`;
+        }
+        
+        // Set user name in greeting
+        const greetingTitle = document.getElementById('dash-greeting-title');
+        if (greetingTitle) {
+          const userNome = sessionStorage.getItem('user_nome') || 'Marcos';
+          greetingTitle.textContent = `Bom dia, ${userNome.split(' ')[0]}.`;
+        }
+      }
+      
+      // Render Calendar Widget
+      function renderCal() {
+        const grid = document.getElementById('dash-cal-grid');
+        if (!grid) return;
+        grid.innerHTML = "";
+        
+        // Add Days of Week headers
+        DOW_NAMES.forEach(d => {
+          const el = document.createElement("div");
+          el.className = "cal-dow";
+          el.textContent = d;
+          grid.appendChild(el);
+        });
+        
+        const firstDay = new Date(currentYearVal, currentMonthIndex, 1);
+        const startDow = firstDay.getDay();
+        const daysInMonth = new Date(currentYearVal, currentMonthIndex + 1, 0).getDate();
+        const daysPrev = new Date(currentYearVal, currentMonthIndex, 0).getDate();
+        
+        // Group events by day of month
+        const dayEvents = {};
+        
+        // 1. Map Kanban Tasks due this month to calendar
+        stateTasks.forEach(task => {
+          if (task.data_vencimento && task.status !== 'done') {
+            // expect format: "YYYY-MM-DD"
+            const parts = task.data_vencimento.split('-');
+            if (parts.length === 3) {
+              const y = parseInt(parts[0]);
+              const m = parseInt(parts[1]) - 1;
+              const d = parseInt(parts[2]);
+              if (y === currentYearVal && m === currentMonthIndex) {
+                if (!dayEvents[d]) dayEvents[d] = [];
+                dayEvents[d].push({
+                  type: task.priority === 'high' ? 'red' : 'amber',
+                  label: `Tarefa · ${task.title}`
+                });
+              }
+            }
+          }
+        });
+        
+        // 2. Map Fixed Creditors payments
+        const empenhadosMap = {};
+        stateEmpenhos.forEach(e => { empenhadosMap[e.credor_id] = true; });
+        
+        stateCredores.forEach(credor => {
+          if (credor.ativo === 1 && credor.pagamento) {
+            const day = parseInt(credor.pagamento);
+            if (!isNaN(day) && day >= 1 && day <= 31) {
+              if (!dayEvents[day]) dayEvents[day] = [];
+              const isDone = empenhadosMap[credor.id];
+              dayEvents[day].push({
+                type: isDone ? 'green' : 'amber',
+                label: `${isDone ? 'Empenhado' : 'Pendente'} · ${credor.nome}`
+              });
+            }
+          }
+        });
+        
+        const totalCells = Math.ceil((startDow + daysInMonth) / 7) * 7;
+        const nowToday = new Date();
+        const isCurrentMonthYear = nowToday.getMonth() === currentMonthIndex && nowToday.getFullYear() === currentYearVal;
+        
+        for (let i = 0; i < totalCells; i++) {
+          const cell = document.createElement("div");
+          cell.className = "cal-cell";
+          
+          let day, isMuted = false;
+          if (i < startDow) {
+            day = daysPrev - startDow + 1 + i;
+            isMuted = true;
+          } else if (i >= startDow + daysInMonth) {
+            day = i - startDow - daysInMonth + 1;
+            isMuted = true;
+          } else {
+            day = i - startDow + 1;
+          }
+          
+          if (isMuted) cell.classList.add("muted");
+          if (!isMuted && isCurrentMonthYear && day === nowToday.getDate()) {
+            cell.classList.add("today");
+          }
+          
+          cell.innerHTML = `<span class="num">${String(day).padStart(2, "0")}</span>`;
+          
+          // Render events inside cell
+          if (!isMuted && dayEvents[day]) {
+            const evts = document.createElement("div");
+            evts.className = "cal-events";
+            dayEvents[day].slice(0, 2).forEach(e => {
+              const t = document.createElement("div");
+              t.className = `cal-evt ${e.type}`;
+              t.textContent = e.label;
+              evts.appendChild(t);
+            });
+            if (dayEvents[day].length > 2) {
+              const more = document.createElement("div");
+              more.className = "cal-more";
+              more.textContent = `+${dayEvents[day].length - 2}`;
+              evts.appendChild(more);
+            }
+            cell.appendChild(evts);
+          }
+          
+          if (!isMuted) {
+            cell.addEventListener("click", () => {
+              document.querySelectorAll(".cal-grid .cal-cell.selected").forEach(c => c.classList.remove("selected"));
+              cell.classList.add("selected");
+              selectedDayActive = day;
+              showDayDetail(day, dayEvents[day] || []);
+            });
+          }
+          
+          grid.appendChild(cell);
+        }
+      }
+      
+      function showDayDetail(day, events) {
+        const dd = document.getElementById("dash-day-detail");
+        const ddNum = document.getElementById("dash-dd-num");
+        const ddTitle = document.getElementById("dash-dd-title");
+        const ddList = document.getElementById("dash-dd-list");
+        if (!dd || !ddNum || !ddTitle || !ddList) return;
+        
+        dd.classList.add("active");
+        ddNum.textContent = `${String(day).padStart(2, "0")}/${String(currentMonthIndex + 1).padStart(2, "0")}`;
+        
+        const dateObj = new Date(currentYearVal, currentMonthIndex, day);
+        const dowLabel = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"][dateObj.getDay()];
+        ddTitle.textContent = `${dowLabel} · ${day} de ${MONTH_NAMES[currentMonthIndex]}`;
+        
+        ddList.innerHTML = "";
+        if (events.length === 0) {
+          ddList.innerHTML = `<li class="empty">Nenhum compromisso programado para este dia.</li>`;
+        } else {
+          events.forEach(e => {
+            const li = document.createElement("li");
+            li.className = e.type;
+            const typeName = e.type === 'green' ? 'Empenho Realizado' : (e.type === 'red' ? 'Prazo Crítico' : 'Pendente');
+            li.innerHTML = `<span class="dot"></span> <strong>${typeName}</strong> · ${e.label.split(' · ')[1]}`;
+            ddList.appendChild(li);
+          });
+        }
+      }
+      
+      // Render Today Checklist Panel
+      function renderTodayPanel() {
+        const todayDateEl = document.getElementById('dash-today-date');
+        const todayDayEl = document.getElementById('dash-today-day');
+        const todayList = document.getElementById('dash-today-list');
+        if (!todayList) return;
+        
+        const now = new Date();
+        if (todayDateEl) {
+          const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+          const monthsShort = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+          todayDateEl.textContent = `${weekdays[now.getDay()]}, ${String(now.getDate()).padStart(2, '0')} ${monthsShort[now.getMonth()]}`;
+        }
+        
+        if (todayDayEl) {
+          // Calculate day of year
+          const start = new Date(now.getFullYear(), 0, 0);
+          const diff = now - start;
+          const oneDay = 1000 * 60 * 60 * 24;
+          const dayOfYear = Math.floor(diff / oneDay);
+          // Calculate week number
+          const oneJan = new Date(now.getFullYear(), 0, 1);
+          const numberOfDays = Math.floor((now - oneJan) / oneDay);
+          const weekNumber = Math.ceil((now.getDay() + 1 + numberOfDays) / 7);
+          
+          const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          todayDayEl.textContent = `Dia ${String(now.getDate()).padStart(2, '0')} / ${totalDays} · Sem ${String(weekNumber).padStart(2, '0')}`;
+        }
+        
+        todayList.innerHTML = "";
+        
+        // 1. Open Tasks (Limit 2)
+        const openTasks = stateTasks.filter(t => t.status !== 'done').slice(0, 2);
+        if (openTasks.length > 0) {
+          const titleEl = document.createElement("h4");
+          titleEl.textContent = "Pendências";
+          todayList.appendChild(titleEl);
+          
+          openTasks.forEach(task => {
+            const el = document.createElement("div");
+            el.className = "task";
+            const priorityTag = task.priority === 'high' ? `<span class="tag red">Alta</span>` : (task.priority === 'medium' ? `<span class="tag blue">Média</span>` : `<span class="tag">Baixa</span>`);
+            
+            el.innerHTML = `
+              <span class="task-check" data-type="task" data-id="${task.id}"></span>
+              <div class="task-body">
+                <div class="task-text">${task.title}</div>
+                <div class="task-meta">${priorityTag} ${task.data_vencimento ? `<span>vence ${task.data_vencimento.split('-').reverse().slice(0,2).join('/')}</span>` : ''}</div>
+              </div>
+            `;
+            todayList.appendChild(el);
+          });
+        }
+        
+        // 2. Upcoming Commitments (Limit 3)
+        const empenhadosMap = {};
+        stateEmpenhos.forEach(e => { empenhadosMap[e.credor_id] = true; });
+        const pendingCredores = stateCredores.filter(c => c.ativo === 1 && !empenhadosMap[c.id]).slice(0, 3);
+        
+        if (pendingCredores.length > 0) {
+          const titleEl = document.createElement("h4");
+          titleEl.textContent = "Próximos Empenhos";
+          todayList.appendChild(titleEl);
+          
+          pendingCredores.forEach(c => {
+            const el = document.createElement("div");
+            el.className = "task";
+            const valorFmt = c.valor ? Number(c.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
+            
+            el.innerHTML = `
+              <span class="task-check" data-type="empenho" data-id="${c.id}" data-nome="${c.nome.replace(/"/g, '&quot;')}"></span>
+              <div class="task-body">
+                <div class="task-text">${c.nome}</div>
+                <div class="task-meta">
+                  <span class="tag green">${valorFmt}</span>
+                  ${c.pagamento ? `<span>dia ${c.pagamento}</span>` : ''}
+                </div>
+              </div>
+            `;
+            todayList.appendChild(el);
+          });
+        }
+        
+        if (openTasks.length === 0 && pendingCredores.length === 0) {
+          todayList.innerHTML = `<div style="padding:18px 0;text-align:center;color:var(--text-3);font-size:13px;font-style:italic;">Nenhuma pendência operacional activa!</div>`;
+        }
+        
+        // Bind click events to checklist checkboxes
+        todayList.querySelectorAll('.task-check').forEach(chk => {
+          chk.addEventListener('click', async () => {
+            const parent = chk.parentElement;
+            parent.classList.add('done');
+            const id = chk.dataset.id;
+            const type = chk.dataset.type;
+            const nome = chk.dataset.nome;
+            
+            try {
+              if (type === 'task') {
+                const tObj = stateTasks.find(t => t.id === id);
+                if (tObj) {
+                  await fetch(`/api/kanban/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...tObj, status: 'done' })
+                  });
+                  if (typeof showToast === 'function') showToast(`✓ Tarefa concluída: ${tObj.title}`, 'success');
+                }
+              } else if (type === 'empenho') {
+                await fetch('/api/empenhos', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ credor_id: id, ano: currentYearVal, mes: currentMonthIndex + 1 })
+                });
+                if (typeof showToast === 'function') showToast(`✓ Empenho lançado para: ${nome}`, 'success');
+              }
+              
+              setTimeout(loadDashboardData, 300);
+            } catch (e) {
+              console.error(e);
+              parent.classList.remove('done');
+              if (typeof showToast === 'function') showToast('Erro ao atualizar item', 'error');
+            }
+          });
+        });
+      }
+      
+      // Render Recent Activity Feed
+      async function renderActivityFeed() {
+        const list = document.getElementById('dash-activity-list');
+        if (!list) return;
+        
+        try {
+          const summary = await fetch('/api/admin/summary').then(r => r.json()).catch(() => ({}));
+          const logs = summary.recent_logs || [];
+          
+          list.innerHTML = "";
+          if (logs.length === 0) {
+            list.innerHTML = `<div style="padding:16px 0;text-align:center;color:var(--text-3);font-size:12.5px;">Nenhuma atividade registrada recentemente.</div>`;
+            return;
+          }
+          
+          logs.slice(0, 4).forEach(log => {
+            const row = document.createElement("div");
+            row.className = "dash-activity-row";
+            
+            // Time format HH:MM
+            let timeLabel = "—";
+            if (log.data) {
+              const match = log.data.match(/\d{2}:\d{2}/);
+              if (match) timeLabel = match[0];
+            }
+            
+            // Friendly description
+            let text = `<strong>Sistema</strong> registrou uma ação`;
+            if (log.acao === 'CRIAR') text = `<strong>Equipe</strong> cadastrou credor <strong>${log.credor_nome}</strong>`;
+            else if (log.acao === 'EDITAR') text = `<strong>Equipe</strong> alterou credor <strong>${log.credor_nome}</strong>`;
+            else if (log.acao === 'EXCLUIR') text = `<strong>Equipe</strong> excluiu credor <strong>${log.credor_nome}</strong>`;
+            else if (log.acao === 'EMPENHAR') text = `<strong>Equipe</strong> empenhou <strong>${log.credor_nome}</strong> (${log.detalhes})`;
+            else if (log.acao === 'DESEMPENHAR') text = `<strong>Equipe</strong> desmarcou <strong>${log.credor_nome}</strong> (${log.detalhes})`;
+            
+            row.innerHTML = `
+              <span class="dash-activity-time">${timeLabel}</span>
+              <span class="dash-activity-text" title="${log.detalhes || ''}">${text}</span>
+              <span class="dash-activity-actor">${log.acao === 'EMPENHAR' || log.acao === 'DESEMPENHAR' ? 'Empenhos' : 'Cadastro'}</span>
+            `;
+            list.appendChild(row);
+          });
+        } catch (e) {
+          list.innerHTML = `<div style="padding:16px 0;text-align:center;color:var(--red);font-size:12.5px;">Erro ao carregar atividades recentes.</div>`;
+        }
+      }
+      
+      // Set up observers to sync selected month changes
+      function initSyncObservers() {
+        const targetMonth = document.getElementById('current-month-name');
+        const targetYear = document.getElementById('current-month-year');
+        if (!targetMonth || !targetYear) return;
+        
+        const obs = new MutationObserver(() => {
+          const monthText = targetMonth.textContent.trim();
+          const yearText = targetYear.textContent.trim();
+          const nextMonthIdx = MONTHS_MAP[monthText];
+          const nextYearIdx = parseInt(yearText);
+          
+          if (nextMonthIdx !== undefined && !isNaN(nextYearIdx)) {
+            if (nextMonthIdx !== currentMonthIndex || nextYearIdx !== currentYearVal) {
+              currentMonthIndex = nextMonthIdx;
+              currentYearVal = nextYearIdx;
+              selectedDayActive = null;
+              const dd = document.getElementById('dash-day-detail');
+              if (dd) dd.classList.remove('active');
+              loadDashboardData();
+            }
+          }
+        });
+        
+        obs.observe(targetMonth, { characterData: true, childList: true, subtree: true });
+        obs.observe(targetYear, { characterData: true, childList: true, subtree: true });
+        
+        // Also capture when home active changes to reload
+        const homeObs = new MutationObserver(() => {
+          const dashboard = document.getElementById('dashboard-area');
+          if (dashboard && dashboard.style.display !== 'none') {
+            const monthText = targetMonth.textContent.trim();
+            const yearText = targetYear.textContent.trim();
+            const nextMonthIdx = MONTHS_MAP[monthText];
+            const nextYearIdx = parseInt(yearText);
+            if (nextMonthIdx !== undefined && !isNaN(nextYearIdx)) {
+              currentMonthIndex = nextMonthIdx;
+              currentYearVal = nextYearIdx;
+            }
+            loadDashboardData();
+          }
+        });
+        const dashboardArea = document.getElementById('dashboard-area');
+        if (dashboardArea) homeObs.observe(dashboardArea, { attributes: true, attributeFilter: ['style'] });
+      }
+      
+      // Mapear teclado de atalhos rápidos
+      function initKeyboardShortcuts() {
+        let keysPressed = {};
+        document.addEventListener('keydown', e => {
+          if (e.target.closest('input, textarea, select')) return; // Ignore on inputs
+          
+          const key = e.key.toUpperCase();
+          keysPressed[key] = true;
+          
+          // NE -> Novo Empenho (Credores Fixos)
+          if (keysPressed['N'] && keysPressed['E']) {
+            e.preventDefault();
+            abrirNovoEmpenhoFast();
+            keysPressed = {};
+          }
+          // NC -> Cadastrar Credor
+          else if (keysPressed['N'] && keysPressed['C']) {
+            e.preventDefault();
+            abrirNovoCredorFast();
+            keysPressed = {};
+          }
+          // IN -> Importar Nota (Documentos)
+          else if (keysPressed['I'] && keysPressed['N']) {
+            e.preventDefault();
+            window.location.href = '/pages/documentos.html';
+            keysPressed = {};
+          }
+          // NT -> Nova Tarefa
+          else if (keysPressed['N'] && keysPressed['T']) {
+            e.preventDefault();
+            window.location.href = '/pages/tarefas.html';
+            keysPressed = {};
+          }
+        });
+        document.addEventListener('keyup', e => {
+          keysPressed[e.key.toUpperCase()] = false;
+        });
+      }
+      
+      // Setup clock and observers
+      setTimeout(() => {
+        initSyncObservers();
+        initKeyboardShortcuts();
+        
+        const monthText = document.getElementById('current-month-name')?.textContent.trim();
+        const yearText = document.getElementById('current-month-year')?.textContent.trim();
+        if (monthText && yearText) {
+          currentMonthIndex = MONTHS_MAP[monthText] !== undefined ? MONTHS_MAP[monthText] : currentMonthIndex;
+          currentYearVal = parseInt(yearText) || currentYearVal;
+        }
+        loadDashboardData();
+      }, 500);
+      
+    })();
+    </script>
   </section><!-- #dashboard-area -->
 
   <!-- ═══════════════════ CREDORSES AREA ═══════════════════ -->

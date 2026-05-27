@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mural de Recados – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
+  <style>
+    .mural-wrap { max-width: 1280px; margin: 24px auto 80px; padding: 0 20px; }
+    .mural-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 28px; flex-wrap: wrap; }
+    .mural-hero h2 { font-size: 26px; font-weight: 800; color: var(--text); margin: 0; display: flex; align-items: center; gap: 10px; }
+    .mural-hero p { font-size: 13px; color: var(--text-3); margin-top: 6px; }
+    
+    /* ── Controls Toolbar ── */
+    .mural-toolbar { 
+      background: var(--surface); 
+      border-radius: var(--radius); 
+      box-shadow: var(--shadow-sm); 
+      padding: 16px 20px; 
+      margin-bottom: 24px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .mural-filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .mural-search-input {
+      background: var(--bg);
+      border: none;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-in-sm);
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      min-width: 220px;
+    }
+    .mural-select {
+      background: var(--bg);
+      border: none;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--neo-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+    }
+    
+    .mural-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 18px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mural-btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      color: #fff;
+      box-shadow: 3px 3px 10px rgba(79, 128, 200, 0.3);
+    }
+    .mural-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 3px 5px 14px rgba(79, 128, 200, 0.4);
+    }
+    .mural-btn-ghost {
+      background: var(--bg);
+      color: var(--text-2);
+      box-shadow: var(--neo-sm);
+    }
+    .mural-btn-ghost:hover {
+      box-shadow: var(--neo-in-sm);
+    }
+
+    /* ── Columns Layout ── */
+    .mural-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .mural-col {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 20px;
+      min-height: 550px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: all 0.2s;
+    }
+    .mural-col-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 4px;
+    }
+    .mural-col-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mural-col-count {
+      background: var(--bg);
+      box-shadow: var(--neo-in-sm);
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-3);
+      padding: 4px 10px;
+    }
+
+    /* ── Sticky Note Card ── */
+    .mural-card {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-top: 5px solid var(--note-border);
+      overflow: hidden;
+    }
+    .mural-card:hover {
+      transform: translateY(-4px) rotate(1deg);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    /* Premium Sticky Note Colors */
+    .card-color-yellow  { --note-border: #f59e0b; background: rgba(254, 243, 199, 0.65); }
+    .card-color-blue    { --note-border: #3b82f6; background: rgba(219, 234, 254, 0.65); }
+    .card-color-green   { --note-border: #10b981; background: rgba(209, 250, 229, 0.65); }
+    .card-color-pink    { --note-border: #ec4899; background: rgba(252, 231, 243, 0.65); }
+    .card-color-purple  { --note-border: #8b5cf6; background: rgba(237, 233, 254, 0.65); }
+    .card-color-orange  { --note-border: #f97316; background: rgba(255, 237, 213, 0.65); }
+
+    [data-theme="dark"] .card-color-yellow { background: rgba(217, 119, 6, 0.12); }
+    [data-theme="dark"] .card-color-blue   { background: rgba(29, 78, 216, 0.12); }
+    [data-theme="dark"] .card-color-green  { background: rgba(4, 120, 87, 0.12); }
+    [data-theme="dark"] .card-color-pink   { background: rgba(190, 24, 74, 0.12); }
+    [data-theme="dark"] .card-color-purple { background: rgba(109, 40, 217, 0.12); }
+    [data-theme="dark"] .card-color-orange { background: rgba(194, 65, 12, 0.12); }
+
+    .mural-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .mural-card-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .mural-card-body {
+      font-size: 12px;
+      color: var(--text-2);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      flex-grow: 1;
+    }
+    
+    .mural-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-3);
+      padding-top: 10px;
+      border-top: 1px dashed rgba(0,0,0,0.06);
+    }
+    [data-theme="dark"] .mural-card-footer {
+      border-top-color: rgba(255,255,255,0.06);
+    }
+    .mural-card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .mural-card-author {
+      font-weight: 700;
+      color: var(--text);
+    }
+    
+    /* Badges */
+    .mural-badge {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.3px;
+    }
+    .badge-prioridade-baixa   { background: rgba(59, 130, 246, 0.15); color: #2563eb; }
+    .badge-prioridade-media   { background: rgba(245, 158, 11, 0.15); color: #d97706; }
+    .badge-prioridade-alta    { background: rgba(249, 115, 22, 0.15); color: #ea580c; }
+    .badge-prioridade-urgente { background: rgba(239, 68, 68, 0.15); color: #dc2626; animation: pulse-urgente 2s infinite; }
+    
+    @keyframes pulse-urgente {
+      0% { opacity: 1; }
+      50% { opacity: 0.65; }
+      100% { opacity: 1; }
+    }
+
+    .badge-categoria-aviso     { background: #fee2e2; color: #b91c1c; }
+    .badge-categoria-tarefa    { background: #e0f2fe; color: #0369a1; }
+    .badge-categoria-lembrete  { background: #fef3c7; color: #b45309; }
+    .badge-categoria-conquista { background: #dcfce7; color: #15803d; }
+
+    /* Actions Panel inside Card */
+    .mural-card-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .mural-card-act {
+      background: var(--surface);
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-2);
+      font-size: 11px;
+      transition: all 0.15s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .mural-card-act:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+    .mural-card-act-done {
+      color: #16a34a;
+    }
+    .mural-card-act-delete {
+      color: #dc2626;
+    }
+
+    /* Modal Backdrop */
+    .mural-modal-backdrop {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: all 0.25s;
+    }
+    .mural-modal-backdrop.active {
+      opacity: 1; pointer-events: auto;
+    }
+    .mural-modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 500px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transform: scale(0.9);
+      transition: all 0.25s;
+    }
+    .mural-modal-backdrop.active .mural-modal {
+      transform: scale(1);
+    }
+    .mural-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mural-modal-header h3 { font-size: 17px; font-weight: 800; color: var(--text); margin: 0; }
+    .mural-modal-close {
+      background: none; border: none; font-size: 20px; color: var(--text-3); cursor: pointer;
+    }
+    
+    .mural-form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mural-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Color Selector Box */
+    .mural-color-picker {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .mural-color-option {
+      width: 26px; height: 26px; border-radius: 99px; cursor: pointer; border: 2px solid transparent; transition: all 0.15s;
+    }
+    .mural-color-option.selected {
+      border-color: var(--text);
+      transform: scale(1.15);
+    }
+
+    .mural-empty {
+      text-align: center;
+      padding: 40px 12px;
+      color: var(--text-3);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    @media (max-width: 960px) {
+      .mural-columns { grid-template-columns: 1fr; }
+      .mural-col { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mural-wrap">
+    <div class="mural-hero">
+      <div>
+        <h2>📌 Mural Interativo da Prefeitura</h2>
+        <p>Avisos, recados e tarefas compartilhadas para a coordenação coletiva dos servidores.</p>
+      </div>
+      <div>
+        <button class="mural-btn mural-btn-primary" id="btn-novo-recado">➕ Criar Recado</button>
+      </div>
+    </div>
+
+    <!-- Toolbar Filters -->
+    <div class="mural-toolbar">
+      <div class="mural-filters">
+        <input type="text" class="mural-search-input" id="mural-busca" placeholder="Pesquisar recados..." />
+        <select class="mural-select" id="filtro-categoria">
+          <option value="">Todas as categorias</option>
+          <option value="aviso">📢 Avisos</option>
+          <option value="tarefa">📋 Tarefas</option>
+          <option value="lembrete">💡 Lembretes</option>
+          <option value="conquista">🎉 Conquistas</option>
+        </select>
+        <select class="mural-select" id="filtro-prioridade">
+          <option value="">Todas as prioridades</option>
+          <option value="baixa">Baixa</option>
+          <option value="media">Média</option>
+          <option value="alta">Alta</option>
+          <option value="urgente">Urgente</option>
+        </select>
+      </div>
+      <div>
+        <button class="mural-btn mural-btn-ghost" id="btn-atualizar" title="Atualizar mural">↺ Atualizar</button>
+      </div>
+    </div>
+
+    <!-- Kanban / Mural Columns -->
+    <div class="mural-columns">
+      <!-- A FAZER -->
+      <div class="mural-col" id="col-a_fazer" data-status="a_fazer">
+        <div class="mural-col-head">
+          <div class="mural-col-title">📌 A Fazer</div>
+          <span class="mural-col-count" id="count-a_fazer">0</span>
+        </div>
+        <div class="mural-col-list" id="list-a_fazer"></div>
+      </div>
+
+      <!-- EM ANDAMENTO -->
+      <div class="mural-col" id="col-em_andamento" data-status="em_andamento">
+        <div class="mural-col-head">
+          <div class="mural-col-title">⚡ Em Progresso</div>
+          <span class="mural-col-count" id="count-em_andamento">0</span>
+        </div>
+        <div class="mural-col-list" id="list-em_andamento"></div>
+      </div>
+
+      <!-- CONCLUIDO -->
+      <div class="mural-col" id="col-concluido" data-status="concluido">
+        <div class="mural-col-head">
+          <div class="mural-col-title">✅ Concluído</div>
+          <span class="mural-col-count" id="count-concluido">0</span>
+        </div>
+        <div class="mural-col-list" id="list-concluido"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Creation & Edit Modal -->
+  <div class="mural-modal-backdrop" id="modal-backdrop">
+    <div class="mural-modal">
+      <div class="mural-modal-header">
+        <h3 id="modal-title">Novo Recado no Mural</h3>
+        <button class="mural-modal-close" id="btn-fechar-modal">&times;</button>
+      </div>
+      <form id="mural-form" style="display:flex; flex-direction:column; gap:16px;">
+        <input type="hidden" id="form-id" />
+        
+        <div class="mural-form-group">
+          <label class="mural-label" for="form-titulo">Título *</label>
+          <input type="text" id="form-titulo" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm);" placeholder="O que precisa ser feito ou comunicado?" required />
+        </div>
+
+        <div class="mural-form-group">
+          <label class="mural-label" for="form-conteudo">Mensagem / Conteúdo *</label>
+          <textarea id="form-conteudo" class="mural-search-input" style="width:100%; min-height:80px; resize:vertical; box-shadow:var(--neo-in-sm);" placeholder="Explicação ou detalhes do recado..." required></textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="mural-form-group">
+            <label class="mural-label" for="form-categoria">Categoria</label>
+            <select id="form-categoria" class="mural-select" style="box-shadow:var(--neo-in-sm);">
+              <option value="tarefa">📋 Tarefa</option>
+              <option value="aviso">📢 Aviso</option>
+              <option value="lembrete">💡 Lembrete</option>
+              <option value="conquista">🎉 Conquista</option>
+            </select>
+          </div>
+          <div class="mural-form-group">
+            <label class="mural-label" for="form-prioridade">Prioridade</label>
+            <select id="form-prioridade" class="mural-select" style="box-shadow:var(--neo-in-sm);">
+              <option value="baixa">Baixa</option>
+              <option value="media" selected>Média</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente 🔥</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="mural-form-group">
+            <label class="mural-label" for="form-autor">Autor</label>
+            <input type="text" id="form-autor" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm);" placeholder="Seu nome" />
+          </div>
+          <div class="mural-form-group">
+            <label class="mural-label" for="form-destinatario">Destinatário</label>
+            <input type="text" id="form-destinatario" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm);" placeholder="Ex: Todos, Financeiro..." value="Todos" />
+          </div>
+        </div>
+
+        <!-- Cor e urgência integradas automaticamente -->
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+          <button type="button" class="mural-btn mural-btn-ghost" id="btn-cancelar">Cancelar</button>
+          <button type="submit" class="mural-btn mural-btn-primary" id="btn-salvar">Salvar no Mural</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    
+    let cacheRecados = [];
+    let selectedColor = 'yellow';
+    
+    const colorsMap = {
+      yellow: '#f59e0b',
+      blue: '#3b82f6',
+      green: '#10b981',
+      pink: '#ec4899',
+      purple: '#8b5cf6',
+      orange: '#f97316'
+    };
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    
+    // Auto-load current user session info to Author field
+    function loadSessionAuthor() {
+      const userNome = sessionStorage.getItem('user_nome');
+      if (userNome) {
+        document.getElementById('form-autor').value = userNome;
+      }
+    }
+
+    async function carregarMural() {
+      try {
+        const res = await fetch('/api/mural');
+        if (!res.ok) throw new Error("Erro ao carregar");
+        cacheRecados = await res.json();
+        renderMural();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function renderMural() {
+      const colLists = {
+        a_fazer: document.getElementById('list-a_fazer'),
+        em_andamento: document.getElementById('list-em_andamento'),
+        concluido: document.getElementById('list-concluido')
+      };
+      
+      const counts = { a_fazer: 0, em_andamento: 0, concluido: 0 };
+      
+      // Clear columns
+      Object.values(colLists).forEach(el => el.innerHTML = '');
+      
+      const searchVal = document.getElementById('mural-busca').value.toLowerCase().trim();
+      const catVal = document.getElementById('filtro-categoria').value;
+      const prioVal = document.getElementById('filtro-prioridade').value;
+      
+      let filtered = cacheRecados;
+      if (searchVal) {
+        filtered = filtered.filter(r => r.titulo.toLowerCase().includes(searchVal) || r.conteudo.toLowerCase().includes(searchVal) || r.autor.toLowerCase().includes(searchVal));
+      }
+      if (catVal) {
+        filtered = filtered.filter(r => r.categoria === catVal);
+      }
+      if (prioVal) {
+        filtered = filtered.filter(r => r.prioridade === prioVal);
+      }
+      
+      filtered.forEach(item => {
+        const col = item.status || 'a_fazer';
+        if (colLists[col]) {
+          counts[col]++;
+          colLists[col].appendChild(criarCardElement(item));
+        }
+      });
+      
+      // Update Column Counts
+      document.getElementById('count-a_fazer').textContent = counts.a_fazer;
+      document.getElementById('count-em_andamento').textContent = counts.em_andamento;
+      document.getElementById('count-concluido').textContent = counts.concluido;
+      
+      // Render Empty States if needed
+      Object.keys(colLists).forEach(col => {
+        if (counts[col] === 0) {
+          colLists[col].innerHTML = '<div class="mural-empty">Nenhum recado nesta coluna</div>';
+        }
+      });
+    }
+
+    function criarCardElement(item) {
+      const card = document.createElement('div');
+      
+      // Cor de acordo com a urgência/prioridade
+      const prio = item.prioridade || 'media';
+      let calculatedColor = 'yellow';
+      if (prio === 'baixa') calculatedColor = 'blue';
+      else if (prio === 'media') calculatedColor = 'yellow';
+      else if (prio === 'alta') calculatedColor = 'orange';
+      else if (prio === 'urgente') calculatedColor = 'pink';
+      
+      card.className = `mural-card card-color-${calculatedColor}`;
+      
+      // Build completion tags if done
+      let completionMeta = '';
+      if (item.status === 'concluido' && item.concluido_em) {
+        completionMeta = `<div style="font-size:10px; color:#16a34a; font-weight:700; margin-top:2px;">Concluído por: ${esc(item.concluido_por)} em ${item.concluido_em}</div>`;
+      }
+
+      // Actions buttons
+      let actButtons = '';
+      if (item.status === 'a_fazer') {
+        actButtons += `<button class="mural-card-act mural-card-act-done" onclick="alterarStatusRecado(${item.id}, 'em_andamento')" title="Iniciar tarefa">⚡</button>`;
+      } else if (item.status === 'em_andamento') {
+        actButtons += `<button class="mural-card-act mural-card-act-done" onclick="alterarStatusRecado(${item.id}, 'concluido')" title="Marcar como concluída">✓</button>`;
+      }
+      actButtons += `<button class="mural-card-act mural-card-act-delete" onclick="excluirRecado(${item.id})" title="Excluir recado">✕</button>`;
+
+      card.innerHTML = `
+        <div class="mural-card-header">
+          <div class="mural-card-title">${esc(item.titulo)}</div>
+          <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
+        </div>
+        <div class="mural-card-body">${esc(item.conteudo)}</div>
+        <div class="mural-card-footer">
+          <div class="mural-card-meta">
+            <span class="mural-card-author">✍ ${esc(item.autor)}</span>
+            <span>Para: 👥 ${esc(item.destinatario || 'Todos')}</span>
+            <span style="font-size:9px; opacity:0.8;">📅 ${esc(item.criado_em.split(' ')[0])}</span>
+            ${completionMeta}
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+            <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
+            <div class="mural-card-actions">
+              ${actButtons}
+            </div>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    async function alterarStatusRecado(id, novoStatus) {
+      try {
+        const res = await fetch(`/api/mural/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: novoStatus })
+        });
+        if (res.ok) carregarMural();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function excluirRecado(id) {
+      if (!confirm("Excluir definitivamente este recado do mural?")) return;
+      try {
+        const res = await fetch(`/api/mural/${id}`, { method: 'DELETE' });
+        if (res.ok) carregarMural();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Modal Control
+    const backdrop = document.getElementById('modal-backdrop');
+    
+    document.getElementById('btn-novo-recado').addEventListener('click', () => {
+      document.getElementById('mural-form').reset();
+      document.getElementById('form-id').value = '';
+      document.getElementById('modal-title').textContent = 'Novo Recado no Mural';
+      loadSessionAuthor();
+      backdrop.classList.add('active');
+    });
+
+    document.getElementById('btn-fechar-modal').addEventListener('click', () => backdrop.classList.remove('active'));
+    document.getElementById('btn-cancelar').addEventListener('click', () => backdrop.classList.remove('active'));
+
+    // Form Submit
+    document.getElementById('mural-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('form-id').value;
+      
+      const prio = document.getElementById('form-prioridade').value;
+      let calculatedColor = 'yellow';
+      if (prio === 'baixa') calculatedColor = 'blue';
+      else if (prio === 'media') calculatedColor = 'yellow';
+      else if (prio === 'alta') calculatedColor = 'orange';
+      else if (prio === 'urgente') calculatedColor = 'pink';
+
+      const payload = {
+        titulo: document.getElementById('form-titulo').value.trim(),
+        conteudo: document.getElementById('form-conteudo').value.trim(),
+        categoria: document.getElementById('form-categoria').value,
+        prioridade: prio,
+        autor: document.getElementById('form-autor').value.trim(),
+        destinatario: document.getElementById('form-destinatario').value.trim(),
+        cor: calculatedColor
+      };
+
+      const url = id ? `/api/mural/${id}` : '/api/mural';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          backdrop.classList.remove('active');
+          carregarMural();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // Filters and Toolbar
+    document.getElementById('mural-busca').addEventListener('input', renderMural);
+    document.getElementById('filtro-categoria').addEventListener('change', renderMural);
+    document.getElementById('filtro-prioridade').addEventListener('change', renderMural);
+    document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
+
+    // Init Page load
+    carregarMural();
+  </script>
+</body>
+</html>
