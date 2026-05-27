@@ -459,6 +459,11 @@
 
         <!-- Cor e urgência integradas automaticamente -->
 
+        <div class="mural-form-group">
+          <label class="mural-label" for="form-file">Anexar Arquivo (Opcional)</label>
+          <input type="file" id="form-file" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg);" />
+        </div>
+
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
           <button type="button" class="mural-btn mural-btn-ghost" id="btn-cancelar">Cancelar</button>
           <button type="submit" class="mural-btn mural-btn-primary" id="btn-salvar">Salvar no Mural</button>
@@ -466,6 +471,8 @@
       </form>
     </div>
   </div>
+
+  <input type="file" id="mural-hidden-file-input" style="display:none;" onchange="handleAnexoFileChange()" />
 
   <script>
     'use strict';
@@ -572,8 +579,43 @@
         completionMeta = `<div style="font-size:10px; color:#16a34a; font-weight:700; margin-top:2px;">Concluído por: ${esc(item.concluido_por)} em ${item.concluido_em}</div>`;
       }
 
+      // Render attachments list
+      let attachmentsList = '';
+      if (item.attachments && item.attachments.length > 0) {
+        attachmentsList = `<div class="mural-card-attachments" style="margin-top: 10px; display:flex; flex-direction:column; gap:6px;">`;
+        item.attachments.forEach(att => {
+          let fileIcon = '📄';
+          const name = att.file_name.toLowerCase();
+          if (name.endsWith('.pdf')) fileIcon = '📕';
+          else if (name.endsWith('.doc') || name.endsWith('.docx')) fileIcon = '📘';
+          else if (name.endsWith('.xls') || name.endsWith('.xlsx')) fileIcon = '📗';
+          else if (name.endsWith('.zip') || name.endsWith('.rar')) fileIcon = '📦';
+          else if (name.match(/\.(jpg|jpeg|png|gif|svg)$/)) fileIcon = '🖼️';
+          
+          attachmentsList += `
+            <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.4); padding:4px 8px; border-radius:6px; font-size:11px;">
+              <a href="/api/mural/${item.id}/attachments/${att.id}/download" style="text-decoration:none; color:var(--text); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:6px;" title="Baixar ${esc(att.file_name)}">
+                <span>${fileIcon}</span>
+                <span style="max-width: 140px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(att.file_name)}</span>
+              </a>
+              <button onclick="excluirAnexo(${item.id}, ${att.id})" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:10px; font-weight:bold; padding:2px 6px;" title="Remover anexo">✕</button>
+            </div>
+          `;
+        });
+        attachmentsList += `</div>`;
+      } else {
+        attachmentsList = `
+          <div style="margin-top: 10px; border: 1px dashed rgba(0,0,0,0.15); border-radius: 6px; padding: 8px; text-align: center; background: rgba(255,255,255,0.15);">
+            <button onclick="triggerAnexoUpload(${item.id})" style="background:none; border:none; color:var(--blue); font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+              📎 Anexar arquivo
+            </button>
+          </div>
+        `;
+      }
+
       // Actions buttons
       let actButtons = '';
+      actButtons += `<button class="mural-card-act" onclick="triggerAnexoUpload(${item.id})" title="Anexar arquivo" style="color:var(--blue);">📎</button>`;
       if (item.status === 'a_fazer') {
         actButtons += `<button class="mural-card-act mural-card-act-done" onclick="alterarStatusRecado(${item.id}, 'em_andamento')" title="Iniciar tarefa">⚡</button>`;
       } else if (item.status === 'em_andamento') {
@@ -586,7 +628,10 @@
           <div class="mural-card-title">${esc(item.titulo)}</div>
           <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
         </div>
-        <div class="mural-card-body">${esc(item.conteudo)}</div>
+        <div class="mural-card-body">
+          <div>${esc(item.conteudo)}</div>
+          ${attachmentsList}
+        </div>
         <div class="mural-card-footer">
           <div class="mural-card-meta">
             <span class="mural-card-author">✍ ${esc(item.autor)}</span>
@@ -674,6 +719,17 @@
           body: JSON.stringify(payload)
         });
         if (res.ok) {
+          const createdRecado = await res.json();
+          const modalFileInput = document.getElementById('form-file');
+          if (modalFileInput.files && modalFileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', modalFileInput.files[0]);
+            
+            await fetch(`/api/mural/${createdRecado.id}/attachments`, {
+              method: 'POST',
+              body: formData
+            });
+          }
           backdrop.classList.remove('active');
           carregarMural();
         }
@@ -687,6 +743,54 @@
     document.getElementById('filtro-categoria').addEventListener('change', renderMural);
     document.getElementById('filtro-prioridade').addEventListener('change', renderMural);
     document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
+
+    // Attachment JS Handlers
+    let currentUploadRecadoId = null;
+
+    window.triggerAnexoUpload = function(recadoId) {
+      currentUploadRecadoId = recadoId;
+      document.getElementById('mural-hidden-file-input').click();
+    };
+
+    window.handleAnexoFileChange = async function() {
+      const fileInput = document.getElementById('mural-hidden-file-input');
+      if (!fileInput.files || fileInput.files.length === 0 || !currentUploadRecadoId) return;
+      
+      const file = fileInput.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const res = await fetch(`/api/mural/${currentUploadRecadoId}/attachments`, {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          carregarMural();
+        } else {
+          const err = await res.json();
+          alert(err.error || 'Erro ao enviar anexo');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Erro ao enviar arquivo');
+      } finally {
+        fileInput.value = '';
+        currentUploadRecadoId = null;
+      }
+    };
+
+    window.excluirAnexo = async function(recadoId, attachmentId) {
+      if (!confirm("Excluir este anexo?")) return;
+      try {
+        const res = await fetch(`/api/mural/${recadoId}/attachments/${attachmentId}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) carregarMural();
+      } catch (e) {
+        console.error(e);
+      }
+    };
 
     // Init Page load
     carregarMural();
