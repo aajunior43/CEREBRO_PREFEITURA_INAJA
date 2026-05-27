@@ -11,10 +11,10 @@ param(
 $host.UI.RawUI.WindowTitle = "Prefeitura de Inaja - Servidor Web"
 Set-Location $PSScriptRoot
 
-function Write-Step  { Write-Host "[>>] $args" -Fore Yellow }
-function Write-OK    { Write-Host "[OK] $args" -Fore Green }
-function Write-Fail  { Write-Host "[ERRO] $args" -Fore Red }
-function Write-Info  { Write-Host "[INFO] $args" -Fore DarkCyan }
+function Write-Step  { Write-Host "  » [AGUARDANDO] $args" -Fore Yellow }
+function Write-OK    { Write-Host "  ✔ [SUCESSO]    $args" -Fore Green }
+function Write-Fail  { Write-Host "  ✘ [FALHA]      $args" -Fore Red }
+function Write-Info  { Write-Host "  • [INFO]       $args" -Fore Cyan }
 
 # ── 1. Checar Python ────────────────────────────────────────────────────────
 function Find-Python {
@@ -69,10 +69,25 @@ function Clear-Port {
 
 # ── 4. Exibir IPs de rede ───────────────────────────────────────────────────
 function Show-URLs {
-    Write-Host "    Local: http://localhost:5000" -Fore Green
+    Write-Host "  ┌────────────────────────────────────────────────────────┐" -Fore DarkGreen
+    Write-Host "  │                    ENDEREÇOS LOCAIS                    │" -Fore DarkGreen
+    Write-Host "  ├────────────────────────────────────────────────────────┤" -Fore DarkGreen
+    Write-Host "  │                                                        │" -Fore DarkGreen
+    Write-Host "  │   Local:  http://127.0.0.1:5000                        │" -Fore Green
+    
     $ips = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
         Where { $_.IPAddress -notmatch '^127\.|^169\.254\.' -and $_.PrefixOrigin -ne 'WellKnown' }
-    foreach ($ip in $ips) { Write-Host "    Rede:  http://$($ip.IPAddress):5000" -Fore Green }
+    foreach ($ip in $ips) {
+        $ipStr = "http://$($ip.IPAddress):5000"
+        $line = "  │   Rede:   $ipStr"
+        $pad = 59 - $line.Length
+        if ($pad -gt 0) { $line = $line + (" " * $pad) + "│" }
+        else { $line = $line + " │" }
+        Write-Host $line -Fore Green
+    }
+    
+    Write-Host "  │                                                        │" -Fore DarkGreen
+    Write-Host "  └────────────────────────────────────────────────────────┘" -Fore DarkGreen
 }
 
 # ── 5. Cloudflare Tunnel functions ──────────────────────────────────────────
@@ -120,10 +135,17 @@ function Start-Tunnel {
 # ── MAIN ────────────────────────────────────────────────────────────────────
 try {
     Write-Host ""
-    Write-Host "============================================================" -Fore Cyan
-    Write-Host "   PREFEITURA MUNICIPAL DE INAJÁ" -Fore Cyan
-    Write-Host "   Sistema de Controle de Empenhos" -Fore Cyan
-    Write-Host "============================================================" -Fore Cyan
+    Write-Host "  ┌────────────────────────────────────────────────────────┐" -Fore Cyan
+    Write-Host "  │             PREFEITURA MUNICIPAL DE INAJÁ              │" -Fore Cyan
+    Write-Host "  │            SISTEMA DE CONTROLE DE EMPENHOS             │" -Fore Cyan
+    Write-Host "  └────────────────────────────────────────────────────────┘" -Fore Cyan
+    Write-Host ""
+    Write-Host "   __  __ _    _ _____          _" -Fore Magenta
+    Write-Host "  |  \/  | |  | |  __ \   /\   | |" -Fore Magenta
+    Write-Host "  | \  / | |  | | |__) | /  \  | |" -Fore Magenta
+    Write-Host "  | |\/| | |  | |  _  / / /\ \ | |" -Fore Magenta
+    Write-Host "  | |  | | |__| | | \ \/ ____ \| |____" -Fore Magenta
+    Write-Host "  |_|  |_|\____/|_|  \_\_/    \_\______|" -Fore Magenta
     Write-Host ""
 
     $py = Find-Python
@@ -141,14 +163,22 @@ try {
             if ($result) {
                 $tunnelJob = $result.Job
                 Write-Host ""
-                Write-Host "============================================================" -Fore Green
-                Write-Host "   SITE PÚBLICO DISPONÍVEL (DESENVOLVIMENTO)!" -Fore Green
-                Write-Host "============================================================" -Fore Green
+                Write-Host "  ┌────────────────────────────────────────────────────────┐" -Fore Green
+                Write-Host "  │               SITE PÚBLICO ATIVADO (DEV)               │" -Fore Green
+                Write-Host "  ├────────────────────────────────────────────────────────┤" -Fore Green
+                Write-Host "  │                                                        │" -Fore Green
+                
+                $urlStr = "  Url:    $($result.Url)"
+                $line = "  │ $urlStr"
+                $pad = 59 - $line.Length
+                if ($pad -gt 0) { $line = $line + (" " * $pad) + "│" }
+                else { $line = $line + " │" }
+                Write-Host $line -Fore Cyan
+                
+                Write-Host "  │                                                        │" -Fore Green
+                Write-Host "  └────────────────────────────────────────────────────────┘" -Fore Green
                 Write-Host ""
-                Write-Host "   $($result.Url)" -Fore Cyan
-                Write-Host ""
-                try { Set-Clipboard -Value $result.Url; Write-OK "URL copiada para area de transferencia." } catch {}
-                Write-Host "============================================================" -Fore Green
+                try { Set-Clipboard -Value $result.Url; Write-OK "URL copiada para a área de transferência." } catch {}
                 Write-Host ""
             }
         }
