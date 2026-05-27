@@ -217,10 +217,10 @@
     }
     .mural-col-list {
       flex: 1;
-      padding: 16px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
       background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 16%, transparent), color-mix(in srgb, var(--surface-2) 10%, transparent));
     }
 
@@ -293,8 +293,11 @@
     }
     .mural-card-meta {
       display: flex;
-      flex-direction: column;
-      gap: 1px;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      row-gap: 2px;
     }
     .mural-card-author {
       font-weight: 800;
@@ -303,12 +306,15 @@
     
     /* Badges */
     .mural-badge {
-      font-size: 10px;
-      font-weight: 700;
+      font-size: 9px;
+      font-weight: 750;
       text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 20px;
-      letter-spacing: 0.3px;
+      padding: 2px 6px;
+      border-radius: 12px;
+      letter-spacing: 0.2px;
+      display: inline-flex;
+      align-items: center;
+      height: 16px;
     }
     .badge-prioridade-baixa   { background: rgba(16, 185, 129, .12); color: #059669; }
     .badge-prioridade-media   { background: rgba(245, 158, 11, .12); color: #d97706; }
@@ -329,21 +335,21 @@
     /* Actions Panel inside Card */
     .mural-card-actions {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       align-items: center;
     }
     .mural-card-act {
       background: color-mix(in srgb, var(--surface) 94%, transparent);
       border: 1px solid var(--border);
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--text-2);
-      font-size: 11px;
+      font-size: 10px;
       transition: all 0.15s ease;
       box-shadow: var(--shadow-sm);
     }
@@ -667,7 +673,7 @@
       // Build completion tags if done
       let completionMeta = '';
       if (item.status === 'concluido' && item.concluido_em) {
-        completionMeta = `<div style="font-size:10px; color:#16a34a; font-weight:700; margin-top:2px;">Concluído por: ${esc(item.concluido_por)} em ${item.concluido_em}</div>`;
+        completionMeta = `<span style="font-size:9px; color:#16a34a; font-weight:700;">Concluído: ${esc(item.concluido_por)} em ${item.concluido_em.split(' ')[0]}</span>`;
       }
 
       // Render attachments list
@@ -717,24 +723,26 @@
       card.innerHTML = `
         <div class="mural-card-header">
           <div class="mural-card-title">${esc(item.titulo)}</div>
-          <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
+          <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
+            <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
+            <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
+          </div>
         </div>
         <div class="mural-card-body">
-          <div style="font-size:11.5px; line-height:1.4; color:var(--text-2); font-weight:500;">${esc(item.conteudo)}</div>
+          <div style="font-size:11px; line-height:1.35; color:var(--text-2); font-weight:500;">${esc(item.conteudo)}</div>
           ${attachmentsList}
         </div>
         <div class="mural-card-footer">
-          <div class="mural-card-meta">
+          <div class="mural-card-meta" style="font-size:9px;">
             <span class="mural-card-author">✍ ${esc(item.autor)}</span>
-            <span>Para: 👥 ${esc(item.destinatario || 'Todos')}</span>
-            <span style="font-size:9px; opacity:0.8;">📅 ${esc(item.criado_em.split(' ')[0])}</span>
-            ${completionMeta}
+            <span style="opacity:0.5;">•</span>
+            <span>👥 ${esc(item.destinatario || 'Todos')}</span>
+            <span style="opacity:0.5;">•</span>
+            <span style="opacity:0.7;">📅 ${esc(item.criado_em.split(' ')[0])}</span>
+            ${completionMeta ? `<span style="opacity:0.5;">•</span>${completionMeta}` : ''}
           </div>
-          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-            <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
-            <div class="mural-card-actions">
-              ${actButtons}
-            </div>
+          <div class="mural-card-actions">
+            ${actButtons}
           </div>
         </div>
       `;
