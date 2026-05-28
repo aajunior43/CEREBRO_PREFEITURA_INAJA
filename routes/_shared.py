@@ -11,6 +11,28 @@ def get_db():
     return g._get_db()
 
 
+def registrar_auditoria(conn, tabela: str, registro_id, operacao: str,
+                        dados_anteriores: dict = None, dados_novos: dict = None):
+    """Insere uma entrada no audit_trail para rastrear criações, edições e exclusões."""
+    try:
+        from flask import request as _req
+        ip = _req.remote_addr or ""
+    except Exception:
+        ip = ""
+    conn.execute(
+        "INSERT INTO audit_trail (tabela, registro_id, operacao, dados_anteriores, dados_novos, ip)"
+        " VALUES (?,?,?,?,?,?)",
+        (
+            tabela,
+            str(registro_id) if registro_id is not None else "",
+            operacao,
+            json.dumps(dados_anteriores or {}, ensure_ascii=False, default=str),
+            json.dumps(dados_novos or {}, ensure_ascii=False, default=str),
+            ip,
+        ),
+    )
+
+
 def row_to_dict(row):
     return dict(row)
 

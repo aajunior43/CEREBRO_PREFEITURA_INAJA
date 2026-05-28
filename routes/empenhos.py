@@ -2,6 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 import time as _time
+from routes._shared import registrar_auditoria
 
 bp = Blueprint("empenhos", __name__)
 
@@ -37,6 +38,10 @@ def toggle_empenho():
         result = persistir_empenho(
             conn, credor_id, ano, mes, _time.strftime("%Y-%m-%d %H:%M:%S")
         )
+        operacao = "EMPENHAR" if result["empenhado"] else "DESEMPENHAR"
+        registrar_auditoria(conn, "empenhos", result.get("id"), operacao,
+                            {"empenhado": not result["empenhado"]},
+                            {"credor_id": credor_id, "ano": ano, "mes": mes, "empenhado": result["empenhado"]})
         conn.commit()
         return jsonify({"ok": True, "empenhado": result["empenhado"]})
     except ValueError as e:

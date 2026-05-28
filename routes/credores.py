@@ -14,6 +14,7 @@ from routes.helpers import (
     montar_filtros_credores,
     parse_bool,
 )
+from routes._shared import registrar_auditoria
 
 bp = Blueprint("credores", __name__)
 
@@ -145,9 +146,10 @@ def add_credor():
                 payload.get("departamento", "") or "Cadastro de credor",
             ),
         )
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
+        registrar_auditoria(conn, "credores", new_id, "CRIAR", None, row_to_dict(row))
         conn.commit()
         _invalidate_summary_cache()
-        row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -219,9 +221,10 @@ def update_credor(cid):
                 json.dumps(mudancas, ensure_ascii=False),
             ),
         )
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
+        registrar_auditoria(conn, "credores", cid, "EDITAR", row_to_dict(atual), row_to_dict(row))
         conn.commit()
         _invalidate_summary_cache()
-        row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
         return jsonify(row_to_dict(row))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -242,6 +245,7 @@ def delete_credor(cid):
             "INSERT INTO logs (acao,credor_id,credor_nome,credor_departamento,credor_cnpj,detalhes) VALUES (?,?,?,?,?,?)",
             ("EXCLUIR", cid, row["nome"], row["departamento"] or "", row["cnpj"] or "", row["departamento"] or "Exclusão lógica"),
         )
+        registrar_auditoria(conn, "credores", cid, "EXCLUIR", row_to_dict(row), None)
         conn.commit()
         return jsonify({"ok": True})
     except Exception as e:
@@ -293,6 +297,7 @@ def restaurar_credor(cid):
                 row["departamento"] or "Restaurado da lixeira",
             ),
         )
+        registrar_auditoria(conn, "credores", cid, "RESTAURAR", {"ativo": 0}, {"ativo": 1})
         conn.commit()
         row = conn.execute("SELECT * FROM credores WHERE id=?", (cid,)).fetchone()
         return jsonify({"ok": True, "credor": row_to_dict(row)})
@@ -347,9 +352,11 @@ def duplicate_credor(cid):
                 f"Duplicado a partir do credor #{cid} ({orig['nome']})",
             ),
         )
+        row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
+        registrar_auditoria(conn, "credores", new_id, "DUPLICAR",
+                            {"origem_id": cid, "origem_nome": orig["nome"]}, row_to_dict(row))
         conn.commit()
         _invalidate_summary_cache()
-        row = conn.execute("SELECT * FROM credores WHERE id=?", (new_id,)).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500

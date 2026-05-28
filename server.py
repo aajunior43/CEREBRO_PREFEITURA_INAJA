@@ -221,6 +221,10 @@ def create_app() -> Flask:
             "CREATE INDEX IF NOT EXISTS idx_autentique_contatos_nome ON autentique_contatos(nome COLLATE NOCASE)",
             "CREATE INDEX IF NOT EXISTS idx_usuarios_login ON usuarios(login)",
             "CREATE INDEX IF NOT EXISTS idx_usuarios_nivel ON usuarios(nivel)",
+            "CREATE INDEX IF NOT EXISTS idx_audit_trail_tabela ON audit_trail(tabela)",
+            "CREATE INDEX IF NOT EXISTS idx_audit_trail_operacao ON audit_trail(operacao)",
+            "CREATE INDEX IF NOT EXISTS idx_audit_trail_timestamp ON audit_trail(timestamp DESC)",
+            "CREATE INDEX IF NOT EXISTS idx_audit_trail_tabela_registro ON audit_trail(tabela, registro_id)",
         ]:
             try:
                 cur.execute(sql)
@@ -249,6 +253,7 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS mural_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexo_contents (attachment_id INTEGER PRIMARY KEY REFERENCES mural_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)",
             "CREATE TABLE IF NOT EXISTS mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS audit_trail (id INTEGER PRIMARY KEY AUTOINCREMENT, tabela TEXT NOT NULL, registro_id TEXT DEFAULT '', operacao TEXT NOT NULL, dados_anteriores TEXT DEFAULT '{}', dados_novos TEXT DEFAULT '{}', ip TEXT DEFAULT '', timestamp TEXT DEFAULT (datetime('now', 'localtime')))",
         ]:
             cur.execute(sql)
 
