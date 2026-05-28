@@ -638,28 +638,9 @@
         </div>
       </div>
 
-      <!-- GLASSMORPHISM TOOLBAR -->
-      <div class="mural-toolbar">
-        <div class="mural-filters">
-          <div class="mural-search-wrap">
-            <span>🔍</span>
-            <input type="text" class="mural-search-input" id="mural-busca" placeholder="Pesquisar recados..." />
-          </div>
-
-          <select class="mural-select" id="filtro-prioridade">
-            <option value="">Todas as prioridades</option>
-            <option value="baixa">Baixa</option>
-            <option value="media">Média</option>
-            <option value="alta">Alta</option>
-            <option value="urgente">Urgente</option>
-          </select>
-          <button class="mural-btn mural-btn-ghost" id="filtro-meus-recados" data-active="false" style="font-weight:700; height:38px; border-radius:14px; padding:0 14px; min-height:38px;">
-            👤 Meus Recados
-          </button>
-        </div>
-        <div>
-          <button class="mural-btn mural-btn-ghost" id="btn-atualizar" title="Atualizar mural">↺ Atualizar</button>
-        </div>
+      <!-- TOOLBAR -->
+      <div class="mural-toolbar" style="justify-content:flex-end;">
+        <button class="mural-btn mural-btn-ghost" id="btn-atualizar" title="Atualizar mural">↺ Atualizar</button>
       </div>
 
       <!-- Column Layout -->
@@ -1029,29 +1010,8 @@
       // Clear columns
       Object.values(colLists).forEach(el => el.innerHTML = '');
       
-      const searchVal = document.getElementById('mural-busca').value.toLowerCase().trim();
-      const prioVal = document.getElementById('filtro-prioridade').value;
-      const meusRecadosActive = document.getElementById('filtro-meus-recados').dataset.active === 'true';
-      
-      let filtered = cacheRecados;
-      if (searchVal) {
-        filtered = filtered.filter(r => r.titulo.toLowerCase().includes(searchVal) || r.conteudo.toLowerCase().includes(searchVal) || r.autor.toLowerCase().includes(searchVal));
-      }
+      const filtered = cacheRecados;
 
-      if (prioVal) {
-        filtered = filtered.filter(r => r.prioridade === prioVal);
-      }
-      if (meusRecadosActive) {
-        const currentUser = (sessionStorage.getItem('user_nome') || '').toLowerCase().trim();
-        if (currentUser) {
-          filtered = filtered.filter(r => {
-            const dest = (r.destinatario || '').toLowerCase().trim();
-            const autor = (r.autor || '').toLowerCase().trim();
-            return dest === currentUser || dest === 'todos' || dest.includes(currentUser) || autor === currentUser;
-          });
-        }
-      }
-      
       filtered.forEach(item => {
         const col = item.status || 'a_fazer';
         if (colLists[col]) {
@@ -1468,20 +1428,8 @@
       }
     });
 
-    // Filters and Toolbar
-    document.getElementById('mural-busca').addEventListener('input', renderMural);
-
-    document.getElementById('filtro-prioridade').addEventListener('change', renderMural);
+    // Toolbar
     document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
-
-    document.getElementById('filtro-meus-recados').addEventListener('click', function() {
-      const btn = document.getElementById('filtro-meus-recados');
-      const active = btn.dataset.active === 'true';
-      btn.dataset.active = active ? 'false' : 'true';
-      btn.classList.toggle('mural-btn-primary', !active);
-      btn.classList.toggle('mural-btn-ghost', active);
-      renderMural();
-    });
 
     // Setup Column Drop Targets for Kanban Drag & Drop
     document.querySelectorAll('.mural-col-list').forEach(listEl => {
