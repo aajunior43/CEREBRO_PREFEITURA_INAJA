@@ -201,7 +201,6 @@
       { href: '/pages/classificador-despesa.html', name: 'Classificador de Despesas', desc: 'Identificar desdobramento correto da despesa (TCE-PR)' },
       { href: '/pages/visualizador.html',    name: 'Relação de Empenhos Emitidos',  desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
-      { href: '/pages/prazos.html',          name: 'Prazos',                 desc: 'Contratos e prazos críticos' },
       { href: '/pages/protocolo.html',       name: 'Protocolo',              desc: 'Ofícios, memorandos e documentos' },
       { href: '/pages/autentique-assinatura.html', name: 'Assinatura Digital', desc: 'Enviar documento para assinatura' },
     ],
@@ -556,23 +555,6 @@
           }));
           return { page: 'protocolo', protocolos_visiveis: rows };
         }
-      },
-      '/pages/prazos.html': {
-        title: 'IA de Prazos',
-        subtitle: 'Assistente para contratos, vencimentos e notificações',
-        chatPlaceholder: 'Ex: Quais prazos estão mais críticos hoje?',
-        emptyMessage: 'Cadastre ou carregue prazos antes de usar a IA.',
-        actions: [
-          { id: 'analisar', label: 'Analisar', description: 'Resume os prazos e principais pontos de atenção.' },
-          { id: 'prioridades', label: 'Prioridades', description: 'Ordena o que precisa de ação imediata.' },
-          { id: 'riscos', label: 'Riscos', description: 'Aponta atrasos, vencimentos próximos e exposições.' },
-          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os prazos.' }
-        ],
-        shortcuts: [
-          { label: 'Resumo dos prazos', action: 'analisar' },
-          { label: 'Urgências do dia', action: 'prioridades' },
-          { label: 'Riscos e atrasos', action: 'riscos' }
-        ]
       },
       '/pages/documentos.html': {
         title: 'IA de Documentos',
