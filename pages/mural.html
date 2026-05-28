@@ -411,10 +411,7 @@
       100% { opacity: 1; }
     }
 
-    .badge-categoria-aviso     { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
-    .badge-categoria-tarefa    { background: color-mix(in srgb, var(--blue) 14%, transparent); color: var(--blue-dark); }
-    .badge-categoria-lembrete  { background: color-mix(in srgb, var(--purple) 14%, transparent); color: var(--purple); }
-    .badge-categoria-conquista { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green-dark); }
+
 
     /* Actions Panel inside Card */
     .mural-card-actions {
@@ -648,13 +645,7 @@
             <span>🔍</span>
             <input type="text" class="mural-search-input" id="mural-busca" placeholder="Pesquisar recados..." />
           </div>
-          <select class="mural-select" id="filtro-categoria">
-            <option value="">Todas as categorias</option>
-            <option value="aviso">📢 Avisos</option>
-            <option value="tarefa">📋 Tarefas</option>
-            <option value="lembrete">💡 Lembretes</option>
-            <option value="conquista">🎉 Conquistas</option>
-          </select>
+
           <select class="mural-select" id="filtro-prioridade">
             <option value="">Todas as prioridades</option>
             <option value="baixa">Baixa</option>
@@ -723,17 +714,7 @@
           <textarea id="form-conteudo" class="mural-search-input" style="width:100%; min-height:90px; resize:vertical; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" placeholder="Explicação ou detalhes do recado..." required></textarea>
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-          <div class="mural-form-group">
-            <label class="mural-label" for="form-categoria">Categoria</label>
-            <select id="form-categoria" class="mural-select" style="box-shadow:var(--neo-in-sm); min-height:42px;">
-              <option value="tarefa">📋 Tarefa</option>
-              <option value="aviso">📢 Aviso</option>
-              <option value="lembrete">💡 Lembrete</option>
-              <option value="conquista">🎉 Conquista</option>
-            </select>
-          </div>
-          <div class="mural-form-group">
+        <div class="mural-form-group">
             <label class="mural-label" for="form-prioridade">Prioridade</label>
             <select id="form-prioridade" class="mural-select" style="box-shadow:var(--neo-in-sm); min-height:42px;">
               <option value="baixa">Baixa</option>
@@ -741,7 +722,6 @@
               <option value="alta">Alta</option>
               <option value="urgente">Urgente 🔥</option>
             </select>
-          </div>
         </div>
 
         <!-- Autor preenchido automaticamente pelo usuário logado -->
@@ -1050,7 +1030,6 @@
       Object.values(colLists).forEach(el => el.innerHTML = '');
       
       const searchVal = document.getElementById('mural-busca').value.toLowerCase().trim();
-      const catVal = document.getElementById('filtro-categoria').value;
       const prioVal = document.getElementById('filtro-prioridade').value;
       const meusRecadosActive = document.getElementById('filtro-meus-recados').dataset.active === 'true';
       
@@ -1058,9 +1037,7 @@
       if (searchVal) {
         filtered = filtered.filter(r => r.titulo.toLowerCase().includes(searchVal) || r.conteudo.toLowerCase().includes(searchVal) || r.autor.toLowerCase().includes(searchVal));
       }
-      if (catVal) {
-        filtered = filtered.filter(r => r.categoria === catVal);
-      }
+
       if (prioVal) {
         filtered = filtered.filter(r => r.prioridade === prioVal);
       }
@@ -1180,7 +1157,7 @@
             <div class="mural-card-title">${esc(item.titulo)}</div>
             <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-top:5px;">
               ${valorBadge}
-              <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
+
               <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
             </div>
           </div>
@@ -1339,7 +1316,7 @@
       document.getElementById('form-id').value = item.id;
       document.getElementById('form-titulo').value = item.titulo;
       document.getElementById('form-conteudo').value = item.conteudo;
-      document.getElementById('form-categoria').value = item.categoria;
+
       document.getElementById('form-prioridade').value = item.prioridade;
       document.getElementById('form-autor').value = item.autor;
       document.getElementById('form-destinatario').value = item.destinatario || 'Todos';
@@ -1393,7 +1370,7 @@
       const payload = {
         titulo: document.getElementById('form-titulo').value.trim(),
         conteudo: document.getElementById('form-conteudo').value.trim(),
-        categoria: document.getElementById('form-categoria').value,
+
         prioridade: prio,
         autor: document.getElementById('form-autor').value.trim(),
         destinatario: document.getElementById('form-destinatario').value.trim(),
@@ -1493,7 +1470,7 @@
 
     // Filters and Toolbar
     document.getElementById('mural-busca').addEventListener('input', renderMural);
-    document.getElementById('filtro-categoria').addEventListener('change', renderMural);
+
     document.getElementById('filtro-prioridade').addEventListener('change', renderMural);
     document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
 
