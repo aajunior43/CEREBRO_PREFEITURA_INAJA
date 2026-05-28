@@ -203,7 +203,8 @@
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      min-height: 580px;
+      max-height: calc(100vh - 210px);
+      min-height: 320px;
       backdrop-filter: blur(10px);
       padding: 0;
       gap: 0;
@@ -215,6 +216,7 @@
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
       background: rgba(255, 255, 255, 0.02);
+      flex-shrink: 0;
     }
     
     .mural-col-todo .mural-col-head { border-top: 3px solid var(--blue); }
@@ -236,34 +238,51 @@
       border-radius: 20px;
       background: color-mix(in srgb, var(--surface-2) 90%, transparent);
       color: var(--text-2);
+      transition: background 0.2s, color 0.2s;
     }
+    .mural-col-todo    .mural-col-count { background: color-mix(in srgb, var(--blue) 14%, transparent); color: var(--blue); }
+    .mural-col-progress .mural-col-count { background: color-mix(in srgb, var(--orange) 14%, transparent); color: var(--orange); }
+    .mural-col-done    .mural-col-count { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green-dark, #15803d); }
+
     .mural-col-list {
       flex: 1;
-      padding: 10px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 16%, transparent), color-mix(in srgb, var(--surface-2) 10%, transparent));
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .mural-col-list::-webkit-scrollbar { width: 4px; }
+    .mural-col-list::-webkit-scrollbar-track { background: transparent; }
+    .mural-col-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    @keyframes cardSlideIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
     }
 
-    /* PREMIUM STICKY NOTE CARD STYLE */
+    /* CARD STYLE */
     .mural-card {
-      border-radius: 4px;
-      padding: 2px 4px;
+      border-radius: 14px;
+      padding: 12px 14px;
       box-shadow: var(--shadow-sm);
       position: relative;
-      transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s;
       display: flex;
       flex-direction: column;
-      gap: 1px;
-      border-top: 2px solid var(--note-border);
+      gap: 8px;
+      border-top: 3px solid var(--note-border);
       border-left: 1px solid var(--border);
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       overflow: hidden;
+      animation: cardSlideIn 0.22s ease both;
     }
     .mural-card:hover {
-      transform: translateY(-2px) rotate(0.2deg);
+      transform: translateY(-3px);
       box-shadow: var(--shadow);
     }
     
@@ -308,37 +327,36 @@
       gap: 3px;
     }
     .mural-card-title {
-      font-size: 13px;
-      font-weight: 850;
+      font-size: 14px;
+      font-weight: 800;
       color: var(--text);
-      line-height: 1.15;
+      line-height: 1.25;
       letter-spacing: -0.01em;
     }
     .mural-card-body {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-2);
-      line-height: 1.25;
+      line-height: 1.45;
       white-space: pre-wrap;
       flex-grow: 1;
     }
-    
+
     .mural-card-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 9px;
+      font-size: 10.5px;
       color: var(--text-3);
-      padding-top: 1px;
+      padding-top: 8px;
       border-top: 1px dashed var(--border);
-      margin-top: 0px;
     }
     .mural-card-meta {
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
       align-items: center;
-      gap: 3px;
-      row-gap: 0.5px;
+      gap: 5px;
+      row-gap: 2px;
     }
     .mural-card-author {
       font-weight: 800;
@@ -347,15 +365,15 @@
     
     /* Badges */
     .mural-badge {
-      font-size: 7.5px;
-      font-weight: 750;
+      font-size: 10px;
+      font-weight: 700;
       text-transform: uppercase;
-      padding: 0px 2px;
-      border-radius: 4px;
-      letter-spacing: 0.1px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.2px;
       display: inline-flex;
       align-items: center;
-      height: 11px;
+      white-space: nowrap;
     }
     
     .mural-valor-badge {
@@ -485,12 +503,46 @@
       text-align: center;
       color: var(--text-3);
       font-size: 13px;
-      padding: 32px 18px;
-      opacity: .8;
-      border: 1px dashed var(--border-hover);
+      padding: 36px 18px;
+      border: 1.5px dashed var(--border-hover);
       border-radius: 16px;
-      background: color-mix(in srgb, var(--surface) 60%, transparent);
-      font-style: italic;
+      background: color-mix(in srgb, var(--surface) 50%, transparent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .mural-empty-icon { font-size: 30px; opacity: 0.5; }
+    .mural-empty-title { font-weight: 700; font-size: 13px; }
+    .mural-empty-sub { font-size: 11px; opacity: 0.7; }
+
+    /* Skeleton loading */
+    @keyframes skeleton-shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+    .mural-skeleton-card {
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mural-skeleton-line {
+      border-radius: 6px;
+      background: linear-gradient(90deg, var(--border) 25%, color-mix(in srgb, var(--border) 60%, var(--surface)) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.6s ease-in-out infinite;
+    }
+
+    /* Drag-over column highlight */
+    .mural-col-list.drag-over {
+      background: color-mix(in srgb, var(--blue) 7%, transparent) !important;
+      outline: 2px dashed color-mix(in srgb, var(--blue) 35%, transparent);
+      outline-offset: -4px;
+      border-radius: 14px;
     }
 
     /* User chip top-right */
@@ -735,7 +787,29 @@
     'use strict';
     
     let cacheRecados = [];
-    
+    let muralLoaded = false;
+
+    const EMPTY_STATES = {
+      a_fazer:      { icon: '📋', title: 'Nenhuma tarefa',  sub: 'Clique em + Criar Recado para começar' },
+      em_andamento: { icon: '⚡', title: 'Nada em progresso', sub: 'Mova um card ou inicie uma tarefa' },
+      concluido:    { icon: '✅', title: 'Nada concluído', sub: 'Conclua tarefas para vê-las aqui' }
+    };
+
+    function renderSkeletons() {
+      ['a_fazer', 'em_andamento', 'concluido'].forEach(col => {
+        const list = document.querySelector(`#col-${col} .mural-col-list`);
+        if (!list) return;
+        list.innerHTML = [1, 2, 3].map((_, i) => `
+          <div class="mural-skeleton-card" style="animation-delay:${i * 80}ms">
+            <div class="mural-skeleton-line" style="width:${60 + i * 10}%;height:14px;"></div>
+            <div class="mural-skeleton-line" style="width:85%;height:10px;"></div>
+            <div class="mural-skeleton-line" style="width:${50 + i * 8}%;height:10px;"></div>
+            <div class="mural-skeleton-line" style="width:40%;height:9px;margin-top:4px;"></div>
+          </div>
+        `).join('');
+      });
+    }
+
     function esc(s) {
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
@@ -905,6 +979,7 @@
     }
 
     async function carregarMural() {
+      if (!muralLoaded) renderSkeletons();
       try {
         const res = await fetch('/api/mural');
         if (!res.ok) throw new Error("Erro ao carregar");
@@ -930,6 +1005,7 @@
         });
 
         cacheRecados = recados;
+        muralLoaded = true;
         renderMural();
       } catch (e) {
         console.error(e);
@@ -990,7 +1066,13 @@
       // Render Empty States if needed
       Object.keys(colLists).forEach(col => {
         if (counts[col] === 0) {
-          colLists[col].innerHTML = '<div class="mural-empty">Nenhum recado nesta coluna</div>';
+          const es = EMPTY_STATES[col] || { icon: '📭', title: 'Vazio', sub: '' };
+          colLists[col].innerHTML = `
+            <div class="mural-empty">
+              <div class="mural-empty-icon">${es.icon}</div>
+              <div class="mural-empty-title">${es.title}</div>
+              ${es.sub ? `<div class="mural-empty-sub">${es.sub}</div>` : ''}
+            </div>`;
         }
       });
     }
@@ -1075,7 +1157,7 @@
           </div>
         </div>
         <div class="mural-card-body">
-          <div style="font-size:11px; line-height:1.35; color:var(--text-2); font-weight:500;">${esc(item.conteudo)}</div>
+          <div style="line-height:1.45; color:var(--text-2); font-weight:500;">${esc(item.conteudo)}</div>
           ${attachmentsList}
         </div>
         <div class="mural-card-footer">
@@ -1094,27 +1176,35 @@
       `;
       // Drag & Drop to attach files directly to the card
       card.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        card.style.border = '2px dashed var(--blue)';
-        card.style.transform = 'scale(1.01)';
+        if (e.dataTransfer.types.includes('Files')) {
+          e.preventDefault();
+          e.stopPropagation();
+          card.style.border = '2px dashed var(--blue)';
+          card.style.transform = 'scale(1.01)';
+        }
       });
-      
+
       card.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        card.style.border = '2px dashed var(--blue)';
-        card.style.transform = 'scale(1.01)';
+        if (e.dataTransfer.types.includes('Files')) {
+          e.preventDefault();
+          e.stopPropagation();
+          card.style.border = '2px dashed var(--blue)';
+          card.style.transform = 'scale(1.01)';
+        }
       });
-      
+
       card.addEventListener('dragleave', () => {
         card.style.border = '';
         card.style.transform = '';
       });
-      
+
       card.addEventListener('drop', async (e) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
+        e.stopPropagation();
         card.style.border = '';
         card.style.transform = '';
-        
+
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
           const file = e.dataTransfer.files[0];
           await enviarAnexoArquivo(item.id, file);
@@ -1148,15 +1238,11 @@
           item.concluido_por = currentUser;
           item.concluido_em = new Date().toLocaleString('pt-BR');
         }
-        if (novoStatus === 'em_andamento' && currentUser) {
-          item.iniciado_por = currentUser;
-        }
         renderMural();
       }
 
       const body = { status: novoStatus };
       if (novoStatus === 'concluido' && currentUser) body.concluido_por = currentUser;
-      if (novoStatus === 'em_andamento' && currentUser) body.iniciado_por = currentUser;
 
       try {
         const res = await fetch(`/api/mural/${id}`, {
@@ -1300,36 +1386,65 @@
         }
       }
 
+      // Optimistic create: show card immediately before server responds
+      let tempItem = null;
+      if (!id) {
+        tempItem = Object.assign({}, payload, {
+          id: -Date.now(), // temporary negative ID to avoid collision
+          status: 'a_fazer',
+          criado_em: new Date().toLocaleString('pt-BR'),
+          concluido_por: '',
+          concluido_em: '',
+          attachments: []
+        });
+        cacheRecados.unshift(tempItem);
+        renderMural();
+      }
+
       try {
         const res = await fetch(url, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        
+
         if (res.ok) {
           const createdRecado = await res.json();
-          
-          // Handle file attachment in background if any
+          createdRecado.attachments = createdRecado.attachments || [];
+
+          if (!id) {
+            // Replace temp item with real server data
+            const idx = cacheRecados.findIndex(r => r.id === tempItem.id);
+            if (idx !== -1) cacheRecados[idx] = createdRecado;
+            seenRecadosIds.add(createdRecado.id); // prevent duplicate notification from SSE
+            renderMural();
+          }
+
+          // Handle file attachment if any
           const modalFileInput = document.getElementById('form-file');
           if (modalFileInput.files && modalFileInput.files.length > 0) {
             const formData = new FormData();
             formData.append('file', modalFileInput.files[0]);
-            
             await fetch(`/api/mural/${createdRecado.id}/attachments`, {
               method: 'POST',
               body: formData
             });
+            carregarMural(); // reload only when there's an attachment to sync
           }
-          
-          // Refresh actual DB data to match background attachment states
-          carregarMural();
         } else {
-          // If server failed, rollback and reload
+          // Rollback temp item and reload
+          if (tempItem) {
+            const idx = cacheRecados.findIndex(r => r.id === tempItem.id);
+            if (idx !== -1) cacheRecados.splice(idx, 1);
+          }
           carregarMural();
         }
       } catch (err) {
         console.error(err);
+        if (tempItem) {
+          const idx = cacheRecados.findIndex(r => r.id === tempItem.id);
+          if (idx !== -1) cacheRecados.splice(idx, 1);
+        }
         carregarMural();
       }
     });
@@ -1356,22 +1471,23 @@
       
       listEl.addEventListener('dragover', (e) => {
         e.preventDefault();
-        listEl.style.background = 'rgba(255, 255, 255, 0.08)';
+        listEl.classList.add('drag-over');
       });
-      
+
       listEl.addEventListener('dragenter', (e) => {
         e.preventDefault();
-        listEl.style.background = 'rgba(255, 255, 255, 0.08)';
+        listEl.classList.add('drag-over');
       });
-      
+
       listEl.addEventListener('dragleave', () => {
-        listEl.style.background = '';
+        listEl.classList.remove('drag-over');
       });
-      
+
       listEl.addEventListener('drop', async (e) => {
+        if (e.dataTransfer.types.includes('Files')) return;
         e.preventDefault();
-        listEl.style.background = '';
-        
+        listEl.classList.remove('drag-over');
+
         const taskIdStr = e.dataTransfer.getData('text/plain');
         if (taskIdStr) {
           const taskId = parseInt(taskIdStr, 10);
@@ -1497,9 +1613,14 @@
       
       source.addEventListener('create', function(e) {
         const item = JSON.parse(e.data);
+
+        // Remove temp optimistic item (negative ID) from the same author if present
+        const tempIdx = cacheRecados.findIndex(r => r.id < 0 && r.autor === item.autor && r.titulo === item.titulo);
+        if (tempIdx !== -1) cacheRecados.splice(tempIdx, 1);
+
         if (!cacheRecados.some(r => r.id === item.id)) {
           cacheRecados.unshift(item);
-          
+
           // Sound and toast notification for destinatario
           const currentUser = (sessionStorage.getItem('user_nome') || '').toLowerCase().trim();
           if (currentUser) {
@@ -1512,7 +1633,7 @@
               }
             }
           }
-          
+
           renderMural();
         }
       });

@@ -7,6 +7,7 @@ import json
 import threading
 from functools import wraps
 from flask import Blueprint, request, jsonify, session, send_file, Response
+from werkzeug.utils import secure_filename
 from routes._shared import get_db
 
 bp = Blueprint("mural", __name__)
@@ -51,21 +52,22 @@ def _normalize_choice(value, allowed, default):
     return normalized if normalized in allowed else default
 
 def broadcast_mural_event(event_type, data):
-    global _mural_listeners
     payload = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
-    active_listeners = []
+    dead = []
     with _mural_listeners_lock:
         listeners = list(_mural_listeners)
     for q in listeners:
         try:
             q.put_nowait(payload)
-            active_listeners.append(q)
         except queue.Full:
-            pass
+            pass  # slow client: keep connection, drop only this message
         except Exception:
-            pass
-    with _mural_listeners_lock:
-        _mural_listeners = active_listeners
+            dead.append(q)
+    if dead:
+        with _mural_listeners_lock:
+            for q in dead:
+                if q in _mural_listeners:
+                    _mural_listeners.remove(q)
 
 
 @bp.route("/api/mural", methods=["GET"])
@@ -76,7 +78,13 @@ def mural_listar():
         status_f = request.args.get("status")
         categoria = request.args.get("categoria")
         prioridade = request.args.get("prioridade")
-        
+        try:
+            page = max(1, int(request.args.get("page", 1)))
+            limit = min(200, max(1, int(request.args.get("limit", 100))))
+        except (TypeError, ValueError):
+            page, limit = 1, 100
+        offset = (page - 1) * limit
+
         clauses, params = [], []
         if status_f:
             status_f = _normalize_choice(status_f, VALID_STATUS, "")
@@ -96,11 +104,11 @@ def mural_listar():
                 return jsonify({"error": "Prioridade invalida"}), 400
             clauses.append("prioridade=?")
             params.append(prioridade)
-            
+
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
         rows = conn.execute(
-            f"SELECT * FROM mural_recados {where} ORDER BY prioridade='urgente' DESC, prioridade='alta' DESC, prioridade='media' DESC, prioridade='baixa' DESC, criado_em DESC",
-            params
+            f"SELECT * FROM mural_recados {where} ORDER BY prioridade='urgente' DESC, prioridade='alta' DESC, prioridade='media' DESC, prioridade='baixa' DESC, criado_em DESC LIMIT ? OFFSET ?",
+            params + [limit, offset]
         ).fetchall()
         
         recados = [dict(r) for r in rows]
@@ -145,11 +153,6 @@ def mural_criar():
         categoria = _normalize_choice(data.get("categoria"), VALID_CATEGORIAS, "tarefa")
         cor = _normalize_choice(data.get("cor"), VALID_CORES, "yellow")
         
-        if prioridade not in ("baixa", "média", "media", "alta", "urgente"):
-            prioridade = "media"
-        if categoria not in ("aviso", "tarefa", "lembrete", "conquista"):
-            categoria = "tarefa"
-            
         valor = _parse_valor(data.get("valor"))
 
         conn = get_db()
@@ -178,7 +181,12 @@ def mural_atualizar(recado_id):
         row = conn.execute("SELECT * FROM mural_recados WHERE id=?", (recado_id,)).fetchone()
         if not row:
             return jsonify({"error": "Recado não encontrado"}), 404
-            
+
+        content_fields = {"titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "valor"}
+        editing_content = bool(content_fields & set(data.keys()))
+        if editing_content and row["autor"] != session.get("usuario_nome") and session.get("usuario_nivel") != "admin":
+            return jsonify({"error": "Sem permissão para editar este recado"}), 403
+
         fields = {}
         for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status", "valor"):
             if k in data:
@@ -239,8 +247,11 @@ def mural_atualizar(recado_id):
 def mural_excluir(recado_id):
     try:
         conn = get_db()
-        if not conn.execute("SELECT id FROM mural_recados WHERE id=?", (recado_id,)).fetchone():
+        row = conn.execute("SELECT autor FROM mural_recados WHERE id=?", (recado_id,)).fetchone()
+        if not row:
             return jsonify({"error": "Recado não encontrado"}), 404
+        if row["autor"] != session.get("usuario_nome") and session.get("usuario_nivel") != "admin":
+            return jsonify({"error": "Sem permissão para excluir este recado"}), 403
         conn.execute("DELETE FROM mural_recados WHERE id=?", (recado_id,))
         conn.commit()
         broadcast_mural_event("delete", {"id": recado_id})
@@ -266,8 +277,10 @@ def mural_anexo_criar(recado_id):
         f = request.files["file"]
         if not f or f.filename == "":
             return jsonify({"error": "Nome de arquivo inválido"}), 400
-            
-        file_name = f.filename
+
+        file_name = secure_filename(f.filename)
+        if not file_name:
+            return jsonify({"error": "Nome de arquivo inválido"}), 400
         content = f.read()
         file_size = len(content)
         if file_size > MAX_ATTACHMENT_BYTES:
@@ -359,7 +372,10 @@ def mural_events():
                 if q in _mural_listeners:
                     _mural_listeners.remove(q)
                 
-    return Response(event_stream(), mimetype="text/event-stream")
+    resp = Response(event_stream(), mimetype="text/event-stream")
+    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["X-Accel-Buffering"] = "no"
+    return resp
 
 
 # ── Mural Comments ──
