@@ -12,8 +12,8 @@ build/
 .env
 
 # Banco de dados auxiliares temporários
-empenhos.db-shm
-empenhos.db-wal
+*.db-shm
+*.db-wal
 
 # Logs temporários
 *.log
