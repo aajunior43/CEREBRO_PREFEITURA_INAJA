@@ -182,10 +182,6 @@ def mural_atualizar(recado_id):
         if not row:
             return jsonify({"error": "Recado não encontrado"}), 404
 
-        content_fields = {"titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "valor"}
-        editing_content = bool(content_fields & set(data.keys()))
-        if editing_content and row["autor"] != session.get("usuario_nome") and session.get("usuario_nivel") != "admin":
-            return jsonify({"error": "Sem permissão para editar este recado"}), 403
 
         fields = {}
         for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status", "valor"):
@@ -250,8 +246,6 @@ def mural_excluir(recado_id):
         row = conn.execute("SELECT autor FROM mural_recados WHERE id=?", (recado_id,)).fetchone()
         if not row:
             return jsonify({"error": "Recado não encontrado"}), 404
-        if row["autor"] != session.get("usuario_nome") and session.get("usuario_nivel") != "admin":
-            return jsonify({"error": "Sem permissão para excluir este recado"}), 403
         conn.execute("DELETE FROM mural_recados WHERE id=?", (recado_id,))
         conn.commit()
         broadcast_mural_event("delete", {"id": recado_id})

@@ -324,7 +324,7 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 3px;
+      gap: 8px;
     }
     .mural-card-title {
       font-size: 14px;
@@ -349,6 +349,8 @@
       color: var(--text-3);
       padding-top: 8px;
       border-top: 1px dashed var(--border);
+      flex-wrap: wrap;
+      gap: 6px;
     }
     .mural-card-meta {
       display: flex;
@@ -357,6 +359,8 @@
       align-items: center;
       gap: 5px;
       row-gap: 2px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
     .mural-card-author {
       font-weight: 800;
@@ -417,6 +421,7 @@
       display: flex;
       gap: 3px;
       align-items: center;
+      flex-shrink: 0;
     }
     .mural-card-act {
       background: color-mix(in srgb, var(--surface) 94%, transparent);
@@ -785,9 +790,29 @@
 
   <script>
     'use strict';
-    
+
     let cacheRecados = [];
     let muralLoaded = false;
+
+    function showMuralToast(msg, type) {
+      let container = document.getElementById('mural-toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'mural-toast-container';
+        container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;';
+        document.body.appendChild(container);
+      }
+      const colors = { error: '#e11d48', success: '#16a34a', info: '#1e40af', warn: '#d97706' };
+      const toast = document.createElement('div');
+      toast.style.cssText = `background:${colors[type]||colors.info};color:#fff;padding:12px 18px;border-radius:10px;box-shadow:var(--shadow-lg);font-size:13px;font-weight:600;max-width:360px;`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'all 0.3s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
 
     const EMPTY_STATES = {
       a_fazer:      { icon: '📋', title: 'Nenhuma tarefa',  sub: 'Clique em + Criar Recado para começar' },
@@ -1131,12 +1156,14 @@
 
       // Actions buttons
       let actButtons = '';
-      actButtons += `<button class="mural-card-act" onclick="editarRecado(${item.id})" title="Editar recado" style="color:var(--orange);">✏️</button>`;
+      actButtons += `<button class="mural-card-act" onclick="editarRecado(${item.id})" title="Editar recado" style="color:var(--orange);width:auto;padding:0 8px;font-size:11px;font-weight:700;">✏️ Editar</button>`;
       actButtons += `<button class="mural-card-act" onclick="triggerAnexoUpload(${item.id})" title="Anexar arquivo" style="color:var(--blue);">📎</button>`;
       if (item.status === 'a_fazer') {
         actButtons += `<button class="mural-card-act mural-card-act-done" onclick="alterarStatusRecado(${item.id}, 'em_andamento')" title="Iniciar tarefa">⚡</button>`;
       } else if (item.status === 'em_andamento') {
         actButtons += `<button class="mural-card-act mural-card-act-done" onclick="alterarStatusRecado(${item.id}, 'concluido')" title="Marcar como concluída">✓</button>`;
+      } else if (item.status === 'concluido') {
+        actButtons += `<button class="mural-card-act" onclick="alterarStatusRecado(${item.id}, 'a_fazer')" title="Reabrir tarefa" style="color:var(--blue);">↩</button>`;
       }
       actButtons += `<button class="mural-card-act mural-card-act-delete" onclick="excluirRecado(${item.id})" title="Excluir recado">✕</button>`;
 
@@ -1149,11 +1176,16 @@
 
       card.innerHTML = `
         <div class="mural-card-header">
-          <div class="mural-card-title">${esc(item.titulo)}</div>
-          <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
-            ${valorBadge}
-            <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
-            <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
+          <div style="flex:1; min-width:0;">
+            <div class="mural-card-title">${esc(item.titulo)}</div>
+            <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-top:5px;">
+              ${valorBadge}
+              <span class="mural-badge badge-categoria-${item.categoria}">${esc(item.categoria)}</span>
+              <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
+            </div>
+          </div>
+          <div class="mural-card-actions">
+            ${actButtons}
           </div>
         </div>
         <div class="mural-card-body">
@@ -1166,11 +1198,8 @@
             <span style="opacity:0.5;">•</span>
             <span>👥 ${esc(item.destinatario || 'Todos')}</span>
             <span style="opacity:0.5;">•</span>
-            <span style="opacity:0.7;">📅 ${esc(item.criado_em.split(' ')[0])}</span>
+            <span style="opacity:0.7;">📅 ${esc((item.criado_em || '').split(' ')[0])}</span>
             ${completionMeta ? `<span style="opacity:0.5;">•</span>${completionMeta}` : ''}
-          </div>
-          <div class="mural-card-actions">
-            ${actButtons}
           </div>
         </div>
       `;
@@ -1286,6 +1315,9 @@
             cacheRecados.push(tempRemoved);
             renderMural();
           }
+          let errMsg = 'Erro ao excluir recado.';
+          if (res.status === 403) errMsg = 'Sem permissão para excluir este recado.';
+          showMuralToast(errMsg, 'error');
           carregarMural();
         }
       } catch (e) {
@@ -1294,6 +1326,7 @@
           cacheRecados.push(tempRemoved);
           renderMural();
         }
+        showMuralToast('Erro de conexão ao excluir recado.', 'error');
         carregarMural();
       }
     }
@@ -1432,11 +1465,19 @@
             carregarMural(); // reload only when there's an attachment to sync
           }
         } else {
-          // Rollback temp item and reload
+          // Rollback temp item and show error
           if (tempItem) {
             const idx = cacheRecados.findIndex(r => r.id === tempItem.id);
             if (idx !== -1) cacheRecados.splice(idx, 1);
           }
+          if (originalItem) Object.assign(originalItem, originalItem);
+          let errMsg = 'Erro ao salvar recado.';
+          try {
+            const errData = await res.json();
+            if (errData.error) errMsg = errData.error;
+          } catch (_) {}
+          if (res.status === 403) errMsg = 'Sem permissão para editar este recado. Apenas o autor ou o administrador pode editar.';
+          showMuralToast(errMsg, 'error');
           carregarMural();
         }
       } catch (err) {
@@ -1445,6 +1486,7 @@
           const idx = cacheRecados.findIndex(r => r.id === tempItem.id);
           if (idx !== -1) cacheRecados.splice(idx, 1);
         }
+        showMuralToast('Erro de conexão ao salvar recado.', 'error');
         carregarMural();
       }
     });

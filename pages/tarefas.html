@@ -1776,7 +1776,7 @@
         <div class="kb-card-actions">
           ${_avatarBadge(task.responsavel)}
           <button class="kb-icon-btn" onclick="duplicateTask('${task.id}')" title="Duplicar">📋</button>
-          <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar">✏️</button>
+          <button class="kb-icon-btn" onclick="openEdit('${task.id}')" title="Editar" style="color:var(--orange,#f59e0b);font-weight:700;padding:4px 8px;width:auto;">✏️ Editar</button>
           <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${task.id}')" title="Excluir">🗑</button>
         </div>
       </div>
@@ -2049,7 +2049,7 @@
                     <td>${statusLabel[t.status]||''} ${qmBtn}</td>
                     <td style="white-space:nowrap">
                         <button class="kb-icon-btn" onclick="duplicateTask('${t.id}')" title="Duplicar">📋</button>
-                        <button class="kb-icon-btn" onclick="openEdit('${t.id}')" title="Editar">✏️</button>
+                        <button class="kb-icon-btn" onclick="openEdit('${t.id}')" title="Editar" style="color:var(--orange,#f59e0b);font-weight:700;padding:4px 8px;width:auto;">✏️ Editar</button>
                         <button class="kb-icon-btn" style="color:#ef4444" onclick="confirmDelete('${t.id}')" title="Excluir">🗑</button>
                     </td>
                 </tr>`;
