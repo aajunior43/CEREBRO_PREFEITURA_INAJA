@@ -1,14 +1,18 @@
 """
-tests/test_app_structure.py - Testes da estrutura modular
+tests/test_app_structure.py - Testes da estrutura modular (Atualizado para server.py)
 """
 
 import os
 import sys
 import unittest
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
+
+# Usar banco de dados temporário de testes para evitar travar o de produção
+import server  # noqa: E402
+TEST_DB_PATH = os.path.join(BASE_DIR, "test_empenhos.db")
+server.DB_PATH = TEST_DB_PATH
 
 
 def _safe_print(message):
@@ -18,96 +22,70 @@ def _safe_print(message):
 
 
 def test_imports():
-    """Testa todos os imports."""
+    """Testa todos os imports ativos (server.py + routes/)."""
     _safe_print("=" * 60)
-    _safe_print("TESTANDO IMPORTS")
+    _safe_print("TESTANDO IMPORTS ATIVOS")
     _safe_print("=" * 60)
 
-    try:
-        from app import create_app  # noqa: F401
-        _safe_print("[OK] app.create_app")
-    except Exception as e:
-        _safe_print(f"[ERRO] app.create_app: {e}")
-        return False
+    from server import create_app  # noqa: F401
+    _safe_print("[OK] server.create_app")
 
-    try:
-        from app.utils.db import get_db, init_db  # noqa: F401
-        _safe_print("[OK] app.utils.db.get_db, init_db")
-    except Exception as e:
-        _safe_print(f"[ERRO] app.utils.db: {e}")
-        return False
-
-    try:
-        from app.utils.helpers import (  # noqa: F401
-            row_to_dict, normalizar_cnpj, parse_bool, slugify, normalize_phone_br
-        )
-        _safe_print("[OK] app.utils.helpers")
-    except Exception as e:
-        _safe_print(f"[ERRO] app.utils.helpers: {e}")
-        return False
+    from routes.helpers import (  # noqa: F401
+        normalizar_cnpj, cnpj_valido, parse_bool, slugify
+    )
+    _safe_print("[OK] routes.helpers")
 
     blueprints = [
-        ("auth", "app.routes.auth"),
-        ("config", "app.routes.config"),
-        ("credores", "app.routes.credores"),
-        ("empenhos", "app.routes.empenhos"),
-        ("rpas", "app.routes.rpas"),
-        ("kanban", "app.routes.kanban"),
-        ("documentos", "app.routes.documentos"),
-        ("autentique", "app.routes.autentique"),
-        ("prazos", "app.routes.prazos"),
-        ("protocolo", "app.routes.protocolo"),
-        ("extratos", "app.routes.extratos"),
-        ("ia", "app.routes.ia"),
-        ("cnpj", "app.routes.cnpj"),
-        ("pdf", "app.routes.pdf"),
+        ("auth",               "routes.auth"),
+        ("config",             "routes.config"),
+        ("credores",           "routes.credores"),
+        ("empenhos",           "routes.empenhos"),
+        ("rpas",               "routes.rpas"),
+        ("mural",              "routes.mural"),
+        ("kanban",             "routes.kanban"),
+        ("documentos",         "routes.documentos"),
+        ("prazos",             "routes.prazos"),
+        ("protocolos",         "routes.protocolos"),
+        ("extratos",           "routes.extratos"),
+        ("ia",                 "routes.ia"),
+        ("cnpj",               "routes.cnpj"),
+        ("pdf",                "routes.pdf"),
+        ("despesas",           "routes.despesas"),
+        ("classificador",      "routes.classificador"),
+        ("empenho_assistente", "routes.empenho_assistente"),
     ]
 
     for name, module in blueprints:
-        try:
-            mod = __import__(module, fromlist=["bp"])
-            bp = getattr(mod, "bp")
-            _safe_print(f"[OK] {name} (bp: {bp.name})")
-        except Exception as e:
-            _safe_print(f"[ERRO] {name}: {e}")
-            return False
-
-    try:
-        from app.routes import (  # noqa: F401
-            credores_bp, empenhos_bp, rpas_bp, kanban_bp,
-            documentos_bp, autentique_bp, prazos_bp, protocolo_bp,
-            extratos_bp, ia_bp, cnpj_bp, pdf_bp, auth_bp, config_bp
-        )
-        _safe_print("[OK] app.routes (todos blueprints)")
-    except Exception as e:
-        _safe_print(f"[ERRO] app.routes: {e}")
-        return False
-
-    return True
+        mod = __import__(module, fromlist=["bp"])
+        bp = getattr(mod, "bp")
+        assert bp is not None, f"Blueprint '{name}' nao encontrado em {module}"
+        _safe_print(f"[OK] {name} (bp: {bp.name})")
 
 
 def test_helpers():
-    """Testa funcoes auxiliares."""
+    """Testa funcoes auxiliares de routes/helpers.py e routes/documentos.py."""
     _safe_print("")
     _safe_print("=" * 60)
     _safe_print("TESTANDO HELPERS")
     _safe_print("=" * 60)
 
-    from app.utils.helpers import (
-        normalizar_cnpj, cnpj_valido, parse_bool, slugify, normalize_phone_br
-    )
+    from routes.helpers import normalizar_cnpj, cnpj_valido, parse_bool, slugify
+    from routes.documentos import _normalize_phone_br
 
+    # normalizar_cnpj
     assert normalizar_cnpj("12.345.678/0001-99") == "12345678000199"
     assert normalizar_cnpj("12345678000199") == "12345678000199"
     assert normalizar_cnpj("") == ""
     _safe_print("[OK] normalizar_cnpj")
 
+    # cnpj_valido
     assert cnpj_valido("12.345.678/0001-95") is True
     assert cnpj_valido("12345678000195") is True
     assert cnpj_valido("11.111.111/1111-11") is False
     assert cnpj_valido("12.345.678/0001-99") is False
     _safe_print("[OK] cnpj_valido")
 
+    # parse_bool
     assert parse_bool(True) is True
     assert parse_bool("true") is True
     assert parse_bool("1") is True
@@ -120,43 +98,46 @@ def test_helpers():
     assert parse_bool("") is False
     _safe_print("[OK] parse_bool")
 
+    # slugify
     assert slugify("Teste Com Acento") == "teste-com-acento"
     assert slugify("Especial: @#$%") == "especial"
     assert slugify("") == "geral"
     _safe_print("[OK] slugify")
 
-    assert normalize_phone_br("(65) 99999-9999") == "5565999999999"
-    assert normalize_phone_br("65999999999") == "5565999999999"
-    _safe_print("[OK] normalize_phone_br")
-
-    return True
+    # _normalize_phone_br  (definido em routes/documentos.py)
+    assert _normalize_phone_br("(65) 99999-9999") == "+5565999999999"
+    assert _normalize_phone_br("65999999999") == "+5565999999999"
+    _safe_print("[OK] _normalize_phone_br")
 
 
 def test_app_factory():
-    """Testa criacao do app."""
+    """Testa criacao do app e registro de blueprints."""
     _safe_print("")
     _safe_print("=" * 60)
     _safe_print("TESTANDO APP FACTORY")
     _safe_print("=" * 60)
 
-    from app import create_app
+    from server import create_app
 
-    app = create_app()
+    app, _, _, _ = create_app()
     _safe_print(f"[OK] App criado: {app.name}")
 
     expected_blueprints = [
         "auth", "config", "credores", "empenhos", "rpas",
-        "kanban", "documentos", "autentique", "prazos", "protocolo",
-        "extratos", "ia", "cnpj", "pdf"
+        "mural", "kanban", "documentos", "autentique", "prazos", "protocolos",
+        "extratos", "ia", "cnpj", "pdf", "despesas",
+        "classificador", "empenho_assistente",
     ]
 
     registered = list(app.blueprints.keys())
+    missing = [bp for bp in expected_blueprints if bp not in registered]
     for bp_name in expected_blueprints:
         if bp_name in registered:
             _safe_print(f"[OK] Blueprint '{bp_name}' registrado")
         else:
             _safe_print(f"[ERRO] Blueprint '{bp_name}' NAO registrado")
-            return False
+
+    assert not missing, f"Blueprints NAO registrados: {missing}"
 
     rules = [str(r) for r in app.url_map.iter_rules()]
     static_routes = ["/", "/static/<path:filename>", "/<path:filename>"]
@@ -164,76 +145,145 @@ def test_app_factory():
         if any(route.replace("<path:filename>", "test") in r for r in rules):
             _safe_print(f"[OK] Rota estatica: {route}")
 
-    return True
-
 
 def test_db_connection():
-    """Testa conexao com banco de dados."""
+    """Testa conexao com banco de dados usando banco temporario isolado."""
     _safe_print("")
     _safe_print("=" * 60)
-    _safe_print("TESTANDO BANCO DE DADOS")
+    _safe_print("TESTANDO BANCO DE DADOS DE TESTES")
     _safe_print("=" * 60)
 
-    from app import create_app
-    from app.utils.db import get_db, init_db
+    # Remover db de teste antigo se existir
+    if os.path.exists(TEST_DB_PATH):
+        try:
+            os.remove(TEST_DB_PATH)
+        except Exception:
+            pass
 
-    app = create_app()
+    from server import create_app
 
-    with app.app_context():
-        init_db()
-        _safe_print("[OK] init_db() executado")
+    app, _, init_db, migrate_db = create_app()
 
-        conn = get_db()
-        cursor = conn.execute("SELECT 1")
-        result = cursor.fetchone()
-        assert result[0] == 1
-        _safe_print("[OK] Conexao DB funcional")
+    missing_tables = []
+    try:
+        with app.app_context():
+            init_db()
+            _safe_print("[OK] init_db() executado")
+            migrate_db()
+            _safe_print("[OK] migrate_db() executado")
 
-        tables = conn.execute(
-            """
-            SELECT name FROM sqlite_master
-            WHERE type='table' AND name NOT LIKE 'sqlite_%'
-            ORDER BY name
-            """
-        ).fetchall()
+            # app._get_db é exposto pelo server.py:
+            #   app._get_db = get_db  (linha ~592)
+            # Funciona no app_context sem necessitar de um request real.
+            conn = app._get_db()
+            result = conn.execute("SELECT 1").fetchone()
+            assert result[0] == 1
+            _safe_print("[OK] Conexao DB funcional")
 
-        expected_tables = [
-            "credores", "empenhos", "rpas", "kanban_tasks",
-            "configuracoes", "logs", "documentos_centro",
-            "autentique_envios", "autentique_contatos",
-        ]
+            tables = conn.execute(
+                """
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name NOT LIKE 'sqlite_%'
+                ORDER BY name
+                """
+            ).fetchall()
 
-        table_names = [t["name"] for t in tables]
-        for table in expected_tables:
-            if table in table_names:
-                _safe_print(f"[OK] Tabela '{table}' existe")
-            else:
-                _safe_print(f"[ERRO] Tabela '{table}' nao encontrada")
-                return False
+            expected_tables = [
+                "credores", "empenhos", "rpas", "kanban_tasks",
+                "mural_recados", "mural_anexos", "mural_comentarios",
+                "configuracoes", "logs", "documentos_centro",
+                "autentique_envios", "autentique_contatos",
+            ]
 
-    return True
+            table_names = [t["name"] for t in tables]
+            for table in expected_tables:
+                if table in table_names:
+                    _safe_print(f"[OK] Tabela '{table}' existe")
+                else:
+                    _safe_print(f"[ERRO] Tabela '{table}' nao encontrada")
+                    missing_tables.append(table)
+    finally:
+        # Sempre limpa o db de teste ao final
+        if os.path.exists(TEST_DB_PATH):
+            try:
+                os.remove(TEST_DB_PATH)
+            except Exception:
+                pass
+
+    assert not missing_tables, f"Tabelas nao encontradas: {missing_tables}"
+
+
+# ── Suporte a unittest runner ────────────────────────────────
+def test_mural_api_guards():
+    """Testa protecao e validacao basica das rotas do mural."""
+    if os.path.exists(TEST_DB_PATH):
+        try:
+            os.remove(TEST_DB_PATH)
+        except Exception:
+            pass
+
+    from server import create_app
+
+    app, _, init_db, migrate_db = create_app()
+    try:
+        with app.app_context():
+            init_db()
+            migrate_db()
+
+        client = app.test_client()
+        assert client.get("/api/mural").status_code == 403
+
+        with client.session_transaction() as sess:
+            sess["usuario_id"] = 1
+            sess["usuario_nome"] = "Teste"
+            sess["usuario_nivel"] = "admin"
+
+        created = client.post(
+            "/api/mural",
+            json={
+                "titulo": "Recado",
+                "conteudo": "Conteudo",
+                "prioridade": "urgente",
+                "categoria": "aviso",
+            },
+        )
+        assert created.status_code == 201
+        recado_id = created.get_json()["id"]
+
+        invalid = client.put(f"/api/mural/{recado_id}", json={"status": "perdido"})
+        assert invalid.status_code == 400
+
+        missing_comment = client.post("/api/mural/999999/comments", json={"texto": "Oi"})
+        assert missing_comment.status_code == 404
+    finally:
+        if os.path.exists(TEST_DB_PATH):
+            try:
+                os.remove(TEST_DB_PATH)
+            except Exception:
+                pass
 
 
 def run_all_tests():
-    """Executa todos os testes."""
+    """Executa todos os testes (uso direto: python tests/test_app_structure.py)."""
     _safe_print("")
     _safe_print("=" * 60)
-    _safe_print("TESTES DA ESTRUTURA MODULAR")
+    _safe_print("TESTES DA ESTRUTURA MODULAR ATIVA")
     _safe_print("=" * 60)
     _safe_print("")
 
     tests = [
-        ("Imports", test_imports),
-        ("Helpers", test_helpers),
-        ("App Factory", test_app_factory),
+        ("Imports",      test_imports),
+        ("Helpers",      test_helpers),
+        ("App Factory",  test_app_factory),
         ("Banco de Dados", test_db_connection),
+        ("Mural API",    test_mural_api_guards),
     ]
 
     results = []
     for name, test_func in tests:
         try:
-            result = test_func()
-            results.append((name, result, None))
+            test_func()
+            results.append((name, True, None))
         except Exception as e:
             results.append((name, False, str(e)))
             _safe_print(f"\n[ERRO] {name} falhou: {e}")
@@ -267,7 +317,13 @@ def run_all_tests():
 
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
-    for fn in (test_imports, test_helpers, test_app_factory, test_db_connection):
+    for fn in (
+        test_imports,
+        test_helpers,
+        test_app_factory,
+        test_db_connection,
+        test_mural_api_guards,
+    ):
         suite.addTest(unittest.FunctionTestCase(fn))
     return suite
 

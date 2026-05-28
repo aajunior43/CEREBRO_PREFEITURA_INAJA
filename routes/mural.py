@@ -4,18 +4,59 @@ import time as _time
 import io
 import queue
 import json
-from flask import Blueprint, request, jsonify, g, session, send_file, Response
+import threading
+from functools import wraps
+from flask import Blueprint, request, jsonify, session, send_file, Response
 from routes._shared import get_db
 
 bp = Blueprint("mural", __name__)
 
 _mural_listeners = []
+_mural_listeners_lock = threading.Lock()
+MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+VALID_PRIORIDADES = {"baixa", "media", "alta", "urgente"}
+VALID_CATEGORIAS = {"aviso", "tarefa", "lembrete", "conquista"}
+VALID_CORES = {"yellow", "blue", "green", "pink", "purple", "orange"}
+VALID_STATUS = {"a_fazer", "em_andamento", "concluido"}
+
+
+def _require_auth(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if "usuario_id" not in session:
+            return jsonify({"error": "Nao autorizado"}), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+def _parse_valor(valor_raw) -> float:
+    if valor_raw is None:
+        return 0.0
+    try:
+        if isinstance(valor_raw, (int, float)):
+            return float(valor_raw)
+        cleaned = str(valor_raw).replace("R$", "").replace(" ", "")
+        if "," in cleaned:
+            cleaned = cleaned.replace(".", "").replace(",", ".")
+        return float(cleaned) if cleaned else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _normalize_choice(value, allowed, default):
+    normalized = (value or default).strip().lower()
+    if normalized == "média":
+        normalized = "media"
+    return normalized if normalized in allowed else default
 
 def broadcast_mural_event(event_type, data):
     global _mural_listeners
     payload = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
     active_listeners = []
-    for q in _mural_listeners:
+    with _mural_listeners_lock:
+        listeners = list(_mural_listeners)
+    for q in listeners:
         try:
             q.put_nowait(payload)
             active_listeners.append(q)
@@ -23,10 +64,12 @@ def broadcast_mural_event(event_type, data):
             pass
         except Exception:
             pass
-    _mural_listeners = active_listeners
+    with _mural_listeners_lock:
+        _mural_listeners = active_listeners
 
 
 @bp.route("/api/mural", methods=["GET"])
+@_require_auth
 def mural_listar():
     try:
         conn = get_db()
@@ -36,12 +79,21 @@ def mural_listar():
         
         clauses, params = [], []
         if status_f:
+            status_f = _normalize_choice(status_f, VALID_STATUS, "")
+            if not status_f:
+                return jsonify({"error": "Status invalido"}), 400
             clauses.append("status=?")
             params.append(status_f)
         if categoria:
+            categoria = _normalize_choice(categoria, VALID_CATEGORIAS, "")
+            if not categoria:
+                return jsonify({"error": "Categoria invalida"}), 400
             clauses.append("categoria=?")
             params.append(categoria)
         if prioridade:
+            prioridade = _normalize_choice(prioridade, VALID_PRIORIDADES, "")
+            if not prioridade:
+                return jsonify({"error": "Prioridade invalida"}), 400
             clauses.append("prioridade=?")
             params.append(prioridade)
             
@@ -77,6 +129,7 @@ def mural_listar():
 
 
 @bp.route("/api/mural", methods=["POST"])
+@_require_auth
 def mural_criar():
     try:
         data = request.get_json(force=True) or {}
@@ -88,28 +141,16 @@ def mural_criar():
             
         autor = (data.get("autor") or session.get("usuario_nome") or "Servidor").strip()
         destinatario = (data.get("destinatario") or "Todos").strip()
-        prioridade = (data.get("prioridade") or "media").strip().lower()
-        categoria = (data.get("categoria") or "tarefa").strip().lower()
-        cor = (data.get("cor") or "yellow").strip().lower()
+        prioridade = _normalize_choice(data.get("prioridade"), VALID_PRIORIDADES, "media")
+        categoria = _normalize_choice(data.get("categoria"), VALID_CATEGORIAS, "tarefa")
+        cor = _normalize_choice(data.get("cor"), VALID_CORES, "yellow")
         
         if prioridade not in ("baixa", "média", "media", "alta", "urgente"):
             prioridade = "media"
         if categoria not in ("aviso", "tarefa", "lembrete", "conquista"):
             categoria = "tarefa"
             
-        valor_raw = data.get("valor")
-        valor = 0.0
-        if valor_raw is not None:
-            try:
-                if isinstance(valor_raw, (int, float)):
-                    valor = float(valor_raw)
-                else:
-                    cleaned = str(valor_raw).replace("R$", "").replace(" ", "")
-                    if "," in cleaned:
-                        cleaned = cleaned.replace(".", "").replace(",", ".")
-                    valor = float(cleaned) if cleaned else 0.0
-            except ValueError:
-                valor = 0.0
+        valor = _parse_valor(data.get("valor"))
 
         conn = get_db()
         cur = conn.cursor()
@@ -129,6 +170,7 @@ def mural_criar():
 
 
 @bp.route("/api/mural/<int:recado_id>", methods=["PUT"])
+@_require_auth
 def mural_atualizar(recado_id):
     try:
         data = request.get_json(force=True) or {}
@@ -141,25 +183,24 @@ def mural_atualizar(recado_id):
         for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status", "valor"):
             if k in data:
                 if k == "valor":
-                    try:
-                        val_raw = data[k]
-                        if val_raw is None:
-                            fields[k] = 0.0
-                        elif isinstance(val_raw, (int, float)):
-                            fields[k] = float(val_raw)
-                        else:
-                            cleaned = str(val_raw).replace("R$", "").replace(" ", "")
-                            if "," in cleaned:
-                                cleaned = cleaned.replace(".", "").replace(",", ".")
-                            fields[k] = float(cleaned) if cleaned else 0.0
-                    except ValueError:
-                        fields[k] = 0.0
+                    fields[k] = _parse_valor(data[k])
+                elif k == "prioridade":
+                    fields[k] = _normalize_choice(data[k], VALID_PRIORIDADES, row["prioridade"] or "media")
+                elif k == "categoria":
+                    fields[k] = _normalize_choice(data[k], VALID_CATEGORIAS, row["categoria"] or "tarefa")
+                elif k == "cor":
+                    fields[k] = _normalize_choice(data[k], VALID_CORES, row["cor"] or "yellow")
+                elif k == "status":
+                    status = _normalize_choice(data[k], VALID_STATUS, "")
+                    if not status:
+                        return jsonify({"error": "Status invalido"}), 400
+                    fields[k] = status
                 else:
                     fields[k] = (data[k] or "").strip()
                 
         # Status completion logic
         if "status" in data:
-            new_status = data["status"].strip().lower()
+            new_status = fields.get("status", "")
             if new_status == "concluido" and row["status"] != "concluido":
                 fields["concluido_por"] = session.get("usuario_nome") or "Servidor"
                 fields["concluido_em"] = _time.strftime("%d/%m/%Y %H:%M")
@@ -194,6 +235,7 @@ def mural_atualizar(recado_id):
 
 
 @bp.route("/api/mural/<int:recado_id>", methods=["DELETE"])
+@_require_auth
 def mural_excluir(recado_id):
     try:
         conn = get_db()
@@ -210,6 +252,7 @@ def mural_excluir(recado_id):
 # ── Mural Attachments ──
 
 @bp.route("/api/mural/<int:recado_id>/attachments", methods=["POST"])
+@_require_auth
 def mural_anexo_criar(recado_id):
     try:
         conn = get_db()
@@ -227,6 +270,8 @@ def mural_anexo_criar(recado_id):
         file_name = f.filename
         content = f.read()
         file_size = len(content)
+        if file_size > MAX_ATTACHMENT_BYTES:
+            return jsonify({"error": "Arquivo excede o limite de 10 MB"}), 413
         mime_type = f.mimetype or "application/octet-stream"
         
         cur = conn.cursor()
@@ -253,6 +298,7 @@ def mural_anexo_criar(recado_id):
 
 
 @bp.route("/api/mural/<int:recado_id>/attachments/<int:attachment_id>/download", methods=["GET"])
+@_require_auth
 def mural_anexo_download(recado_id, attachment_id):
     try:
         conn = get_db()
@@ -277,6 +323,7 @@ def mural_anexo_download(recado_id, attachment_id):
 
 
 @bp.route("/api/mural/<int:recado_id>/attachments/<int:attachment_id>", methods=["DELETE"])
+@_require_auth
 def mural_anexo_excluir(recado_id, attachment_id):
     try:
         conn = get_db()
@@ -294,10 +341,12 @@ def mural_anexo_excluir(recado_id, attachment_id):
 # ── Mural Events (SSE) ──
 
 @bp.route("/api/mural/events", methods=["GET"])
+@_require_auth
 def mural_events():
     def event_stream():
         q = queue.Queue(maxsize=100)
-        _mural_listeners.append(q)
+        with _mural_listeners_lock:
+            _mural_listeners.append(q)
         try:
             while True:
                 try:
@@ -306,8 +355,9 @@ def mural_events():
                 except queue.Empty:
                     yield "event: heartbeat\ndata: {}\n\n"
         except GeneratorExit:
-            if q in _mural_listeners:
-                _mural_listeners.remove(q)
+            with _mural_listeners_lock:
+                if q in _mural_listeners:
+                    _mural_listeners.remove(q)
                 
     return Response(event_stream(), mimetype="text/event-stream")
 
@@ -315,6 +365,7 @@ def mural_events():
 # ── Mural Comments ──
 
 @bp.route("/api/mural/<int:recado_id>/comments", methods=["GET"])
+@_require_auth
 def mural_comentarios_listar(recado_id):
     try:
         conn = get_db()
@@ -328,6 +379,7 @@ def mural_comentarios_listar(recado_id):
 
 
 @bp.route("/api/mural/<int:recado_id>/comments", methods=["POST"])
+@_require_auth
 def mural_comentario_criar(recado_id):
     try:
         data = request.get_json(force=True) or {}
@@ -338,6 +390,8 @@ def mural_comentario_criar(recado_id):
         autor = (data.get("autor") or session.get("usuario_nome") or "Servidor").strip()
         
         conn = get_db()
+        if not conn.execute("SELECT id FROM mural_recados WHERE id=?", (recado_id,)).fetchone():
+            return jsonify({"error": "Recado nao encontrado"}), 404
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO mural_comentarios (recado_id, autor, texto) VALUES (?, ?, ?)",
