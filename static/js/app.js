@@ -1488,7 +1488,7 @@ function attachEvents() {
   });
 
   document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
-  document.getElementById('btn-empenhar-todos').addEventListener('click', batchEmpenhar);
+  document.getElementById('btn-empenhar-todos')?.addEventListener('click', batchEmpenhar);
 
   // Lixeira
   document.getElementById('btn-lixeira').addEventListener('click', openLixeira);
@@ -1599,6 +1599,22 @@ function initTheme() {
     document.documentElement.setAttribute('data-theme', 'vintage');
   } else if (saved === 'cosmos') {
     document.documentElement.setAttribute('data-theme', 'cosmos');
+  } else if (saved === 'esmeralda') {
+    document.documentElement.setAttribute('data-theme', 'esmeralda');
+  } else if (saved === 'diamante') {
+    document.documentElement.setAttribute('data-theme', 'diamante');
+  } else if (saved === 'safira') {
+    document.documentElement.setAttribute('data-theme', 'safira');
+  } else if (saved === 'vulcano') {
+    document.documentElement.setAttribute('data-theme', 'vulcano');
+  } else if (saved === 'crepusculo') {
+    document.documentElement.setAttribute('data-theme', 'crepusculo');
+  } else if (saved === 'nordico') {
+    document.documentElement.setAttribute('data-theme', 'nordico');
+  } else if (saved === 'cacau') {
+    document.documentElement.setAttribute('data-theme', 'cacau');
+  } else if (saved === 'ametista') {
+    document.documentElement.setAttribute('data-theme', 'ametista');
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -1611,7 +1627,15 @@ function syncThemeLabel() {
   if (current === 'light') label.textContent = 'Tema Escuro';
   else if (current === 'dark') label.textContent = 'Tema Vintage';
   else if (current === 'vintage') label.textContent = 'Tema Cosmos';
-  else if (current === 'cosmos') label.textContent = 'Tema Claro';
+  else if (current === 'cosmos') label.textContent = 'Tema Esmeralda';
+  else if (current === 'esmeralda') label.textContent = 'Tema Diamante';
+  else if (current === 'diamante') label.textContent = 'Tema Safira';
+  else if (current === 'safira') label.textContent = 'Tema Vulcano';
+  else if (current === 'vulcano') label.textContent = 'Tema Crepúsculo';
+  else if (current === 'crepusculo') label.textContent = 'Tema Nórdico';
+  else if (current === 'nordico') label.textContent = 'Tema Cacau';
+  else if (current === 'cacau') label.textContent = 'Tema Ametista';
+  else if (current === 'ametista') label.textContent = 'Tema Claro';
 }
 
 function initCosmosEffects() {
@@ -1704,6 +1728,30 @@ function toggleTheme() {
   } else if (current === 'vintage') {
     html.setAttribute('data-theme', 'cosmos');
     localStorage.setItem('theme', 'cosmos');
+  } else if (current === 'cosmos') {
+    html.setAttribute('data-theme', 'esmeralda');
+    localStorage.setItem('theme', 'esmeralda');
+  } else if (current === 'esmeralda') {
+    html.setAttribute('data-theme', 'diamante');
+    localStorage.setItem('theme', 'diamante');
+  } else if (current === 'diamante') {
+    html.setAttribute('data-theme', 'safira');
+    localStorage.setItem('theme', 'safira');
+  } else if (current === 'safira') {
+    html.setAttribute('data-theme', 'vulcano');
+    localStorage.setItem('theme', 'vulcano');
+  } else if (current === 'vulcano') {
+    html.setAttribute('data-theme', 'crepusculo');
+    localStorage.setItem('theme', 'crepusculo');
+  } else if (current === 'crepusculo') {
+    html.setAttribute('data-theme', 'nordico');
+    localStorage.setItem('theme', 'nordico');
+  } else if (current === 'nordico') {
+    html.setAttribute('data-theme', 'cacau');
+    localStorage.setItem('theme', 'cacau');
+  } else if (current === 'cacau') {
+    html.setAttribute('data-theme', 'ametista');
+    localStorage.setItem('theme', 'ametista');
   } else {
     html.removeAttribute('data-theme');
     localStorage.setItem('theme', 'light');
@@ -1719,7 +1767,15 @@ function initAppDOM() {
     let text = 'Tema Escuro';
     if (current === 'dark') text = 'Tema Vintage';
     if (current === 'vintage') text = 'Tema Cosmos';
-    if (current === 'cosmos') text = 'Tema Claro';
+    if (current === 'cosmos') text = 'Tema Esmeralda';
+    if (current === 'esmeralda') text = 'Tema Diamante';
+    if (current === 'diamante') text = 'Tema Safira';
+    if (current === 'safira') text = 'Tema Vulcano';
+    if (current === 'vulcano') text = 'Tema Crepúsculo';
+    if (current === 'crepusculo') text = 'Tema Nórdico';
+    if (current === 'nordico') text = 'Tema Cacau';
+    if (current === 'cacau') text = 'Tema Ametista';
+    if (current === 'ametista') text = 'Tema Claro';
     
     const sidebarLabel = document.querySelector('.theme-label-sidebar');
     if (sidebarLabel) sidebarLabel.textContent = text;

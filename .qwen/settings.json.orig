@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(findstr *)",
+      "Bash(curl *)",
+      "Bash(wmic *)",
+      "Bash(taskkill *)",
+      "Bash(start *)",
+      "Bash(timeout *)",
+      "Bash(type *)",
+      "Bash(mkdir *)"
     ]
-  }
+  },
+  "$version": 3
 }
