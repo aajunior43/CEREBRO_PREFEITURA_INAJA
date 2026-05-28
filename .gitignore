@@ -62,3 +62,6 @@ documentos_centro/relatorios_html/
 stdout.log
 stderr.log
 
+# Worktree do backup automático (gerenciado pelo backup_db.py)
+.backup_worktree/
+
