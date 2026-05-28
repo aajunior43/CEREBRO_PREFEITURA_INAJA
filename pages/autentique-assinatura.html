@@ -9,295 +9,388 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="/static/js/shared-header.js"></script>
   <style>
-    /* === PAGE BACKGROUND === */
     .aut-page {
       min-height: calc(100vh - 64px);
       padding: 28px 24px 72px;
       background:
-        radial-gradient(circle at top left, color-mix(in srgb, var(--blue) 10%, transparent), transparent 30%),
-        radial-gradient(circle at bottom right, color-mix(in srgb, var(--purple) 8%, transparent), transparent 25%),
+        radial-gradient(circle at top left,  color-mix(in srgb, var(--blue)   10%, transparent), transparent 32%),
+        radial-gradient(circle at bot right, color-mix(in srgb, var(--purple)  8%, transparent), transparent 28%),
         var(--bg);
     }
-    .aut-wrap { max-width: 1260px; margin: 0 auto; }
+    .aut-wrap { max-width: 1100px; margin: 0 auto; }
 
-    /* === HERO === */
+    /* ── HERO ── */
     .aut-hero {
-      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-      padding: 22px 28px; margin-bottom: 24px; border-radius: 22px;
-      background: linear-gradient(145deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 88%, transparent));
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      padding: 20px 24px; margin-bottom: 20px; border-radius: 22px;
+      background: linear-gradient(145deg,
+        color-mix(in srgb, var(--surface)   94%, transparent),
+        color-mix(in srgb, var(--surface-2) 88%, transparent));
       border: 1px solid var(--border); box-shadow: var(--shadow-lg); backdrop-filter: blur(10px);
     }
     .aut-hero-icon {
-      width: 54px; height: 54px; border-radius: 18px; flex-shrink: 0;
+      width: 50px; height: 50px; border-radius: 16px; flex-shrink: 0;
       background: linear-gradient(135deg, var(--blue), var(--purple));
       display: flex; align-items: center; justify-content: center;
-      box-shadow: var(--shadow); font-size: 24px;
+      box-shadow: var(--shadow); font-size: 22px;
     }
-    .aut-hero-body { flex: 1; min-width: 180px; }
-    .aut-hero-title { font-size: clamp(20px, 3.5vw, 27px); font-weight: 900; color: var(--text); margin: 0; letter-spacing: -0.03em; }
-    .aut-hero-sub { font-size: 13px; color: var(--text-3); margin: 5px 0 0; line-height: 1.6; }
-    .aut-hero-pills { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; min-width: 260px; }
-    .aut-overview-pill {
-      padding: 11px 14px; border-radius: 14px;
-      background: color-mix(in srgb, var(--blue) 7%, var(--surface-2));
-      border: 1px solid color-mix(in srgb, var(--blue) 14%, transparent);
-    }
-    .aut-overview-pill-k { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; }
-    .aut-overview-pill-v { margin-top: 4px; font-size: 12px; font-weight: 700; color: var(--text-2); }
-    .aut-hero-balance { display: flex; flex-direction: column; gap: 8px; min-width: 280px; }
-    .aut-side-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; }
-    .aut-balance-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 6px; }
-    .aut-balance-card {
-      padding: 12px 14px; border-radius: 14px;
-      background: color-mix(in srgb, var(--blue) 8%, var(--surface-2));
-      border: 1px solid color-mix(in srgb, var(--blue) 18%, transparent);
-    }
-    .aut-balance-k { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-    .aut-balance-v { font-size: 26px; font-weight: 900; color: var(--text); margin-top: 3px; letter-spacing: -0.03em; }
-    .aut-balance-user { font-size: 11px; color: var(--text-3); line-height: 1.5; }
-    .aut-key-select { margin-top: 4px; }
+    .aut-hero-body { flex: 1; min-width: 160px; }
+    .aut-hero-title { font-size: clamp(18px,3vw,24px); font-weight: 900; color: var(--text); margin: 0; letter-spacing: -.03em; }
+    .aut-hero-sub   { font-size: 12px; color: var(--text-3); margin: 4px 0 0; line-height: 1.55; }
 
-    /* === MAIN GRID === */
-    .aut-grid { display: grid; grid-template-columns: minmax(320px,.9fr) minmax(0,1.1fr); gap: 20px; align-items: start; }
-    .aut-panel-stack { display: grid; gap: 20px; }
+    /* balance strip inside hero */
+    .aut-bal-strip {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: 10px 16px; border-radius: 14px;
+      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+      border: 1px solid var(--border); flex-shrink: 0;
+    }
+    .aut-bal-item { display: flex; flex-direction: column; gap: 1px; }
+    .aut-bal-k { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+    .aut-bal-v { font-size: 20px; font-weight: 900; color: var(--text); letter-spacing: -.03em; }
+    .aut-bal-sep { width: 1px; height: 32px; background: var(--border); }
+    .aut-bal-user { font-size: 11px; color: var(--text-3); max-width: 180px; line-height: 1.4; }
+    .aut-select-inline {
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 5px 8px; font-family: inherit; font-size: 11px;
+      color: var(--text-2); outline: none; cursor: pointer;
+    }
+    .aut-btn-icon {
+      width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      color: var(--text-2); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; transition: all .15s;
+    }
+    .aut-btn-icon:hover { background: var(--surface); color: var(--text); }
 
-    /* === CARDS === */
+    /* ── TABS ── */
+    .aut-tabs {
+      display: flex; gap: 4px; margin-bottom: 20px;
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+      border: 1px solid var(--border); border-radius: 16px;
+      padding: 5px;
+    }
+    .aut-tab {
+      flex: 1; padding: 10px 16px; border-radius: 12px; border: none;
+      font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+      color: var(--text-3); background: transparent;
+      transition: all .18s ease; white-space: nowrap;
+    }
+    .aut-tab:hover { color: var(--text); background: color-mix(in srgb, var(--surface) 80%, transparent); }
+    .aut-tab.active {
+      background: var(--surface); color: var(--text);
+      box-shadow: var(--shadow); border: 1px solid var(--border);
+    }
+    .aut-tab-pane { display: none; }
+    .aut-tab-pane.active { display: block; }
+
+    /* ── CARDS ── */
     .aut-card {
-      border-radius: 22px; padding: 22px 24px;
-      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--surface-2) 92%, transparent));
+      border-radius: 20px; padding: 22px 24px;
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--surface)   96%, transparent),
+        color-mix(in srgb, var(--surface-2) 92%, transparent));
       border: 1px solid var(--border); box-shadow: var(--shadow-lg); backdrop-filter: blur(10px);
     }
-    .aut-card-blue  { border-top: 3px solid var(--blue); }
-    .aut-card-green { border-top: 3px solid var(--green); }
-    .aut-card-purple{ border-top: 3px solid var(--purple); }
-    .aut-card-orange{ border-top: 3px solid var(--orange); }
-    .aut-card h2 { margin: 10px 0 0; font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
-    .aut-card > p  { margin: 6px 0 0; color: var(--text-3); font-size: 13px; line-height: 1.6; }
+    .aut-card-blue   { border-top: 3px solid var(--blue); }
+    .aut-card-green  { border-top: 3px solid var(--green); }
+    .aut-card-purple { border-top: 3px solid var(--purple); }
+    .aut-card-orange { border-top: 3px solid var(--orange); }
+    .aut-card h2 { margin: 10px 0 0; font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: -.02em; }
+    .aut-card > p { margin: 5px 0 0; font-size: 12px; color: var(--text-3); line-height: 1.55; }
 
-    /* === STEP BADGE === */
+    /* ── STEP BADGE ── */
     .aut-step {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 999px;
-      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+      display: inline-flex; align-items: center; padding: 3px 11px;
+      border-radius: 999px; font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .08em;
       background: color-mix(in srgb, var(--blue) 12%, transparent);
       color: var(--blue); border: 1px solid color-mix(in srgb, var(--blue) 24%, transparent);
     }
 
-    /* === FORM === */
-    .aut-stack { display: grid; gap: 14px; margin-top: 18px; }
-    .aut-label { display: block; font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+    /* ── TAB ENVIO: 2 colunas ── */
+    .aut-envio-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 1.05fr) minmax(0, .95fr);
+      gap: 20px; align-items: start;
+    }
+
+    /* Source toggle (upload / biblioteca) */
+    .aut-source-toggle {
+      display: flex; gap: 6px; margin-top: 16px;
+      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+      border: 1px solid var(--border); border-radius: 12px; padding: 4px;
+    }
+    .aut-toggle-btn {
+      flex: 1; padding: 7px 12px; border-radius: 9px; border: none;
+      font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+      color: var(--text-3); background: transparent; transition: all .15s;
+    }
+    .aut-toggle-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
+
+    /* ── UPLOAD ── */
+    .aut-upload { margin-top: 14px; }
+    .aut-upload-zone {
+      position: relative; min-height: 108px; border-radius: 14px;
+      border: 2px dashed color-mix(in srgb, var(--blue) 35%, var(--border));
+      background: color-mix(in srgb, var(--blue) 4%, var(--surface));
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 7px; text-align: center; padding: 18px; cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .aut-upload-zone:hover, .aut-upload-zone.drag {
+      border-color: var(--blue); background: color-mix(in srgb, var(--blue) 9%, var(--surface));
+    }
+    .aut-upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .aut-upload-zone svg { width: 32px; height: 32px; color: var(--blue); opacity: .8; }
+    .aut-upload-title { font-size: 13px; font-weight: 800; color: var(--text); }
+    .aut-upload-sub   { font-size: 11px; color: var(--text-3); line-height: 1.45; }
+    .aut-upload-picked {
+      display: none; margin-top: 8px; padding: 9px 13px; border-radius: 10px;
+      background: color-mix(in srgb, var(--green) 10%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--green) 26%, transparent);
+      font-size: 12px; color: var(--text-2);
+    }
+
+    /* ── LIBRARY (doc list) ── */
+    .aut-lib-filters { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 14px; }
+    .aut-list {
+      display: grid; gap: 7px; margin-top: 10px; max-height: 360px; overflow: auto;
+      padding-right: 2px; scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .aut-doc {
+      padding: 10px 12px; border-radius: 12px; text-align: left; width: 100%;
+      background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+      border: 1px solid var(--border); cursor: pointer; transition: all .13s ease;
+      display: flex; align-items: flex-start; gap: 10px;
+    }
+    .aut-doc:hover { background: var(--surface); border-color: var(--border-hover); transform: translateX(2px); }
+    .aut-doc.active {
+      border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface));
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--blue) 18%, transparent);
+    }
+    .aut-doc-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .aut-doc-body { flex: 1; min-width: 0; }
+    .aut-doc-name { font-size: 12px; font-weight: 700; color: var(--text); word-break: break-word; line-height: 1.3; }
+    .aut-doc-meta { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+    .aut-doc-badge {
+      font-size: 9px; font-weight: 700; color: var(--text-3);
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px;
+    }
+    .aut-doc.active .aut-doc-badge {
+      background: color-mix(in srgb, var(--blue) 10%, transparent);
+      border-color: color-mix(in srgb, var(--blue) 20%, transparent); color: var(--blue);
+    }
+    .aut-doc-desc { margin-top: 4px; font-size: 10px; color: var(--text-3); line-height: 1.4; white-space: pre-wrap; }
+    .aut-empty { margin-top: 12px; padding: 22px; text-align: center; color: var(--text-3); font-size: 12px; border: 1px dashed var(--border); border-radius: 12px; }
+    .aut-doc-help {
+      margin-top: 12px; padding: 10px 13px; border-radius: 11px;
+      background: color-mix(in srgb, var(--blue) 6%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--blue) 16%, transparent);
+      color: var(--text-2); font-size: 11px; line-height: 1.55;
+    }
+
+    /* ── FORM ── */
+    .aut-stack { display: grid; gap: 13px; margin-top: 16px; }
+    .aut-label { display: block; font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; }
     .aut-input, .aut-select, .aut-textarea {
       width: 100%; background: color-mix(in srgb, var(--surface) 94%, transparent);
-      border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px;
+      border: 1px solid var(--border); border-radius: 11px; padding: 9px 13px;
       font-family: inherit; font-size: 13px; color: var(--text); outline: none;
       transition: border-color .15s, box-shadow .15s; box-sizing: border-box;
     }
     .aut-input:focus, .aut-select:focus, .aut-textarea:focus {
-      border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 15%, transparent);
+      border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 14%, transparent);
     }
-    .aut-textarea { min-height: 110px; resize: vertical; line-height: 1.65; }
+    .aut-input[readonly] { color: var(--text-2); cursor: default; }
 
-    /* === BUTTONS === */
-    .aut-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    /* selected doc chip */
+    .aut-selected-chip {
+      display: flex; align-items: center; gap: 10px; padding: 10px 13px;
+      border-radius: 11px; border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
+      margin-top: 14px;
+    }
+    .aut-selected-chip-icon { font-size: 18px; flex-shrink: 0; }
+    .aut-selected-chip-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+    .aut-selected-chip-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* hidden real input for JS compat */
+    #aut-doc-selected { display: none; }
+
+    /* ── BUTTONS ── */
+    .aut-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
     .aut-btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      border: none; border-radius: 12px; padding: 10px 18px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      border: none; border-radius: 11px; padding: 10px 18px;
       font-family: inherit; font-size: 13px; font-weight: 700;
       cursor: pointer; text-decoration: none; min-height: 40px; white-space: nowrap;
       transition: all .18s ease;
     }
     .aut-btn-primary {
       background: linear-gradient(135deg, var(--blue), var(--blue-dark)); color: #fff;
-      box-shadow: 0 4px 14px color-mix(in srgb, var(--blue) 35%, transparent);
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--blue) 32%, transparent);
     }
-    .aut-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px color-mix(in srgb, var(--blue) 40%, transparent); }
+    .aut-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 22px color-mix(in srgb, var(--blue) 38%, transparent); }
     .aut-btn-secondary {
       background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--text-2);
       border: 1px solid var(--border); box-shadow: var(--shadow-sm);
     }
     .aut-btn-secondary:hover { background: var(--surface); color: var(--text); transform: translateY(-1px); box-shadow: var(--shadow); }
 
-    /* === UPLOAD === */
-    .aut-upload { margin-top: 18px; }
-    .aut-upload-zone {
-      position: relative; min-height: 120px; border-radius: 16px;
-      border: 2px dashed color-mix(in srgb, var(--blue) 35%, var(--border));
-      background: color-mix(in srgb, var(--blue) 4%, var(--surface));
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 8px; text-align: center; padding: 20px; cursor: pointer;
-      transition: border-color .15s, background .15s;
-    }
-    .aut-upload-zone:hover, .aut-upload-zone.drag {
-      border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface));
-    }
-    .aut-upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-    .aut-upload-zone svg { width: 34px; height: 34px; color: var(--blue); opacity: .8; }
-    .aut-upload-title { font-size: 14px; font-weight: 800; color: var(--text); }
-    .aut-upload-sub { font-size: 12px; color: var(--text-3); line-height: 1.5; max-width: 300px; }
-    .aut-upload-picked {
-      display: none; margin-top: 10px; padding: 10px 14px; border-radius: 12px;
-      background: color-mix(in srgb, var(--green) 10%, var(--surface));
-      border: 1px solid color-mix(in srgb, var(--green) 25%, transparent);
-      font-size: 12px; color: var(--text-2);
-    }
-
-    /* === DOC LIST === */
-    .aut-list { display: grid; gap: 8px; margin-top: 16px; max-height: 540px; overflow: auto; padding-right: 2px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-    .aut-doc {
-      padding: 12px 14px; border-radius: 14px; text-align: left; width: 100%;
-      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-      border: 1px solid var(--border); cursor: pointer;
-      transition: all .15s ease;
-    }
-    .aut-doc:hover { background: var(--surface); border-color: var(--border-hover); transform: translateX(2px); }
-    .aut-doc.active { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, var(--surface)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--blue) 18%, transparent); }
-    .aut-doc-name { font-size: 13px; font-weight: 700; color: var(--text); word-break: break-word; }
-    .aut-doc-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-    .aut-doc-badge { font-size: 10px; font-weight: 700; color: var(--text-3); background: color-mix(in srgb, var(--surface) 90%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; }
-    .aut-doc.active .aut-doc-badge { background: color-mix(in srgb, var(--blue) 10%, transparent); border-color: color-mix(in srgb, var(--blue) 20%, transparent); color: var(--blue); }
-    .aut-doc-desc { margin-top: 6px; font-size: 11px; color: var(--text-3); line-height: 1.5; white-space: pre-wrap; }
-    .aut-doc-help {
-      margin-top: 14px; padding: 12px 14px; border-radius: 12px;
-      background: color-mix(in srgb, var(--blue) 6%, var(--surface));
-      border: 1px solid color-mix(in srgb, var(--blue) 16%, transparent);
-      color: var(--text-2); font-size: 12px; line-height: 1.6;
-    }
-    .aut-empty { margin-top: 18px; padding: 26px; text-align: center; color: var(--text-3); font-size: 13px; border: 1px dashed var(--border); border-radius: 14px; }
-
-    /* === STATUS & RESULT === */
-    .aut-status { display: none; margin-top: 14px; padding: 11px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; }
-    .aut-status.ok { display: flex; align-items: center; gap: 6px; background: color-mix(in srgb, var(--green) 12%, transparent); color: var(--green-dark); border: 1px solid color-mix(in srgb, var(--green) 24%, transparent); }
-    .aut-status.err { display: flex; align-items: center; gap: 6px; background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.2); }
+    /* ── STATUS & RESULT ── */
+    .aut-status { display: none; margin-top: 13px; padding: 10px 13px; border-radius: 11px; font-size: 12px; font-weight: 700; }
+    .aut-status.ok  { display: flex; gap: 6px; align-items: center; background: color-mix(in srgb, var(--green) 11%, transparent); color: var(--green-dark); border: 1px solid color-mix(in srgb, var(--green) 24%, transparent); }
+    .aut-status.err { display: flex; gap: 6px; align-items: center; background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.2); }
     .aut-result {
-      display: none; margin-top: 16px; padding: 16px 18px; border-radius: 16px;
+      display: none; margin-top: 14px; padding: 14px 16px; border-radius: 14px;
       background: color-mix(in srgb, var(--green) 8%, var(--surface));
-      border: 1px solid color-mix(in srgb, var(--green) 24%, transparent);
+      border: 1px solid color-mix(in srgb, var(--green) 22%, transparent);
     }
-    .aut-result strong { display: block; color: var(--text); font-size: 14px; margin-bottom: 8px; }
-    .aut-result-line { font-size: 12px; color: var(--text-2); line-height: 1.7; word-break: break-word; }
-    .aut-result-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+    .aut-result strong { display: block; color: var(--text); font-size: 13px; margin-bottom: 7px; }
+    .aut-result-line { font-size: 12px; color: var(--text-2); line-height: 1.6; word-break: break-word; }
+    .aut-result-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 11px; }
 
-    /* === CONTACTS === */
+    /* ── TAB CONTATOS ── */
     .aut-contact-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
-    .aut-contact-note { margin-top: 6px; font-size: 12px; color: var(--text-3); line-height: 1.6; }
-    .aut-contact-form { display: grid; grid-template-columns: minmax(0,1fr) minmax(180px,.7fr) auto; gap: 8px; margin-top: 14px; }
+    .aut-contact-note { margin-top: 5px; font-size: 12px; color: var(--text-3); line-height: 1.55; }
+    .aut-contact-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 14px; }
     .aut-contact-list { display: grid; gap: 8px; margin-top: 14px; }
     .aut-contact-item {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; padding: 12px 14px; border-radius: 14px;
-      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-      border: 1px solid var(--border); transition: border-color .15s;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 11px 13px; border-radius: 13px;
+      background: color-mix(in srgb, var(--surface-2) 75%, transparent);
+      border: 1px solid var(--border); transition: border-color .13s;
     }
     .aut-contact-item:hover { border-color: var(--border-hover); }
-    .aut-contact-name { font-size: 13px; font-weight: 700; color: var(--text); }
-    .aut-contact-phone { margin-top: 3px; font-size: 11px; color: var(--text-3); }
-    .aut-contact-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .aut-contact-empty { margin-top: 14px; padding: 16px; border-radius: 14px; color: var(--text-3); font-size: 12px; text-align: center; border: 1px dashed var(--border); }
+    .aut-contact-name  { font-size: 13px; font-weight: 700; color: var(--text); }
+    .aut-contact-phone { margin-top: 2px; font-size: 11px; color: var(--text-3); }
+    .aut-contact-actions { display: flex; gap: 6px; }
+    .aut-contact-empty { margin-top: 14px; padding: 18px; border-radius: 12px; color: var(--text-3); font-size: 12px; text-align: center; border: 1px dashed var(--border); }
 
-    /* === MONITOR === */
-    .aut-monitor { margin-top: 0; }
-    .aut-monitor-head { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 10px; }
-    .aut-monitor-note { margin-top: 6px; font-size: 12px; color: var(--text-3); line-height: 1.6; }
-    .aut-webhook-url {
-      display: block; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
-      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-      border: 1px solid var(--border); color: var(--text-3); font-size: 11px;
+    /* ── TAB HISTÓRICO ── */
+    .aut-monitor-head  { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 10px; }
+    .aut-monitor-note  { margin-top: 5px; font-size: 12px; color: var(--text-3); line-height: 1.55; }
+    .aut-webhook-url   {
+      display: block; margin-top: 10px; padding: 9px 12px; border-radius: 11px;
+      background: color-mix(in srgb, var(--surface-2) 75%, transparent);
+      border: 1px solid var(--border); color: var(--text-3); font-size: 10px;
       word-break: break-all; font-family: monospace;
     }
     .aut-envios { display: grid; gap: 10px; margin-top: 14px; }
     .aut-envio {
-      padding: 14px 16px; border-radius: 16px;
-      background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-      border: 1px solid var(--border); transition: border-color .15s;
+      padding: 13px 15px; border-radius: 14px;
+      background: color-mix(in srgb, var(--surface-2) 75%, transparent);
+      border: 1px solid var(--border); transition: border-color .13s;
     }
     .aut-envio:hover { border-color: var(--border-hover); }
-    .aut-envio-top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
-    .aut-envio-title { font-size: 13px; font-weight: 800; color: var(--text); }
-    .aut-envio-meta { margin-top: 5px; font-size: 11px; color: var(--text-3); line-height: 1.7; }
-    .aut-envio-badges { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; }
+    .aut-envio-top  { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+    .aut-envio-title{ font-size: 13px; font-weight: 800; color: var(--text); }
+    .aut-envio-meta { margin-top: 4px; font-size: 11px; color: var(--text-3); line-height: 1.65; }
+    .aut-envio-badges { display: flex; gap: 7px; flex-wrap: wrap; flex-shrink: 0; }
     .aut-status-badge {
-      display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px;
+      display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px;
       border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
     }
-    .aut-status-badge.pendente { background: rgba(245,158,11,.14); color: #b45309; border: 1px solid rgba(245,158,11,.24); }
-    .aut-status-badge.assinado { background: rgba(34,197,94,.14); color: #166534; border: 1px solid rgba(34,197,94,.24); }
-    .aut-status-badge.recusado,.aut-status-badge.cancelado,.aut-status-badge.expirado { background: rgba(239,68,68,.12); color: #b91c1c; border: 1px solid rgba(239,68,68,.2); }
-    .aut-envio-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .aut-status-badge.pendente  { background: rgba(245,158,11,.14); color: #b45309; border: 1px solid rgba(245,158,11,.24); }
+    .aut-status-badge.assinado  { background: rgba(34,197,94,.14);  color: #166534; border: 1px solid rgba(34,197,94,.24); }
+    .aut-status-badge.recusado,
+    .aut-status-badge.cancelado,
+    .aut-status-badge.expirado  { background: rgba(239,68,68,.12); color: #b91c1c; border: 1px solid rgba(239,68,68,.2); }
+    .aut-envio-actions { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 9px; }
     .aut-mini-btn {
       display: inline-flex; align-items: center; justify-content: center;
-      min-height: 30px; padding: 0 12px; border-radius: 10px;
+      min-height: 28px; padding: 0 11px; border-radius: 9px;
       border: 1px solid var(--border); font-size: 11px; font-weight: 700;
       background: color-mix(in srgb, var(--surface) 90%, transparent);
-      color: var(--text-2); cursor: pointer; text-decoration: none; transition: all .15s;
+      color: var(--text-2); cursor: pointer; text-decoration: none; transition: all .13s;
     }
     .aut-mini-btn:hover { background: var(--surface); color: var(--text); border-color: var(--border-hover); }
-    .aut-envios-empty { margin-top: 14px; padding: 22px; border-radius: 14px; color: var(--text-3); font-size: 13px; text-align: center; border: 1px dashed var(--border); }
+    .aut-envios-empty { margin-top: 14px; padding: 22px; border-radius: 12px; color: var(--text-3); font-size: 13px; text-align: center; border: 1px dashed var(--border); }
 
-    /* === RESPONSIVE === */
-    @media (max-width: 1080px) { .aut-hero { flex-direction: column; align-items: flex-start; } }
-    @media (max-width: 920px) { .aut-grid { grid-template-columns: 1fr; } .aut-hero-pills { grid-template-columns: 1fr; } }
-    @media (max-width: 600px) {
-      .aut-page { padding: 16px 12px 56px; }
-      .aut-contact-form { grid-template-columns: 1fr; }
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px)  { .aut-envio-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 680px)  { .aut-contact-form { grid-template-columns: 1fr; } .aut-lib-filters { grid-template-columns: 1fr; } }
+    @media (max-width: 600px)  {
+      .aut-page { padding: 14px 12px 56px; }
       .aut-actions, .aut-result-actions { flex-direction: column; }
       .aut-btn { width: 100%; }
-      .aut-contact-item { align-items: flex-start; flex-direction: column; }
-      .aut-balance-grid { grid-template-columns: 1fr; }
+      .aut-contact-item { flex-direction: column; align-items: flex-start; }
+      .aut-tabs { gap: 2px; }
+      .aut-tab { padding: 8px 10px; font-size: 11px; }
     }
   </style>
 </head>
 <body>
-  <div class="aut-page">
-  <div class="aut-wrap">
+<div class="aut-page">
+<div class="aut-wrap">
 
-    <!-- HERO -->
-    <div class="aut-hero">
-      <div class="aut-hero-icon">✍️</div>
-      <div class="aut-hero-body">
-        <div class="aut-hero-title">Assinatura Digital</div>
-        <div class="aut-hero-sub">Envio por WhatsApp via Autentique · Acompanhamento em tempo real · Download do PDF assinado</div>
-      </div>
-      <div class="aut-hero-pills">
-        <div class="aut-overview-pill">
-          <div class="aut-overview-pill-k">Pré-requisito</div>
-          <div class="aut-overview-pill-v">Chave Autentique no ADM</div>
-        </div>
-        <div class="aut-overview-pill">
-          <div class="aut-overview-pill-k">Entrega</div>
-          <div class="aut-overview-pill-v">WhatsApp do signatário</div>
-        </div>
-      </div>
-      <div class="aut-hero-balance">
-        <div class="aut-side-label">Saldo da conta</div>
-        <div class="aut-balance-grid">
-          <div class="aut-balance-card">
-            <div class="aut-balance-k">Documentos</div>
-            <div id="aut-balance-docs" class="aut-balance-v">-</div>
-          </div>
-          <div class="aut-balance-card">
-            <div class="aut-balance-k">Créditos</div>
-            <div id="aut-balance-credits" class="aut-balance-v">-</div>
-          </div>
-        </div>
-        <div id="aut-balance-user" class="aut-balance-user">Carregando saldo...</div>
-        <div class="aut-key-select">
-          <label class="aut-label" style="margin-bottom:5px;">Chave ativa</label>
-          <select id="aut-key-select" class="aut-select">
-            <option value="">Automático</option>
-          </select>
-        </div>
-        <button id="aut-refresh-balance" class="aut-btn aut-btn-secondary" type="button" style="margin-top:8px;width:100%;">↺ Atualizar saldo</button>
-      </div>
+  <!-- ═══════════ HERO ═══════════ -->
+  <div class="aut-hero">
+    <div class="aut-hero-icon">✍️</div>
+    <div class="aut-hero-body">
+      <div class="aut-hero-title">Assinatura Digital</div>
+      <div class="aut-hero-sub">Autentique · Envio WhatsApp · Acompanhamento em tempo real · Download do assinado</div>
     </div>
+    <div class="aut-bal-strip">
+      <div class="aut-bal-item">
+        <span class="aut-bal-k">Documentos</span>
+        <span id="aut-balance-docs" class="aut-bal-v">-</span>
+      </div>
+      <div class="aut-bal-sep"></div>
+      <div class="aut-bal-item">
+        <span class="aut-bal-k">Créditos</span>
+        <span id="aut-balance-credits" class="aut-bal-v">-</span>
+      </div>
+      <div class="aut-bal-sep"></div>
+      <div class="aut-bal-user" id="aut-balance-user">Carregando...</div>
+      <select id="aut-key-select" class="aut-select-inline">
+        <option value="">Chave: Auto</option>
+      </select>
+      <button id="aut-refresh-balance" class="aut-btn-icon" title="Atualizar saldo">↺</button>
+    </div>
+  </div>
 
-    <section class="aut-grid">
+  <!-- ═══════════ TABS ═══════════ -->
+  <div class="aut-tabs">
+    <button class="aut-tab active" data-tab="envio">📤 Novo Envio</button>
+    <button class="aut-tab" data-tab="contatos">📋 Contatos</button>
+    <button class="aut-tab" data-tab="historico">📊 Histórico</button>
+  </div>
+
+  <!-- ═══════════ TAB: NOVO ENVIO ═══════════ -->
+  <div class="aut-tab-pane active" id="tab-envio">
+    <div class="aut-envio-grid">
+
+      <!-- COLUNA 1: Escolher documento -->
       <article class="aut-card aut-card-blue">
-        <span class="aut-step">Etapa 1</span>
-        <h2 style="margin-top:12px;">Escolher documento</h2>
-        <p>Selecione o PDF que será enviado para assinatura. Ao clicar em um item, ele vira o documento atual do envio.</p>
-        <div class="aut-stack">
-          <div>
-            <label class="aut-label">Filtrar categoria</label>
+        <span class="aut-step">Etapa 1 · Documento</span>
+        <h2>Escolher PDF</h2>
+        <p>Faça upload de um novo arquivo ou selecione um PDF já salvo na biblioteca.</p>
+
+        <div class="aut-source-toggle">
+          <button class="aut-toggle-btn active" data-source="upload">⬆ Upload</button>
+          <button class="aut-toggle-btn" data-source="library">📁 Biblioteca</button>
+        </div>
+
+        <!-- Fonte: Upload -->
+        <div id="source-upload" class="aut-upload">
+          <div class="aut-upload-zone" id="aut-upload-zone">
+            <input id="aut-upload-input" type="file" accept=".pdf,application/pdf" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+            </svg>
+            <div class="aut-upload-title">Arraste o PDF aqui ou clique</div>
+            <div class="aut-upload-sub">Apenas arquivos .pdf</div>
+          </div>
+          <div id="aut-upload-picked" class="aut-upload-picked"></div>
+        </div>
+
+        <!-- Fonte: Biblioteca -->
+        <div id="source-library" style="display:none;">
+          <div class="aut-lib-filters" style="margin-top:14px;">
+            <input id="aut-filtro-busca" class="aut-input" type="text" placeholder="🔍 Buscar por nome ou referência…" />
             <select id="aut-filtro-categoria" class="aut-select">
               <option value="">Todas</option>
               <option value="contratos">Contratos</option>
@@ -309,599 +402,408 @@
               <option value="geral">Geral</option>
             </select>
           </div>
-          <div>
-            <label class="aut-label">Buscar documento</label>
-            <input id="aut-filtro-busca" class="aut-input" type="text" placeholder="Nome, referência ou descrição" />
-          </div>
+          <div id="aut-doc-list" class="aut-list"></div>
+          <div id="aut-doc-empty" class="aut-empty" style="display:none;">Nenhum PDF encontrado.</div>
+          <div class="aut-doc-help">Dica: se o arquivo não estiver aqui, use a aba Upload.</div>
         </div>
-        <div class="aut-doc-help">Dica: se o arquivo ainda não estiver no sistema, use o upload rápido na coluna ao lado.</div>
-        <div id="aut-doc-list" class="aut-list"></div>
-        <div id="aut-doc-empty" class="aut-empty" style="display:none;">Nenhum PDF encontrado no Centro de Documentos.</div>
       </article>
 
-      <div class="aut-panel-stack">
-        <article class="aut-card aut-card-green">
-          <span class="aut-step">Etapa 2</span>
-          <h2 style="margin-top:12px;">Enviar para assinatura</h2>
-          <p>Escolha o documento, preencha o signatário e dispare pela Autentique.</p>
-          <div class="aut-upload">
-            <label class="aut-label">Upload rápido de PDF</label>
-            <div class="aut-upload-zone" id="aut-upload-zone">
-              <input id="aut-upload-input" type="file" accept=".pdf,application/pdf" />
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
-              </svg>
-              <div class="aut-upload-title">Arraste o PDF aqui ou clique para selecionar</div>
-              <div class="aut-upload-sub">Se preferir, envie o arquivo agora e ele será salvo em Documentos antes da assinatura.</div>
-            </div>
-            <div id="aut-upload-picked" class="aut-upload-picked"></div>
+      <!-- COLUNA 2: Signatário + Enviar -->
+      <article class="aut-card aut-card-green">
+        <span class="aut-step">Etapa 2 · Signatário</span>
+        <h2>Enviar para Assinatura</h2>
+        <p>Confirme o documento, preencha o signatário e envie pelo WhatsApp.</p>
+
+        <!-- Documento selecionado (chip visual) -->
+        <div class="aut-selected-chip" id="aut-selected-chip">
+          <div class="aut-selected-chip-icon">📄</div>
+          <div style="flex:1;min-width:0;">
+            <div class="aut-selected-chip-label">Documento</div>
+            <div class="aut-selected-chip-name" id="aut-selected-chip-name">Nenhum selecionado</div>
           </div>
-          <div class="aut-stack">
-            <div>
-              <label class="aut-label">Documento selecionado</label>
-              <input id="aut-doc-selected" class="aut-input" type="text" value="Nenhum documento selecionado" readonly />
-            </div>
-            <div>
-              <label class="aut-label">Nome do signatário</label>
-              <input id="aut-signer-name" class="aut-input" type="text" placeholder="Nome completo" />
-            </div>
-            <div>
-              <label class="aut-label">WhatsApp do signatário</label>
-              <input id="aut-signer-phone" class="aut-input" type="text" inputmode="tel" placeholder="+55 (44) 99184-2415" />
-            </div>
-          </div>
+        </div>
+        <input id="aut-doc-selected" type="hidden" value="Nenhum documento selecionado" />
 
-          <div class="aut-actions">
-            <button id="aut-send-btn" class="aut-btn aut-btn-primary" type="button">Enviar para assinatura no WhatsApp</button>
-            <button id="aut-test-btn" class="aut-btn aut-btn-secondary" type="button">Testar chave da Autentique</button>
-            <a class="aut-btn aut-btn-secondary" href="/pages/documentos.html">Abrir Centro de Documentos</a>
-          </div>
-
-          <div id="aut-status" class="aut-status"></div>
-
-          <div id="aut-result" class="aut-result">
-            <strong>Solicitação enviada para assinatura</strong>
-            <div class="aut-result-line" id="aut-result-doc"></div>
-            <div class="aut-result-line" id="aut-result-link"></div>
-            <div class="aut-result-actions">
-              <a id="aut-sign-link" class="aut-btn aut-btn-secondary" href="#" target="_blank" rel="noopener">Abrir link de assinatura</a>
-            </div>
-          </div>
-        </article>
-
-        <article class="aut-card aut-card-purple">
-          <span class="aut-step">Agenda</span>
-          <div class="aut-contact-head">
-            <h2 style="margin-top:12px;">Contatos salvos</h2>
-            <button id="aut-save-contact" class="aut-btn aut-btn-secondary" type="button">Salvar contato</button>
-          </div>
-          <div class="aut-contact-note">Guarde os WhatsApps mais usados e preencha o signatário com um clique.</div>
-          <div class="aut-contact-form">
-            <input id="aut-contact-name" class="aut-input" type="text" placeholder="Nome do contato" />
-            <input id="aut-contact-phone" class="aut-input" type="text" inputmode="tel" placeholder="+55 (44) 99184-2415" />
-            <button id="aut-clear-contact" class="aut-btn aut-btn-secondary" type="button">Limpar</button>
-          </div>
-          <div id="aut-contact-list" class="aut-contact-list"></div>
-          <div id="aut-contact-empty" class="aut-contact-empty" style="display:none;">Nenhum contato salvo ainda.</div>
-        </article>
-
-        <article class="aut-card aut-card-orange aut-monitor">
-          <span class="aut-step">Acompanhamento</span>
-          <div class="aut-monitor-head">
-            <h2 style="margin-top:12px;">Acompanhamento</h2>
-            <button id="aut-refresh-envios" class="aut-btn aut-btn-secondary" type="button">Atualizar lista</button>
-          </div>
-          <div class="aut-monitor-note">Quando o webhook da Autentique avisar que o documento foi assinado, o sistema atualiza o status e libera o download do PDF assinado aqui mesmo.</div>
-          <code id="aut-webhook-url" class="aut-webhook-url"></code>
-          <div id="aut-envios" class="aut-envios"></div>
-          <div id="aut-envios-empty" class="aut-envios-empty" style="display:none;">Nenhum envio de assinatura foi registrado ainda.</div>
-        </article>
-      </div>
-    </section>
-  </div>
-  </div><!-- /aut-page -->
-
-  <script>
-    const docsListEl = document.getElementById('aut-doc-list');
-    const docsEmptyEl = document.getElementById('aut-doc-empty');
-    const filtroCategoriaEl = document.getElementById('aut-filtro-categoria');
-    const filtroBuscaEl = document.getElementById('aut-filtro-busca');
-    const selectedInputEl = document.getElementById('aut-doc-selected');
-    const statusEl = document.getElementById('aut-status');
-    const resultEl = document.getElementById('aut-result');
-    const resultDocEl = document.getElementById('aut-result-doc');
-    const resultLinkEl = document.getElementById('aut-result-link');
-    const signLinkEl = document.getElementById('aut-sign-link');
-    const enviosEl = document.getElementById('aut-envios');
-    const enviosEmptyEl = document.getElementById('aut-envios-empty');
-    const webhookUrlEl = document.getElementById('aut-webhook-url');
-    const signerNameEl = document.getElementById('aut-signer-name');
-    const signerPhoneEl = document.getElementById('aut-signer-phone');
-    const contactNameEl = document.getElementById('aut-contact-name');
-    const contactPhoneEl = document.getElementById('aut-contact-phone');
-    const contactListEl = document.getElementById('aut-contact-list');
-    const contactEmptyEl = document.getElementById('aut-contact-empty');
-    const balanceDocsEl = document.getElementById('aut-balance-docs');
-    const balanceCreditsEl = document.getElementById('aut-balance-credits');
-    const balanceUserEl = document.getElementById('aut-balance-user');
-    const keySelectEl = document.getElementById('aut-key-select');
-
-    let docsCache = [];
-    let selectedDoc = null;
-    let pendingFile = null;
-    let searchTimer = null;
-    let enviosTimer = null;
-    let autentiqueKeys = [];
-
-    function esc(v) {
-      return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    }
-
-    function fmtBytes(n) {
-      const value = Number(n) || 0;
-      if (value < 1024) return `${value} B`;
-      if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-      return `${(value / (1024 * 1024)).toFixed(2)} MB`;
-    }
-
-    function normalizePhoneDigits(value) {
-      const digits = String(value || '').replace(/\D+/g, '');
-      if (!digits) return '';
-      if (digits.startsWith('55')) return digits;
-      if (digits.length === 10 || digits.length === 11) return `55${digits}`;
-      return digits;
-    }
-
-    function formatPhoneBR(value) {
-      const digits = normalizePhoneDigits(value);
-      if (!digits) return '';
-      let local = digits.startsWith('55') ? digits.slice(2) : digits;
-      if (local.length > 11) local = local.slice(0, 11);
-      if (local.length <= 2) return `+55 (${local}`;
-      if (local.length <= 7) return `+55 (${local.slice(0, 2)}) ${local.slice(2)}`;
-      if (local.length <= 10) return `+55 (${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
-      return `+55 (${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
-    }
-
-    function setStatus(msg, ok) {
-      statusEl.textContent = msg;
-      statusEl.className = `aut-status ${ok ? 'ok' : 'err'}`;
-    }
-
-    function clearStatus() {
-      statusEl.textContent = '';
-      statusEl.className = 'aut-status';
-    }
-
-    function renderContacts(items) {
-      const contacts = Array.isArray(items) ? items : [];
-      contactListEl.innerHTML = contacts.map(item => `
-        <div class="aut-contact-item">
+        <div class="aut-stack">
           <div>
-            <div class="aut-contact-name">${esc(item.nome || 'Sem nome')}</div>
-            <div class="aut-contact-phone">${esc(formatPhoneBR(item.phone || '-'))}</div>
+            <label class="aut-label" for="aut-signer-name">Nome do signatário</label>
+            <input id="aut-signer-name" class="aut-input" type="text" placeholder="Nome completo" />
           </div>
-          <div class="aut-contact-actions">
-            <button class="aut-mini-btn" type="button" data-contact-use="${Number(item.id)}">Usar</button>
-            <button class="aut-mini-btn" type="button" data-contact-delete="${Number(item.id)}">Excluir</button>
-          </div>
-        </div>
-      `).join('');
-      contactEmptyEl.style.display = contacts.length ? 'none' : '';
-    }
-
-    function fillContactForm(name = '', phone = '') {
-      contactNameEl.value = name;
-      contactPhoneEl.value = formatPhoneBR(phone);
-    }
-
-    async function loadContacts(showErrors = false) {
-      try {
-        const res = await fetch('/api/autentique/contatos');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao carregar contatos');
-        renderContacts(data);
-      } catch (err) {
-        if (showErrors) setStatus(err.message || 'Erro ao carregar contatos.', false);
-      }
-    }
-
-    async function useSavedContact(id) {
-      try {
-        const res = await fetch('/api/autentique/contatos');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao carregar contato');
-        const item = Array.isArray(data) ? data.find(row => Number(row.id) === Number(id)) : null;
-        if (!item) return;
-        signerNameEl.value = item.nome || '';
-        signerPhoneEl.value = formatPhoneBR(item.phone || '');
-        setStatus(`Contato "${item.nome}" preenchido no formulário.`, true);
-      } catch (err) {
-        setStatus(err.message || 'Erro ao carregar contato.', false);
-      }
-    }
-
-    async function deleteSavedContact(id) {
-      try {
-        const res = await fetch(`/api/autentique/contatos/${Number(id)}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao excluir contato');
-        await loadContacts();
-        setStatus('Contato removido.', true);
-      } catch (err) {
-        setStatus(err.message || 'Erro ao excluir contato.', false);
-      }
-    }
-
-    async function saveCurrentContact() {
-      const name = (contactNameEl.value || signerNameEl.value || '').trim();
-      const phone = formatPhoneBR(contactPhoneEl.value || signerPhoneEl.value || '');
-      if (!name) {
-        setStatus('Informe o nome do contato para salvar.', false);
-        return;
-      }
-      if (!phone) {
-        setStatus('Informe o WhatsApp do contato para salvar.', false);
-        return;
-      }
-      const normalized = normalizePhoneDigits(phone);
-      if (normalized.length < 12) {
-        setStatus('WhatsApp inválido para salvar contato.', false);
-        return;
-      }
-      try {
-        const res = await fetch('/api/autentique/contatos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome: name, phone: formatPhoneBR(phone) }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao salvar contato');
-        await loadContacts();
-        fillContactForm('', '');
-        setStatus(`Contato "${data.nome || name}" salvo no banco.`, true);
-      } catch (err) {
-        setStatus(err.message || 'Erro ao salvar contato.', false);
-      }
-    }
-
-    function fmtDate(value) {
-      if (!value) return '';
-      const dt = new Date(value.replace(' ', 'T'));
-      if (Number.isNaN(dt.getTime())) return value;
-      return dt.toLocaleString('pt-BR');
-    }
-
-    function escAttr(v) {
-      return esc(v).replace(/'/g, '&#39;');
-    }
-
-    function getSelectedAutentiqueKey() {
-      return keySelectEl.value || '';
-    }
-
-    function renderAutentiqueKeys(items) {
-      autentiqueKeys = Array.isArray(items) ? items : [];
-      keySelectEl.innerHTML = ['<option value="">Automático</option>'].concat(
-        autentiqueKeys.map(item => `<option value="${escAttr(item.value)}">${esc(item.label)} • ${esc(item.masked)}</option>`)
-      ).join('');
-    }
-
-    async function loadAutentiqueKeys(showErrors = false) {
-      try {
-        const res = await fetch('/api/autentique/chaves');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao carregar chaves da Autentique');
-        renderAutentiqueKeys(data);
-      } catch (err) {
-        renderAutentiqueKeys([]);
-        if (showErrors) setStatus(err.message || 'Erro ao carregar chaves da Autentique.', false);
-      }
-    }
-
-    async function loadBalance(showErrors = false) {
-      try {
-        const query = getSelectedAutentiqueKey() ? `?api_key=${encodeURIComponent(getSelectedAutentiqueKey())}` : '';
-        const res = await fetch(`/api/autentique/saldo${query}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao carregar saldo da Autentique');
-        balanceDocsEl.textContent = data.subscription?.documents ?? '-';
-        balanceCreditsEl.textContent = data.subscription?.credits ?? '-';
-        const userName = data.usuario?.name || 'Conta conectada';
-        const userEmail = data.usuario?.email ? ` (${data.usuario.email})` : '';
-        balanceUserEl.textContent = `${userName}${userEmail}`;
-      } catch (err) {
-        balanceDocsEl.textContent = '-';
-        balanceCreditsEl.textContent = '-';
-        balanceUserEl.textContent = 'Não foi possível consultar o saldo agora.';
-        if (showErrors) setStatus(err.message || 'Erro ao carregar saldo da Autentique.', false);
-      }
-    }
-
-    function renderEnvios(items) {
-      const list = Array.isArray(items) ? items : [];
-      enviosEl.innerHTML = list.map(item => `
-        <div class="aut-envio">
-          <div class="aut-envio-top">
-            <div>
-              <div class="aut-envio-title">${esc(item.documento_nome || item.documento_origem_nome || 'Documento sem nome')}</div>
-              <div class="aut-envio-meta">
-                Signatário: ${esc(item.signatario_nome || '-')}<br />
-                WhatsApp: ${esc(item.signatario_phone || '-')}<br />
-                Criado em: ${esc(fmtDate(item.criado_em) || '-')}
-                ${item.assinado_em ? `<br />Assinado em: ${esc(fmtDate(item.assinado_em))}` : ''}
-              </div>
-            </div>
-            <div class="aut-envio-badges">
-              <span class="aut-status-badge ${escAttr(item.status || 'pendente')}">${esc(item.status || 'pendente')}</span>
-            </div>
-          </div>
-          <div class="aut-envio-actions">
-            ${item.documento_centro_id ? `<a class="aut-mini-btn" href="/api/documentos/${Number(item.documento_centro_id)}/download">Baixar original</a>` : ''}
-            ${item.assinatura_link ? `<a class="aut-mini-btn" href="${escAttr(item.assinatura_link)}" target="_blank" rel="noopener">Abrir link</a>` : ''}
-            ${item.assinado_doc_id ? `<a class="aut-mini-btn" href="/api/autentique/envios/${Number(item.id)}/download-assinado">Baixar assinado</a>` : ''}
-            <button class="aut-mini-btn" type="button" data-envio-delete="${Number(item.id)}">Remover</button>
+          <div>
+            <label class="aut-label" for="aut-signer-phone">WhatsApp do signatário</label>
+            <input id="aut-signer-phone" class="aut-input" type="text" inputmode="tel" placeholder="+55 (44) 99184-2415" />
           </div>
         </div>
-      `).join('');
-      enviosEmptyEl.style.display = list.length ? 'none' : '';
+
+        <div class="aut-actions">
+          <button id="aut-send-btn" class="aut-btn aut-btn-primary" type="button">📤 Enviar pelo WhatsApp</button>
+          <button id="aut-test-btn" class="aut-btn aut-btn-secondary" type="button">Testar chave</button>
+          <a class="aut-btn aut-btn-secondary" href="/pages/documentos.html">Centro de Docs</a>
+        </div>
+
+        <div id="aut-status" class="aut-status"></div>
+
+        <div id="aut-result" class="aut-result">
+          <strong>✅ Enviado para assinatura</strong>
+          <div class="aut-result-line" id="aut-result-doc"></div>
+          <div class="aut-result-line" id="aut-result-link"></div>
+          <div class="aut-result-actions">
+            <a id="aut-sign-link" class="aut-btn aut-btn-secondary" href="#" target="_blank" rel="noopener">Abrir link de assinatura</a>
+          </div>
+        </div>
+      </article>
+
+    </div><!-- /aut-envio-grid -->
+  </div><!-- /tab-envio -->
+
+  <!-- ═══════════ TAB: CONTATOS ═══════════ -->
+  <div class="aut-tab-pane" id="tab-contatos">
+    <article class="aut-card aut-card-purple" style="max-width:700px;">
+      <span class="aut-step">Agenda</span>
+      <div class="aut-contact-head">
+        <h2>Contatos Salvos</h2>
+        <button id="aut-save-contact" class="aut-btn aut-btn-secondary" type="button">+ Salvar contato</button>
+      </div>
+      <div class="aut-contact-note">Guarde WhatsApps frequentes e preencha o signatário com um clique na aba "Novo Envio".</div>
+      <div class="aut-contact-form">
+        <input id="aut-contact-name"  class="aut-input" type="text" placeholder="Nome do contato" />
+        <input id="aut-contact-phone" class="aut-input" type="text" inputmode="tel" placeholder="+55 (44) 99184-2415" />
+        <button id="aut-clear-contact" class="aut-btn aut-btn-secondary" type="button">Limpar</button>
+      </div>
+      <div id="aut-contact-list"  class="aut-contact-list"></div>
+      <div id="aut-contact-empty" class="aut-contact-empty" style="display:none;">Nenhum contato salvo ainda.</div>
+    </article>
+  </div>
+
+  <!-- ═══════════ TAB: HISTÓRICO ═══════════ -->
+  <div class="aut-tab-pane" id="tab-historico">
+    <article class="aut-card aut-card-orange">
+      <span class="aut-step">Acompanhamento</span>
+      <div class="aut-monitor-head">
+        <h2>Histórico de Envios</h2>
+        <button id="aut-refresh-envios" class="aut-btn aut-btn-secondary" type="button">↺ Atualizar</button>
+      </div>
+      <div class="aut-monitor-note">O status atualiza automaticamente via webhook da Autentique. Quando assinado, o download fica disponível aqui.</div>
+      <code id="aut-webhook-url" class="aut-webhook-url"></code>
+      <div id="aut-envios" class="aut-envios"></div>
+      <div id="aut-envios-empty" class="aut-envios-empty" style="display:none;">Nenhum envio registrado ainda.</div>
+    </article>
+  </div>
+
+</div><!-- /aut-wrap -->
+</div><!-- /aut-page -->
+
+<input type="file" id="mural-hidden-file-input" style="display:none;" />
+
+<script>
+  'use strict';
+
+  /* ── refs ── */
+  const docsListEl      = document.getElementById('aut-doc-list');
+  const docsEmptyEl     = document.getElementById('aut-doc-empty');
+  const filtroCategoriaEl = document.getElementById('aut-filtro-categoria');
+  const filtroBuscaEl   = document.getElementById('aut-filtro-busca');
+  const selectedInputEl = document.getElementById('aut-doc-selected');
+  const selectedChipName= document.getElementById('aut-selected-chip-name');
+  const statusEl        = document.getElementById('aut-status');
+  const resultEl        = document.getElementById('aut-result');
+  const resultDocEl     = document.getElementById('aut-result-doc');
+  const resultLinkEl    = document.getElementById('aut-result-link');
+  const signLinkEl      = document.getElementById('aut-sign-link');
+  const enviosEl        = document.getElementById('aut-envios');
+  const enviosEmptyEl   = document.getElementById('aut-envios-empty');
+  const webhookUrlEl    = document.getElementById('aut-webhook-url');
+  const signerNameEl    = document.getElementById('aut-signer-name');
+  const signerPhoneEl   = document.getElementById('aut-signer-phone');
+  const contactNameEl   = document.getElementById('aut-contact-name');
+  const contactPhoneEl  = document.getElementById('aut-contact-phone');
+  const contactListEl   = document.getElementById('aut-contact-list');
+  const contactEmptyEl  = document.getElementById('aut-contact-empty');
+  const balanceDocsEl   = document.getElementById('aut-balance-docs');
+  const balanceCreditsEl= document.getElementById('aut-balance-credits');
+  const balanceUserEl   = document.getElementById('aut-balance-user');
+  const keySelectEl     = document.getElementById('aut-key-select');
+
+  let docsCache = [], selectedDoc = null, pendingFile = null;
+  let searchTimer = null, enviosTimer = null, autentiqueKeys = [];
+
+  /* ── utils ── */
+  function esc(v){ return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function escAttr(v){ return esc(v).replace(/'/g,'&#39;'); }
+  function fmtBytes(n){ const v=Number(n)||0; if(v<1024) return `${v} B`; if(v<1048576) return `${(v/1024).toFixed(1)} KB`; return `${(v/1048576).toFixed(2)} MB`; }
+  function fmtDate(v){ if(!v) return ''; const d=new Date(v.replace(' ','T')); return isNaN(d)?v:d.toLocaleString('pt-BR'); }
+  function normalizePhoneDigits(v){ const d=String(v||'').replace(/\D+/g,''); if(!d) return ''; if(d.startsWith('55')) return d; if(d.length===10||d.length===11) return '55'+d; return d; }
+  function formatPhoneBR(v){ const d=normalizePhoneDigits(v); if(!d) return ''; let l=d.startsWith('55')?d.slice(2):d; if(l.length>11) l=l.slice(0,11); if(l.length<=2) return `+55 (${l}`; if(l.length<=7) return `+55 (${l.slice(0,2)}) ${l.slice(2)}`; if(l.length<=10) return `+55 (${l.slice(0,2)}) ${l.slice(2,6)}-${l.slice(6)}`; return `+55 (${l.slice(0,2)}) ${l.slice(2,7)}-${l.slice(7)}`; }
+  function setStatus(msg,ok){ statusEl.textContent=msg; statusEl.className=`aut-status ${ok?'ok':'err'}`; }
+  function clearStatus(){ statusEl.textContent=''; statusEl.className='aut-status'; }
+
+  /* ── tabs ── */
+  document.querySelectorAll('.aut-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.aut-tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.aut-tab-pane').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ── source toggle (upload / library) ── */
+  document.querySelectorAll('.aut-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.aut-toggle-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const src = btn.dataset.source;
+      document.getElementById('source-upload').style.display  = src==='upload'  ? '' : 'none';
+      document.getElementById('source-library').style.display = src==='library' ? '' : 'none';
+    });
+  });
+
+  /* ── autentique keys ── */
+  function renderAutentiqueKeys(items){
+    autentiqueKeys = Array.isArray(items)?items:[];
+    keySelectEl.innerHTML = ['<option value="">Chave: Auto</option>'].concat(
+      autentiqueKeys.map(item=>`<option value="${escAttr(item.value)}">${esc(item.label)} • ${esc(item.masked)}</option>`)
+    ).join('');
+  }
+  async function loadAutentiqueKeys(showErrors=false){
+    try{ const r=await fetch('/api/autentique/chaves'); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro'); renderAutentiqueKeys(d); }
+    catch(err){ renderAutentiqueKeys([]); if(showErrors) setStatus(err.message||'Erro ao carregar chaves.',false); }
+  }
+  function getSelectedAutentiqueKey(){ return keySelectEl.value||''; }
+
+  /* ── balance ── */
+  async function loadBalance(showErrors=false){
+    try{
+      const q=getSelectedAutentiqueKey()?`?api_key=${encodeURIComponent(getSelectedAutentiqueKey())}`:'' ;
+      const r=await fetch(`/api/autentique/saldo${q}`); const d=await r.json();
+      if(!r.ok) throw new Error(d.error||'Erro');
+      balanceDocsEl.textContent    = d.subscription?.documents??'-';
+      balanceCreditsEl.textContent = d.subscription?.credits??'-';
+      const name=d.usuario?.name||'Conta conectada', email=d.usuario?.email?` (${d.usuario.email})`:'';
+      balanceUserEl.textContent = name+email;
+    }catch(err){
+      balanceDocsEl.textContent=balanceCreditsEl.textContent='-';
+      balanceUserEl.textContent='Saldo indisponível.';
+      if(showErrors) setStatus(err.message||'Erro ao carregar saldo.',false);
     }
+  }
 
-    async function loadEnvios(showErrors = false) {
-      try {
-        const res = await fetch('/api/autentique/envios');
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao carregar envios');
-        renderEnvios(data);
-      } catch (err) {
-        if (showErrors) setStatus(err.message || 'Erro ao carregar acompanhamento.', false);
-      }
-    }
+  /* ── contacts ── */
+  function renderContacts(items){
+    const c=Array.isArray(items)?items:[];
+    contactListEl.innerHTML = c.map(item=>`
+      <div class="aut-contact-item">
+        <div><div class="aut-contact-name">${esc(item.nome||'Sem nome')}</div>
+          <div class="aut-contact-phone">${esc(formatPhoneBR(item.phone||'-'))}</div></div>
+        <div class="aut-contact-actions">
+          <button class="aut-mini-btn" type="button" data-contact-use="${Number(item.id)}">Usar</button>
+          <button class="aut-mini-btn" type="button" data-contact-delete="${Number(item.id)}">Excluir</button>
+        </div>
+      </div>`).join('');
+    contactEmptyEl.style.display = c.length?'none':'';
+  }
+  function fillContactForm(name='',phone=''){ contactNameEl.value=name; contactPhoneEl.value=formatPhoneBR(phone); }
+  async function loadContacts(showErrors=false){
+    try{ const r=await fetch('/api/autentique/contatos'); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro'); renderContacts(d); }
+    catch(err){ if(showErrors) setStatus(err.message||'Erro ao carregar contatos.',false); }
+  }
+  async function useSavedContact(id){
+    try{
+      const r=await fetch('/api/autentique/contatos'); const d=await r.json();
+      if(!r.ok) throw new Error(d.error||'Erro');
+      const item=Array.isArray(d)?d.find(row=>Number(row.id)===Number(id)):null; if(!item) return;
+      signerNameEl.value=item.nome||''; signerPhoneEl.value=formatPhoneBR(item.phone||'');
+      // Switch to envio tab
+      document.querySelector('[data-tab="envio"]')?.click();
+      setStatus(`Contato "${item.nome}" preenchido.`,true);
+    }catch(err){ setStatus(err.message||'Erro.',false); }
+  }
+  async function deleteSavedContact(id){
+    try{ const r=await fetch(`/api/autentique/contatos/${Number(id)}`,{method:'DELETE'}); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro'); await loadContacts(); setStatus('Contato removido.',true); }
+    catch(err){ setStatus(err.message||'Erro.',false); }
+  }
+  async function saveCurrentContact(){
+    const name=(contactNameEl.value||signerNameEl.value||'').trim();
+    const phone=formatPhoneBR(contactPhoneEl.value||signerPhoneEl.value||'');
+    if(!name){ setStatus('Informe o nome do contato.',false); return; }
+    if(!phone){ setStatus('Informe o WhatsApp.',false); return; }
+    if(normalizePhoneDigits(phone).length<12){ setStatus('WhatsApp inválido.',false); return; }
+    try{
+      const r=await fetch('/api/autentique/contatos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome:name,phone:formatPhoneBR(phone)})});
+      const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro');
+      await loadContacts(); fillContactForm('',''); setStatus(`Contato "${d.nome||name}" salvo.`,true);
+    }catch(err){ setStatus(err.message||'Erro.',false); }
+  }
 
-    async function deleteEnvio(id) {
-      try {
-        const res = await fetch(`/api/autentique/envios/${Number(id)}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao remover envio');
-        await loadEnvios();
-        setStatus('Envio removido do acompanhamento.', true);
-      } catch (err) {
-        setStatus(err.message || 'Erro ao remover envio.', false);
-      }
-    }
+  /* ── envios ── */
+  function renderEnvios(items){
+    const list=Array.isArray(items)?items:[];
+    enviosEl.innerHTML = list.map(item=>`
+      <div class="aut-envio">
+        <div class="aut-envio-top">
+          <div>
+            <div class="aut-envio-title">${esc(item.documento_nome||item.documento_origem_nome||'Documento sem nome')}</div>
+            <div class="aut-envio-meta">
+              Signatário: ${esc(item.signatario_nome||'-')} &nbsp;·&nbsp; WhatsApp: ${esc(item.signatario_phone||'-')}<br/>
+              Criado: ${esc(fmtDate(item.criado_em)||'-')}
+              ${item.assinado_em?` &nbsp;·&nbsp; Assinado: ${esc(fmtDate(item.assinado_em))}`:''}
+            </div>
+          </div>
+          <div class="aut-envio-badges">
+            <span class="aut-status-badge ${escAttr(item.status||'pendente')}">${esc(item.status||'pendente')}</span>
+          </div>
+        </div>
+        <div class="aut-envio-actions">
+          ${item.documento_centro_id?`<a class="aut-mini-btn" href="/api/documentos/${Number(item.documento_centro_id)}/download">⬇ Original</a>`:''}
+          ${item.assinatura_link?`<a class="aut-mini-btn" href="${escAttr(item.assinatura_link)}" target="_blank" rel="noopener">🔗 Abrir link</a>`:''}
+          ${item.assinado_doc_id?`<a class="aut-mini-btn" href="/api/autentique/envios/${Number(item.id)}/download-assinado">✅ Baixar assinado</a>`:''}
+          <button class="aut-mini-btn" type="button" data-envio-delete="${Number(item.id)}">Remover</button>
+        </div>
+      </div>`).join('');
+    enviosEmptyEl.style.display = list.length?'none':'';
+  }
+  async function loadEnvios(showErrors=false){
+    try{ const r=await fetch('/api/autentique/envios'); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro'); renderEnvios(d); }
+    catch(err){ if(showErrors) setStatus(err.message||'Erro ao carregar envios.',false); }
+  }
+  async function deleteEnvio(id){
+    try{ const r=await fetch(`/api/autentique/envios/${Number(id)}`,{method:'DELETE'}); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro'); await loadEnvios(); setStatus('Envio removido.',true); }
+    catch(err){ setStatus(err.message||'Erro.',false); }
+  }
 
-    function renderDocs() {
-      const categoria = filtroCategoriaEl.value;
-      const busca = (filtroBuscaEl.value || '').trim().toLowerCase();
-      const list = docsCache.filter(doc => {
-        if ((doc.extensao || '').toLowerCase() !== '.pdf') return false;
-        if (categoria && doc.categoria !== categoria) return false;
-        if (!busca) return true;
-        const bucket = `${doc.nome_original || ''} ${doc.referencia || ''} ${doc.descricao || ''}`.toLowerCase();
-        return bucket.includes(busca);
-      });
-
-      docsListEl.innerHTML = list.map(doc => `
-        <button class="aut-doc${selectedDoc && selectedDoc.id === doc.id ? ' active' : ''}" data-doc-id="${doc.id}" type="button">
+  /* ── docs list ── */
+  function updateSelectedChip(){
+    const name = selectedDoc ? selectedDoc.nome_original : (pendingFile ? pendingFile.name : 'Nenhum selecionado');
+    selectedChipName.textContent = name;
+    selectedInputEl.value = name;
+    document.getElementById('aut-selected-chip').style.borderColor = (selectedDoc||pendingFile)?'var(--blue)':'var(--border)';
+  }
+  function renderDocs(){
+    const categoria = (filtroCategoriaEl?.value||'');
+    const busca = (filtroBuscaEl?.value||'').trim().toLowerCase();
+    const list = docsCache.filter(doc=>{
+      if((doc.extensao||'').toLowerCase()!=='.pdf') return false;
+      if(categoria&&doc.categoria!==categoria) return false;
+      if(!busca) return true;
+      return `${doc.nome_original||''} ${doc.referencia||''} ${doc.descricao||''}`.toLowerCase().includes(busca);
+    });
+    docsListEl.innerHTML = list.map(doc=>`
+      <button class="aut-doc${selectedDoc&&selectedDoc.id===doc.id?' active':''}" data-doc-id="${doc.id}" type="button">
+        <div class="aut-doc-icon">📄</div>
+        <div class="aut-doc-body">
           <div class="aut-doc-name">${esc(doc.nome_original)}</div>
           <div class="aut-doc-meta">
-            <span class="aut-doc-badge">${esc(doc.categoria || 'geral')}</span>
-            <span class="aut-doc-badge">${esc(doc.referencia || 'sem referência')}</span>
+            <span class="aut-doc-badge">${esc(doc.categoria||'geral')}</span>
+            <span class="aut-doc-badge">${esc(doc.referencia||'sem ref.')}</span>
             <span class="aut-doc-badge">${fmtBytes(doc.tamanho)}</span>
           </div>
-          ${doc.descricao ? `<div class="aut-doc-desc">${esc(doc.descricao)}</div>` : ''}
-        </button>
-      `).join('');
+          ${doc.descricao?`<div class="aut-doc-desc">${esc(doc.descricao)}</div>`:''}
+        </div>
+      </button>`).join('');
+    docsEmptyEl.style.display = list.length?'none':'';
+  }
+  async function loadDocs(){
+    const r=await fetch('/api/documentos'); const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Erro ao carregar documentos');
+    docsCache=d; renderDocs();
+  }
+  function selectDoc(docId){
+    selectedDoc=docsCache.find(doc=>Number(doc.id)===Number(docId))||null;
+    pendingFile=null;
+    document.getElementById('aut-upload-input').value='';
+    document.getElementById('aut-upload-picked').style.display='none';
+    updateSelectedChip(); renderDocs();
+  }
+  function selectPendingFile(file){
+    pendingFile=file; selectedDoc=null;
+    updateSelectedChip();
+    const picked=document.getElementById('aut-upload-picked');
+    if(file){ picked.style.display='block'; picked.textContent=`✅ ${file.name} (${fmtBytes(file.size)})`; }
+    else { picked.style.display='none'; picked.textContent=''; }
+    renderDocs();
+  }
+  async function uploadPendingFile(){
+    if(!pendingFile) return null;
+    const fd=new FormData(); fd.append('arquivo',pendingFile); fd.append('categoria','contratos'); fd.append('referencia','assinatura-autentique'); fd.append('descricao','Arquivo enviado para assinatura digital');
+    const r=await fetch('/api/documentos',{method:'POST',body:fd}); const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Erro ao salvar PDF');
+    await loadDocs(); selectDoc(d.id); return d;
+  }
 
-      docsEmptyEl.style.display = list.length ? 'none' : '';
-    }
+  /* ── send ── */
+  async function sendForSignature(){
+    clearStatus(); resultEl.style.display='none';
+    if(!selectedDoc){ if(!pendingFile){ setStatus('Selecione ou envie um PDF antes de assinar.',false); return; } await uploadPendingFile(); }
+    signerPhoneEl.value=formatPhoneBR(signerPhoneEl.value);
+    const payload={ documento_id:selectedDoc.id, signer_name:signerNameEl.value.trim(), signer_phone:signerPhoneEl.value.trim(), api_key:getSelectedAutentiqueKey() };
+    const btn=document.getElementById('aut-send-btn'); btn.disabled=true; btn.textContent='Enviando…';
+    try{
+      const r=await fetch('/api/autentique/enviar-whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro ao enviar');
+      setStatus('Enviado com sucesso para o WhatsApp do signatário.',true);
+      resultEl.style.display='block';
+      resultDocEl.textContent=`Documento: ${d.documento?.name||selectedDoc.nome_original}`;
+      resultLinkEl.textContent=d.assinatura?.phone?`WhatsApp: ${d.assinatura.phone}`:'Notificação enviada pela Autentique.';
+      signLinkEl.href=d.assinatura?.link||'#'; signLinkEl.style.display=d.assinatura?.link?'':'none';
+      await loadEnvios();
+    }catch(err){ setStatus(err.message||'Erro ao criar assinatura.',false); }
+    finally{ btn.disabled=false; btn.textContent='📤 Enviar pelo WhatsApp'; }
+  }
+  async function testAutentique(){
+    clearStatus(); const btn=document.getElementById('aut-test-btn'); btn.disabled=true; btn.textContent='Testando…';
+    try{
+      const r=await fetch('/api/autentique/testar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:getSelectedAutentiqueKey()})});
+      const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro');
+      setStatus(`Conexão OK: ${d.usuario?.name||'conta autenticada'}.`,true);
+    }catch(err){ setStatus(err.message||'Erro ao testar chave.',false); }
+    finally{ btn.disabled=false; btn.textContent='Testar chave'; }
+  }
 
-    async function loadDocs() {
-      const res = await fetch('/api/documentos');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao carregar documentos');
-      docsCache = data;
-      renderDocs();
-    }
+  /* ── event listeners ── */
+  docsListEl.addEventListener('click', e=>{ const it=e.target.closest('[data-doc-id]'); if(it) selectDoc(it.dataset.docId); });
+  [filtroCategoriaEl,filtroBuscaEl].forEach(el=>{ if(!el) return; el.addEventListener('input',()=>{ clearTimeout(searchTimer); searchTimer=setTimeout(renderDocs,120); }); el.addEventListener('change',renderDocs); });
+  document.getElementById('aut-send-btn').addEventListener('click', sendForSignature);
+  document.getElementById('aut-test-btn').addEventListener('click', testAutentique);
+  document.getElementById('aut-refresh-envios').addEventListener('click', ()=>loadEnvios(true));
+  document.getElementById('aut-refresh-balance').addEventListener('click', ()=>loadBalance(true));
+  keySelectEl.addEventListener('change', ()=>loadBalance(true));
+  signerPhoneEl.addEventListener('input',  e=>{ const f=formatPhoneBR(e.target.value); if(f) e.target.value=f; });
+  signerPhoneEl.addEventListener('blur',   e=>{ e.target.value=formatPhoneBR(e.target.value); });
+  contactPhoneEl.addEventListener('input', e=>{ const f=formatPhoneBR(e.target.value); if(f) e.target.value=f; });
+  contactPhoneEl.addEventListener('blur',  e=>{ e.target.value=formatPhoneBR(e.target.value); });
+  document.getElementById('aut-save-contact').addEventListener('click',  saveCurrentContact);
+  document.getElementById('aut-clear-contact').addEventListener('click', ()=>fillContactForm('',''));
+  contactListEl.addEventListener('click', e=>{
+    const u=e.target.closest('[data-contact-use]');    if(u){ useSavedContact(Number(u.dataset.contactUse));   return; }
+    const d=e.target.closest('[data-contact-delete]'); if(d)  deleteSavedContact(Number(d.dataset.contactDelete));
+  });
+  enviosEl.addEventListener('click', e=>{ const d=e.target.closest('[data-envio-delete]'); if(d) deleteEnvio(Number(d.dataset.envioDelete)); });
 
-    function selectDoc(docId) {
-      selectedDoc = docsCache.find(doc => Number(doc.id) === Number(docId)) || null;
-      pendingFile = null;
-      document.getElementById('aut-upload-input').value = '';
-      document.getElementById('aut-upload-picked').style.display = 'none';
-      selectedInputEl.value = selectedDoc ? selectedDoc.nome_original : 'Nenhum documento selecionado';
-      renderDocs();
-    }
+  /* upload zone */
+  const uploadZone  = document.getElementById('aut-upload-zone');
+  const uploadInput = document.getElementById('aut-upload-input');
+  uploadInput.addEventListener('change', e=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    if(!f.name.toLowerCase().endsWith('.pdf')){ setStatus('Envie apenas arquivos PDF.',false); return; }
+    clearStatus(); selectPendingFile(f);
+  });
+  uploadZone.addEventListener('dragover',  e=>{ e.preventDefault(); uploadZone.classList.add('drag'); });
+  uploadZone.addEventListener('dragleave', ()=>uploadZone.classList.remove('drag'));
+  uploadZone.addEventListener('drop', e=>{
+    e.preventDefault(); uploadZone.classList.remove('drag');
+    const f=e.dataTransfer.files?.[0]; if(!f) return;
+    if(!f.name.toLowerCase().endsWith('.pdf')){ setStatus('Envie apenas arquivos PDF.',false); return; }
+    clearStatus(); selectPendingFile(f);
+  });
 
-    function selectPendingFile(file) {
-      pendingFile = file;
-      selectedDoc = null;
-      selectedInputEl.value = file ? file.name : 'Nenhum documento selecionado';
-      const picked = document.getElementById('aut-upload-picked');
-      if (file) {
-        picked.style.display = 'block';
-        picked.textContent = `Arquivo pronto para envio: ${file.name} (${fmtBytes(file.size)})`;
-      } else {
-        picked.style.display = 'none';
-        picked.textContent = '';
-      }
-      renderDocs();
-    }
-
-    async function uploadPendingFile() {
-      if (!pendingFile) return null;
-      const fd = new FormData();
-      fd.append('arquivo', pendingFile);
-      fd.append('categoria', 'contratos');
-      fd.append('referencia', 'assinatura-autentique');
-      fd.append('descricao', 'Arquivo enviado diretamente para assinatura digital');
-      const res = await fetch('/api/documentos', { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erro ao salvar PDF enviado');
-      await loadDocs();
-      selectDoc(data.id);
-      return data;
-    }
-
-    async function sendForSignature() {
-      clearStatus();
-      resultEl.style.display = 'none';
-
-      if (!selectedDoc) {
-        if (!pendingFile) {
-          setStatus('Selecione um documento PDF ou envie um arquivo antes de assinar.', false);
-          return;
-        }
-        await uploadPendingFile();
-      }
-
-      const phoneInput = signerPhoneEl;
-      phoneInput.value = formatPhoneBR(phoneInput.value);
-
-      const payload = {
-        documento_id: selectedDoc.id,
-        signer_name: signerNameEl.value.trim(),
-        signer_phone: phoneInput.value.trim(),
-        api_key: getSelectedAutentiqueKey(),
-      };
-
-      const btn = document.getElementById('aut-send-btn');
-      btn.disabled = true;
-      btn.textContent = 'Enviando...';
-      try {
-        const res = await fetch('/api/autentique/enviar-whatsapp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao enviar documento');
-
-        setStatus('Documento criado na Autentique e enviado para o WhatsApp do signatário.', true);
-        resultEl.style.display = 'block';
-        resultDocEl.textContent = `Documento: ${data.documento?.name || selectedDoc.nome_original}`;
-        resultLinkEl.textContent = data.assinatura?.phone
-          ? `WhatsApp destino: ${data.assinatura.phone}`
-          : 'WhatsApp enviado pela Autentique.';
-        signLinkEl.href = data.assinatura?.link || '#';
-        signLinkEl.style.display = data.assinatura?.link ? '' : 'none';
-        await loadEnvios();
-      } catch (err) {
-        setStatus(err.message || 'Erro ao criar assinatura.', false);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Enviar para assinatura no WhatsApp';
-      }
-    }
-
-    async function testAutentique() {
-      clearStatus();
-      const btn = document.getElementById('aut-test-btn');
-      btn.disabled = true;
-      btn.textContent = 'Testando...';
-      try {
-        const res = await fetch('/api/autentique/testar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ api_key: getSelectedAutentiqueKey() })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erro ao testar Autentique');
-        setStatus(`Conexão OK com a Autentique: ${data.usuario?.name || 'conta autenticada'}.`, true);
-      } catch (err) {
-        setStatus(err.message || 'Erro ao testar chave.', false);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Testar chave da Autentique';
-      }
-    }
-
-    docsListEl.addEventListener('click', e => {
-      const item = e.target.closest('[data-doc-id]');
-      if (!item) return;
-      selectDoc(item.dataset.docId);
-    });
-
-    [filtroCategoriaEl, filtroBuscaEl].forEach(el => {
-      el.addEventListener('input', () => {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(renderDocs, 120);
-      });
-      el.addEventListener('change', renderDocs);
-    });
-
-    document.getElementById('aut-send-btn').addEventListener('click', sendForSignature);
-    document.getElementById('aut-test-btn').addEventListener('click', testAutentique);
-    document.getElementById('aut-refresh-envios').addEventListener('click', () => loadEnvios(true));
-    document.getElementById('aut-refresh-balance').addEventListener('click', () => loadBalance(true));
-    keySelectEl.addEventListener('change', () => loadBalance(true));
-    signerPhoneEl.addEventListener('input', e => {
-      const formatted = formatPhoneBR(e.target.value);
-      if (formatted) e.target.value = formatted;
-    });
-    signerPhoneEl.addEventListener('blur', e => {
-      e.target.value = formatPhoneBR(e.target.value);
-    });
-    contactPhoneEl.addEventListener('input', e => {
-      const formatted = formatPhoneBR(e.target.value);
-      if (formatted) e.target.value = formatted;
-    });
-    contactPhoneEl.addEventListener('blur', e => {
-      e.target.value = formatPhoneBR(e.target.value);
-    });
-    document.getElementById('aut-save-contact').addEventListener('click', saveCurrentContact);
-    document.getElementById('aut-clear-contact').addEventListener('click', () => fillContactForm('', ''));
-    contactListEl.addEventListener('click', e => {
-      const useBtn = e.target.closest('[data-contact-use]');
-      if (useBtn) {
-        useSavedContact(Number(useBtn.dataset.contactUse));
-        return;
-      }
-      const delBtn = e.target.closest('[data-contact-delete]');
-      if (delBtn) deleteSavedContact(Number(delBtn.dataset.contactDelete));
-    });
-    enviosEl.addEventListener('click', e => {
-      const delBtn = e.target.closest('[data-envio-delete]');
-      if (delBtn) deleteEnvio(Number(delBtn.dataset.envioDelete));
-    });
-
-    const uploadZone = document.getElementById('aut-upload-zone');
-    const uploadInput = document.getElementById('aut-upload-input');
-    uploadInput.addEventListener('change', e => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (!file.name.toLowerCase().endsWith('.pdf')) {
-        setStatus('Envie apenas arquivos PDF.', false);
-        return;
-      }
-      clearStatus();
-      selectPendingFile(file);
-    });
-    uploadZone.addEventListener('dragover', e => {
-      e.preventDefault();
-      uploadZone.classList.add('drag');
-    });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag'));
-    uploadZone.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag');
-      const file = e.dataTransfer.files?.[0];
-      if (!file) return;
-      if (!file.name.toLowerCase().endsWith('.pdf')) {
-        setStatus('Envie apenas arquivos PDF.', false);
-        return;
-      }
-      clearStatus();
-      selectPendingFile(file);
-    });
-
-    webhookUrlEl.textContent = `${window.location.origin}/api/autentique/webhook`;
-    loadAutentiqueKeys();
-    loadBalance();
-    loadContacts();
-    loadDocs().catch(err => setStatus(err.message || 'Erro ao carregar documentos.', false));
-    loadEnvios();
-    enviosTimer = window.setInterval(() => loadEnvios(false), 30000);
-  </script>
+  /* ── init ── */
+  webhookUrlEl.textContent = `${window.location.origin}/api/autentique/webhook`;
+  loadAutentiqueKeys();
+  loadBalance();
+  loadContacts();
+  loadDocs().catch(err=>setStatus(err.message||'Erro ao carregar documentos.',false));
+  loadEnvios();
+  enviosTimer = window.setInterval(()=>loadEnvios(false), 30000);
+</script>
 </body>
 </html>
