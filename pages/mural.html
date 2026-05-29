@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mural</title>
   <link rel="stylesheet" href="/static/css/index.css" />
-  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt==='cyberpunk')document.documentElement.classList.add('theme-cyberpunk');}());</script>
   <script>
     // Bloqueia renderização imediatamente antes de qualquer HTML ser exibido
     document.documentElement.style.visibility = 'hidden';
@@ -278,8 +278,11 @@
       border-left: 1px solid var(--border);
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      overflow: hidden;
+      overflow: visible;
       animation: cardSlideIn 0.22s ease both;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     .mural-card:hover {
       transform: translateY(-3px);
@@ -326,12 +329,110 @@
       align-items: flex-start;
       gap: 8px;
     }
+    .mural-card-assignee-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .mural-filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px 4px 6px;
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-2);
+      box-shadow: var(--shadow-sm);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .mural-filter-chip:hover {
+      border-color: var(--border-hover);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+    .mural-filter-chip.active {
+      background: var(--surface) !important;
+      border-color: var(--blue) !important;
+      color: var(--blue) !important;
+      box-shadow: 0 0 10px color-mix(in srgb, var(--blue) 25%, transparent) !important;
+    }
+    .mural-filter-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 800;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .mural-card.mural-card-dragging {
+      transform: scale(1.02) rotate(-2deg) !important;
+      box-shadow: var(--shadow-lg) !important;
+      opacity: 0.7 !important;
+      transition: transform 0.1s ease !important;
+    }
+    .mural-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      animation: pulsingUrgencyDot 1.6s infinite;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    @keyframes pulsingUrgencyDot {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+      }
+    }
+    .mural-particle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      will-change: transform, opacity;
+      transform-style: preserve-3d;
+    }
     .mural-card-title {
       font-size: 14px;
       font-weight: 800;
       color: var(--text);
       line-height: 1.25;
       letter-spacing: -0.01em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
     }
     .mural-card-body {
       font-size: 13px;
@@ -419,6 +520,7 @@
       gap: 3px;
       align-items: center;
       flex-shrink: 0;
+      margin-left: auto;
     }
     .mural-card-act {
       background: color-mix(in srgb, var(--surface) 94%, transparent);
@@ -611,9 +713,297 @@
       .mural-columns { grid-template-columns: 1fr; gap: 20px; }
       .mural-col { min-height: auto; }
     }
+
+    /* =============================================================================
+       CYBERPUNK THEME INTEGRATION (DYNAMIC)
+       ============================================================================= */
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+    html.theme-cyberpunk {
+      --bg-deep:   #05070f;
+      --bg-panel:  #0a0e1c;
+      --bg-card:   #0f1426;
+      --line:      #1a2342;
+      --line-hi:   #2a3866;
+      --ink:       #e8eef8;
+      --ink-2:     #a0aec8;
+      --ink-3:     #5a6a8a;
+      --ink-4:     #3a4868;
+
+      --accent:    #00f0ff;   /* Ciano */
+      --accent-2:  #ff2d8e;   /* Magenta */
+      --accent-3:  #c8ff2d;   /* Lime */
+      --gold:      #ffc24a;
+
+      --p-urg:     #ff2d4f;
+      --p-alt:     #ff8a3d;
+      --p-med:     #ffc24a;
+      --p-bai:     #4dffa0;
+
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
+      --shadow: 0 4px 16px rgba(0,0,0,0.6);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.8);
+      
+      --blue: #4d9eff;
+      --orange: #ff8a3d;
+      --green: #4dffa0;
+      --red: #ff2d4f;
+    }
+
+    html.theme-cyberpunk body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px) 0 0 / 100% 28px,
+        linear-gradient(90deg, rgba(255,255,255,.015) 1px, transparent 1px) 0 0 / 28px 100%;
+      mask: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 90%);
+      opacity: 0.5;
+    }
+    html.theme-cyberpunk body::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2;
+      background: repeating-linear-gradient(180deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+      opacity: 0.35;
+      mix-blend-mode: overlay;
+    }
+
+    .glow-blob {
+      display: none;
+    }
+    html.theme-cyberpunk .glow-blob {
+      display: block;
+      position: fixed; pointer-events: none; z-index: 0;
+      width: 600px; height: 600px; border-radius: 50%;
+      filter: blur(120px); opacity: 0.12;
+    }
+    html.theme-cyberpunk .glow-blob.a { top: -200px; left: -200px; background: var(--accent); }
+    html.theme-cyberpunk .glow-blob.b { bottom: -200px; right: -200px; background: var(--accent-2); }
+
+    html.theme-cyberpunk .mural-page {
+      background: var(--bg-deep) !important;
+      font-family: 'Chakra Petch', sans-serif !important;
+    }
+    
+    html.theme-cyberpunk .mural-hero {
+      background: var(--bg-panel) !important;
+      border: 1px solid var(--line) !important;
+      border-top: 3px solid var(--accent) !important;
+      border-radius: 4px !important;
+      position: relative;
+      box-shadow: 0 0 24px rgba(0, 240, 255, 0.1) !important;
+    }
+    html.theme-cyberpunk .mural-hero h2 {
+      font-family: 'Chakra Petch', sans-serif !important;
+      font-weight: 700 !important;
+      background: linear-gradient(120deg, #d4af37 0%, #fef1c9 25%, #ffd66e 50%, #fef1c9 75%, #d4af37 100%) !important;
+      background-size: 200% auto !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      filter: drop-shadow(0 0 12px rgba(255, 194, 74, 0.3)) !important;
+    }
+
+    html.theme-cyberpunk .mural-toolbar {
+      background: rgba(255, 255, 255, 0.01) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 4px !important;
+    }
+
+    html.theme-cyberpunk .mural-col {
+      border-radius: 4px !important;
+      border: 1px solid var(--line) !important;
+      background: var(--bg-panel) !important;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.03) !important;
+    }
+    html.theme-cyberpunk .mural-col-head {
+      background: linear-gradient(180deg, rgba(255,255,255,.015), transparent 80%) !important;
+      border-bottom: 1px solid var(--line) !important;
+    }
+    html.theme-cyberpunk .mural-col-todo .mural-col-head { border-top: 3px solid var(--blue) !important; }
+    html.theme-cyberpunk .mural-col-progress .mural-col-head { border-top: 3px solid var(--orange) !important; }
+    html.theme-cyberpunk .mural-col-done .mural-col-head { border-top: 3px solid var(--green) !important; }
+    
+    html.theme-cyberpunk .mural-col-title {
+      font-family: 'Chakra Petch', sans-serif !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
+    }
+
+    html.theme-cyberpunk .mural-col-count {
+      border-radius: 2px !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      background: var(--line) !important;
+      border: 1px solid var(--line-hi) !important;
+    }
+
+    html.theme-cyberpunk .mural-card {
+      border-radius: 2px !important;
+      border: 1px solid var(--line) !important;
+      background: var(--bg-card) !important;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)) !important;
+      border-top: none !important;
+      padding-left: 14px !important;
+      position: relative;
+    }
+    html.theme-cyberpunk .mural-card::before {
+      content: "";
+      position: absolute; top: 8px; bottom: 8px; left: 0; width: 2.5px;
+      background: var(--note-border);
+      box-shadow: 0 0 8px var(--note-border), 0 0 14px var(--note-border);
+    }
+    html.theme-cyberpunk .mural-card:hover {
+      border-color: var(--line-hi) !important;
+      box-shadow: 0 0 18px rgba(0, 240, 255, 0.08) !important;
+      transform: translateY(-2px);
+    }
+
+    html.theme-cyberpunk .mural-card-has-valor {
+      background: linear-gradient(180deg, rgba(255, 194, 74, 0.08) 0%, transparent 100%), var(--bg-card) !important;
+      border: 1px solid var(--gold) !important;
+      box-shadow: 0 0 12px rgba(255, 194, 74, 0.12) !important;
+    }
+    html.theme-cyberpunk .mural-card-has-valor:hover {
+      box-shadow: 0 0 18px rgba(255, 194, 74, 0.2) !important;
+    }
+
+    html.theme-cyberpunk .mural-card-title {
+      font-family: 'Chakra Petch', sans-serif !important;
+      font-weight: 600 !important;
+      color: var(--ink) !important;
+      letter-spacing: 0.01em !important;
+    }
+
+    html.theme-cyberpunk .mural-badge {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 8.5px !important;
+      border-radius: 2px !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      padding: 1px 6px !important;
+    }
+    html.theme-cyberpunk .badge-prioridade-baixa { border: 1px solid var(--blue) !important; background: rgba(77, 158, 255, 0.08) !important; color: var(--blue) !important; }
+    html.theme-cyberpunk .badge-prioridade-media { border: 1px solid var(--gold) !important; background: rgba(255, 194, 74, 0.08) !important; color: var(--gold) !important; }
+    html.theme-cyberpunk .badge-prioridade-alta { border: 1px solid var(--orange) !important; background: rgba(255, 138, 61, 0.08) !important; color: var(--orange) !important; }
+    html.theme-cyberpunk .badge-prioridade-urgente { border: 1px solid var(--red) !important; background: rgba(255, 45, 79, 0.08) !important; color: var(--red) !important; font-weight: 700 !important; animation: pulsePri 1.8s ease-in-out infinite !important; }
+
+    html.theme-cyberpunk .mural-valor-badge {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 9px !important;
+      border-radius: 2px !important;
+      border: 1px solid var(--gold) !important;
+      background: rgba(255, 194, 74, 0.06) !important;
+      color: var(--gold) !important;
+      text-shadow: 0 0 6px rgba(255, 194, 74, 0.4) !important;
+    }
+
+    html.theme-cyberpunk .mural-card-footer {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 9px !important;
+    }
+    html.theme-cyberpunk .mural-card-author {
+      color: var(--accent) !important;
+    }
+
+    html.theme-cyberpunk .mural-btn-primary {
+      background: linear-gradient(180deg, rgba(0, 240, 255, 0.15), rgba(0, 240, 255, 0.05)) !important;
+      border: 1px solid var(--accent) !important;
+      color: var(--accent) !important;
+      border-radius: 2px !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      letter-spacing: 0.12em !important;
+      text-transform: uppercase !important;
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.15), inset 0 0 8px rgba(0, 240, 255, 0.08) !important;
+    }
+    html.theme-cyberpunk .mural-btn-primary:hover {
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), inset 0 0 12px rgba(0, 240, 255, 0.15) !important;
+      transform: translateY(-1.5px);
+    }
+    html.theme-cyberpunk .mural-btn-ghost {
+      background: transparent !important;
+      border: 1px solid var(--line-hi) !important;
+      color: var(--ink-2) !important;
+      border-radius: 2px !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+    }
+    html.theme-cyberpunk .mural-btn-ghost:hover {
+      border-color: var(--accent) !important;
+      color: var(--accent) !important;
+      transform: translateY(-1.5px);
+    }
+
+    html.theme-cyberpunk .mural-modal {
+      background: var(--bg-panel) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 32px rgba(0, 240, 255, 0.12) !important;
+    }
+    html.theme-cyberpunk .mural-search-input {
+      background: var(--bg-card) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 2px !important;
+      color: var(--ink) !important;
+    }
+    html.theme-cyberpunk .mural-search-input:focus {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.15) !important;
+    }
+    html.theme-cyberpunk .mural-select {
+      background: var(--bg-card) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 2px !important;
+      color: var(--ink) !important;
+    }
+    html.theme-cyberpunk .mural-select:focus {
+      border-color: var(--accent) !important;
+    }
+
+    html.theme-cyberpunk .mural-user-chip {
+      background: var(--bg-panel) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 4px !important;
+    }
+    html.theme-cyberpunk .mural-user-avatar {
+      border-radius: 2px !important;
+      background: rgba(0, 240, 255, 0.1) !important;
+      border: 1px solid var(--accent) !important;
+      color: var(--accent) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    html.theme-cyberpunk #mural-toast-container > div {
+      background: var(--bg-panel) !important;
+      border: 1px solid var(--line) !important;
+      border-left: 4px solid var(--accent) !important;
+      border-radius: 2px !important;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.15) !important;
+    }
+
+    html.theme-cyberpunk .mural-card-assignee-avatar {
+      border-radius: 2px !important;
+      background: rgba(0, 240, 255, 0.1) !important;
+      border: 1px solid var(--accent) !important;
+      color: var(--accent) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.15) !important;
+    }
+
+    @keyframes pulsePri {
+      0%, 100% { box-shadow: 0 0 4px var(--red), inset 0 0 4px var(--red); }
+      50%      { box-shadow: 0 0 10px var(--red), inset 0 0 8px var(--red); }
+    }
   </style>
 </head>
 <body>
+  <div class="glow-blob a"></div>
+  <div class="glow-blob b"></div>
   <div class="mural-page">
     <div class="mural-wrap">
       <!-- HERO HEADER -->
@@ -640,6 +1030,26 @@
 
       <!-- TOOLBAR -->
       <div class="mural-toolbar" style="justify-content:flex-end;">
+        <div id="mural-assignee-filters" style="display: flex; gap: 8px; align-items: center; margin-right: auto; overflow-x: auto; padding: 2px 0;"></div>
+        <select id="mural-theme-select" class="mural-select" style="min-height: 42px; margin-right: 8px;">
+          <optgroup label="Interface Glassmorphism">
+            <option value="light">☀️ Claro</option>
+            <option value="dark">🌙 Escuro</option>
+            <option value="vintage">🍂 Vintage</option>
+            <option value="cosmos">🌌 Cosmos</option>
+            <option value="esmeralda">💚 Esmeralda</option>
+            <option value="diamante">💎 Diamante</option>
+            <option value="safira">💙 Safira</option>
+            <option value="vulcano">🌋 Vulcano</option>
+            <option value="crepusculo">🌅 Crepúsculo</option>
+            <option value="nordico">❄️ Nórdico</option>
+            <option value="cacau">☕ Cacau</option>
+            <option value="ametista">🔮 Ametista</option>
+          </optgroup>
+          <optgroup label="Interface Avançada">
+            <option value="cyberpunk">⚡ Cyberpunk (Neon)</option>
+          </optgroup>
+        </select>
         <button class="mural-btn mural-btn-ghost" id="btn-atualizar" title="Atualizar mural">↺ Atualizar</button>
       </div>
 
@@ -747,7 +1157,7 @@
     </div>
   </div>
 
-  <input type="file" id="mural-hidden-file-input" style="display:none;" onchange="handleAnexoFileChange()" />
+  <input type="file" id="mural-hidden-file-input" style="display:none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar,.jpg,.jpeg,.png,.gif,.svg,.mp4,.mp3" />
 
   <script>
     'use strict';
@@ -827,6 +1237,54 @@
       btnSair.style.display = 'inline-flex';
     }
 
+    let filtroResponsavel = 'Todos';
+
+    function renderAssigneeFilters(users) {
+      const container = document.getElementById('mural-assignee-filters');
+      if (!container) return;
+
+      const uniqueNames = ['Todos', ...users.filter(u => u.ativo).map(u => u.nome)];
+      
+      container.innerHTML = uniqueNames.map(name => {
+        const isAll = name === 'Todos';
+        const initial = isAll ? '👥' : name.charAt(0).toUpperCase();
+        const activeClass = (filtroResponsavel === name) ? 'active' : '';
+        
+        let bg = 'linear-gradient(135deg, var(--blue), var(--purple))';
+        if (!isAll) {
+          const colors = {
+            'A': '#3b6db8', 'B': '#4a8a5a', 'C': '#cb6a2a', 'D': '#8a5a8c',
+            'E': '#7a6d4a', 'F': '#3b6db8', 'G': '#4a8a5a', 'H': '#cb6a2a',
+            'I': '#8a5a8c', 'J': '#4d6b8a', 'K': '#7a6d4a', 'L': '#3b6db8',
+            'M': '#8a5a8c', 'N': '#4a8a5a', 'O': '#cb6a2a', 'P': '#7a6d4a',
+            'Q': '#3b6db8', 'R': '#7a6d4a', 'S': '#8a5a8c', 'T': '#4a8a5a',
+            'U': '#cb6a2a', 'V': '#7a6d4a', 'W': '#3b6db8', 'X': '#8a5a8c',
+            'Y': '#4a8a5a', 'Z': '#cb6a2a'
+          };
+          bg = colors[initial] || '#4d6b8a';
+        }
+
+        return `
+          <div class="mural-filter-chip ${activeClass}" onclick="setFiltroResponsavel('${esc(name)}')" title="Filtrar por: ${esc(name)}">
+            <span class="mural-filter-avatar" style="background:${bg};">${initial}</span>
+            <span class="mural-filter-name">${esc(name)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.setFiltroResponsavel = function(name) {
+      filtroResponsavel = name;
+      document.querySelectorAll('.mural-filter-chip').forEach(chip => {
+        if (chip.title.includes(name)) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+      renderMural();
+    };
+
     async function loadDestinatarios() {
       try {
         const res = await fetch('/api/auth/usuarios');
@@ -844,6 +1302,7 @@
               }
             });
           }
+          renderAssigneeFilters(users);
         }
       } catch (e) {
         console.warn('Erro ao carregar destinatarios:', e);
@@ -853,6 +1312,55 @@
     document.addEventListener('DOMContentLoaded', function() {
       populateUserChip();
       loadDestinatarios();
+
+      // Inicializa e controla o seletor de tema do mural
+      const themeSelect = document.getElementById('mural-theme-select');
+      if (themeSelect) {
+        const mt = localStorage.getItem('mural_theme') || 'default';
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        
+        if (mt === 'cyberpunk') {
+          themeSelect.value = 'cyberpunk';
+          document.documentElement.classList.add('theme-cyberpunk');
+        } else {
+          themeSelect.value = currentTheme;
+          document.documentElement.classList.remove('theme-cyberpunk');
+        }
+        
+        themeSelect.addEventListener('change', function() {
+          const selected = themeSelect.value;
+          if (selected === 'cyberpunk') {
+            localStorage.setItem('mural_theme', 'cyberpunk');
+            document.documentElement.classList.add('theme-cyberpunk');
+          } else {
+            localStorage.setItem('mural_theme', 'default');
+            localStorage.setItem('theme', selected);
+            document.documentElement.setAttribute('data-theme', selected);
+            document.documentElement.classList.remove('theme-cyberpunk');
+            
+            // Sincroniza a classe ativa dos botões do cabeçalho compartilhado (se houver)
+            document.querySelectorAll('.theme-select-btn').forEach(btn => {
+              const val = btn.getAttribute('data-theme-val');
+              if (val === selected) {
+                btn.classList.add('active');
+              } else {
+                btn.classList.remove('active');
+              }
+            });
+          }
+        });
+
+        // Sincroniza o seletor local do mural quando o tema é alterado pelo cabeçalho (dropdown de perfil)
+        document.addEventListener('click', function(e) {
+          const btn = e.target.closest('.theme-select-btn');
+          if (btn) {
+            const val = btn.getAttribute('data-theme-val');
+            localStorage.setItem('mural_theme', 'default');
+            document.documentElement.classList.remove('theme-cyberpunk');
+            themeSelect.value = val;
+          }
+        });
+      }
 
       document.getElementById('btn-sair').addEventListener('click', function() {
         fetch('/api/auth/sair', { method: 'POST' })
@@ -1010,7 +1518,12 @@
       // Clear columns
       Object.values(colLists).forEach(el => el.innerHTML = '');
       
-      const filtered = cacheRecados;
+      const filtered = cacheRecados.filter(item => {
+        if (filtroResponsavel && filtroResponsavel !== 'Todos') {
+          return item.destinatario === filtroResponsavel;
+        }
+        return true;
+      });
 
       filtered.forEach(item => {
         const col = item.status || 'a_fazer';
@@ -1037,6 +1550,151 @@
             </div>`;
         }
       });
+    }
+
+    function createParticleExplosion(x, y) {
+      // Se as coordenadas forem inválidas, nulas ou zeradas, tenta encontrar o centro da coluna Concluído ou da tela
+      if (!x || !y || x === 0 || y === 0) {
+        const concluidoCol = document.querySelector('#col-concluido');
+        if (concluidoCol) {
+          const rect = concluidoCol.getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 3;
+        } else {
+          x = window.innerWidth / 2;
+          y = window.innerHeight / 2;
+        }
+      }
+
+      const isCyber = document.documentElement.classList.contains('theme-cyberpunk');
+      
+      // Cores vibrantes neon para o cyberpunk, cores ricas para o padrão
+      const colors = isCyber 
+        ? ['#00f0ff', '#ff2d8e', '#c8ff2d', '#ffc24a', '#a124fd', '#ff0055'] 
+        : ['#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+      
+      const particleCount = isCyber ? 60 : 45; // Mais partículas para um efeito volumoso e satisfatório
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'mural-particle';
+        
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.backgroundColor = color;
+        
+        // 50% de retângulos (fitas), 50% de círculos (confetes clássicos)
+        const isCircle = Math.random() > 0.5;
+        const w = Math.floor(Math.random() * 8) + 6; // Largura entre 6px e 14px
+        const h = isCircle ? w : Math.floor(Math.random() * 10) + 8; // Retângulos são mais alongados
+        
+        particle.style.width = `${w}px`;
+        particle.style.height = `${h}px`;
+        particle.style.borderRadius = isCircle ? '50%' : '2px';
+        
+        // Glow neon no tema cyberpunk ou sombra realista no clássico
+        if (isCyber) {
+          particle.style.boxShadow = `0 0 10px ${color}, 0 0 4px ${color}`;
+        } else {
+          particle.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.15)';
+        }
+        
+        // Posicionamento absoluto inicial via fixed para controle total por translate3d
+        particle.style.left = '0';
+        particle.style.top = '0';
+        
+        document.body.appendChild(particle);
+        
+        // Física em leque: atirar para cima e para fora (ângulo em radianos de -35deg a -145deg)
+        const angle = -Math.PI * 0.2 - Math.random() * Math.PI * 0.6;
+        const speed = Math.random() * 10 + 5; // Velocidade de 5 a 15
+        
+        let vx = Math.cos(angle) * speed;
+        let vy = Math.sin(angle) * speed;
+        
+        let px = x;
+        let py = y;
+        
+        // Rotação inicial em 3D
+        let rotX = Math.random() * 360;
+        let rotY = Math.random() * 360;
+        let rotZ = Math.random() * 360;
+        
+        // Velocidade de rotação
+        const rotSpeedX = (Math.random() - 0.5) * 20;
+        const rotSpeedY = (Math.random() - 0.5) * 20;
+        const rotSpeedZ = (Math.random() - 0.5) * 20;
+        
+        // Desvio de vento aleatório lateral
+        const windDrift = (Math.random() - 0.5) * 0.4;
+        
+        const gravity = isCyber ? 0.20 : 0.26; // Queda um pouco mais flutuante no Cyberpunk
+        const friction = 0.985; // Suave resistência ao ar
+        
+        const start = Date.now();
+        const duration = Math.random() * 600 + 1000; // Tempo de vida: 1000ms a 1600ms
+        
+        function anim() {
+          const elapsed = Date.now() - start;
+          if (elapsed >= duration) {
+            particle.remove();
+            return;
+          }
+          
+          const progress = elapsed / duration;
+          const opacity = 1.0 - progress;
+          
+          // Escala diminui gradualmente no final (nos últimos 20% do ciclo de vida)
+          let scale = 1.0;
+          if (progress > 0.8) {
+            scale = (1.0 - progress) / 0.2;
+          }
+          
+          // Atualiza física
+          vx *= friction;
+          vy *= friction;
+          vy += gravity;
+          
+          // Efeito de ondulação/flutuação (drift senoidal para imitar papel no ar)
+          const sway = Math.sin(elapsed / 100 + i) * 0.5;
+          px += vx + sway + windDrift;
+          py += vy;
+          
+          // Incrementa rotações
+          rotX += rotSpeedX;
+          rotY += rotSpeedY;
+          rotZ += rotSpeedZ;
+          
+          // Atualiza os estilos usando 3D acelerado por hardware
+          particle.style.opacity = opacity;
+          particle.style.transform = `translate3d(${px}px, ${py}px, 0) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(${rotZ}deg) scale(${scale})`;
+          
+          requestAnimationFrame(anim);
+        }
+        
+        requestAnimationFrame(anim);
+      }
+    }
+
+    function isStagnant(criadoEmStr) {
+      if (!criadoEmStr) return false;
+      try {
+        const clean = criadoEmStr.split(' ')[0];
+        let dateObj;
+        if (clean.includes('-')) {
+          const parts = clean.split('-');
+          dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+        } else if (clean.includes('/')) {
+          const parts = clean.split('/');
+          dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+        } else {
+          return false;
+        }
+        const diffTime = Math.abs(new Date() - dateObj);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays >= 3;
+      } catch (_) {
+        return false;
+      }
     }
 
     function criarCardElement(item) {
@@ -1111,17 +1769,49 @@
         valorBadge = `<span class="mural-valor-badge">💰 ${formatted}</span>`;
       }
 
+      const dest = item.destinatario || 'Todos';
+      const isAll = dest === 'Todos';
+      const initial = isAll ? '👥' : dest.charAt(0).toUpperCase();
+      
+      let assigneeBg = 'linear-gradient(135deg, var(--blue), var(--purple))';
+      if (!isAll) {
+        const char = initial;
+        const colors = {
+          'A': '#3b6db8', 'B': '#4a8a5a', 'C': '#cb6a2a', 'D': '#8a5a8c',
+          'E': '#7a6d4a', 'F': '#3b6db8', 'G': '#4a8a5a', 'H': '#cb6a2a',
+          'I': '#8a5a8c', 'J': '#4d6b8a', 'K': '#7a6d4a', 'L': '#3b6db8',
+          'M': '#8a5a8c', 'N': '#4a8a5a', 'O': '#cb6a2a', 'P': '#7a6d4a',
+          'Q': '#3b6db8', 'R': '#7a6d4a', 'S': '#8a5a8c', 'T': '#4a8a5a',
+          'U': '#cb6a2a', 'V': '#7a6d4a', 'W': '#3b6db8', 'X': '#8a5a8c',
+          'Y': '#4a8a5a', 'Z': '#cb6a2a'
+        };
+        assigneeBg = colors[char] || '#4d6b8a';
+      }
+
+      const assigneeAvatar = `
+        <div class="mural-card-assignee-avatar" style="background:${assigneeBg};" title="Designado para: ${esc(dest)}">
+          ${initial}
+        </div>
+      `;
+
+      // Calcula se está estagnado (mais de 3 dias nas colunas A Fazer ou Em Progresso)
+      let stagnantDot = '';
+      if (item.status !== 'concluido' && isStagnant(item.criado_em)) {
+        stagnantDot = `<span class="mural-pulse-dot" title="Pendente há mais de 3 dias!"></span>`;
+      }
+
       card.innerHTML = `
-        <div class="mural-card-header">
-          <div style="flex:1; min-width:0;">
+        <div class="mural-card-header" style="display:flex; gap:10px; align-items:flex-start;">
+          ${assigneeAvatar}
+          <div style="flex:1; min-width:0; overflow:hidden;">
             <div class="mural-card-title">${esc(item.titulo)}</div>
             <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-top:5px;">
               ${valorBadge}
-
-              <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}</span>
+              <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}${stagnantDot}</span>
+              <span class="mural-badge" style="background:rgba(0,0,0,0.04); color:var(--text-2); border:1px solid var(--border); text-transform:none;">👤 ${esc(dest)}</span>
             </div>
           </div>
-          <div class="mural-card-actions">
+          <div class="mural-card-actions" style="margin-left:auto;">
             ${actButtons}
           </div>
         </div>
@@ -1132,8 +1822,6 @@
         <div class="mural-card-footer">
           <div class="mural-card-meta" style="font-size:9px;">
             <span class="mural-card-author">✍ ${esc(item.autor)}</span>
-            <span style="opacity:0.5;">•</span>
-            <span>👥 ${esc(item.destinatario || 'Todos')}</span>
             <span style="opacity:0.5;">•</span>
             <span style="opacity:0.7;">📅 ${esc((item.criado_em || '').split(' ')[0])}</span>
             ${completionMeta ? `<span style="opacity:0.5;">•</span>${completionMeta}` : ''}
@@ -1183,11 +1871,11 @@
       card.addEventListener('dragstart', (e) => {
         // Store task ID in dataTransfer
         e.dataTransfer.setData('text/plain', item.id);
-        card.style.opacity = '0.4';
+        card.classList.add('mural-card-dragging');
       });
       
       card.addEventListener('dragend', () => {
-        card.style.opacity = '';
+        card.classList.remove('mural-card-dragging');
       });
 
       return card;
@@ -1203,6 +1891,12 @@
         if (novoStatus === 'concluido' && currentUser) {
           item.concluido_por = currentUser;
           item.concluido_em = new Date().toLocaleString('pt-BR');
+          
+          // Dispara a animação de partículas com base no clique
+          const e = window.event;
+          if (e && e.clientX && e.clientY) {
+            createParticleExplosion(e.clientX, e.clientY);
+          }
         }
         renderMural();
       }
@@ -1461,6 +2155,9 @@
           if (!isNaN(taskId)) {
             const task = cacheRecados.find(r => r.id === taskId);
             if (task && task.status !== targetStatus) {
+              if (targetStatus === 'concluido') {
+                createParticleExplosion(e.clientX, e.clientY);
+              }
               await alterarStatusRecado(taskId, targetStatus);
             }
           }
@@ -1473,10 +2170,17 @@
 
     window.triggerAnexoUpload = function(recadoId) {
       currentUploadRecadoId = recadoId;
-      document.getElementById('mural-hidden-file-input').click();
+      const fileInput = document.getElementById('mural-hidden-file-input');
+      // Reset o valor ANTES de abrir o dialog — essencial para que onchange
+      // dispare mesmo quando o mesmo arquivo é selecionado novamente
+      fileInput.value = '';
+      fileInput.click();
     };
 
     async function enviarAnexoArquivo(recadoId, file) {
+      // Feedback visual imediato
+      showMuralToast(`📎 Enviando "${file.name}"...`, 'info');
+      
       const formData = new FormData();
       formData.append('file', file);
       
@@ -1486,14 +2190,19 @@
           body: formData
         });
         if (res.ok) {
+          showMuralToast(`✅ Anexo "${file.name}" enviado com sucesso!`, 'success');
           carregarMural();
         } else {
-          const err = await res.json();
-          alert(err.error || 'Erro ao enviar anexo');
+          let errMsg = 'Erro ao enviar anexo';
+          try {
+            const err = await res.json();
+            errMsg = err.error || errMsg;
+          } catch(_) {}
+          showMuralToast(`❌ ${errMsg}`, 'error');
         }
       } catch (e) {
-        console.error(e);
-        alert('Erro ao enviar arquivo');
+        console.error('Erro ao enviar arquivo:', e);
+        showMuralToast('❌ Erro de rede ao enviar arquivo', 'error');
       }
     }
 
@@ -1502,11 +2211,20 @@
       if (!fileInput.files || fileInput.files.length === 0 || !currentUploadRecadoId) return;
       
       const file = fileInput.files[0];
-      await enviarAnexoArquivo(currentUploadRecadoId, file);
-      
-      fileInput.value = '';
+      const id = currentUploadRecadoId;
       currentUploadRecadoId = null;
+      fileInput.value = '';
+      await enviarAnexoArquivo(id, file);
     };
+
+    // Registra o listener de change via addEventListener como reforço robusto
+    // (O elemento já existe no DOM pois o script é inline, não é necessário DOMContentLoaded)
+    (function() {
+      const fi = document.getElementById('mural-hidden-file-input');
+      if (fi) {
+        fi.addEventListener('change', window.handleAnexoFileChange);
+      }
+    })();
 
     window.excluirAnexo = async function(recadoId, attachmentId) {
       if (!confirm("Excluir este anexo?")) return;
