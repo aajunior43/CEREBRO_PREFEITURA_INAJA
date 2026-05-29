@@ -127,16 +127,28 @@ function shouldRequestSummary() {
 }
 
 async function ensureBrasaoB64() {
+  // Se ja tem o valor em cache (sessao), retorna direto
   if (typeof BRASAO_B64 !== 'undefined' && BRASAO_B64) return BRASAO_B64;
+  if (window._brasaoB64Cache) return window._brasaoB64Cache;
   if (_brasaoB64Promise) return _brasaoB64Promise;
-  _brasaoB64Promise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = '/static/js/brasao_b64.js';
-    script.async = true;
-    script.onload = () => resolve(typeof BRASAO_B64 !== 'undefined' ? BRASAO_B64 : '');
-    script.onerror = () => reject(new Error('Falha ao carregar brasão otimizado'));
-    document.head.appendChild(script);
-  });
+
+  // Carrega a imagem via fetch e converte para base64 (substitui o arquivo brasao_b64.js de 436KB)
+  _brasaoB64Promise = fetch('/static/img/brasao.png')
+    .then(r => {
+      if (!r.ok) throw new Error('Falha ao carregar brasão');
+      return r.blob();
+    })
+    .then(blob => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        window._brasaoB64Cache = reader.result;
+        resolve(reader.result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    }))
+    .catch(() => '/static/img/brasao.png'); // fallback: URL direta
+
   return _brasaoB64Promise;
 }
 

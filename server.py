@@ -124,6 +124,7 @@ def create_app() -> Flask:
     app.config["SESSION_COOKIE_NAME"] = "inaja_sid"
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["MAX_CONTENT_LENGTH"] = 15 * 1024 * 1024  # 15 MB — cobre uploads de anexos do Mural
 
 # ── Logging ──────────────────────────────────────────────
     os.makedirs(str(settings.log_dir), exist_ok=True)
@@ -683,7 +684,24 @@ def create_app() -> Flask:
     except ImportError:
         _BROTLI_OK = False
 
-    _SKIP_EXTS = {".db", ".db-shm", ".db-wal", ".pyc", ".pyo", ".log", ".bat"}
+    _SKIP_EXTS = {
+        # Banco de dados
+        ".db", ".db-shm", ".db-wal",
+        # Bytecode Python
+        ".pyc", ".pyo",
+        # Logs e scripts de sistema
+        ".log", ".bat", ".ps1", ".sh",
+        # Executaveis e arquivos binarios grandes (nao sao assets web)
+        ".exe", ".dll", ".so", ".bin",
+        # Arquivos comprimidos / pacotes
+        ".zip", ".gz", ".tar", ".rar", ".7z",
+        # Fontes TTF/OTF — browser moderno so precisa de .woff2
+        ".ttf", ".otf", ".eot",
+        # Codigo-fonte Python e docs (nao sao assets web)
+        ".py", ".md", ".txt", ".rst",
+        # Dados brutos (CSV pesado)
+        ".csv",
+    }
     _SKIP_DIRS = {
         "__pycache__",
         ".git",
