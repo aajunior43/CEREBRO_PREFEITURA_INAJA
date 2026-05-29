@@ -838,7 +838,8 @@
         contextBuilder() {
           if (typeof window.buildComparisonContext === 'function') return window.buildComparisonContext();
           return buildGenericIaContext();
-
+        }
+      }
     };
 
     function ensureIaWidgetScript() {
