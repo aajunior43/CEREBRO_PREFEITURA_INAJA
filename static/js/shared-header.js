@@ -260,10 +260,12 @@
     <nav class="desktop-nav">
       <a href="/index.html" class="nav-tab" style="text-decoration:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <line x1="9" y1="3" x2="9" y2="21"/>
+          <line x1="13" y1="9" x2="19" y2="9"/>
+          <line x1="13" y1="13" x2="19" y2="13"/>
         </svg>
-        Credores
+        Painel Financeiro
       </a>
       <div class="nav-group">
         <button class="nav-group-btn">
@@ -319,7 +321,7 @@
     <span>Menu</span>
     <button class="mobile-nav-close" id="shd-mobile-nav-close">&times;</button>
   </div>
-  <a href="/index.html" class="mobile-nav-item" style="text-decoration:none;">Credores Fixos</a>
+  <a href="/index.html" class="mobile-nav-item" style="text-decoration:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;flex-shrink:0;margin-right:8px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="13" y1="9" x2="19" y2="9"/><line x1="13" y1="13" x2="19" y2="13"/></svg> Painel Financeiro</a>
 
   <div class="mobile-nav-divider"></div>
   <div class="mobile-nav-label">Documentos</div>
@@ -405,8 +407,8 @@
       bnav.innerHTML = `
         <div class="bottom-nav-items">
           <a class="bottom-nav-item${isActive('/index.html') ? ' active':''}" href="/index.html">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            <span>Credores</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            <span>Painel</span>
             <span class="bottom-nav-indicator"></span>
           </a>
 

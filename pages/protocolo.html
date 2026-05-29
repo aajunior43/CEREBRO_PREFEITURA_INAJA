@@ -166,7 +166,19 @@
           </div>
           <div>
             <div class="pr-label">Origem / Destino</div>
-            <input id="pr-origem" class="pr-input" type="text" placeholder="Ex: Tribunal de Contas, SAAE Inajá..." />
+            <input id="pr-origem" class="pr-input" type="text" placeholder="Ex: Setor de Finanças, Tribunal de Contas, SAAE Inajá..." list="origens-sugeridas" />
+            <datalist id="origens-sugeridas">
+              <option value="Setor de Finanças"></option>
+              <option value="SAAE Inajá"></option>
+              <option value="Tribunal de Contas (TCE-PR)"></option>
+              <option value="Setor de Recursos Humanos (RH)"></option>
+              <option value="Setor de Compras e Licitações"></option>
+              <option value="Gabinete do Prefeito"></option>
+              <option value="Setor de Administração"></option>
+              <option value="Setor de Saúde"></option>
+              <option value="Setor de Educação"></option>
+              <option value="Câmara Municipal"></option>
+            </datalist>
           </div>
           <div>
             <div class="pr-label">Assunto *</div>

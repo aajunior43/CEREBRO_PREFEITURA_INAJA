@@ -46,7 +46,7 @@ def _buscar_cnpja(cnpj: str, api_key: str = "") -> dict:
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     req = _urllib_req.Request(url, headers=headers)
-    with _urllib_req.urlopen(req, timeout=15) as r:
+    with _urllib_req.urlopen(req, timeout=3) as r:
         d = json.loads(r.read().decode())
     end = d.get("address", {})
     telefones = [
@@ -101,7 +101,7 @@ def _buscar_cnpja(cnpj: str, api_key: str = "") -> dict:
 def _buscar_receitaws(cnpj: str) -> dict:
     url = f"https://www.receitaws.com.br/v1/cnpj/{cnpj}"
     req = _urllib_req.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with _urllib_req.urlopen(req, timeout=10) as r:
+    with _urllib_req.urlopen(req, timeout=5) as r:
         d = json.loads(r.read().decode())
     if d.get("status") == "ERROR":
         raise Exception(d.get("message", "CNPJ não encontrado"))
@@ -135,25 +135,88 @@ def _buscar_receitaws(cnpj: str) -> dict:
     }
 
 
+def _buscar_brasilapi(cnpj: str) -> dict:
+    url = f"https://brasilapi.com.br/api/cnpj/v1/{cnpj}"
+    req = _urllib_req.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with _urllib_req.urlopen(req, timeout=3) as r:
+        d = json.loads(r.read().decode())
+    
+    end_str = f"{d.get('logradouro', '')} {d.get('numero', '')}".strip()
+    comp = d.get('complemento')
+    if comp:
+        end_str += f", {comp}"
+    end_str += f" - {d.get('bairro', '')} - {d.get('municipio', '')}/{d.get('uf', '')} - CEP {d.get('cep', '')}"
+    
+    socios = [
+        {
+            "nome": s.get("nome_socio", ""),
+            "qualificacao": str(s.get("codigo_qualificacao_socio", ""))
+        }
+        for s in d.get("qsa", [])
+    ]
+    
+    cnaes_sec = [a.get("descricao", "") for a in d.get("cnaes_secundarios", []) if a.get("descricao")]
+    
+    tel1 = d.get("ddd_telefone_1") or ""
+    tels = [tel1] if tel1 else []
+    
+    email = d.get("email") or ""
+    emails = [email] if email else []
+    
+    return {
+        "cnpj": cnpj,
+        "razao_social": d.get("razao_social", ""),
+        "nome_fantasia": d.get("nome_fantasia", "") or d.get("razao_social", ""),
+        "situacao": d.get("descricao_situacao_cadastral", ""),
+        "situacao_id": str(d.get("situacao_cadastral", "")),
+        "data_situacao": d.get("data_situacao_cadastral", ""),
+        "data_abertura": d.get("data_inicio_atividade", ""),
+        "natureza_juridica": str(d.get("codigo_natureza_juridica", "")),
+        "capital_social": _fmt_moeda(d.get("capital_social")),
+        "porte": d.get("descricao_porte", ""),
+        "simples": "Sim" if d.get("opcao_pelo_simples") else "Não",
+        "mei": "Sim" if d.get("opcao_pelo_mei") else "Não",
+        "matriz": "Sim" if d.get("identificador_matriz_filial") == 1 else "Filial",
+        "endereco": end_str,
+        "cnae_principal": d.get("cnae_fiscal_principal_descricao", ""),
+        "cnaes_secundarios": cnaes_sec,
+        "socios": socios,
+        "telefones": tels,
+        "emails": emails,
+        "fonte": "BrasilAPI",
+    }
+
+
 @bp.route("/api/cnpj/buscar", methods=["POST"])
 def cnpj_buscar():
-    d = request.get_json()
+    d = request.get_json() or {}
     cnpj = _cnpj_so_numeros(d.get("cnpj", ""))
     api_key = d.get("api_key_cnpja", "").strip()
     if len(cnpj) != 14:
         return jsonify({"error": "CNPJ deve ter 14 dígitos"}), 400
     if not _cnpj_valido(cnpj):
         return jsonify({"error": "CNPJ inválido"}), 400
+    
+    # 1. Se possuir chave para o CNPJá, tenta primeiro por ele
+    if api_key:
+        try:
+            return jsonify(_buscar_cnpja(cnpj, api_key))
+        except _urllib_err.HTTPError as e:
+            if e.code == 429:
+                return jsonify(
+                    {"error": "Limite de consultas no CNPJá atingido (5/min). Aguarde 1 minuto."}
+                ), 429
+        except Exception:
+            pass
+            
+    # 2. Tenta BrasilAPI (excelente serviço público, gratuito, rápido e sem chaves)
     try:
-        return jsonify(_buscar_cnpja(cnpj, api_key))
-    except _urllib_err.HTTPError as e:
-        if e.code == 429:
-            return jsonify(
-                {"error": "Limite de consultas atingido (5/min). Aguarde 1 minuto."}
-            ), 429
+        return jsonify(_buscar_brasilapi(cnpj))
     except Exception:
         pass
+        
+    # 3. Tenta ReceitaWS como último recurso
     try:
         return jsonify(_buscar_receitaws(cnpj))
     except Exception as e2:
-        return jsonify({"error": f"CNPJ não encontrado: {e2}"}), 404
+        return jsonify({"error": f"CNPJ não encontrado nos serviços de consulta: {e2}"}), 404

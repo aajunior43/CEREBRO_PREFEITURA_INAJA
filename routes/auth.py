@@ -34,12 +34,16 @@ def _seed_admin(admin_password, app):
     if not admin_password:
         return
     conn = app._get_db()
-    row = conn.execute("SELECT id FROM usuarios WHERE login='admin' AND ativo=1").fetchone()
+    # Remove os usuarios legacy 'admin' e 'administrador' para garantir que o Aleksandro seja o unico administrador
+    conn.execute("DELETE FROM usuarios WHERE login IN ('admin', 'administrador')")
+    conn.commit()
+    
+    row = conn.execute("SELECT id FROM usuarios WHERE login='aleksandro' AND ativo=1").fetchone()
     if row:
         return
     conn.execute(
         "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-        ("Administrador", "admin@inaja.pr.gov.br", "admin", _hash(admin_password), "admin"),
+        ("Aleksandro", "aleksandro@inaja.pr.gov.br", "aleksandro", _hash(admin_password), "admin"),
     )
     conn.commit()
 
@@ -135,14 +139,18 @@ def auth_adm_legacy():
         return jsonify({"ok": False, "error": "Senha incorreta"}), 401
 
     conn = get_db()
-    row = conn.execute("SELECT * FROM usuarios WHERE login='admin' AND ativo=1").fetchone()
+    # Remove os usuarios legacy 'admin' e 'administrador' para garantir a limpeza do banco
+    conn.execute("DELETE FROM usuarios WHERE login IN ('admin', 'administrador')")
+    conn.commit()
+    
+    row = conn.execute("SELECT * FROM usuarios WHERE login='aleksandro' AND ativo=1").fetchone()
     if not row:
         conn.execute(
             "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-            ("Administrador", "admin@inaja.pr.gov.br", "admin", _hash(admin_password), "admin"),
+            ("Aleksandro", "aleksandro@inaja.pr.gov.br", "aleksandro", _hash(admin_password), "admin"),
         )
         conn.commit()
-        row = conn.execute("SELECT * FROM usuarios WHERE login='admin' AND ativo=1").fetchone()
+        row = conn.execute("SELECT * FROM usuarios WHERE login='aleksandro' AND ativo=1").fetchone()
 
     session["usuario_id"] = row["id"]
     session["usuario_login"] = row["login"]

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mural</title>
   <link rel="stylesheet" href="/static/css/index.css" />
-  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt&&['cyberpunk','netflix','spotify','discord','github','dracula','executivo','matrix'].indexOf(mt)!==-1)document.documentElement.classList.add('theme-'+mt);}());</script>
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt&&['cyberpunk','netflix','spotify','discord','github','dracula','executivo','matrix','starwars','barbie','whatsapp','pastel','instagram'].indexOf(mt)!==-1)document.documentElement.classList.add('theme-'+mt);}());</script>
   <script>
     // Bloqueia renderização imediatamente antes de qualquer HTML ser exibido
     document.documentElement.style.visibility = 'hidden';
@@ -1171,7 +1171,7 @@
     }
 
     html.theme-netflix .mural-hero h2 {
-      font-family: 'Montserrat', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+      font-family: 'Montserrat', sans-serif !important;
       font-weight: 900 !important;
       background: linear-gradient(180deg, #ffffff 0%, #e5e5e5 100%) !important;
       -webkit-background-clip: text !important;
@@ -1247,13 +1247,45 @@
       border: 1px solid #3c3c3c !important;
       border-radius: 4px !important;
     }
+    html.theme-netflix .mural-stats-number {
+      color: #e50914 !important;
+    }
 
     html.theme-netflix .mural-modal {
       background: #181818 !important;
       border: 1px solid #2b2b2b !important;
       border-radius: 6px !important;
       box-shadow: 0 20px 50px rgba(0,0,0,0.9) !important;
+      border-top: 3px solid #e50914 !important;
     }
+
+    html.theme-netflix .mural-search-wrap, 
+    html.theme-netflix .mural-select {
+      background: #2f2f2f !important;
+      border: 1px solid #3c3c3c !important;
+      border-radius: 4px !important;
+      color: #ffffff !important;
+    }
+    html.theme-netflix .mural-search-wrap:focus-within {
+      border-color: #e50914 !important;
+      box-shadow: 0 0 10px rgba(229, 9, 20, 0.4) !important;
+    }
+
+    html.theme-netflix .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-netflix .mural-col-list::-webkit-scrollbar-track {
+      background: #141414;
+    }
+    html.theme-netflix .mural-col-list::-webkit-scrollbar-thumb {
+      background: #e50914;
+      border-radius: 3px;
+    }
+
+    html.theme-netflix .badge-prioridade-baixa { background: #2e7d32 !important; color: #ffffff !important; border-radius: 2px !important; }
+    html.theme-netflix .badge-prioridade-media { background: #ef6c00 !important; color: #ffffff !important; border-radius: 2px !important; }
+    html.theme-netflix .badge-prioridade-alta { background: #c62828 !important; color: #ffffff !important; border-radius: 2px !important; }
+    html.theme-netflix .badge-prioridade-urgente { background: #e50914 !important; color: #ffffff !important; border-radius: 2px !important; font-weight: bold !important; animation: pulsePri 1.5s infinite !important; }
 
     /* =============================================================================
        SPOTIFY THEME INTEGRATION
@@ -1382,13 +1414,45 @@
       border: 1px solid #282828 !important;
       border-radius: 8px !important;
     }
+    html.theme-spotify .mural-stats-number {
+      color: #1db954 !important;
+    }
 
     html.theme-spotify .mural-modal {
       background: #121212 !important;
       border: 1px solid #282828 !important;
       border-radius: 12px !important;
       box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
+      border-top: 3px solid #1db954 !important;
     }
+
+    html.theme-spotify .mural-search-wrap, 
+    html.theme-spotify .mural-select {
+      background: #282828 !important;
+      border: 1px solid transparent !important;
+      border-radius: 500px !important;
+      color: #ffffff !important;
+      padding: 8px 16px !important;
+    }
+    html.theme-spotify .mural-search-wrap:focus-within {
+      border: 1px solid #1db954 !important;
+    }
+
+    html.theme-spotify .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-spotify .mural-col-list::-webkit-scrollbar-thumb {
+      background: #535353;
+      border-radius: 3px;
+    }
+    html.theme-spotify .mural-col-list::-webkit-scrollbar-thumb:hover {
+      background: #1db954;
+    }
+
+    html.theme-spotify .badge-prioridade-baixa { background: #535353 !important; color: #b3b3b3 !important; border-radius: 500px !important; border: 1px solid #7f7f7f !important; }
+    html.theme-spotify .badge-prioridade-media { background: #ffa154 !important; color: #000000 !important; border-radius: 500px !important; }
+    html.theme-spotify .badge-prioridade-alta { background: #f15858 !important; color: #ffffff !important; border-radius: 500px !important; }
+    html.theme-spotify .badge-prioridade-urgente { background: #1db954 !important; color: #000000 !important; border-radius: 500px !important; font-weight: bold !important; }
 
     /* =============================================================================
        DISCORD THEME INTEGRATION
@@ -1471,6 +1535,40 @@
     html.theme-discord .mural-btn-ghost:hover {
       background: #6d6f78 !important;
     }
+    
+    html.theme-discord .mural-modal {
+      background: #313338 !important;
+      border: 1px solid #1e1f22 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.8) !important;
+    }
+    html.theme-discord .mural-search-wrap, 
+    html.theme-discord .mural-select {
+      background: #1e1f22 !important;
+      border: 1px solid transparent !important;
+      border-radius: 4px !important;
+      color: #f2f3f5 !important;
+    }
+    html.theme-discord .mural-search-wrap:focus-within {
+      border: 1px solid #5865f2 !important;
+    }
+    html.theme-discord .mural-col-list::-webkit-scrollbar {
+      width: 8px;
+    }
+    html.theme-discord .mural-col-list::-webkit-scrollbar-track {
+      background: #2e3035;
+    }
+    html.theme-discord .mural-col-list::-webkit-scrollbar-thumb {
+      background: #1a1b1e;
+      border-radius: 4px;
+    }
+    html.theme-discord .badge-prioridade-baixa { background: #23a55a !important; color: #ffffff !important; border-radius: 3px !important; }
+    html.theme-discord .badge-prioridade-media { background: #f0b232 !important; color: #ffffff !important; border-radius: 3px !important; }
+    html.theme-discord .badge-prioridade-alta { background: #f23f43 !important; color: #ffffff !important; border-radius: 3px !important; }
+    html.theme-discord .badge-prioridade-urgente { background: #f23f43 !important; color: #ffffff !important; border-radius: 3px !important; font-weight: bold !important; animation: pulsePri 1.5s infinite !important; }
+    html.theme-discord .mural-stats-panel { background: #2b2d31 !important; border-left: 1px solid #1e1f22 !important; }
+    html.theme-discord .mural-stats-card { background: #1e1f22 !important; border: 1px solid #1e1f22 !important; border-radius: 4px !important; }
+    html.theme-discord .mural-stats-number { color: #5865f2 !important; }
 
     /* =============================================================================
        GITHUB THEME INTEGRATION
@@ -1559,6 +1657,37 @@
       border-color: #8b949e !important;
       transform: none !important;
     }
+    
+    html.theme-github .mural-modal {
+      background: #161b22 !important;
+      border: 1px solid #30363d !important;
+      border-radius: 6px !important;
+    }
+    html.theme-github .mural-search-wrap, 
+    html.theme-github .mural-select {
+      background: #0d1117 !important;
+      border: 1px solid #30363d !important;
+      border-radius: 6px !important;
+      color: #c9d1d9 !important;
+    }
+    html.theme-github .mural-search-wrap:focus-within {
+      border-color: #58a6ff !important;
+      box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15) !important;
+    }
+    html.theme-github .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-github .mural-col-list::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 3px;
+    }
+    html.theme-github .badge-prioridade-baixa { background: rgba(56, 139, 253, 0.15) !important; color: #58a6ff !important; border: 1px solid rgba(56, 139, 253, 0.4) !important; border-radius: 2em !important; }
+    html.theme-github .badge-prioridade-media { background: rgba(210, 153, 34, 0.15) !important; color: #d29922 !important; border: 1px solid rgba(210, 153, 34, 0.4) !important; border-radius: 2em !important; }
+    html.theme-github .badge-prioridade-alta { background: rgba(248, 81, 73, 0.15) !important; color: #f85149 !important; border: 1px solid rgba(248, 81, 73, 0.4) !important; border-radius: 2em !important; }
+    html.theme-github .badge-prioridade-urgente { background: #f85149 !important; color: #ffffff !important; border-radius: 2em !important; font-weight: bold !important; }
+    html.theme-github .mural-stats-panel { background: #161b22 !important; border-left: 1px solid #30363d !important; }
+    html.theme-github .mural-stats-card { background: #0d1117 !important; border: 1px solid #30363d !important; border-radius: 6px !important; }
+    html.theme-github .mural-stats-number { color: #58a6ff !important; }
 
     /* =============================================================================
        DRACULA THEME INTEGRATION
@@ -1643,6 +1772,38 @@
     html.theme-dracula .mural-btn-ghost:hover {
       background: #6272a4 !important;
     }
+    
+    html.theme-dracula .mural-modal {
+      background: #1e1f29 !important;
+      border: 1px solid #6272a4 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 10px 30px rgba(189, 147, 249, 0.2) !important;
+    }
+    html.theme-dracula .mural-search-wrap, 
+    html.theme-dracula .mural-select {
+      background: #282a36 !important;
+      border: 1px solid #6272a4 !important;
+      border-radius: 4px !important;
+      color: #f8f8f2 !important;
+    }
+    html.theme-dracula .mural-search-wrap:focus-within {
+      border-color: #ff79c6 !important;
+      box-shadow: 0 0 8px rgba(255, 121, 198, 0.3) !important;
+    }
+    html.theme-dracula .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-dracula .mural-col-list::-webkit-scrollbar-thumb {
+      background: #bd93f9;
+      border-radius: 3px;
+    }
+    html.theme-dracula .badge-prioridade-baixa { background: rgba(80, 250, 123, 0.1) !important; color: #50fa7b !important; border: 1px solid #50fa7b !important; }
+    html.theme-dracula .badge-prioridade-media { background: rgba(255, 184, 108, 0.1) !important; color: #ffb86c !important; border: 1px solid #ffb86c !important; }
+    html.theme-dracula .badge-prioridade-alta { background: rgba(255, 121, 198, 0.1) !important; color: #ff79c6 !important; border: 1px solid #ff79c6 !important; }
+    html.theme-dracula .badge-prioridade-urgente { background: #ff5555 !important; color: #282a36 !important; font-weight: bold !important; animation: pulsePri 1.5s infinite !important; }
+    html.theme-dracula .mural-stats-panel { background: #1e1f29 !important; border-left: 1px solid #6272a4 !important; }
+    html.theme-dracula .mural-stats-card { background: #282a36 !important; border: 1px solid #6272a4 !important; border-radius: 6px !important; }
+    html.theme-dracula .mural-stats-number { color: #bd93f9 !important; }
 
     /* =============================================================================
        EXECUTIVO OURO THEME INTEGRATION
@@ -1739,6 +1900,38 @@
       color: #ffffff !important;
       transform: translateY(-2px);
     }
+    
+    html.theme-executivo .mural-modal {
+      background: #0f172a !important;
+      border: 1px solid #d4af37 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 15px 40px rgba(212, 175, 55, 0.15) !important;
+    }
+    html.theme-executivo .mural-search-wrap, 
+    html.theme-executivo .mural-select {
+      background: #1e293b !important;
+      border: 1px solid #334155 !important;
+      border-radius: 8px !important;
+      color: #cbd5e1 !important;
+    }
+    html.theme-executivo .mural-search-wrap:focus-within {
+      border-color: #d4af37 !important;
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.2) !important;
+    }
+    html.theme-executivo .mural-col-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    html.theme-executivo .mural-col-list::-webkit-scrollbar-thumb {
+      background: #d4af37;
+      border-radius: 3px;
+    }
+    html.theme-executivo .badge-prioridade-baixa { border: 1px solid var(--blue) !important; color: var(--blue) !important; background: rgba(56, 189, 248, 0.05) !important; }
+    html.theme-executivo .badge-prioridade-media { border: 1px solid var(--orange) !important; color: var(--orange) !important; background: rgba(251, 146, 60, 0.05) !important; }
+    html.theme-executivo .badge-prioridade-alta { border: 1px solid var(--red) !important; color: var(--red) !important; background: rgba(248, 113, 113, 0.05) !important; }
+    html.theme-executivo .badge-prioridade-urgente { border: 1px solid #d4af37 !important; color: #080d16 !important; background: #d4af37 !important; font-weight: bold !important; }
+    html.theme-executivo .mural-stats-panel { background: #0f172a !important; border-left: 1px solid #1e293b !important; }
+    html.theme-executivo .mural-stats-card { background: #1e293b !important; border: 1px solid #334155 !important; border-radius: 10px !important; }
+    html.theme-executivo .mural-stats-number { color: #d4af37 !important; }
 
     /* =============================================================================
        MATRIX THEME INTEGRATION
@@ -1781,6 +1974,7 @@
     }
     html.theme-matrix .mural-page {
       background: #000000 !important;
+      font-family: "Courier New", Courier, monospace !important;
     }
     html.theme-matrix .mural-hero {
       background: #050505 !important;
@@ -1792,11 +1986,13 @@
       font-family: "Courier New", Courier, monospace !important;
       font-weight: bold !important;
       color: #00ff00 !important;
+      text-shadow: 0 0 6px #00ff00 !important;
     }
     html.theme-matrix .mural-toolbar {
       background: #050505 !important;
       border: 1px solid #003300 !important;
       border-radius: 2px !important;
+      font-family: monospace !important;
     }
     html.theme-matrix .mural-col {
       border-radius: 2px !important;
@@ -1807,6 +2003,7 @@
       border-radius: 2px !important;
       border: 1px solid #003300 !important;
       background: #0a0a0a !important;
+      font-family: monospace !important;
     }
     html.theme-matrix .mural-card:hover {
       border-color: #00ff00 !important;
@@ -1819,6 +2016,7 @@
       color: #00ff00 !important;
       border-radius: 2px !important;
       font-family: monospace !important;
+      text-shadow: 0 0 4px #00ff00 !important;
     }
     html.theme-matrix .mural-btn-primary:hover {
       background: #006600 !important;
@@ -1836,9 +2034,743 @@
       color: #00ff00 !important;
       box-shadow: 0 0 8px #00ff00 !important;
     }
-  </style>
+    
+    html.theme-matrix .mural-modal {
+      background: #000000 !important;
+      border: 1px solid #00ff00 !important;
+      border-radius: 2px !important;
+      font-family: monospace !important;
+      box-shadow: 0 0 20px #00ff00 !important;
+    }
+    html.theme-matrix .mural-search-wrap, 
+    html.theme-matrix .mural-select {
+      background: #000000 !important;
+      border: 1px solid #003300 !important;
+      border-radius: 2px !important;
+      color: #00ff00 !important;
+      font-family: monospace !important;
+    }
+    html.theme-matrix .mural-search-wrap:focus-within {
+      border-color: #00ff00 !important;
+      box-shadow: 0 0 10px #00ff00 !important;
+    }
+    html.theme-matrix .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-matrix .mural-col-list::-webkit-scrollbar-thumb {
+      background: #00ff00;
+      border-radius: 2px;
+    }
+    html.theme-matrix .mural-col-list::-webkit-scrollbar-track {
+      background: #000000;
+    }
+    html.theme-matrix .badge-prioridade-baixa::before { content: "["; }
+    html.theme-matrix .badge-prioridade-baixa::after { content: "-BAIXA]"; }
+    html.theme-matrix .badge-prioridade-media::before { content: "["; }
+    html.theme-matrix .badge-prioridade-media::after { content: "-MEDIA]"; }
+    html.theme-matrix .badge-prioridade-alta::before { content: "["; }
+    html.theme-matrix .badge-prioridade-alta::after { content: "-ALTA]"; }
+    html.theme-matrix .badge-prioridade-urgente::before { content: "["; }
+    html.theme-matrix .badge-prioridade-urgente::after { content: "-URGENTE]"; }
+    html.theme-matrix .mural-badge {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      color: #00ff00 !important;
+      font-family: monospace !important;
+    }
+    html.theme-matrix .mural-stats-panel {
+      background: #000000 !important;
+      border-left: 1px solid #00ff00 !important;
+      font-family: monospace !important;
+    }
+    html.theme-matrix .mural-stats-card {
+      background: #050505 !important;
+      border: 1px solid #003300 !important;
+    }
+    html.theme-matrix .mural-stats-number {
+      color: #00ff00 !important;
+      text-shadow: 0 0 6px #00ff00 !important;
+    }
+
+    /* =============================================================================
+       STAR WARS THEME INTEGRATION
+       ============================================================================= */
+    html.theme-starwars {
+      --bg-deep:   #000000;
+      --bg-panel:  #0a0b0d;
+      --bg-card:   #131518;
+      --line:      #23272a;
+      --line-hi:   #e01a22;
+      --ink:       #ffffff;
+      --ink-2:     #a3a8b2;
+      --ink-3:     #5a626a;
+      --ink-4:     #1e2124;
+
+      --accent:    #ffe81f;
+      --accent-2:  #e01a22;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 4px 10px rgba(0,0,0,0.5);
+      --shadow: 0 8px 20px rgba(0,0,0,0.6);
+      --shadow-lg: 0 12px 30px rgba(0,0,0,0.8);
+      
+      --blue: #0066ff;
+      --orange: #ff9900;
+      --green: #00ff00;
+      --red: #e01a22;
+    }
+    html.theme-starwars body {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    html.theme-starwars .mural-page {
+      background: #000000 !important;
+      background-image: radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px) !important;
+      background-size: 60px 60px !important;
+    }
+    html.theme-starwars .mural-hero {
+      background: #0a0b0d !important;
+      border: 1px solid #23272a !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 15px rgba(255, 232, 31, 0.1) !important;
+    }
+    html.theme-starwars .mural-hero h2 {
+      font-family: 'Montserrat', sans-serif !important;
+      font-weight: 900 !important;
+      color: #ffe81f !important;
+      text-shadow: 0 0 8px rgba(255, 232, 31, 0.5) !important;
+    }
+    html.theme-starwars .mural-toolbar {
+      background: #0a0b0d !important;
+      border: 1px solid #23272a !important;
+      border-radius: 4px !important;
+    }
+    html.theme-starwars .mural-col {
+      border-radius: 4px !important;
+      border: 1px solid #23272a !important;
+      background: #0a0b0d !important;
+    }
+    html.theme-starwars .mural-col-todo { box-shadow: 0 0 12px rgba(224, 26, 34, 0.12) !important; }
+    html.theme-starwars .mural-col-progress { box-shadow: 0 0 12px rgba(0, 102, 255, 0.12) !important; }
+    html.theme-starwars .mural-col-done { box-shadow: 0 0 12px rgba(0, 255, 0, 0.12) !important; }
+
+    html.theme-starwars .mural-card {
+      border-radius: 4px !important;
+      border: 1px solid #23272a !important;
+      background: #131518 !important;
+      position: relative;
+    }
+    html.theme-starwars .mural-col-todo .mural-card::before {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #e01a22;
+      box-shadow: 0 0 8px #e01a22;
+    }
+    html.theme-starwars .mural-col-progress .mural-card::before {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #0066ff;
+      box-shadow: 0 0 8px #0066ff;
+    }
+    html.theme-starwars .mural-col-done .mural-card::before {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #00ff00;
+      box-shadow: 0 0 8px #00ff00;
+    }
+    html.theme-starwars .mural-card:hover {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 12px rgba(255, 232, 31, 0.25) !important;
+      transform: translateY(-2px);
+    }
+    html.theme-starwars .mural-btn-primary {
+      background: #ffe81f !important;
+      color: #000000 !important;
+      border-radius: 4px !important;
+      font-weight: 800 !important;
+    }
+    html.theme-starwars .mural-btn-primary:hover {
+      background: #e6cf1c !important;
+      box-shadow: 0 0 8px #ffe81f !important;
+    }
+    html.theme-starwars .mural-btn-ghost {
+      background: #131518 !important;
+      color: #ffffff !important;
+      border: 1px solid #23272a !important;
+      border-radius: 4px !important;
+    }
+    html.theme-starwars .mural-btn-ghost:hover {
+      border-color: #ffe81f !important;
+      color: #ffe81f !important;
+    }
+    
+    html.theme-starwars .mural-modal {
+      background: #0a0b0d !important;
+      border: 1px solid #ffe81f !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 25px rgba(255, 232, 31, 0.2) !important;
+    }
+    html.theme-starwars .mural-search-wrap, 
+    html.theme-starwars .mural-select {
+      background: #131518 !important;
+      border: 1px solid #23272a !important;
+      border-radius: 4px !important;
+      color: #ffffff !important;
+    }
+    html.theme-starwars .mural-search-wrap:focus-within {
+      border-color: #ffe81f !important;
+    }
+    html.theme-starwars .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-starwars .mural-col-list::-webkit-scrollbar-thumb {
+      background: #ffe81f;
+      border-radius: 3px;
+      box-shadow: 0 0 6px #ffe81f;
+    }
+    html.theme-starwars .badge-prioridade-baixa { background: #0066ff !important; color: #ffffff !important; border-radius: 2px !important; font-family: monospace !important; }
+    html.theme-starwars .badge-prioridade-media { background: #ff9900 !important; color: #ffffff !important; border-radius: 2px !important; font-family: monospace !important; }
+    html.theme-starwars .badge-prioridade-alta { background: #e01a22 !important; color: #ffffff !important; border-radius: 2px !important; font-family: monospace !important; }
+    html.theme-starwars .badge-prioridade-urgente { background: #e01a22 !important; color: #ffffff !important; border-radius: 2px !important; font-weight: bold !important; font-family: monospace !important; animation: pulsePri 1.5s infinite !important; }
+    html.theme-starwars .mural-stats-panel { background: #0a0b0d !important; border-left: 1px solid #23272a !important; }
+    html.theme-starwars .mural-stats-card { background: #131518 !important; border: 1px solid #23272a !important; border-radius: 4px !important; }
+    html.theme-starwars .mural-stats-number { color: #ffe81f !important; text-shadow: 0 0 6px rgba(255, 232, 31, 0.4) !important; }
+
+    /* =============================================================================
+       BARBIE THEME INTEGRATION
+       ============================================================================= */
+    html.theme-barbie {
+      --bg-deep:   #fff0f5;
+      --bg-panel:  #ffe4e1;
+      --bg-card:   #ffffff;
+      --line:      #ffb6c1;
+      --line-hi:   #ff69b4;
+      --ink:       #4a0e2e;
+      --ink-2:     #e0218a;
+      --ink-3:     #ff8da1;
+      --ink-4:     #ffe4e1;
+
+      --accent:    #ff69b4;
+      --accent-2:  #e0218a;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 2px 8px rgba(255, 105, 180, 0.08);
+      --shadow: 0 8px 20px rgba(255, 105, 180, 0.12);
+      --shadow-lg: 0 12px 30px rgba(255, 105, 180, 0.18);
+      
+      --blue: #00bfff;
+      --orange: #ffa500;
+      --green: #3cb371;
+      --red: #ff1493;
+    }
+    html.theme-barbie body {
+      background-color: #fff0f5 !important;
+      color: #4a0e2e !important;
+    }
+    html.theme-barbie .mural-page {
+      background: linear-gradient(135deg, #fff0f5, #ffe4e1) !important;
+    }
+    html.theme-barbie .mural-hero {
+      background: #ffffff !important;
+      border: 1px solid #ffb6c1 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 8px 24px rgba(255, 105, 180, 0.08) !important;
+    }
+    html.theme-barbie .mural-hero h2 {
+      font-family: 'Arial Rounded MT Bold', sans-serif !important;
+      font-weight: bold !important;
+      color: #ff69b4 !important;
+      text-shadow: 0 1px 2px rgba(224, 33, 138, 0.15) !important;
+    }
+    html.theme-barbie .mural-toolbar {
+      background: #ffffff !important;
+      border: 1px solid #ffb6c1 !important;
+      border-radius: 16px !important;
+    }
+    html.theme-barbie .mural-col {
+      border-radius: 16px !important;
+      border: 1px solid #ffb6c1 !important;
+      background: rgba(255, 255, 255, 0.7) !important;
+    }
+    html.theme-barbie .mural-card {
+      border-radius: 12px !important;
+      border: 1px solid #ffb6c1 !important;
+      background: #ffffff !important;
+    }
+    html.theme-barbie .mural-card:hover {
+      border-color: #ff69b4 !important;
+      box-shadow: 0 8px 20px rgba(255, 105, 180, 0.2) !important;
+      transform: translateY(-2px);
+    }
+    html.theme-barbie .mural-btn-primary {
+      background: linear-gradient(135deg, #ff69b4, #ff1493) !important;
+      color: #ffffff !important;
+      border-radius: 50px !important;
+      font-weight: 800 !important;
+    }
+    html.theme-barbie .mural-btn-primary:hover {
+      transform: scale(1.03) translateY(-1px) !important;
+      box-shadow: 0 4px 12px rgba(255, 20, 147, 0.3) !important;
+    }
+    html.theme-barbie .mural-btn-ghost {
+      background: #ffffff !important;
+      border: 1px solid #ffb6c1 !important;
+      color: #ff69b4 !important;
+      border-radius: 50px !important;
+    }
+    html.theme-barbie .mural-btn-ghost:hover {
+      background: #fff0f5 !important;
+      border-color: #ff69b4 !important;
+    }
+    
+    html.theme-barbie .mural-modal {
+      background: #ffffff !important;
+      border: 2px solid #ffb6c1 !important;
+      border-radius: 16px !important;
+      box-shadow: 0 15px 40px rgba(255, 105, 180, 0.25) !important;
+    }
+    html.theme-barbie .mural-search-wrap, 
+    html.theme-barbie .mural-select {
+      background: #ffffff !important;
+      border: 1.5px solid #ffb6c1 !important;
+      border-radius: 50px !important;
+      color: #4a0e2e !important;
+    }
+    html.theme-barbie .mural-search-wrap:focus-within {
+      border-color: #ff69b4 !important;
+      box-shadow: 0 0 10px rgba(255, 105, 180, 0.2) !important;
+    }
+    html.theme-barbie .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-barbie .mural-col-list::-webkit-scrollbar-thumb {
+      background: #ffb6c1;
+      border-radius: 3px;
+    }
+    html.theme-barbie .mural-col-list::-webkit-scrollbar-thumb:hover {
+      background: #ff69b4;
+    }
+    html.theme-barbie .badge-prioridade-baixa { background: #e8f5e9 !important; color: #2e7d32 !important; border-radius: 50px !important; border: 1px solid #81c784 !important; }
+    html.theme-barbie .badge-prioridade-media { background: #fff3e0 !important; color: #ef6c00 !important; border-radius: 50px !important; border: 1px solid #ffb74d !important; }
+    html.theme-barbie .badge-prioridade-alta { background: #ffebee !important; color: #c62828 !important; border-radius: 50px !important; border: 1px solid #ef5350 !important; }
+    html.theme-barbie .badge-prioridade-urgente { background: #ff1493 !important; color: #ffffff !important; border-radius: 50px !important; font-weight: bold !important; box-shadow: 0 0 8px #ff1493 !important; }
+    html.theme-barbie .mural-stats-panel { background: #ffe4e1 !important; border-left: 1px solid #ffb6c1 !important; }
+    html.theme-barbie .mural-stats-card { background: #ffffff !important; border: 1px solid #ffb6c1 !important; border-radius: 12px !important; }
+    html.theme-barbie .mural-stats-number { color: #ff69b4 !important; }
+
+    /* =============================================================================
+       WHATSAPP THEME INTEGRATION
+       ============================================================================= */
+    html.theme-whatsapp {
+      --bg-deep:   #efeae2;
+      --bg-panel:  #ffffff;
+      --bg-card:   #ffffff;
+      --line:      #e1e1e1;
+      --line-hi:   #00a884;
+      --ink:       #111b21;
+      --ink-2:     #3b4a54;
+      --ink-3:     #8696a0;
+      --ink-4:     #e1e9eb;
+
+      --accent:    #00a884;
+      --accent-2:  #008069;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow: 0 3px 10px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      
+      --blue: #027eb5;
+      --orange: #e68500;
+      --green: #25d366;
+      --red: #ea0038;
+    }
+    html.theme-whatsapp body {
+      background-color: #efeae2 !important;
+      color: #111b21 !important;
+    }
+    html.theme-whatsapp .mural-page {
+      background-color: #efeae2 !important;
+      background-image: radial-gradient(#dfdcd6 1px, transparent 1px) !important;
+      background-size: 20px 20px !important;
+    }
+    html.theme-whatsapp .mural-hero {
+      background: #ffffff !important;
+      border: 1px solid #e1e1e1 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+    }
+    html.theme-whatsapp .mural-hero h2 {
+      font-weight: 700 !important;
+      color: #008069 !important;
+    }
+    html.theme-whatsapp .mural-toolbar {
+      background: #ffffff !important;
+      border: 1px solid #e1e1e1 !important;
+      border-radius: 8px !important;
+    }
+    html.theme-whatsapp .mural-col {
+      border-radius: 8px !important;
+      border: 1px solid #e1e1e1 !important;
+      background: #ffffff !important;
+    }
+    html.theme-whatsapp .mural-card {
+      border-radius: 8px !important;
+      border: 1px solid #e1e1e1 !important;
+      background: #ffffff !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+    }
+    html.theme-whatsapp .mural-col-progress .mural-card {
+      background: #d9fdd3 !important; /* Sent WhatsApp Bubble */
+    }
+    html.theme-whatsapp .mural-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
+      transform: translateY(-1.5px);
+    }
+    html.theme-whatsapp .mural-btn-primary {
+      background: #00a884 !important;
+      color: #ffffff !important;
+      border-radius: 20px !important;
+      font-weight: 700 !important;
+    }
+    html.theme-whatsapp .mural-btn-primary:hover {
+      background: #008069 !important;
+      transform: translateY(-1px);
+    }
+    html.theme-whatsapp .mural-btn-ghost {
+      background: transparent !important;
+      border: 1px solid #e1e1e1 !important;
+      color: #3b4a54 !important;
+      border-radius: 20px !important;
+    }
+    html.theme-whatsapp .mural-btn-ghost:hover {
+      background: #f0f2f5 !important;
+      border-color: #3b4a54 !important;
+    }
+    
+    html.theme-whatsapp .mural-modal {
+      background: #ffffff !important;
+      border: 1px solid #e1e1e1 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+    html.theme-whatsapp .mural-modal-header {
+      background: #008069 !important;
+      padding: 12px 18px !important;
+      margin: -24px -24px 16px -24px !important;
+      border-radius: 8px 8px 0 0 !important;
+    }
+    html.theme-whatsapp .mural-modal-header h3 {
+      color: #ffffff !important;
+    }
+    html.theme-whatsapp .mural-modal-close {
+      color: rgba(255,255,255,0.7) !important;
+    }
+    html.theme-whatsapp .mural-modal-close:hover {
+      color: #ffffff !important;
+    }
+    html.theme-whatsapp .mural-search-wrap, 
+    html.theme-whatsapp .mural-select {
+      background: #f0f2f5 !important;
+      border: 1px solid transparent !important;
+      border-radius: 20px !important;
+      color: #111b21 !important;
+    }
+    html.theme-whatsapp .mural-search-wrap:focus-within {
+      background: #ffffff !important;
+      border: 1px solid #00a884 !important;
+    }
+    html.theme-whatsapp .mural-col-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    html.theme-whatsapp .mural-col-list::-webkit-scrollbar-thumb {
+      background: #8696a0;
+      border-radius: 3px;
+    }
+    html.theme-whatsapp .badge-prioridade-baixa { background: #e1f5fe !important; color: #0288d1 !important; border-radius: 4px !important; }
+    html.theme-whatsapp .badge-prioridade-media { background: #fff3e0 !important; color: #f57c00 !important; border-radius: 4px !important; }
+    html.theme-whatsapp .badge-prioridade-alta { background: #ffebee !important; color: #d32f2f !important; border-radius: 4px !important; }
+    html.theme-whatsapp .badge-prioridade-urgente { background: #ea0038 !important; color: #ffffff !important; border-radius: 4px !important; font-weight: bold !important; }
+    html.theme-whatsapp .mural-stats-panel { background: #ffffff !important; border-left: 1px solid #e1e1e1 !important; }
+    html.theme-whatsapp .mural-stats-card { background: #f0f2f5 !important; border: 1px solid #e1e1e1 !important; border-radius: 8px !important; }
+    html.theme-whatsapp .mural-stats-number { color: #008069 !important; }
+
+    /* =============================================================================
+       PASTEL MINIMALISTA THEME INTEGRATION
+       ============================================================================= */
+    html.theme-pastel {
+      --bg-deep:   #f7f9fa;
+      --bg-panel:  #ffffff;
+      --bg-card:   #fdfdfd;
+      --line:      #e2e8f0;
+      --line-hi:   #cbd5e1;
+      --ink:       #1e293b;
+      --ink-2:     #64748b;
+      --ink-3:     #94a3b8;
+      --ink-4:     #cbd5e1;
+
+      --accent:    #a5b4fc;
+      --accent-2:  #fbcfe8;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.02);
+      --shadow: 0 4px 10px rgba(0,0,0,0.04);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.06);
+      
+      --blue: #bae6fd;
+      --orange: #fed7aa;
+      --green: #bbf7d0;
+      --red: #fecaca;
+    }
+    html.theme-pastel body {
+      background-color: #f7f9fa !important;
+      color: #1e293b !important;
+    }
+    html.theme-pastel .mural-page {
+      background: #f7f9fa !important;
+    }
+    html.theme-pastel .mural-hero {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+    }
+    html.theme-pastel .mural-hero h2 {
+      font-weight: 500 !important;
+      color: #4f46e5 !important;
+      background: linear-gradient(135deg, #4f46e5, #ec4899) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+    html.theme-pastel .mural-toolbar {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+    }
+    html.theme-pastel .mural-col {
+      border-radius: 12px !important;
+      border: 1px solid #e2e8f0 !important;
+      background: #ffffff !important;
+    }
+    html.theme-pastel .mural-card {
+      border-radius: 8px !important;
+      border: 1px solid #e2e8f0 !important;
+      background: #fdfdfd !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+    }
+    html.theme-pastel .mural-card:hover {
+      border-color: #a5b4fc !important;
+      box-shadow: 0 4px 14px rgba(165,180,252,0.15) !important;
+      transform: translateY(-1.5px);
+    }
+    html.theme-pastel .mural-btn-primary {
+      background: #e0e7ff !important;
+      color: #4338ca !important;
+      border-radius: 8px !important;
+    }
+    html.theme-pastel .mural-btn-primary:hover {
+      background: #c7d2fe !important;
+      transform: translateY(-1px);
+    }
+    html.theme-pastel .mural-btn-ghost {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      color: #64748b !important;
+      border-radius: 8px !important;
+    }
+    html.theme-pastel .mural-btn-ghost:hover {
+      background: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+    }
+    
+    html.theme-pastel .mural-modal {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important;
+    }
+    html.theme-pastel .mural-search-wrap, 
+    html.theme-pastel .mural-select {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px !important;
+      color: #1e293b !important;
+    }
+    html.theme-pastel .mural-search-wrap:focus-within {
+      border-color: #a5b4fc !important;
+      background: #ffffff !important;
+    }
+    html.theme-pastel .mural-col-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    html.theme-pastel .mural-col-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    html.theme-pastel .badge-prioridade-baixa { background: #bae6fd !important; color: #0369a1 !important; border-radius: 4px !important; }
+    html.theme-pastel .badge-prioridade-media { background: #fed7aa !important; color: #c2410c !important; border-radius: 4px !important; }
+    html.theme-pastel .badge-prioridade-alta { background: #fecaca !important; color: #b91c1c !important; border-radius: 4px !important; }
+    html.theme-pastel .badge-prioridade-urgente { background: #fca5a5 !important; color: #7f1d1d !important; border-radius: 4px !important; font-weight: bold !important; }
+    html.theme-pastel .mural-stats-panel { background: #ffffff !important; border-left: 1px solid #e2e8f0 !important; }
+    html.theme-pastel .mural-stats-card { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; }
+    html.theme-pastel .mural-stats-number { color: #4f46e5 !important; }
+
+    /* =============================================================================
+       INSTAGRAM THEME INTEGRATION
+       ============================================================================= */
+    html.theme-instagram {
+      --bg-deep:   #fafafa;
+      --bg-panel:  #ffffff;
+      --bg-card:   #ffffff;
+      --line:      #dbdbdb;
+      --line-hi:   #e1306c;
+      --ink:       #262626;
+      --ink-2:     #8e8e8e;
+      --ink-3:     #c7c7c7;
+      --ink-4:     #dbdbdb;
+
+      --accent:    #c13584;
+      --accent-2:  #fd1d1d;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 4px 12px rgba(0,0,0,0.06);
+      --shadow: 0 8px 24px rgba(0,0,0,0.1);
+      --shadow-lg: 0 16px 40px rgba(0,0,0,0.18);
+      
+      --blue: #0095f6;
+      --orange: #f77737;
+      --green: #58c322;
+      --red: #fd1d1d;
+    }
+    html.theme-instagram body {
+      background-color: #fafafa !important;
+      color: #262626 !important;
+    }
+    html.theme-instagram .mural-page {
+      background: linear-gradient(135deg, #405de6, #5851db, #833ab4, #c13584, #e1306c, #fd1d1d, #f56040, #f77737, #fcaf45, #ffdc80) !important;
+    }
+    html.theme-instagram .mural-hero, 
+    html.theme-instagram .mural-toolbar, 
+    html.theme-instagram .mural-col {
+      background: rgba(255, 255, 255, 0.72) !important;
+      backdrop-filter: blur(12px) !important;
+      -webkit-backdrop-filter: blur(12px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.35) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    }
+    html.theme-instagram .mural-hero h2 {
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+      background: linear-gradient(to right, #ffffff, #ffffff) !important;
+      -webkit-background-clip: unset !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+    html.theme-instagram .mural-card {
+      border-radius: 8px !important;
+      border: 1px solid rgba(255, 255, 255, 0.5) !important;
+      background: rgba(255, 255, 255, 0.85) !important;
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+      transition: border-color 0.25s, transform 0.25s !important;
+    }
+    html.theme-instagram .mural-card:hover {
+      background: #ffffff !important;
+      border-color: transparent !important;
+      transform: translateY(-2px);
+      outline: 2px solid transparent;
+      border-image: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888) 1;
+      box-shadow: 0 10px 24px rgba(225, 48, 108, 0.2) !important;
+    }
+    html.theme-instagram .mural-btn-primary {
+      background: #0095f6 !important;
+      color: #ffffff !important;
+      border-radius: 6px !important;
+      font-weight: 700 !important;
+    }
+    html.theme-instagram .mural-btn-primary:hover {
+      background: #1877f2 !important;
+      transform: translateY(-1px);
+    }
+    html.theme-instagram .mural-btn-ghost {
+      background: rgba(255,255,255,0.8) !important;
+      border: 1px solid #dbdbdb !important;
+      color: #262626 !important;
+      border-radius: 6px !important;
+    }
+    html.theme-instagram .mural-btn-ghost:hover {
+      background: #ffffff !important;
+      border-color: #262626 !important;
+    }
+    
+    html.theme-instagram .mural-modal {
+      background: rgba(255, 255, 255, 0.95) !important;
+      backdrop-filter: blur(15px) !important;
+      -webkit-backdrop-filter: blur(15px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.5) !important;
+      border-radius: 12px !important;
+    }
+    html.theme-instagram .mural-search-wrap, 
+    html.theme-instagram .mural-select {
+      background: rgba(255, 255, 255, 0.6) !important;
+      border: 1px solid #dbdbdb !important;
+      border-radius: 6px !important;
+      color: #262626 !important;
+    }
+    html.theme-instagram .mural-search-wrap:focus-within {
+      border-color: #e1306c !important;
+    }
+    html.theme-instagram .mural-col-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    html.theme-instagram .mural-col-list::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #f77737, #e1306c);
+      border-radius: 3px;
+    }
+    html.theme-instagram .badge-prioridade-baixa { background: #0095f6 !important; color: #ffffff !important; border-radius: 4px !important; }
+    html.theme-instagram .badge-prioridade-media { background: #f77737 !important; color: #ffffff !important; border-radius: 4px !important; }
+    html.theme-instagram .badge-prioridade-alta { background: #fd1d1d !important; color: #ffffff !important; border-radius: 4px !important; }
+    html.theme-instagram .badge-prioridade-urgente { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888) !important; color: #ffffff !important; border-radius: 4px !important; font-weight: bold !important; }
+    html.theme-instagram .mural-stats-panel { background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border-left: 1px solid rgba(255, 255, 255, 0.3) !important; }
+    html.theme-instagram .mural-stats-card { background: rgba(255, 255, 255, 0.9) !important; border: 1px solid rgba(255, 255, 255, 0.5) !important; border-radius: 12px !important; }
+    html.theme-instagram .mural-stats-number { color: #e1306c !important; }
+</style>
 </head>
 <body>
+  <!-- MATRIX CANVAS EFFECT -->
+  <canvas id="matrix-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; display: none; opacity: 0.15;"></canvas>
   <div class="glow-blob a"></div>
   <div class="glow-blob b"></div>
   <div class="mural-page">
@@ -1909,6 +2841,11 @@
             <option value="dracula">🧛 Dracula (Dark)</option>
             <option value="executivo">👑 Executivo (Ouro)</option>
             <option value="matrix">🕶️ Matrix (Hacker)</option>
+            <option value="starwars">🌌 Star Wars (Sabre)</option>
+            <option value="barbie">💖 Barbie (Pink)</option>
+            <option value="whatsapp">💬 WhatsApp (Chat)</option>
+            <option value="pastel">🌸 Pastel (Suave)</option>
+            <option value="instagram">📸 Instagram (Insta)</option>
           </optgroup>
         </select>
         <button class="mural-btn mural-btn-ghost" id="btn-stats" title="Estatísticas do mural">📊 Estatísticas</button>
@@ -2264,7 +3201,99 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    
+    // Lógica do Efeito Matrix (Chuvas de Código Katakana/Alfanumérico)
+    let matrixAnimationFrameId = null;
+    function initMatrixRain() {
+      const canvas = document.getElementById('matrix-canvas');
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resizeCanvas();
+      
+      const katakana = "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      const alphabet = katakana.split("");
+      const fontSize = 15;
+      let columns = Math.ceil(canvas.width / fontSize);
+      
+      let rainDrops = [];
+      for (let x = 0; x < columns; x++) {
+        rainDrops[x] = Math.random() * -80;
+      }
+      
+      function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#00ff00';
+        ctx.font = fontSize + 'px monospace';
+        
+        for (let i = 0; i < rainDrops.length; i++) {
+          const text = alphabet[Math.floor(Math.random() * alphabet.length)];
+          const x = i * fontSize;
+          const y = rainDrops[i] * fontSize;
+          
+          if (Math.random() > 0.98) {
+            ctx.fillStyle = '#ffffff';
+          } else {
+            ctx.fillStyle = '#00ff00';
+          }
+          
+          ctx.fillText(text, x, y);
+          
+          if (y > canvas.height && Math.random() > 0.975) {
+            rainDrops[i] = 0;
+          }
+          rainDrops[i]++;
+        }
+        matrixAnimationFrameId = requestAnimationFrame(draw);
+      }
+
+      window.addEventListener('resize', function() {
+        resizeCanvas();
+        columns = Math.ceil(canvas.width / fontSize);
+        const oldLength = rainDrops.length;
+        if (columns > oldLength) {
+          for (let x = oldLength; x < columns; x++) {
+            rainDrops[x] = Math.random() * -80;
+          }
+        }
+      });
+
+      draw();
+    }
+
+    function stopMatrixRain() {
+      if (matrixAnimationFrameId) {
+        cancelAnimationFrame(matrixAnimationFrameId);
+        matrixAnimationFrameId = null;
+      }
+      const canvas = document.getElementById('matrix-canvas');
+      if (canvas) {
+        canvas.style.display = 'none';
+      }
+    }
+
+    function checkAndStartMatrixRain(themeName) {
+      const canvas = document.getElementById('matrix-canvas');
+      if (!canvas) return;
+      
+      if (themeName === 'matrix') {
+        canvas.style.display = 'block';
+        if (!matrixAnimationFrameId) {
+          initMatrixRain();
+        }
+      } else {
+        stopMatrixRain();
+      }
+    }
+
+document.addEventListener('DOMContentLoaded', function() {
       populateUserChip();
       loadDestinatarios();
 
@@ -2282,7 +3311,7 @@
       // Inicializa e controla o seletor de tema do mural
       const themeSelect = document.getElementById('mural-theme-select');
       if (themeSelect) {
-        const customThemes = ['cyberpunk', 'netflix', 'spotify', 'discord', 'github', 'dracula', 'executivo', 'matrix'];
+        const customThemes = ['cyberpunk', 'netflix', 'spotify', 'discord', 'github', 'dracula', 'executivo', 'matrix', 'starwars', 'barbie', 'whatsapp', 'pastel', 'instagram'];
         const mt = localStorage.getItem('mural_theme') || 'default';
         const currentTheme = localStorage.getItem('theme') || 'dark';
         
@@ -2292,9 +3321,11 @@
             if (t === mt) document.documentElement.classList.add('theme-' + t);
             else document.documentElement.classList.remove('theme-' + t);
           });
+          checkAndStartMatrixRain(mt);
         } else {
           themeSelect.value = currentTheme;
           customThemes.forEach(t => document.documentElement.classList.remove('theme-' + t));
+          checkAndStartMatrixRain('default');
         }
         
         themeSelect.addEventListener('change', function() {
@@ -2321,6 +3352,7 @@
               }
             });
           }
+          checkAndStartMatrixRain(selected);
         });
 
         // Sincroniza o seletor local do mural quando o tema é alterado pelo cabeçalho (dropdown de perfil)
@@ -2331,6 +3363,7 @@
             localStorage.setItem('mural_theme', 'default');
             customThemes.forEach(t => document.documentElement.classList.remove('theme-' + t));
             themeSelect.value = val;
+            checkAndStartMatrixRain(val);
           }
         });
       }

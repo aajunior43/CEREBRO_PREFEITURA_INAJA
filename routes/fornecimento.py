@@ -1,5 +1,6 @@
 """Blueprint: Fornecimento"""
 
+import re
 from flask import Blueprint, request, jsonify
 
 bp = Blueprint("fornecimento", __name__)
@@ -8,6 +9,34 @@ bp = Blueprint("fornecimento", __name__)
 def get_db():
     from flask import g
     return g._get_db()
+
+
+def safe_float(v):
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def parse_money(s):
+    if not s:
+        return 0.0
+    s = str(s).strip()
+    s = re.sub(r"[^\d,.-]", "", s)
+    if not s:
+        return 0.0
+    if "," in s:
+        if "." in s:
+            if s.index(".") < s.index(","):
+                s = s.replace(".", "").replace(",", ".")
+            else:
+                s = s.replace(",", "")
+        else:
+            s = s.replace(",", ".")
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
 
 
 @bp.route("/api/fornecimento/dados", methods=["GET"])
@@ -61,3 +90,331 @@ def del_fornecimento_dado():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/solicitacoes", methods=["GET"])
+def list_solicitacoes():
+    try:
+        q = request.args.get("q", "").strip()
+        conn = get_db()
+        if q:
+            rows = conn.execute(
+                """SELECT * FROM fornecimento_solicitacoes 
+                   WHERE solicitante LIKE ? OR empresa LIKE ? OR obs LIKE ?
+                   ORDER BY id DESC""",
+                (f"%{q}%", f"%{q}%", f"%{q}%"),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM fornecimento_solicitacoes ORDER BY id DESC"
+            ).fetchall()
+
+        result = []
+        for r in rows:
+            sol_id = r["id"]
+            items_rows = conn.execute(
+                "SELECT * FROM fornecimento_solicitacao_itens WHERE solicitacao_id = ? ORDER BY id ASC",
+                (sol_id,),
+            ).fetchall()
+
+            items = []
+            valor_total = 0.0
+            for item_row in items_rows:
+                items.append(
+                    {
+                        "id": item_row["id"],
+                        "nome": item_row["nome"],
+                        "desc": item_row["desc"],
+                        "qtd": item_row["qtd"],
+                        "preco": item_row["preco"],
+                    }
+                )
+                qtd_f = safe_float(item_row["qtd"])
+                preco_f = parse_money(item_row["preco"])
+                valor_total += qtd_f * preco_f
+
+            result.append(
+                {
+                    "id": r["id"],
+                    "solicitante": r["solicitante"],
+                    "empresa": r["empresa"],
+                    "data": r["data"],
+                    "obs": r["obs"],
+                    "criado_em": r["criado_em"],
+                    "atualizado_em": r["atualizado_em"],
+                    "total_itens": len(items),
+                    "valor_total": valor_total,
+                    "items": items,
+                }
+            )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/solicitacoes", methods=["POST"])
+def create_solicitacao():
+    try:
+        data = request.get_json() or {}
+        solicitante = (data.get("solicitante") or "").strip()
+        empresa = (data.get("empresa") or "").strip()
+        data_sol = (data.get("data") or "").strip()
+        obs = (data.get("obs") or "").strip()
+        items_payload = data.get("items") or []
+
+        if not solicitante:
+            return jsonify({"error": "Informe o solicitante."}), 400
+        if not items_payload:
+            return jsonify({"error": "Adicione pelo menos um item."}), 400
+
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute(
+            """INSERT INTO fornecimento_solicitacoes (solicitante, empresa, data, obs)
+               VALUES (?, ?, ?, ?)""",
+            (solicitante, empresa, data_sol, obs),
+        )
+        sol_id = cur.lastrowid
+
+        for item in items_payload:
+            cur.execute(
+                """INSERT INTO fornecimento_solicitacao_itens (solicitacao_id, nome, desc, qtd, preco)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    sol_id,
+                    (item.get("nome") or "").strip(),
+                    (item.get("desc") or "").strip(),
+                    (item.get("qtd") or "").strip(),
+                    (item.get("preco") or "").strip(),
+                ),
+            )
+        conn.commit()
+
+        saved = conn.execute(
+            "SELECT * FROM fornecimento_solicitacoes WHERE id = ?", (sol_id,)
+        ).fetchone()
+
+        items_rows = conn.execute(
+            "SELECT * FROM fornecimento_solicitacao_itens WHERE solicitacao_id = ? ORDER BY id ASC",
+            (sol_id,),
+        ).fetchall()
+
+        items = []
+        valor_total = 0.0
+        for item_row in items_rows:
+            items.append(
+                {
+                    "id": item_row["id"],
+                    "nome": item_row["nome"],
+                    "desc": item_row["desc"],
+                    "qtd": item_row["qtd"],
+                    "preco": item_row["preco"],
+                }
+            )
+            qtd_f = safe_float(item_row["qtd"])
+            preco_f = parse_money(item_row["preco"])
+            valor_total += qtd_f * preco_f
+
+        return jsonify(
+            {
+                "id": saved["id"],
+                "solicitante": saved["solicitante"],
+                "empresa": saved["empresa"],
+                "data": saved["data"],
+                "obs": saved["obs"],
+                "criado_em": saved["criado_em"],
+                "atualizado_em": saved["atualizado_em"],
+                "total_itens": len(items),
+                "valor_total": valor_total,
+                "items": items,
+            }
+        ), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/solicitacoes/<int:id>", methods=["PUT"])
+def update_solicitacao(id):
+    try:
+        data = request.get_json() or {}
+        solicitante = (data.get("solicitante") or "").strip()
+        empresa = (data.get("empresa") or "").strip()
+        data_sol = (data.get("data") or "").strip()
+        obs = (data.get("obs") or "").strip()
+        items_payload = data.get("items") or []
+
+        if not solicitante:
+            return jsonify({"error": "Informe o solicitante."}), 400
+        if not items_payload:
+            return jsonify({"error": "Adicione pelo menos um item."}), 400
+
+        conn = get_db()
+        cur = conn.cursor()
+
+        curr = conn.execute(
+            "SELECT id FROM fornecimento_solicitacoes WHERE id = ?", (id,)
+        ).fetchone()
+        if not curr:
+            return jsonify({"error": "Solicitação não encontrada."}), 404
+
+        cur.execute(
+            """UPDATE fornecimento_solicitacoes 
+               SET solicitante = ?, empresa = ?, data = ?, obs = ?, atualizado_em = datetime('now','localtime')
+               WHERE id = ?""",
+            (solicitante, empresa, data_sol, obs, id),
+        )
+
+        cur.execute(
+            "DELETE FROM fornecimento_solicitacao_itens WHERE solicitacao_id = ?",
+            (id,),
+        )
+
+        for item in items_payload:
+            cur.execute(
+                """INSERT INTO fornecimento_solicitacao_itens (solicitacao_id, nome, desc, qtd, preco)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    id,
+                    (item.get("nome") or "").strip(),
+                    (item.get("desc") or "").strip(),
+                    (item.get("qtd") or "").strip(),
+                    (item.get("preco") or "").strip(),
+                ),
+            )
+        conn.commit()
+
+        saved = conn.execute(
+            "SELECT * FROM fornecimento_solicitacoes WHERE id = ?", (id,)
+        ).fetchone()
+
+        items_rows = conn.execute(
+            "SELECT * FROM fornecimento_solicitacao_itens WHERE solicitacao_id = ? ORDER BY id ASC",
+            (id,),
+        ).fetchall()
+
+        items = []
+        valor_total = 0.0
+        for item_row in items_rows:
+            items.append(
+                {
+                    "id": item_row["id"],
+                    "nome": item_row["nome"],
+                    "desc": item_row["desc"],
+                    "qtd": item_row["qtd"],
+                    "preco": item_row["preco"],
+                }
+            )
+            qtd_f = safe_float(item_row["qtd"])
+            preco_f = parse_money(item_row["preco"])
+            valor_total += qtd_f * preco_f
+
+        return jsonify(
+            {
+                "id": saved["id"],
+                "solicitante": saved["solicitante"],
+                "empresa": saved["empresa"],
+                "data": saved["data"],
+                "obs": saved["obs"],
+                "criado_em": saved["criado_em"],
+                "atualizado_em": saved["atualizado_em"],
+                "total_itens": len(items),
+                "valor_total": valor_total,
+                "items": items,
+            }
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/solicitacoes/<int:id>", methods=["DELETE"])
+def delete_solicitacao(id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        curr = conn.execute(
+            "SELECT id FROM fornecimento_solicitacoes WHERE id = ?", (id,)
+        ).fetchone()
+        if not curr:
+            return jsonify({"error": "Solicitação não encontrada."}), 404
+
+        cur.execute("DELETE FROM fornecimento_solicitacoes WHERE id = ?", (id,))
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/solicitacoes/<int:id>/duplicate", methods=["POST"])
+def duplicate_solicitacao(id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        orig = conn.execute(
+            "SELECT * FROM fornecimento_solicitacoes WHERE id = ?", (id,)
+        ).fetchone()
+        if not orig:
+            return jsonify({"error": "Solicitação original não encontrada."}), 404
+
+        cur.execute(
+            """INSERT INTO fornecimento_solicitacoes (solicitante, empresa, data, obs)
+               VALUES (?, ?, ?, ?)""",
+            (orig["solicitante"], orig["empresa"], orig["data"], orig["obs"]),
+        )
+        new_id = cur.lastrowid
+
+        orig_items = conn.execute(
+            "SELECT * FROM fornecimento_solicitacao_itens WHERE solicitacao_id = ?",
+            (id,),
+        ).fetchall()
+        for item in orig_items:
+            cur.execute(
+                """INSERT INTO fornecimento_solicitacao_itens (solicitacao_id, nome, desc, qtd, preco)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (new_id, item["nome"], item["desc"], item["qtd"], item["preco"]),
+            )
+        conn.commit()
+
+        saved = conn.execute(
+            "SELECT * FROM fornecimento_solicitacoes WHERE id = ?", (new_id,)
+        ).fetchone()
+
+        items_rows = conn.execute(
+            "SELECT * FROM fornecimento_solicitacao_itens WHERE solicitacao_id = ? ORDER BY id ASC",
+            (new_id,),
+        ).fetchall()
+
+        items = []
+        valor_total = 0.0
+        for item_row in items_rows:
+            items.append(
+                {
+                    "id": item_row["id"],
+                    "nome": item_row["nome"],
+                    "desc": item_row["desc"],
+                    "qtd": item_row["qtd"],
+                    "preco": item_row["preco"],
+                }
+            )
+            qtd_f = safe_float(item_row["qtd"])
+            preco_f = parse_money(item_row["preco"])
+            valor_total += qtd_f * preco_f
+
+        return jsonify(
+            {
+                "id": saved["id"],
+                "solicitante": saved["solicitante"],
+                "empresa": saved["empresa"],
+                "data": saved["data"],
+                "obs": saved["obs"],
+                "criado_em": saved["criado_em"],
+                "atualizado_em": saved["atualizado_em"],
+                "total_itens": len(items),
+                "valor_total": valor_total,
+                "items": items,
+            }
+        ), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+

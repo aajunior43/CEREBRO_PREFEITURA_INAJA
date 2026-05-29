@@ -672,161 +672,235 @@
         gap: 6px;
       }
     }
+
+    /* Estilização para as Seções Colapsáveis Modernas */
+    .ea-collapsible-section {
+      background: var(--ea-surface-strong);
+      border: 1px solid rgba(40,95,147,.12);
+      border-radius: 18px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(24,57,92,.02);
+    }
+    .ea-collapsible-section[open] {
+      box-shadow: 0 12px 24px rgba(24,57,92,.06);
+    }
+    .ea-collapsible-summary {
+      padding: 14px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ea-ink);
+      cursor: pointer;
+      user-select: none;
+      outline: none;
+      display: flex;
+      align-items: center;
+      transition: background-color 0.2s;
+    }
+    .ea-collapsible-summary:hover {
+      background-color: rgba(40,95,147,.04);
+    }
+    .ea-collapsible-content {
+      padding: 0 18px 18px 18px;
+      border-top: 1px solid rgba(40,95,147,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.4), rgba(244,248,252,0.4));
+    }
+    .ea-simple-header {
+      background: linear-gradient(135deg, rgba(255,255,255,.94), rgba(244,248,252,.9));
+      border: 1px solid rgba(40,95,147,.12);
+      border-radius: 24px;
+      padding: 24px 28px;
+      box-shadow: 0 12px 32px rgba(24,57,92,.05);
+      margin-bottom: 20px;
+    }
+
+    /* Estilos Modernos de Abas de Entrada */
+    .ea-input-tabs {
+      display: flex;
+      gap: 6px;
+      background: rgba(40,95,147,.05);
+      padding: 5px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(40,95,147,.08);
+    }
+    .ea-tab-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-3);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ea-tab-btn:hover {
+      color: var(--ea-ink);
+      background: rgba(255,255,255,.4);
+    }
+    .ea-tab-btn.active {
+      background: #ffffff;
+      color: var(--ea-ink);
+      box-shadow: 0 4px 12px rgba(24,57,92,.08);
+    }
+    .ea-tab-content {
+      animation: eaFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes eaFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
   <div class="ea-page ea-shell">
-    <section class="ea-hero">
-      <div>
+    <!-- Sleek, Minimalist Page Header -->
+    <div class="ea-simple-header">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap;">
         <span class="ea-hero-badge">Assistente com IA</span>
-        <h1>Assistente de Empenho</h1>
-        <p>Texto ou arquivo. Descricao pronta.</p>
-        <div class="ea-hero-meta">
-          <div class="ea-meta-card">
-            <strong>1</strong>
-            <span>enviar ou colar</span>
-          </div>
-          <div class="ea-meta-card">
-            <strong>2</strong>
-            <span>extrair</span>
-          </div>
-          <div class="ea-meta-card">
-            <strong>3</strong>
-            <span>gerar</span>
-          </div>
-        </div>
-        <div class="ea-hero-actions">
-          <a class="ea-chip-link" href="/pages/documentos.html">Centro de documentos</a>
-        </div>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 900; color: var(--ea-ink);">Gerador de Descrição de Empenho</h1>
       </div>
-      <div class="ea-hero-side">
-        <article class="ea-side-card">
-          <span class="ea-side-label">Entrada</span>
-          <strong>Texto, imagem ou PDF.</strong>
-        </article>
-        <article class="ea-side-card">
-          <span class="ea-side-label">Saida</span>
-          <strong>Descricao em caixa alta.</strong>
-        </article>
-      </div>
-    </section>
+      <p style="margin: 0; font-size: 13px; color: var(--text-3); line-height: 1.5;">Gere descrições padronizadas e formais em caixa alta com base em notas fiscais, pedidos ou contratos usando Inteligência Artificial.</p>
+    </div>
 
     <div class="ea-layout">
+      <!-- Left Column: Inputs -->
       <section class="ea-stack">
         <article class="ea-card">
           <div class="ea-card-head">
-            <h2>Entrada do Documento</h2>
-            <p>Cole ou envie.</p>
+            <h2>1. Documento de Entrada</h2>
+            <p>Escolha o método e insira as informações de origem do empenho.</p>
           </div>
           <div class="ea-card-body">
             <div class="ea-form-sections">
-              <section class="ea-block">
-                <div class="ea-block-title">
-                  <strong>Arquivo ou scanner</strong>
-                  <span>opcional</span>
-                </div>
-                <div class="ea-upload-box">
-                  <label class="ea-upload-dropzone" id="ea-upload-dropzone">
-                    <input type="file" id="arquivo_documento" accept=".pdf,image/*,application/pdf" />
-                    <div class="ea-upload-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                    </div>
-                    <div class="ea-upload-title" id="ea-upload-title">Clique ou arraste um arquivo</div>
-                    <div class="ea-upload-subtitle">Imagem ou PDF.</div>
-                    <div class="ea-upload-meta">aceita pdf, jpg, jpeg, png, webp e scanner</div>
+              <!-- Modern Input Tab Switcher -->
+              <div class="ea-input-tabs">
+                <button class="ea-tab-btn active" type="button" data-tab="texto">📝 Colar Texto Base</button>
+                <button class="ea-tab-btn" type="button" data-tab="arquivo">📎 Enviar Arquivo (Nota/Pedido)</button>
+              </div>
+
+              <!-- Base Text Tab Content -->
+              <div class="ea-tab-content" data-tab-content="texto">
+                <section class="ea-block" style="padding: 0; background: transparent; border: none;">
+                  <label class="ea-field ea-field-full">
+                    <textarea class="ea-textarea ea-contextarea" id="texto_base" placeholder="Cole o texto descritivo do pedido, itens da nota fiscal ou escaneamento aqui..." style="min-height: 220px;"></textarea>
                   </label>
-                  <div class="ea-file-row" id="ea-file-row">
-                    <div class="ea-file-info">
-                      <strong id="ea-file-name"></strong>
-                      <span id="ea-file-meta"></span>
+                </section>
+              </div>
+
+              <!-- Upload Dropzone Tab Content -->
+              <div class="ea-tab-content" data-tab-content="arquivo" style="display: none;">
+                <section class="ea-block" style="padding: 0; background: transparent; border: none;">
+                  <div class="ea-upload-box" style="background: transparent; border: none; padding: 0;">
+                    <label class="ea-upload-dropzone" id="ea-upload-dropzone" style="min-height: 220px;">
+                      <input type="file" id="arquivo_documento" accept=".pdf,image/*,application/pdf" />
+                      <div class="ea-upload-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="17 8 12 3 7 8"/>
+                          <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                      </div>
+                      <div class="ea-upload-title" id="ea-upload-title">Clique ou arraste o arquivo</div>
+                      <div class="ea-upload-subtitle" style="font-size: 12px; margin-top: 4px;">Suporta PDF ou Imagens (Leitura OCR automática)</div>
+                    </label>
+                    <div class="ea-file-row" id="ea-file-row" style="margin-top: 12px;">
+                      <div class="ea-file-info">
+                        <strong id="ea-file-name"></strong>
+                        <span id="ea-file-meta"></span>
+                      </div>
+                      <button class="ea-btn ea-btn-danger" id="btn-clear-file" type="button">Remover</button>
                     </div>
-                    <button class="ea-btn ea-btn-danger" id="btn-clear-file" type="button">Remover arquivo</button>
                   </div>
-                  <div class="ea-scanner-note">Scanner aceito.</div>
-                </div>
-              </section>
+                </section>
+              </div>
 
-              <section class="ea-block">
-                <div class="ea-block-title">
-                  <strong>Texto base</strong>
-                  <span>obrigatório se não houver arquivo</span>
+              <!-- Optional Meta Fields Accordion -->
+              <details class="ea-collapsible-section" style="margin-top: 8px;">
+                <summary class="ea-collapsible-summary">🛠️ Campos e Dados Complementares Opcionais</summary>
+                <div class="ea-collapsible-content">
+                  <div class="ea-grid" style="margin-top: 12px;">
+                    <label class="ea-field">
+                      <span class="ea-label">Secretaria / setor</span>
+                      <input class="ea-input" id="secretaria" placeholder="Secretaria de Saúde" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Fornecedor / credor</span>
+                      <input class="ea-input" id="fornecedor" placeholder="Nome do fornecedor" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Tipo da despesa</span>
+                      <input class="ea-input" id="tipo_despesa" placeholder="Material, serviço, locação..." />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Finalidade</span>
+                      <input class="ea-input" id="finalidade" placeholder="Pagamento de..." />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Valor</span>
+                      <input class="ea-input" id="valor" placeholder="R$ 0,00" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Competência / período</span>
+                      <input class="ea-input" id="competencia" placeholder="03/2026" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Processo</span>
+                      <input class="ea-input" id="processo" placeholder="Processo administrativo" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Pregão / licitação</span>
+                      <input class="ea-input" id="pregao" placeholder="Pregão 012/2026" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Contrato</span>
+                      <input class="ea-input" id="contrato" placeholder="Contrato 123/2026" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Nota fiscal / OS</span>
+                      <input class="ea-input" id="nota_fiscal" placeholder="NF 000123" />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Fonte / origem</span>
+                      <input class="ea-input" id="fonte" placeholder="Empenho, NF, arquivo, etc." />
+                    </label>
+                    <label class="ea-field">
+                      <span class="ea-label">Observações</span>
+                      <input class="ea-input" id="observacoes" placeholder="Pontos de atenção" />
+                    </label>
+                  </div>
                 </div>
-                <label class="ea-field ea-field-full">
-                  <span class="ea-label">Texto colado ou conteúdo extraído</span>
-                  <textarea class="ea-textarea ea-contextarea" id="texto_base" placeholder="Cole o texto aqui."></textarea>
-                </label>
-              </section>
+              </details>
             </div>
+          </div>
+        </article>
+      </section>
 
-              <section class="ea-block">
-                <div class="ea-block-title">
-                  <strong>Dados complementares</strong>
-                  <span>preenchimento manual</span>
-                </div>
-                <div class="ea-grid">
-                  <label class="ea-field">
-                    <span class="ea-label">Secretaria / setor</span>
-                    <input class="ea-input" id="secretaria" placeholder="Secretaria de Saude" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Fornecedor / credor</span>
-                    <input class="ea-input" id="fornecedor" placeholder="Nome do fornecedor" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Tipo da despesa</span>
-                    <input class="ea-input" id="tipo_despesa" placeholder="Material, servico, locacao..." />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Finalidade</span>
-                    <input class="ea-input" id="finalidade" placeholder="Pagamento de..." />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Valor</span>
-                    <input class="ea-input" id="valor" placeholder="R$ 0,00" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Competencia / periodo</span>
-                    <input class="ea-input" id="competencia" placeholder="03/2026" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Processo</span>
-                    <input class="ea-input" id="processo" placeholder="Processo administrativo" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Pregao / licitacao</span>
-                    <input class="ea-input" id="pregao" placeholder="Pregao 012/2026" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Contrato</span>
-                    <input class="ea-input" id="contrato" placeholder="Contrato 123/2026" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Nota fiscal / OS</span>
-                    <input class="ea-input" id="nota_fiscal" placeholder="NF 000123" />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Fonte / origem</span>
-                    <input class="ea-input" id="fonte" placeholder="Empenho, NF, arquivo, etc." />
-                  </label>
-                  <label class="ea-field">
-                    <span class="ea-label">Observacoes</span>
-                    <input class="ea-input" id="observacoes" placeholder="Pontos de atencao" />
-                  </label>
-                </div>
-              </section>
-
-            <div class="ea-actions">
-              <button class="ea-btn" id="btn-read-file" type="button">Ler arquivo</button>
-              <button class="ea-btn" id="btn-extract" type="button">Extrair campos</button>
-              <button class="ea-btn ea-btn-primary" id="btn-generate" type="button">Gerar descricao</button>
-              <button class="ea-btn" id="btn-checklist" type="button">Checklist</button>
-              <button class="ea-btn" id="btn-review" type="button">Revisar tudo</button>
-              <button class="ea-btn" id="btn-improve" type="button">Melhorar descricao</button>
-              <button class="ea-btn ea-btn-danger" id="btn-clear" type="button">Limpar tudo</button>
+      <!-- Right Column: Outputs -->
+      <section class="ea-stack">
+        <article class="ea-card">
+          <div class="ea-card-head">
+            <h2>2. Descrição Gerada</h2>
+            <p>Resultado gerado pela inteligência artificial padronizado em caixa alta.</p>
+          </div>
+          <div class="ea-card-body">
+            <div class="ea-result-header" style="margin-bottom: 10px;">
+              <div class="ea-result-badge">saída oficial editável</div>
+            </div>
+            
+            <textarea class="ea-textarea ea-result-box" id="descricao_resultado" placeholder="A descrição oficial do empenho aparecerá aqui..." style="min-height: 220px; font-weight: 600; font-size: 13px;"></textarea>
+            
+            <div class="ea-actions" style="margin-top: 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+              <button class="ea-btn ea-btn-primary" id="btn-generate" type="button" style="grid-column: 1 / -1; min-height: 52px; font-size: 15px; border-radius: 18px;">✨ Gerar Descrição Padronizada</button>
+              <button class="ea-btn" id="btn-copy" type="button" style="font-size: 13px; font-weight: 700; border-radius: 16px; min-height: 44px;">📋 Copiar Texto</button>
+              <button class="ea-btn ea-btn-danger" id="btn-clear" type="button" style="font-size: 13px; font-weight: 700; border-radius: 16px; min-height: 44px; color: var(--red);">🧹 Limpar Tudo</button>
             </div>
 
             <div class="ea-loader" id="ea-loader">Processando arquivo e consultando a IA...</div>
@@ -835,103 +909,71 @@
           </div>
         </article>
 
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Descricao da Nota de Empenho</h2>
-            <p>Resultado.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-result-header">
-              <div class="ea-result-badge">saida editavel</div>
-            </div>
-            <textarea class="ea-textarea ea-result-box" id="descricao_resultado" placeholder="A descricao aparecera aqui."></textarea>
-            <div class="ea-result-tools">
-              <button class="ea-btn ea-btn-primary" id="btn-copy">Copiar descricao</button>
-              <button class="ea-btn" id="btn-download">Baixar .txt</button>
-            </div>
-          </div>
-        </article>
+        <!-- Advanced Controls Drawer -->
+        <details class="ea-collapsible-section">
+          <summary class="ea-collapsible-summary">⚙️ Opções Avançadas e Painel Técnico</summary>
+          <div class="ea-collapsible-content">
+            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 16px;">
+              <div class="ea-actions" style="margin: 0; display: flex; flex-wrap: wrap; gap: 8px;">
+                <button class="ea-btn" id="btn-read-file" type="button">Ler Arquivo</button>
+                <button class="ea-btn" id="btn-extract" type="button">Extrair Campos</button>
+                <button class="ea-btn" id="btn-checklist" type="button">Gerar Checklist</button>
+                <button class="ea-btn" id="btn-review" type="button">Revisar Tudo</button>
+                <button class="ea-btn" id="btn-improve" type="button">Melhorar Texto</button>
+                <button class="ea-btn" id="btn-download" type="button">💾 Baixar TXT</button>
+              </div>
 
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Historico recente</h2>
-            <p>Ultimas execucoes do assistente.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-mini-list" id="historico_lista">
-              <div class="ea-mini-item">
-                <strong>Carregando historico...</strong>
+              <!-- Technical diagnostics areas accessed by static/js/assistente-empenho.js -->
+              <div style="display: grid; grid-template-columns: 1fr; gap: 12px; border-top: 1px solid rgba(40,95,147,.08); padding-top: 14px;">
+                <div>
+                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 0 0 6px 0; letter-spacing: 0.5px;">📋 Campos Extraídos</h4>
+                  <div class="ea-mini-list" id="painel_campos" style="max-height: 140px; overflow-y: auto;">
+                    <div class="ea-mini-item"><strong>Nenhuma extração realizada ainda.</strong></div>
+                  </div>
+                </div>
+                <div>
+                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 12px 0 6px 0; letter-spacing: 0.5px;">☑️ Checklist de Validação</h4>
+                  <div class="ea-mini-list" id="painel_checklist" style="max-height: 140px; overflow-y: auto;">
+                    <div class="ea-mini-item"><strong>Checklist ainda não gerado.</strong></div>
+                  </div>
+                </div>
+                <div>
+                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 12px 0 6px 0; letter-spacing: 0.5px;">⚖️ Comparador de Versões</h4>
+                  <div class="ea-mini-list" id="painel_diff" style="max-height: 140px; overflow-y: auto;">
+                    <div class="ea-mini-item"><strong>Nenhuma revisão gerada para comparação.</strong></div>
+                  </div>
+                </div>
+                <div>
+                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 12px 0 6px 0; letter-spacing: 0.5px;">⏳ Histórico Recente</h4>
+                  <div class="ea-mini-list" id="historico_lista" style="max-height: 140px; overflow-y: auto;">
+                    <div class="ea-mini-item"><strong>Carregando histórico do servidor...</strong></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </article>
+        </details>
       </section>
-
-      <aside class="ea-stack">
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Como usar</h2>
-            <p>3 passos.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-mini-list">
-              <div class="ea-mini-item">
-                <strong>1. Envie ou cole</strong>
-              </div>
-              <div class="ea-mini-item">
-                <strong>2. Ler arquivo</strong>
-              </div>
-              <div class="ea-mini-item">
-                <strong>3. Gerar descricao</strong>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Campos extraidos</h2>
-            <p>Resultado da leitura estruturada do documento.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-mini-list" id="painel_campos">
-              <div class="ea-mini-item">
-                <strong>Nenhuma extracao ainda.</strong>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Checklist</h2>
-            <p>O que falta conferir antes de finalizar.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-mini-list" id="painel_checklist">
-              <div class="ea-mini-item">
-                <strong>Checklist ainda nao gerado.</strong>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="ea-card">
-          <div class="ea-card-head">
-            <h2>Comparacao</h2>
-            <p>Mostra a diferenca entre a descricao base e a revisada.</p>
-          </div>
-          <div class="ea-card-body">
-            <div class="ea-mini-list" id="painel_diff">
-              <div class="ea-mini-item">
-                <strong>Use a revisao para gerar o diff.</strong>
-              </div>
-            </div>
-          </div>
-        </article>
-      </aside>
     </div>
   </div>
+
+  <!-- Tab switcher trigger script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabs = document.querySelectorAll('.ea-tab-btn');
+      const contents = document.querySelectorAll('.ea-tab-content');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const target = tab.dataset.tab;
+          tabs.forEach(t => t.classList.toggle('active', t === tab));
+          contents.forEach(content => {
+            const isTarget = content.dataset.tabContent === target;
+            content.style.display = isTarget ? 'block' : 'none';
+          });
+        });
+      });
+    });
+  </script>
 
   <script src="/static/js/assistente-empenho.js"></script>
 

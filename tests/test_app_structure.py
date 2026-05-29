@@ -193,6 +193,7 @@ def test_db_connection():
                 "mural_recados", "mural_anexos", "mural_comentarios",
                 "configuracoes", "logs", "documentos_centro",
                 "autentique_envios", "autentique_contatos",
+                "fornecimento_solicitacoes", "fornecimento_solicitacao_itens",
             ]
 
             table_names = [t["name"] for t in tables]
@@ -263,6 +264,208 @@ def test_mural_api_guards():
                 pass
 
 
+def test_protocolos_api():
+    """Testa cadastro de protocolos, upload de anexos (PDFs) e download."""
+    if os.path.exists(TEST_DB_PATH):
+        try:
+            os.remove(TEST_DB_PATH)
+        except Exception:
+            pass
+
+    from server import create_app
+    import io
+
+    app, _, init_db, migrate_db = create_app()
+    try:
+        with app.app_context():
+            init_db()
+            migrate_db()
+
+        client = app.test_client()
+
+        # 1. Obter próximo número
+        res_num = client.get("/api/protocolos/proximo-numero")
+        assert res_num.status_code == 200
+        numero = res_num.get_json()["numero"]
+        assert "PROT-" in numero
+
+        # 2. Criar protocolo
+        res_create = client.post(
+            "/api/protocolos",
+            json={
+                "numero": numero,
+                "tipo": "oficio",
+                "direcao": "enviado",
+                "origem_destino": "Setor de Finanças",
+                "assunto": "Remessa de Balancete Mensal",
+                "data_protocolo": "2026-05-29",
+                "prazo_resposta": "2026-06-15",
+                "observacoes": "PDF em anexo",
+            },
+        )
+        assert res_create.status_code == 201
+        data = res_create.get_json()
+        assert data["id"] is not None
+        assert data["origem_destino"] == "Setor de Finanças"
+        assert data["assunto"] == "Remessa de Balancete Mensal"
+        prot_id = data["id"]
+
+        # 3. Listar protocolos (e filtrar por busca 'Finanças')
+        res_list = client.get("/api/protocolos?busca=Finanças")
+        assert res_list.status_code == 200
+        list_data = res_list.get_json()
+        assert list_data["total"] >= 1
+        assert list_data["items"][0]["origem_destino"] == "Setor de Finanças"
+
+        # 4. Upload de anexo PDF fictício
+        dummy_pdf_content = b"%PDF-1.4 dummy pdf content for testing protocols"
+        res_upload = client.post(
+            f"/api/protocolos/{prot_id}/anexos",
+            data={
+                "arquivo": (io.BytesIO(dummy_pdf_content), "balancete.pdf", "application/pdf")
+            },
+            content_type="multipart/form-data",
+        )
+        assert res_upload.status_code == 201
+        upload_data = res_upload.get_json()
+        assert upload_data["id"] is not None
+        assert upload_data["file_name"] == "balancete.pdf"
+        anexo_id = upload_data["id"]
+
+        # 5. Listar anexos
+        res_anexos = client.get(f"/api/protocolos/{prot_id}/anexos")
+        assert res_anexos.status_code == 200
+        anexos_list = res_anexos.get_json()
+        assert len(anexos_list) == 1
+        assert anexos_list[0]["file_name"] == "balancete.pdf"
+
+        # 6. Download de anexo
+        res_download = client.get(f"/api/protocolos/{prot_id}/anexos/{anexo_id}/download")
+        assert res_download.status_code == 200
+        assert res_download.data == dummy_pdf_content
+
+        # 7. Excluir anexo
+        res_del_anexo = client.delete(f"/api/protocolos/{prot_id}/anexos/{anexo_id}")
+        assert res_del_anexo.status_code == 200
+
+        # 8. Excluir protocolo
+        res_delete = client.delete(f"/api/protocolos/{prot_id}")
+        assert res_delete.status_code == 200
+    finally:
+        if os.path.exists(TEST_DB_PATH):
+            try:
+                os.remove(TEST_DB_PATH)
+            except Exception:
+                pass
+
+
+def test_fornecimento_solicitacoes_api():
+    """Testa cadastro, listagem, edicao, clonagem e exclusao de solicitacoes de fornecimento."""
+    if os.path.exists(TEST_DB_PATH):
+        try:
+            os.remove(TEST_DB_PATH)
+        except Exception:
+            pass
+
+    from server import create_app
+
+    app, _, init_db, migrate_db = create_app()
+    try:
+        with app.app_context():
+            init_db()
+            migrate_db()
+
+        client = app.test_client()
+
+        # 1. Criar solicitacao
+        res_create = client.post(
+            "/api/fornecimento/solicitacoes",
+            json={
+                "solicitante": "Joao da Silva",
+                "empresa": "Material de Escritorio SA",
+                "data": "30/05/2026",
+                "obs": "Urgente",
+                "items": [
+                    {"nome": "Caneta", "desc": "Azul", "qtd": "10", "preco": "2,50"},
+                    {"nome": "Papel A4", "desc": "Resma", "qtd": "5", "preco": "25,00"}
+                ]
+            }
+        )
+        assert res_create.status_code == 201
+        data = res_create.get_json()
+        assert data["id"] is not None
+        assert data["solicitante"] == "Joao da Silva"
+        assert len(data["items"]) == 2
+        assert data["valor_total"] == 150.0 # 10*2.5 + 5*25 = 25 + 125 = 150
+        sol_id = data["id"]
+
+        # 2. Listar solicitacoes
+        res_list = client.get("/api/fornecimento/solicitacoes")
+        assert res_list.status_code == 200
+        list_data = res_list.get_json()
+        assert len(list_data) >= 1
+        assert list_data[0]["id"] == sol_id
+
+        # 3. Filtrar com busca
+        res_search = client.get("/api/fornecimento/solicitacoes?q=Escritorio")
+        assert res_search.status_code == 200
+        assert len(res_search.get_json()) >= 1
+
+        res_search_empty = client.get("/api/fornecimento/solicitacoes?q=Inexistente")
+        assert res_search_empty.status_code == 200
+        assert len(res_search_empty.get_json()) == 0
+
+        # 4. Atualizar solicitacao (PUT)
+        res_update = client.put(
+            f"/api/fornecimento/solicitacoes/{sol_id}",
+            json={
+                "solicitante": "Joao da Silva Alterado",
+                "empresa": "Material de Escritorio SA",
+                "data": "30/05/2026",
+                "obs": "Nao tao urgente",
+                "items": [
+                    {"nome": "Caneta", "desc": "Preta", "qtd": "20", "preco": "2,50"}
+                ]
+            }
+        )
+        assert res_update.status_code == 200
+        up_data = res_update.get_json()
+        assert up_data["solicitante"] == "Joao da Silva Alterado"
+        assert len(up_data["items"]) == 1
+        assert up_data["items"][0]["desc"] == "Preta"
+        assert up_data["valor_total"] == 50.0
+
+        # 5. Clonar solicitacao (POST /duplicate)
+        res_clone = client.post(f"/api/fornecimento/solicitacoes/{sol_id}/duplicate")
+        assert res_clone.status_code == 201
+        clone_data = res_clone.get_json()
+        assert clone_data["id"] is not None
+        assert clone_data["id"] != sol_id
+        assert clone_data["solicitante"] == "Joao da Silva Alterado"
+        assert len(clone_data["items"]) == 1
+        clone_id = clone_data["id"]
+
+        # 6. Excluir solicitacoes
+        res_del1 = client.delete(f"/api/fornecimento/solicitacoes/{sol_id}")
+        assert res_del1.status_code == 200
+        
+        res_del2 = client.delete(f"/api/fornecimento/solicitacoes/{clone_id}")
+        assert res_del2.status_code == 200
+
+        # Verificacao de cascateamento
+        with app.app_context():
+            conn = app._get_db()
+            items_left = conn.execute("SELECT COUNT(*) FROM fornecimento_solicitacao_itens").fetchone()[0]
+            assert items_left == 0
+            
+    finally:
+        if os.path.exists(TEST_DB_PATH):
+            try:
+                os.remove(TEST_DB_PATH)
+            except Exception:
+                pass
+
+
 def run_all_tests():
     """Executa todos os testes (uso direto: python tests/test_app_structure.py)."""
     _safe_print("")
@@ -277,6 +480,8 @@ def run_all_tests():
         ("App Factory",  test_app_factory),
         ("Banco de Dados", test_db_connection),
         ("Mural API",    test_mural_api_guards),
+        ("Protocolos API", test_protocolos_api),
+        ("Fornecimento API", test_fornecimento_solicitacoes_api),
     ]
 
     results = []
@@ -323,6 +528,8 @@ def load_tests(loader, tests, pattern):
         test_app_factory,
         test_db_connection,
         test_mural_api_guards,
+        test_protocolos_api,
+        test_fornecimento_solicitacoes_api,
     ):
         suite.addTest(unittest.FunctionTestCase(fn))
     return suite

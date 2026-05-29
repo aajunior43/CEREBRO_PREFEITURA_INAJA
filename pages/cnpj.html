@@ -51,14 +51,213 @@
     .btn-imprimir { background: var(--bg); color: var(--text-2); box-shadow: var(--neo-sm); font-size: 13px; padding: 9px 18px; }
     .btn-imprimir:hover { box-shadow: var(--neo); }
 
+    /* Estilos de tela para os elementos de impressão */
+    .print-header, .print-footer {
+      display: none;
+    }
+
     @media print {
-      header, .cnpj-card:not(#resultado), .btn-imprimir, .fonte-badge { display: none !important; }
-      body { background: white !important; }
-      .cnpj-wrap { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
-      #resultado { display: block !important; box-shadow: none !important; padding: 0 !important; }
-      .info-item { box-shadow: none !important; border: 1px solid #ccc; }
-      .lista-box { box-shadow: none !important; border: 1px solid #ccc; }
-      .print-header { display: flex !important; }
+      /* Reset geral para impressão */
+      header, .cnpj-card:not(#resultado), .btn-imprimir, .fonte-badge, .ia-chat-widget, #bottom-nav, .app-footer, footer, #toast {
+        display: none !important;
+      }
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .cnpj-wrap {
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      #resultado {
+        display: block !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      
+      /* Cabeçalho de Impressão */
+      .print-header {
+        display: block !important;
+        margin-bottom: 24px;
+      }
+      .print-header-top {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .print-header-logo {
+        width: 50px;
+        height: 50px;
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .print-header-text {
+        flex: 1;
+      }
+      .print-header-text h2 {
+        font-size: 15px;
+        font-weight: 800;
+        margin: 0 0 3px 0;
+        color: #111827;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .print-header-text h3 {
+        font-size: 12px;
+        font-weight: 600;
+        margin: 0 0 3px 0;
+        color: #374151;
+      }
+      .print-header-text p {
+        font-size: 10px;
+        margin: 0;
+        color: #6b7280;
+      }
+      .print-header-date {
+        font-size: 10px;
+        color: #4b5563;
+        text-align: right;
+        font-weight: 600;
+      }
+      .print-header-divider {
+        height: 2px;
+        background: #111827;
+        margin: 10px 0 14px 0;
+      }
+      .print-report-title {
+        font-size: 14px;
+        font-weight: 800;
+        text-align: center;
+        margin: 0 0 16px 0;
+        color: #111827;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      /* Grid de Informações em PDF */
+      .info-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+        page-break-inside: avoid;
+      }
+      .info-item {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 4px !important;
+        background: #fff !important;
+        padding: 10px 12px !important;
+      }
+      .info-item .lbl {
+        color: #4b5563 !important;
+        font-size: 9px !important;
+        margin-bottom: 3px !important;
+      }
+      .info-item .val {
+        color: #111827 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+      }
+
+      /* Caixas de Listas */
+      .section-title {
+        color: #111827 !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        margin: 18px 0 8px 0 !important;
+        border-bottom: 1px solid #d1d5db !important;
+        padding-bottom: 4px !important;
+        page-break-after: avoid;
+      }
+      .lista-box {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 4px !important;
+        background: #fff !important;
+        padding: 10px 12px !important;
+        page-break-inside: avoid;
+      }
+
+      /* Itens de Quadro Societário e CNAE */
+      .lista-item {
+        padding: 6px 0 !important;
+        border-bottom: 1px solid #f3f4f6 !important;
+      }
+      .lista-item:last-child {
+        border-bottom: none !important;
+      }
+      .contact-row {
+        padding: 5px 0 !important;
+        border-bottom: 1px solid #f3f4f6 !important;
+      }
+      .contact-row:last-child {
+        border-bottom: none !important;
+      }
+
+      /* Rodapé de Assinatura */
+      .print-footer {
+        display: block !important;
+        margin-top: 35px;
+        page-break-inside: avoid;
+      }
+      .print-footer-divider {
+        height: 1px;
+        background: #d1d5db;
+        margin-bottom: 14px;
+      }
+      .print-footer-sig-row {
+        display: flex !important;
+        justify-content: space-between;
+        gap: 30px;
+        align-items: flex-start;
+      }
+      .print-footer-sig-box {
+        flex: 1;
+        text-align: center;
+        padding-top: 20px;
+      }
+      .print-signature-line {
+        width: 80%;
+        height: 1px;
+        background: #4b5563;
+        margin: 0 auto 8px auto;
+      }
+      .print-signature-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+      }
+      .print-signature-sub {
+        font-size: 9px;
+        color: #6b7280;
+        margin: 2px 0 0 0;
+      }
+      .print-footer-info-box {
+        flex: 1.5;
+        border-left: 2px solid #111827;
+        padding-left: 16px;
+      }
+      .print-footer-info-box p {
+        font-size: 10px;
+        margin: 0 0 2px 0;
+        color: #374151;
+        line-height: 1.4;
+      }
     }
 
     @media (max-width: 600px) {
@@ -121,10 +320,21 @@
     <!-- Resultado -->
     <div id="resultado" style="display:none;" class="cnpj-card">
 
-      <!-- Cabeçalho só para impressão -->
+      <!-- Cabeçalho Oficial de Impressão (PDF) -->
       <div class="print-header">
-        <span><strong>Prefeitura de Inajá</strong> · Consulta CNPJ</span>
-        <span id="print-data"></span>
+        <div class="print-header-top">
+          <div class="print-header-logo">
+            <span style="font-size: 24px;">🏛️</span>
+          </div>
+          <div class="print-header-text">
+            <h2>PREFEITURA MUNICIPAL DE INAJÁ</h2>
+            <h3>Secretaria Municipal de Administração e Finanças</h3>
+            <p>Sistema de Gestão de Empenhos e Contratos — CÉREBRO</p>
+          </div>
+          <div class="print-header-date" id="print-data"></div>
+        </div>
+        <div class="print-header-divider"></div>
+        <h1 class="print-report-title">Relatório de Habilitação Cadastral e Econômica</h1>
       </div>
 
       <!-- Cabeçalho da empresa -->
@@ -178,6 +388,23 @@
       <div id="bloco-socios" style="display:none;">
         <div class="section-title">👥 Quadro Societário</div>
         <div class="lista-box" id="r-socios"></div>
+      </div>
+
+      <!-- Rodapé de Assinatura e Autenticação (PDF) -->
+      <div class="print-footer">
+        <div class="print-footer-divider"></div>
+        <div class="print-footer-sig-row">
+          <div class="print-footer-sig-box">
+            <div class="print-signature-line"></div>
+            <p class="print-signature-label">Servidor Responsável pela Consulta</p>
+            <p class="print-signature-sub">Prefeitura de Inajá / PR</p>
+          </div>
+          <div class="print-footer-info-box">
+            <p><strong>Autenticação CÉREBRO:</strong></p>
+            <p>Código Hash: <span id="print-hash" style="font-family: monospace; font-size: 11px;">—</span></p>
+            <p style="font-size: 9px; color: #555; margin-top: 4px;">Este documento certifica a consulta de dados cadastrais oficiais na Receita Federal do Brasil em conformidade com as diretrizes de contratação pública da Lei Federal nº 14.133/2021.</p>
+          </div>
+        </div>
       </div>
 
       <div class="fonte-badge" id="r-fonte"></div>
@@ -319,6 +546,18 @@
     }
 
     function imprimirCNPJ() {
+      const d = window._lastCnpjData || {};
+      const cleanCnpj = (d.cnpj || '').replace(/\D/g, '');
+      const timestamp = new Date().toISOString();
+      let hash = 0;
+      const combinedStr = cleanCnpj + timestamp;
+      for (let i = 0; i < combinedStr.length; i++) {
+        hash = (hash << 5) - hash + combinedStr.charCodeAt(i);
+        hash |= 0;
+      }
+      const uniqueCode = "CEREBRO-" + Math.abs(hash).toString(16).toUpperCase() + "-" + cleanCnpj.slice(-4);
+      
+      document.getElementById('print-hash').textContent = uniqueCode;
       document.getElementById('print-data').textContent =
         'Emitido em: ' + new Date().toLocaleString('pt-BR');
       window.print();
