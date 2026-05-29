@@ -734,6 +734,91 @@
       .mural-col { min-height: auto; }
     }
 
+    @media (max-width: 768px) {
+      .mural-page {
+        padding: 14px 12px 72px;
+      }
+      .mural-hero {
+        padding: 14px 16px;
+        border-radius: 16px;
+        gap: 12px;
+      }
+      .mural-hero h2 {
+        font-size: 20px;
+      }
+      .mural-toolbar {
+        padding: 12px;
+        border-radius: 14px;
+        gap: 12px;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .mural-filters {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+      }
+      .mural-search-wrap {
+        max-width: none;
+        width: 100%;
+      }
+      .mural-select {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .mural-btn {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .mural-columns {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        gap: 14px;
+        padding: 4px 4px 16px;
+        margin: 0 -4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .mural-columns::-webkit-scrollbar {
+        height: 5px;
+      }
+      .mural-columns::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .mural-columns::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 10px;
+      }
+      .mural-col {
+        flex: 0 0 85vw;
+        max-height: calc(100vh - 230px);
+        scroll-snap-align: center;
+        min-height: 420px;
+        border-radius: 16px !important;
+      }
+      
+      html.theme-cyberpunk .mural-col {
+        clip-path: none !important;
+      }
+      html.theme-cyberpunk .mural-card {
+        clip-path: none !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .mural-modal {
+        padding: 16px;
+        gap: 14px;
+      }
+      .mural-modal-header h3 {
+        font-size: 16px;
+      }
+      .mural-modal form div[style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
     /* =============================================================================
        CYBERPUNK THEME INTEGRATION (DYNAMIC)
        ============================================================================= */
