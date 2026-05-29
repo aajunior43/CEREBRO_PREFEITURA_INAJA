@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mural</title>
   <link rel="stylesheet" href="/static/css/index.css" />
-  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt==='cyberpunk')document.documentElement.classList.add('theme-cyberpunk');else if(mt==='netflix')document.documentElement.classList.add('theme-netflix');}());</script>
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt==='cyberpunk')document.documentElement.classList.add('theme-cyberpunk');else if(mt==='netflix')document.documentElement.classList.add('theme-netflix');else if(mt==='spotify')document.documentElement.classList.add('theme-spotify');}());</script>
   <script>
     // Bloqueia renderização imediatamente antes de qualquer HTML ser exibido
     document.documentElement.style.visibility = 'hidden';
@@ -1254,6 +1254,141 @@
       border-radius: 6px !important;
       box-shadow: 0 20px 50px rgba(0,0,0,0.9) !important;
     }
+
+    /* =============================================================================
+       SPOTIFY THEME INTEGRATION
+       ============================================================================= */
+    html.theme-spotify {
+      --bg-deep:   #121212;
+      --bg-panel:  #181818;
+      --bg-card:   #282828;
+      --line:      #3e3e3e;
+      --line-hi:   #1db954;
+      --ink:       #ffffff;
+      --ink-2:     #b3b3b3;
+      --ink-3:     #7f7f7f;
+      --ink-4:     #535353;
+
+      --accent:    #1db954;
+      --accent-2:  #1ed760;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 4px 12px rgba(0,0,0,0.5);
+      --shadow: 0 8px 24px rgba(0,0,0,0.7);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.9);
+      
+      --blue: #53b9ff;
+      --orange: #ffa154;
+      --green: #1db954;
+      --red: #f15858;
+    }
+
+    html.theme-spotify body {
+      background-color: #121212 !important;
+      color: #ffffff !important;
+    }
+
+    html.theme-spotify .mural-page {
+      background: #121212 !important;
+    }
+
+    html.theme-spotify .mural-hero {
+      background: #181818 !important;
+      border: 1px solid #282828 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6) !important;
+    }
+
+    html.theme-spotify .mural-hero h2 {
+      font-family: 'Circular', 'Circular Sp', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      letter-spacing: -0.03em !important;
+    }
+
+    html.theme-spotify .mural-toolbar {
+      background: #181818 !important;
+      border: 1px solid #282828 !important;
+      border-radius: 12px !important;
+    }
+
+    html.theme-spotify .mural-col {
+      border-radius: 12px !important;
+      border: 1px solid #282828 !important;
+      background: #181818 !important;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
+    }
+    
+    html.theme-spotify .mural-col-todo .mural-col-head { border-top: 3px solid var(--accent) !important; }
+    html.theme-spotify .mural-col-progress .mural-col-head { border-top: 3px solid var(--orange) !important; }
+    html.theme-spotify .mural-col-done .mural-col-head { border-top: 3px solid var(--accent) !important; }
+
+    html.theme-spotify .mural-card {
+      border-radius: 8px !important;
+      border: 1px solid transparent !important;
+      background: #181818 !important;
+      transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.2s ease !important;
+    }
+
+    html.theme-spotify .mural-card:hover {
+      background-color: #282828 !important;
+      border-color: #282828 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6) !important;
+    }
+
+    html.theme-spotify .mural-btn-primary {
+      background: #1db954 !important;
+      color: #000000 !important;
+      border-radius: 500px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.1em !important;
+      font-weight: 800 !important;
+    }
+    html.theme-spotify .mural-btn-primary:hover {
+      background: #1ed760 !important;
+      transform: scale(1.04) translateY(-1px) !important;
+      box-shadow: 0 4px 12px rgba(29,185,84,0.3) !important;
+    }
+
+    html.theme-spotify .mural-btn-ghost {
+      background: transparent !important;
+      border: 1px solid #878787 !important;
+      color: #ffffff !important;
+      border-radius: 500px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.1em !important;
+      font-weight: 800 !important;
+    }
+    html.theme-spotify .mural-btn-ghost:hover {
+      border-color: #ffffff !important;
+      transform: scale(1.04) translateY(-1px) !important;
+    }
+
+    html.theme-spotify .mural-stats-panel {
+      background: rgba(18, 18, 18, 0.98) !important;
+      border-left: 1px solid #282828 !important;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.8) !important;
+    }
+    html.theme-spotify .mural-stats-card {
+      background: #181818 !important;
+      border: 1px solid #282828 !important;
+      border-radius: 8px !important;
+    }
+
+    html.theme-spotify .mural-modal {
+      background: #121212 !important;
+      border: 1px solid #282828 !important;
+      border-radius: 12px !important;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
+    }
   </style>
 </head>
 <body>
@@ -1321,6 +1456,7 @@
           <optgroup label="Interface Avançada">
             <option value="cyberpunk">⚡ Cyberpunk (Neon)</option>
             <option value="netflix">🔴 Netflix (Pipoca)</option>
+            <option value="spotify">🟢 Spotify (Play)</option>
           </optgroup>
         </select>
         <button class="mural-btn mural-btn-ghost" id="btn-stats" title="Estatísticas do mural">📊 Estatísticas</button>
@@ -1700,31 +1836,39 @@
         if (mt === 'cyberpunk') {
           themeSelect.value = 'cyberpunk';
           document.documentElement.classList.add('theme-cyberpunk');
-          document.documentElement.classList.remove('theme-netflix');
+          document.documentElement.classList.remove('theme-netflix', 'theme-spotify');
         } else if (mt === 'netflix') {
           themeSelect.value = 'netflix';
           document.documentElement.classList.add('theme-netflix');
-          document.documentElement.classList.remove('theme-cyberpunk');
+          document.documentElement.classList.remove('theme-cyberpunk', 'theme-spotify');
+        } else if (mt === 'spotify') {
+          themeSelect.value = 'spotify';
+          document.documentElement.classList.add('theme-spotify');
+          document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
         } else {
           themeSelect.value = currentTheme;
-          document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
+          document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix', 'theme-spotify');
         }
         
         themeSelect.addEventListener('change', function() {
           const selected = themeSelect.value;
           if (selected === 'cyberpunk') {
             localStorage.setItem('mural_theme', 'cyberpunk');
-            document.documentElement.classList.remove('theme-netflix');
+            document.documentElement.classList.remove('theme-netflix', 'theme-spotify');
             document.documentElement.classList.add('theme-cyberpunk');
           } else if (selected === 'netflix') {
             localStorage.setItem('mural_theme', 'netflix');
-            document.documentElement.classList.remove('theme-cyberpunk');
+            document.documentElement.classList.remove('theme-cyberpunk', 'theme-spotify');
             document.documentElement.classList.add('theme-netflix');
+          } else if (selected === 'spotify') {
+            localStorage.setItem('mural_theme', 'spotify');
+            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
+            document.documentElement.classList.add('theme-spotify');
           } else {
             localStorage.setItem('mural_theme', 'default');
             localStorage.setItem('theme', selected);
             document.documentElement.setAttribute('data-theme', selected);
-            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
+            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix', 'theme-spotify');
             
             // Sincroniza a classe ativa dos botões do cabeçalho compartilhado (se houver)
             document.querySelectorAll('.theme-select-btn').forEach(btn => {
@@ -1744,7 +1888,7 @@
           if (btn) {
             const val = btn.getAttribute('data-theme-val');
             localStorage.setItem('mural_theme', 'default');
-            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
+            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix', 'theme-spotify');
             themeSelect.value = val;
           }
         });
