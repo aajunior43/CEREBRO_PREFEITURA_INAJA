@@ -323,31 +323,16 @@ class OpenRouterService:
 
 
 def build_default_model_policies(default_model: str) -> dict[str, ModelPolicy]:
-    if is_opencode_go_model(default_model):
-        go_fallbacks = tuple(
-            model for model in (
-                'opencode-go/qwen3.6-plus',
-                'opencode-go/deepseek-v4-flash',
-                'opencode-go/qwen3.5-plus',
-            )
-            if model != default_model
-        )
-        return {
-            'default': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=1200),
-            'chat': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=2000),
-            'empenho': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=14000, max_tokens=1400),
-            'auditoria_documento': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=15000, max_tokens=1800),
-            'extrato': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=600),
-            'renomeacao_arquivo': ModelPolicy(primary=default_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=400),
-        }
-    free_fallbacks = ('openrouter/free', 'google/gemma-3-27b-it:free', 'mistralai/mistral-small-3.1-24b-instruct:free', 'meta-llama/llama-3.2-3b-instruct:free')
+    # Forçado para utilizar opencode-go/deepseek-v4-flash em todos os procedimentos
+    forced_model = 'opencode-go/deepseek-v4-flash'
+    go_fallbacks = ('opencode-go/qwen3.6-plus', 'opencode-go/qwen3.5-plus')
     return {
-        'default': ModelPolicy(primary=default_model, fallbacks=free_fallbacks, max_input_chars=12000, max_tokens=1200),
-        'chat': ModelPolicy(primary='meta-llama/llama-3.3-70b-instruct:free', fallbacks=free_fallbacks, max_input_chars=12000, max_tokens=2000, prefer_free=True),
-        'empenho': ModelPolicy(primary=default_model, fallbacks=free_fallbacks, max_input_chars=14000, max_tokens=1400),
-        'auditoria_documento': ModelPolicy(primary=default_model, fallbacks=free_fallbacks, max_input_chars=15000, max_tokens=1800),
-        'extrato': ModelPolicy(primary='google/gemma-3-27b-it:free', fallbacks=free_fallbacks, max_input_chars=9000, max_tokens=600, prefer_free=True),
-        'renomeacao_arquivo': ModelPolicy(primary='google/gemma-3-27b-it:free', fallbacks=free_fallbacks, max_input_chars=9000, max_tokens=400, prefer_free=True),
+        'default': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=1200),
+        'chat': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=2000),
+        'empenho': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=14000, max_tokens=1400),
+        'auditoria_documento': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=15000, max_tokens=1800),
+        'extrato': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=600),
+        'renomeacao_arquivo': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=400),
     }
 
 
