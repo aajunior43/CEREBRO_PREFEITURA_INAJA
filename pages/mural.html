@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mural</title>
   <link rel="stylesheet" href="/static/css/index.css" />
-  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt==='cyberpunk')document.documentElement.classList.add('theme-cyberpunk');else if(mt==='netflix')document.documentElement.classList.add('theme-netflix');else if(mt==='spotify')document.documentElement.classList.add('theme-spotify');}());</script>
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);var mt=localStorage.getItem('mural_theme');if(mt&&['cyberpunk','netflix','spotify','discord','github','dracula','executivo','matrix'].indexOf(mt)!==-1)document.documentElement.classList.add('theme-'+mt);}());</script>
   <script>
     // Bloqueia renderização imediatamente antes de qualquer HTML ser exibido
     document.documentElement.style.visibility = 'hidden';
@@ -1389,6 +1389,453 @@
       border-radius: 12px !important;
       box-shadow: 0 20px 40px rgba(0,0,0,0.8) !important;
     }
+
+    /* =============================================================================
+       DISCORD THEME INTEGRATION
+       ============================================================================= */
+    html.theme-discord {
+      --bg-deep:   #313338;
+      --bg-panel:  #2b2d31;
+      --bg-card:   #1e1f22;
+      --line:      #3f4147;
+      --line-hi:   #5865f2;
+      --ink:       #f2f3f5;
+      --ink-2:     #dbdee1;
+      --ink-3:     #949ba4;
+      --ink-4:     #4e5058;
+
+      --accent:    #5865f2;
+      --accent-2:  #4752c4;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 4px 10px rgba(0,0,0,0.4);
+      --shadow: 0 8px 20px rgba(0,0,0,0.6);
+      --shadow-lg: 0 12px 30px rgba(0,0,0,0.8);
+      
+      --blue: #5865f2;
+      --orange: #f0b232;
+      --green: #23a55a;
+      --red: #f23f43;
+    }
+    html.theme-discord body {
+      background-color: #313338 !important;
+      color: #f2f3f5 !important;
+    }
+    html.theme-discord .mural-page {
+      background: #313338 !important;
+    }
+    html.theme-discord .mural-hero {
+      background: #2b2d31 !important;
+      border: 1px solid #1e1f22 !important;
+      border-radius: 8px !important;
+    }
+    html.theme-discord .mural-toolbar {
+      background: #2b2d31 !important;
+      border: 1px solid #1e1f22 !important;
+      border-radius: 8px !important;
+    }
+    html.theme-discord .mural-col {
+      border-radius: 8px !important;
+      border: 1px solid #1e1f22 !important;
+      background: #2b2d31 !important;
+    }
+    html.theme-discord .mural-card {
+      border-radius: 8px !important;
+      border: 1px solid #1e1f22 !important;
+      background: #1e1f22 !important;
+    }
+    html.theme-discord .mural-card:hover {
+      border-color: #5865f2 !important;
+      transform: translateY(-2px);
+    }
+    html.theme-discord .mural-btn-primary {
+      background: #5865f2 !important;
+      color: #ffffff !important;
+      border-radius: 3px !important;
+    }
+    html.theme-discord .mural-btn-primary:hover {
+      background: #4752c4 !important;
+    }
+    html.theme-discord .mural-btn-ghost {
+      background: #4e5058 !important;
+      color: #ffffff !important;
+      border-radius: 3px !important;
+    }
+    html.theme-discord .mural-btn-ghost:hover {
+      background: #6d6f78 !important;
+    }
+
+    /* =============================================================================
+       GITHUB THEME INTEGRATION
+       ============================================================================= */
+    html.theme-github {
+      --bg-deep:   #0d1117;
+      --bg-panel:  #161b22;
+      --bg-card:   #21262d;
+      --line:      #30363d;
+      --line-hi:   #58a6ff;
+      --ink:       #c9d1d9;
+      --ink-2:     #8b949e;
+      --ink-3:     #484f58;
+      --ink-4:     #21262d;
+
+      --accent:    #2ea44f;
+      --accent-2:  #2c974b;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow: 0 4px 12px rgba(0,0,0,0.15);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+      
+      --blue: #58a6ff;
+      --orange: #d29922;
+      --green: #3fb950;
+      --red: #f85149;
+    }
+    html.theme-github body {
+      background-color: #0d1117 !important;
+      color: #c9d1d9 !important;
+    }
+    html.theme-github .mural-page {
+      background: #0d1117 !important;
+    }
+    html.theme-github .mural-hero {
+      background: #161b22 !important;
+      border: 1px solid #30363d !important;
+      border-radius: 6px !important;
+    }
+    html.theme-github .mural-toolbar {
+      background: #161b22 !important;
+      border: 1px solid #30363d !important;
+      border-radius: 6px !important;
+    }
+    html.theme-github .mural-col {
+      border-radius: 6px !important;
+      border: 1px solid #30363d !important;
+      background: #161b22 !important;
+    }
+    html.theme-github .mural-card {
+      border-radius: 6px !important;
+      border: 1px solid #30363d !important;
+      background: #0d1117 !important;
+    }
+    html.theme-github .mural-card:hover {
+      border-color: #8b949e !important;
+      transform: none !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+    html.theme-github .mural-btn-primary {
+      background: #238636 !important;
+      color: #ffffff !important;
+      border: 1px solid rgba(240,246,252,0.1) !important;
+      border-radius: 6px !important;
+    }
+    html.theme-github .mural-btn-primary:hover {
+      background: #2ea44f !important;
+      transform: none !important;
+    }
+    html.theme-github .mural-btn-ghost {
+      background: #21262d !important;
+      border: 1px solid #30363d !important;
+      color: #c9d1d9 !important;
+      border-radius: 6px !important;
+    }
+    html.theme-github .mural-btn-ghost:hover {
+      background: #30363d !important;
+      border-color: #8b949e !important;
+      transform: none !important;
+    }
+
+    /* =============================================================================
+       DRACULA THEME INTEGRATION
+       ============================================================================= */
+    html.theme-dracula {
+      --bg-deep:   #282a36;
+      --bg-panel:  #1e1f29;
+      --bg-card:   #44475a;
+      --line:      #6272a4;
+      --line-hi:   #bd93f9;
+      --ink:       #f8f8f2;
+      --ink-2:     #e2e2dc;
+      --ink-3:     #6272a4;
+      --ink-4:     #44475a;
+
+      --accent:    #bd93f9;
+      --accent-2:  #ff79c6;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 4px 10px rgba(0,0,0,0.5);
+      --shadow: 0 8px 24px rgba(0,0,0,0.7);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.8);
+      
+      --blue: #8be9fd;
+      --orange: #ffb86c;
+      --green: #50fa7b;
+      --red: #ff5555;
+    }
+    html.theme-dracula body {
+      background-color: #282a36 !important;
+      color: #f8f8f2 !important;
+    }
+    html.theme-dracula .mural-page {
+      background: #282a36 !important;
+    }
+    html.theme-dracula .mural-hero {
+      background: #1e1f29 !important;
+      border: 1px solid #44475a !important;
+      border-radius: 8px !important;
+    }
+    html.theme-dracula .mural-toolbar {
+      background: #1e1f29 !important;
+      border: 1px solid #44475a !important;
+      border-radius: 8px !important;
+    }
+    html.theme-dracula .mural-col {
+      border-radius: 8px !important;
+      border: 1px solid #44475a !important;
+      background: #1e1f29 !important;
+    }
+    html.theme-dracula .mural-card {
+      border-radius: 8px !important;
+      border: 1px solid #44475a !important;
+      background: #282a36 !important;
+    }
+    html.theme-dracula .mural-card:hover {
+      border-color: #ff79c6 !important;
+      box-shadow: 0 0 10px rgba(255, 121, 198, 0.4) !important;
+      transform: translateY(-2px);
+    }
+    html.theme-dracula .mural-btn-primary {
+      background: #bd93f9 !important;
+      color: #282a36 !important;
+      border-radius: 4px !important;
+    }
+    html.theme-dracula .mural-btn-primary:hover {
+      background: #ff79c6 !important;
+      color: #282a36 !important;
+    }
+    html.theme-dracula .mural-btn-ghost {
+      background: #44475a !important;
+      color: #f8f8f2 !important;
+      border-radius: 4px !important;
+    }
+    html.theme-dracula .mural-btn-ghost:hover {
+      background: #6272a4 !important;
+    }
+
+    /* =============================================================================
+       EXECUTIVO OURO THEME INTEGRATION
+       ============================================================================= */
+    html.theme-executivo {
+      --bg-deep:   #080d16;
+      --bg-panel:  #0f172a;
+      --bg-card:   #1e293b;
+      --line:      #334155;
+      --line-hi:   #d4af37;
+      --ink:       #ffffff;
+      --ink-2:     #cbd5e1;
+      --ink-3:     #64748b;
+      --ink-4:     #475569;
+
+      --accent:    #d4af37;
+      --accent-2:  #b99326;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.5);
+      --shadow: 0 6px 18px rgba(0,0,0,0.6);
+      --shadow-lg: 0 12px 36px rgba(0,0,0,0.8);
+      
+      --blue: #38bdf8;
+      --orange: #fb923c;
+      --green: #34d399;
+      --red: #f87171;
+    }
+    html.theme-executivo body {
+      background-color: #080d16 !important;
+      color: #ffffff !important;
+    }
+    html.theme-executivo .mural-page {
+      background: #080d16 !important;
+    }
+    html.theme-executivo .mural-hero {
+      background: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 12px !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    }
+    html.theme-executivo .mural-hero h2 {
+      font-family: 'Outfit', sans-serif !important;
+      font-weight: 800 !important;
+      background: linear-gradient(120deg, #d4af37 0%, #fef1c9 50%, #ffd66e 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+    html.theme-executivo .mural-toolbar {
+      background: #0f172a !important;
+      border: 1px solid #1e293b !important;
+      border-radius: 12px !important;
+    }
+    html.theme-executivo .mural-col {
+      border-radius: 12px !important;
+      border: 1px solid #1e293b !important;
+      background: #0f172a !important;
+    }
+    html.theme-executivo .mural-card {
+      border-radius: 10px !important;
+      border: 1px solid #1e293b !important;
+      background: #1e293b !important;
+    }
+    html.theme-executivo .mural-card:hover {
+      border-color: #d4af37 !important;
+      box-shadow: 0 8px 24px rgba(212,175,55,0.12) !important;
+      transform: translateY(-3px);
+    }
+    html.theme-executivo .mural-btn-primary {
+      background: linear-gradient(135deg, #d4af37, #b99326) !important;
+      color: #080d16 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 10px rgba(212,175,55,0.2) !important;
+    }
+    html.theme-executivo .mural-btn-primary:hover {
+      background: linear-gradient(135deg, #ffd66e, #d4af37) !important;
+      transform: translateY(-2px);
+    }
+    html.theme-executivo .mural-btn-ghost {
+      background: rgba(255,255,255,0.03) !important;
+      border: 1px solid #334155 !important;
+      color: #cbd5e1 !important;
+      border-radius: 8px !important;
+    }
+    html.theme-executivo .mural-btn-ghost:hover {
+      border-color: #d4af37 !important;
+      color: #ffffff !important;
+      transform: translateY(-2px);
+    }
+
+    /* =============================================================================
+       MATRIX THEME INTEGRATION
+       ============================================================================= */
+    html.theme-matrix {
+      --bg-deep:   #000000;
+      --bg-panel:  #050505;
+      --bg-card:   #0a0a0a;
+      --line:      #003300;
+      --line-hi:   #00ff00;
+      --ink:       #00ff00;
+      --ink-2:     #00cc00;
+      --ink-3:     #006600;
+      --ink-4:     #003300;
+
+      --accent:    #00ff00;
+      --accent-2:  #00cc00;
+      
+      --bg: var(--bg-deep);
+      --surface: var(--bg-panel);
+      --surface-2: var(--bg-card);
+      --border: var(--line);
+      --border-hover: var(--line-hi);
+      --text: var(--ink);
+      --text-2: var(--ink-2);
+      --text-3: var(--ink-3);
+      --shadow-sm: 0 0 4px rgba(0,255,0,0.2);
+      --shadow: 0 0 10px rgba(0,255,0,0.4);
+      --shadow-lg: 0 0 20px rgba(0,255,0,0.6);
+      
+      --blue: #00ffcc;
+      --orange: #ffcc00;
+      --green: #00ff00;
+      --red: #ff0033;
+    }
+    html.theme-matrix body {
+      background-color: #000000 !important;
+      color: #00ff00 !important;
+      font-family: "Courier New", Courier, monospace !important;
+    }
+    html.theme-matrix .mural-page {
+      background: #000000 !important;
+    }
+    html.theme-matrix .mural-hero {
+      background: #050505 !important;
+      border: 1px solid #003300 !important;
+      border-radius: 2px !important;
+      box-shadow: 0 0 12px rgba(0,255,0,0.3) !important;
+    }
+    html.theme-matrix .mural-hero h2 {
+      font-family: "Courier New", Courier, monospace !important;
+      font-weight: bold !important;
+      color: #00ff00 !important;
+    }
+    html.theme-matrix .mural-toolbar {
+      background: #050505 !important;
+      border: 1px solid #003300 !important;
+      border-radius: 2px !important;
+    }
+    html.theme-matrix .mural-col {
+      border-radius: 2px !important;
+      border: 1px solid #003300 !important;
+      background: #050505 !important;
+    }
+    html.theme-matrix .mural-card {
+      border-radius: 2px !important;
+      border: 1px solid #003300 !important;
+      background: #0a0a0a !important;
+    }
+    html.theme-matrix .mural-card:hover {
+      border-color: #00ff00 !important;
+      box-shadow: 0 0 15px #00ff00 !important;
+      transform: scale(1.01) !important;
+    }
+    html.theme-matrix .mural-btn-primary {
+      background: #003300 !important;
+      border: 1px solid #00ff00 !important;
+      color: #00ff00 !important;
+      border-radius: 2px !important;
+      font-family: monospace !important;
+    }
+    html.theme-matrix .mural-btn-primary:hover {
+      background: #006600 !important;
+      box-shadow: 0 0 10px #00ff00 !important;
+    }
+    html.theme-matrix .mural-btn-ghost {
+      background: transparent !important;
+      border: 1px solid #003300 !important;
+      color: #00cc00 !important;
+      border-radius: 2px !important;
+      font-family: monospace !important;
+    }
+    html.theme-matrix .mural-btn-ghost:hover {
+      border-color: #00ff00 !important;
+      color: #00ff00 !important;
+      box-shadow: 0 0 8px #00ff00 !important;
+    }
   </style>
 </head>
 <body>
@@ -1457,6 +1904,11 @@
             <option value="cyberpunk">⚡ Cyberpunk (Neon)</option>
             <option value="netflix">🔴 Netflix (Pipoca)</option>
             <option value="spotify">🟢 Spotify (Play)</option>
+            <option value="discord">👾 Discord (Gamer)</option>
+            <option value="github">🐙 GitHub (Dev)</option>
+            <option value="dracula">🧛 Dracula (Dark)</option>
+            <option value="executivo">👑 Executivo (Ouro)</option>
+            <option value="matrix">🕶️ Matrix (Hacker)</option>
           </optgroup>
         </select>
         <button class="mural-btn mural-btn-ghost" id="btn-stats" title="Estatísticas do mural">📊 Estatísticas</button>
@@ -1830,45 +2282,34 @@
       // Inicializa e controla o seletor de tema do mural
       const themeSelect = document.getElementById('mural-theme-select');
       if (themeSelect) {
+        const customThemes = ['cyberpunk', 'netflix', 'spotify', 'discord', 'github', 'dracula', 'executivo', 'matrix'];
         const mt = localStorage.getItem('mural_theme') || 'default';
         const currentTheme = localStorage.getItem('theme') || 'dark';
         
-        if (mt === 'cyberpunk') {
-          themeSelect.value = 'cyberpunk';
-          document.documentElement.classList.add('theme-cyberpunk');
-          document.documentElement.classList.remove('theme-netflix', 'theme-spotify');
-        } else if (mt === 'netflix') {
-          themeSelect.value = 'netflix';
-          document.documentElement.classList.add('theme-netflix');
-          document.documentElement.classList.remove('theme-cyberpunk', 'theme-spotify');
-        } else if (mt === 'spotify') {
-          themeSelect.value = 'spotify';
-          document.documentElement.classList.add('theme-spotify');
-          document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
+        if (customThemes.indexOf(mt) !== -1) {
+          themeSelect.value = mt;
+          customThemes.forEach(t => {
+            if (t === mt) document.documentElement.classList.add('theme-' + t);
+            else document.documentElement.classList.remove('theme-' + t);
+          });
         } else {
           themeSelect.value = currentTheme;
-          document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix', 'theme-spotify');
+          customThemes.forEach(t => document.documentElement.classList.remove('theme-' + t));
         }
         
         themeSelect.addEventListener('change', function() {
           const selected = themeSelect.value;
-          if (selected === 'cyberpunk') {
-            localStorage.setItem('mural_theme', 'cyberpunk');
-            document.documentElement.classList.remove('theme-netflix', 'theme-spotify');
-            document.documentElement.classList.add('theme-cyberpunk');
-          } else if (selected === 'netflix') {
-            localStorage.setItem('mural_theme', 'netflix');
-            document.documentElement.classList.remove('theme-cyberpunk', 'theme-spotify');
-            document.documentElement.classList.add('theme-netflix');
-          } else if (selected === 'spotify') {
-            localStorage.setItem('mural_theme', 'spotify');
-            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix');
-            document.documentElement.classList.add('theme-spotify');
+          if (customThemes.indexOf(selected) !== -1) {
+            localStorage.setItem('mural_theme', selected);
+            customThemes.forEach(t => {
+              if (t === selected) document.documentElement.classList.add('theme-' + t);
+              else document.documentElement.classList.remove('theme-' + t);
+            });
           } else {
             localStorage.setItem('mural_theme', 'default');
             localStorage.setItem('theme', selected);
             document.documentElement.setAttribute('data-theme', selected);
-            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix', 'theme-spotify');
+            customThemes.forEach(t => document.documentElement.classList.remove('theme-' + t));
             
             // Sincroniza a classe ativa dos botões do cabeçalho compartilhado (se houver)
             document.querySelectorAll('.theme-select-btn').forEach(btn => {
@@ -1888,7 +2329,7 @@
           if (btn) {
             const val = btn.getAttribute('data-theme-val');
             localStorage.setItem('mural_theme', 'default');
-            document.documentElement.classList.remove('theme-cyberpunk', 'theme-netflix', 'theme-spotify');
+            customThemes.forEach(t => document.documentElement.classList.remove('theme-' + t));
             themeSelect.value = val;
           }
         });
