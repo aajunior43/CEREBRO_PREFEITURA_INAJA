@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador PDF LaTeX - Prefeitura de Inaja</title>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
+  <script defer src="/static/js/shared-header.js"></script>
+  <style>
+    .latex-page { max-width: 1380px; margin: 24px auto 72px; padding: 0 20px; }
+    .latex-header { padding: 24px 28px; border: 1px solid rgba(40,95,147,.12); border-radius: 8px; background: #fff; box-shadow: 0 12px 30px rgba(24,57,92,.06); margin-bottom: 18px; }
+    .latex-header h1 { margin: 0; color: var(--text); font-size: 30px; line-height: 1.15; letter-spacing: 0; }
+    .latex-header p { margin: 8px 0 0; color: var(--text-3); line-height: 1.55; max-width: 880px; }
+    .latex-layout { display: grid; grid-template-columns: minmax(320px,.78fr) minmax(0,1.22fr); gap: 18px; align-items: start; }
+    .latex-panel { background: #fff; border: 1px solid rgba(40,95,147,.1); border-radius: 8px; box-shadow: 0 12px 28px rgba(24,57,92,.06); overflow: hidden; }
+    .latex-panel-head { padding: 16px 18px; border-bottom: 1px solid rgba(40,95,147,.08); background: rgba(40,95,147,.04); }
+    .latex-panel-head h2 { margin: 0; color: var(--text); font-size: 17px; }
+    .latex-panel-head p { margin: 6px 0 0; color: var(--text-3); font-size: 13px; line-height: 1.5; }
+    .latex-panel-body { padding: 18px; }
+    .latex-form { display: grid; gap: 14px; }
+    .latex-field { display: grid; gap: 7px; }
+    .latex-label { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--text-2); letter-spacing: .04em; }
+    .latex-input, .latex-select, .latex-textarea, .latex-code {
+      width: 100%; border: 1px solid rgba(40,95,147,.14); border-radius: 8px; background: #fff; color: var(--text);
+      font-family: inherit; font-size: 14px; padding: 12px 13px; outline: none;
+    }
+    .latex-input:focus, .latex-select:focus, .latex-textarea:focus, .latex-code:focus { border-color: rgba(40,95,147,.38); box-shadow: 0 0 0 3px rgba(40,95,147,.08); }
+    .latex-textarea { min-height: 170px; resize: vertical; line-height: 1.55; }
+    .latex-code { min-height: 610px; resize: vertical; font-family: "Courier New", monospace; font-size: 13px; line-height: 1.5; white-space: pre; tab-size: 2; }
+    .latex-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .latex-btn { min-height: 42px; border: 1px solid rgba(40,95,147,.14); border-radius: 8px; padding: 0 14px; background: #fff; color: var(--text); font-weight: 800; cursor: pointer; }
+    .latex-btn:hover { box-shadow: 0 10px 18px rgba(24,57,92,.08); }
+    .latex-btn:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+    .latex-btn-primary { background: #285f93; color: #fff; border-color: #285f93; }
+    .latex-btn-danger { color: var(--red); }
+    .latex-status, .latex-error { display: none; margin-top: 14px; padding: 12px 13px; border-radius: 8px; font-size: 13px; line-height: 1.45; }
+    .latex-status { color: var(--green-dark); background: rgba(86,167,113,.1); border: 1px solid rgba(86,167,113,.18); }
+    .latex-error { color: var(--red); background: rgba(199,74,74,.08); border: 1px solid rgba(199,74,74,.16); white-space: pre-wrap; }
+    .latex-preview { border: 1px solid rgba(40,95,147,.12); border-radius: 8px; min-height: 280px; background: #f8fafc; overflow: hidden; }
+    .latex-preview iframe { width: 100%; height: 520px; border: 0; display: block; background: #fff; }
+    .latex-preview-empty { padding: 24px; color: var(--text-3); font-size: 14px; line-height: 1.6; }
+    @media (max-width: 980px) { .latex-layout { grid-template-columns: 1fr; } .latex-code { min-height: 430px; } }
+    @media (max-width: 640px) { .latex-page { padding: 0 12px; } .latex-actions { flex-direction: column; } .latex-btn { width: 100%; } }
+  </style>
+</head>
+<body>
+  <main class="latex-page">
+    <header class="latex-header">
+      <h1>Gerador PDF LaTeX com IA</h1>
+      <p>Crie documentos oficiais em LaTeX, revise o codigo gerado e compile para PDF quando houver um compilador LaTeX instalado no servidor.</p>
+    </header>
+
+    <section class="latex-layout">
+      <article class="latex-panel">
+        <div class="latex-panel-head">
+          <h2>Pedido do documento</h2>
+          <p>Descreva o documento que a IA deve montar. Quanto mais dados voce informar, melhor sera o resultado.</p>
+        </div>
+        <div class="latex-panel-body">
+          <form class="latex-form" id="latex-form">
+            <label class="latex-field">
+              <span class="latex-label">Tipo</span>
+              <select class="latex-select" id="latex-tipo">
+                <option>Oficio</option>
+                <option>Memorando</option>
+                <option>Relatorio</option>
+                <option>Declaracao</option>
+                <option>Termo de referencia</option>
+                <option>Ata</option>
+                <option>Documento oficial</option>
+              </select>
+            </label>
+            <label class="latex-field">
+              <span class="latex-label">Nome do arquivo</span>
+              <input class="latex-input" id="latex-filename" value="documento_latex" />
+            </label>
+            <label class="latex-field">
+              <span class="latex-label">Estilo</span>
+              <select class="latex-select" id="latex-estilo">
+                <option>formal</option>
+                <option>tecnico</option>
+                <option>simples e objetivo</option>
+                <option>administrativo detalhado</option>
+              </select>
+            </label>
+            <label class="latex-field">
+              <span class="latex-label">Conteudo desejado</span>
+              <textarea class="latex-textarea" id="latex-prompt" placeholder="Ex: Gere um oficio solicitando cotacao para materiais de expediente, com tabela de itens e campo de assinatura."></textarea>
+            </label>
+            <label class="latex-field">
+              <span class="latex-label">Dados adicionais</span>
+              <textarea class="latex-textarea" id="latex-detalhes" placeholder="Secretaria, destinatario, processo, datas, itens, valores, observacoes..." style="min-height: 120px;"></textarea>
+            </label>
+          </form>
+          <div class="latex-actions">
+            <button class="latex-btn latex-btn-primary" id="btn-gerar-latex" type="button">Gerar LaTeX com IA</button>
+            <button class="latex-btn" id="btn-modelo" type="button">Inserir modelo</button>
+            <button class="latex-btn latex-btn-danger" id="btn-limpar" type="button">Limpar</button>
+          </div>
+          <div class="latex-status" id="latex-status"></div>
+          <div class="latex-error" id="latex-error"></div>
+        </div>
+      </article>
+
+      <article class="latex-panel">
+        <div class="latex-panel-head">
+          <h2>Codigo LaTeX e PDF</h2>
+          <p>Edite o codigo antes de compilar. A compilacao usa pdflatex, xelatex ou lualatex instalado no servidor.</p>
+        </div>
+        <div class="latex-panel-body">
+          <label class="latex-field">
+            <span class="latex-label">Fonte LaTeX</span>
+            <textarea class="latex-code" id="latex-source" spellcheck="false"></textarea>
+          </label>
+          <div class="latex-actions">
+            <button class="latex-btn latex-btn-primary" id="btn-compilar" type="button">Compilar e baixar PDF</button>
+            <button class="latex-btn" id="btn-baixar-tex" type="button">Baixar .tex</button>
+            <button class="latex-btn" id="btn-copiar" type="button">Copiar codigo</button>
+          </div>
+          <div class="latex-preview" id="latex-preview">
+            <div class="latex-preview-empty">Depois de compilar, uma pre-visualizacao do PDF aparece aqui.</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/static/js/latex-pdf.js"></script>
+</body>
+</html>

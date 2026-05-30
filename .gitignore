@@ -17,6 +17,7 @@ build/
 
 # Logs temporários
 *.log
+tmp/
 
 # Excel temporário
 *.xlsx
@@ -64,4 +65,3 @@ stderr.log
 
 # Worktree do backup automático (gerenciado pelo backup_db.py)
 .backup_worktree/
-

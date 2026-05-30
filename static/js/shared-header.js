@@ -198,6 +198,7 @@
       { href: '/pages/mural.html',           name: 'Mural Interativo',       desc: 'Avisos e tarefas compartilhadas' },
       { href: '/pages/rpa.html',             name: 'Gerador de RPAs',        desc: 'Recibo de Pagamento Autônomo' },
       { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
+      { href: '/pages/latex-pdf.html',       name: 'Gerador PDF LaTeX',      desc: 'Criar documentos com IA' },
       { href: '/pages/assistente-empenho.html', name: 'Gerador de Descrição para Empenhos', desc: 'Gerar descrição de empenho com IA' },
       { href: '/pages/classificador-despesa.html', name: 'Classificador de Despesas', desc: 'Identificar desdobramento correto da despesa (TCE-PR)' },
       { href: '/pages/visualizador.html',    name: 'Relação de Empenhos Emitidos',  desc: 'Visualizar e filtrar empenhos' },

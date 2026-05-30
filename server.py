@@ -1185,6 +1185,7 @@ def create_app() -> Flask:
         bp_extratos,
         bp_empenho_assistente,
         bp_classificador,
+        bp_latex_pdf,
     )
 
     app.register_blueprint(bp_credores)
@@ -1207,6 +1208,7 @@ def create_app() -> Flask:
     app.register_blueprint(bp_extratos)
     app.register_blueprint(bp_empenho_assistente)
     app.register_blueprint(bp_classificador)
+    app.register_blueprint(bp_latex_pdf)
 
     # Init auth hash (compat) + multi-user auth
     from routes.all_routes import init_auth_hash
