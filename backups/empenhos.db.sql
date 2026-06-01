@@ -1,4 +1,4 @@
--- Backup: 2026-06-01T17:00:05.402584
+-- Backup: 2026-06-01T17:30:12.194249
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -249,7 +249,7 @@ INSERT INTO "mural_recados" VALUES(13,'FAZER OFICIO','colocar a conta pra fazer 
 INSERT INTO "mural_recados" VALUES(14,'Pagar Noroeste Medicamento','Abra o Anexo.','Aleksandro','Todos','urgente','tarefa','a_fazer','pink','','','2026-05-28 15:29:37','2026-05-28 15:31:14',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(15,'Enviar Oficio para o Bradesco','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 15:26:50','2026-05-29 15:26:50',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(16,'Checar Resposta do FALECOM BB sobre oficio','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 15:27:26','2026-05-29 15:27:26',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(17,'Checar CIRAU','diz que esta atrazado 3 meses.','Aleksandro','Aleksandro','urgente','tarefa','concluido','pink','Aleksandro','01/06/2026 09:18','2026-05-29 15:29:11','2026-06-01 09:18:33',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(17,'Checar CIRAU','diz que esta atrazado 3 meses.','Aleksandro','Aleksandro','urgente','tarefa','em_andamento','pink','','','2026-05-29 15:29:11','2026-06-01 17:21:10',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(18,'Oficio para controle interno respondendo que nao obtive resposta da educação e caixa da previdencia','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:30:30','2026-05-29 15:30:30',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(19,'Checar com a INGA INFORMATICA se temos dividas','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:31:30','2026-05-29 15:31:30',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(20,'Fazer relação dos pagamentos dos enfermeiros e valores repassados indevidamente cobrados indevidamente.','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 17:10:50','2026-05-29 17:10:50',0.0,NULL);
