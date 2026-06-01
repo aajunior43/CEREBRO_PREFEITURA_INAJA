@@ -197,7 +197,6 @@
       { href: '/pages/documentos.html',      name: 'Centro de Documentos',   desc: 'Salvar e organizar arquivos' },
       { href: '/pages/mural.html',           name: 'Mural Interativo',       desc: 'Avisos e tarefas compartilhadas' },
       { href: '/pages/rpa.html',             name: 'Gerador de RPAs',        desc: 'Recibo de Pagamento Autônomo' },
-      { href: '/pages/pdf.html',             name: 'Editor de PDF',          desc: 'Mesclar, dividir e proteger' },
       { href: '/pages/latex-pdf.html',       name: 'Gerador PDF LaTeX',      desc: 'Criar documentos com IA' },
       { href: '/pages/assistente-empenho.html', name: 'Gerador de Descrição para Empenhos', desc: 'Gerar descrição de empenho com IA' },
       { href: '/pages/classificador-despesa.html', name: 'Classificador de Despesas', desc: 'Identificar desdobramento correto da despesa (TCE-PR)' },
@@ -605,21 +604,6 @@
           { label: 'Resumo do cadastro', action: 'analisar' },
           { label: 'O que conferir', action: 'prioridades' },
           { label: 'Alertas cadastrais', action: 'riscos' }
-        ]
-      },
-      '/pages/pdf.html': {
-        title: 'IA de PDF',
-        subtitle: 'Assistente para orientar fusão, divisão, proteção e organização de arquivos',
-        chatPlaceholder: 'Ex: Qual a melhor forma de organizar estes PDFs?',
-        emptyMessage: 'Carregue arquivos PDF antes de usar a IA.',
-        actions: [
-          { id: 'analisar', label: 'Analisar', description: 'Resume o cenário atual e sugere organização dos arquivos.' },
-          { id: 'prioridades', label: 'Prioridades', description: 'Indica a ordem mais eficiente para trabalhar os PDFs.' },
-          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre o fluxo com PDFs.' }
-        ],
-        shortcuts: [
-          { label: 'Sugestão de fluxo', action: 'analisar' },
-          { label: 'O que fazer primeiro', action: 'prioridades' }
         ]
       },
       '/pages/rpa.html': {
