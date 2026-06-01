@@ -1,4 +1,4 @@
--- Backup: 2026-06-01T15:30:07.064158
+-- Backup: 2026-06-01T16:00:06.048373
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -244,7 +244,7 @@ INSERT INTO "mural_recados" VALUES(9,'Inserir conciliação do mes 04/2026','.',
 INSERT INTO "mural_recados" VALUES(10,'Empenhar passagem de Onibus','Aquisição de 2 (duas) passagens de ônibus em favor de Maria José Ribeiro do Carmo, CPF nº 650.739.919-15, residente na Rua Vitória, nº 363, município de Inajá – PR, conforme Requerimento de Passagem emitido pelo Centro de Referência de Assistência Social – CRAS e Parecer da Divisão Social, nos termos da Lei Municipal nº 1.082/2019, de 16 de outubro de 2019. Trajeto de ida: Nova Esperança a Curitiba, data prevista: 28/05/2026; trajeto de volta: Curitiba a Nova Esperança, data prevista: 29/05/2026.
 Valor total: R$ 426,56 (quatrocentos e vinte e seis reais e cinquenta e seis centavos).','Aleksandro','Luana','urgente','tarefa','concluido','pink','Luana','29/05/2026 15:26','2026-05-27 15:40:05','2026-05-29 15:26:04',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(11,'Pagar Eletromega após a folha de pagamento','Apos a folha de pagamento','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:12','2026-05-28 09:51:53',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(12,'Pagar Prodasp após a folha de pagamento','Apos a folha','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:40','2026-05-28 14:02:26',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(12,'Pagar Prodasp após a folha de pagamento','Apos a folha','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:40','2026-06-01 15:49:44',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(13,'FAZER OFICIO','colocar a conta pra fazer a devolução','Luana','Aleksandro','media','tarefa','concluido','yellow','Aleksandro','29/05/2026 15:27','2026-05-28 13:15:50','2026-05-29 15:27:50',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(14,'Pagar Noroeste Medicamento','Abra o Anexo.','Aleksandro','Todos','urgente','tarefa','a_fazer','pink','','','2026-05-28 15:29:37','2026-05-28 15:31:14',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(15,'Enviar Oficio para o Bradesco','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 15:26:50','2026-05-29 15:26:50',0.0,NULL);
