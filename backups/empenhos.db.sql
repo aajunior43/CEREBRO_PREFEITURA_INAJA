@@ -1,4 +1,4 @@
--- Backup: 2026-06-01T09:30:05.057942
+-- Backup: 2026-06-01T10:00:05.558643
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -12,9 +12,13 @@ INSERT INTO "audit_trail" VALUES(6,'empenhos','','EMPENHAR','{"empenhado": false
 INSERT INTO "audit_trail" VALUES(7,'empenhos','','EMPENHAR','{"empenhado": false}','{"credor_id": 15, "ano": 2026, "mes": 5, "empenhado": true}','10.42.43.118','2026-05-28 14:11:17');
 INSERT INTO "audit_trail" VALUES(8,'empenhos','','EMPENHAR','{"empenhado": false}','{"credor_id": 22, "ano": 2026, "mes": 5, "empenhado": true}','10.42.43.118','2026-05-28 14:11:17');
 CREATE TABLE autentique_contatos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, phone TEXT NOT NULL UNIQUE, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')));
+INSERT INTO "autentique_contatos" VALUES(1,'Luana','+5544991344277','2026-06-01 09:48:47','2026-06-01 09:48:47');
+INSERT INTO "autentique_contatos" VALUES(2,'Aleksandro','+5544991842415','2026-06-01 09:52:29','2026-06-01 09:52:29');
 CREATE TABLE autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(documento_centro_id) REFERENCES documentos_centro(id) ON DELETE CASCADE, FOREIGN KEY(assinado_doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL);
+INSERT INTO "autentique_envios" VALUES(1,30,'24bb0569804a69c2fb9264afe536875296582aa550cd200d9','40212e025db911f1bb8342010a2b6020','DIARISTAS.pdf','Aleksandro','+5544991842415','pendente','DELIVERY_METHOD_WHATSAPP','','','',NULL,'','2026-06-01 09:55:43','2026-06-01 09:55:43');
 CREATE TABLE classificador_despesa_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT NOT NULL, codigo_completo TEXT NOT NULL DEFAULT '', grupo TEXT DEFAULT '', modalidade TEXT DEFAULT '', elemento TEXT DEFAULT '', subelemento TEXT DEFAULT '', justificativa TEXT DEFAULT '', ponto_atencao TEXT DEFAULT '', confianca REAL DEFAULT 0.0, resultado_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
 CREATE TABLE configuracoes (chave TEXT PRIMARY KEY, valor TEXT NOT NULL DEFAULT '', atualizado_em TEXT DEFAULT (datetime('now', 'localtime')));
+INSERT INTO "configuracoes" VALUES('api_autentique_key','356865d1aa95cd57f4839756be5fea65a98aac48e1af3bd95e82fe98e1c532fd','2026-06-01 09:49:52');
 CREATE TABLE credores (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, valor REAL DEFAULT 0, descricao TEXT, cnpj TEXT, email TEXT, tipo_valor TEXT DEFAULT 'FIXO', solicitacao TEXT, pagamento TEXT, validade TEXT, departamento TEXT, obs TEXT, ativo INTEGER DEFAULT 1, atualizado_em TEXT);
 INSERT INTO "credores" VALUES(1,'EMPASOFT',799.99,'LINHA TELEFÔNICA','03.404.680/0001-05','G21@G21TELECOM.COM.BR','FIXO','5','10',NULL,'ADMINISTRAÇÃO','VENCIDO',1,'2026-05-18 15:29:39');
 INSERT INTO "credores" VALUES(2,'L. RICARDO DE MAGALHAES',1489.82,'SOFTWARE PARA LICITAÇÃO','17.922.286/0001-65','financeiro@sistematrazvalor.com.br','FIXO','','20',NULL,'ADMINISTRAÇÃO','',1,'2026-05-18 15:29:39');
@@ -114,6 +118,10 @@ INSERT INTO "documentos_centro" VALUES(23,'solicitacao_PRODASP_2026_4.html','177
 INSERT INTO "documentos_centro" VALUES(24,'solicitacao_ROSIANE_OLIVEIRA_LIMA_GON_ALVES_EIRELI_2026_4.html','1778506540493_608e47fe13.html','relatorios_html','2026-04','Relatório individual gerado para ROSIANE OLIVEIRA LIMA GONÇALVES EIRELI',451722,'.html','relatorios_html/2026-04/1778506540493_608e47fe13.html','2026-05-11 10:35:40');
 INSERT INTO "documentos_centro" VALUES(25,'solicitacao_SAMUEL_CERQUEIRA_2026_4.html','1778506560176_f4ba6c9549.html','relatorios_html','2026-04','Relatório individual gerado para SAMUEL CERQUEIRA',451666,'.html','relatorios_html/2026-04/1778506560176_f4ba6c9549.html','2026-05-11 10:36:00');
 INSERT INTO "documentos_centro" VALUES(26,'solicitacao_ANTELMO_2026_5.html','1779283348225_4fa848af58.html','relatorios_html','2026-05','Relatório individual gerado para ANTELMO',451659,'.html','relatorios_html/2026-05/1779283348225_4fa848af58.html','2026-05-20 10:22:28');
+INSERT INTO "documentos_centro" VALUES(27,'Oficio_014_2026_SF_Devolucao.pdf','1780318223953_702180c7be.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',2269640,'.pdf','contratos/assinatura-autentique/1780318223953_702180c7be.pdf','2026-06-01 09:50:23');
+INSERT INTO "documentos_centro" VALUES(28,'Orçamento 258585 - BBS-6375.pdf','1780318359827_1aedc1d8d3.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',189571,'.pdf','contratos/assinatura-autentique/1780318359827_1aedc1d8d3.pdf','2026-06-01 09:52:39');
+INSERT INTO "documentos_centro" VALUES(29,'Orçamento 258585 - BBS-6375.pdf','1780318364066_956a5d627f.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',189571,'.pdf','contratos/assinatura-autentique/1780318364066_956a5d627f.pdf','2026-06-01 09:52:44');
+INSERT INTO "documentos_centro" VALUES(30,'DIARISTAS.pdf','1780318540542_c2f113294d.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',377869,'.pdf','contratos/assinatura-autentique/1780318540542_c2f113294d.pdf','2026-06-01 09:55:40');
 CREATE TABLE empenho_assistente_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, payload_json TEXT NOT NULL DEFAULT '{}', resultado_json TEXT NOT NULL DEFAULT '{}', campos_json TEXT NOT NULL DEFAULT '{}', checklist_json TEXT NOT NULL DEFAULT '{}', descricao_base TEXT DEFAULT '', descricao_melhorada TEXT DEFAULT '', diff_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
 CREATE TABLE empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL, mes INTEGER NOT NULL, empenhado INTEGER DEFAULT 1, timestamp TEXT, UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE CASCADE);
 INSERT INTO "empenhos" VALUES(1,19,2026,4,1,'2026-05-11 09:28:50');
@@ -217,28 +225,28 @@ INSERT INTO "mural_anexos" VALUES(5,14,'SCANNER2026-05-28_151817.pdf','applicati
 INSERT INTO "mural_anexos" VALUES(6,14,'SCANNER2026-05-28_151817.pdf','application/pdf',1189487,'2026-05-28 15:31:14');
 INSERT INTO "mural_anexos" VALUES(7,21,'RelatorioLimiteDespesaPoderLegislativo.pdf','application/pdf',383706,'2026-06-01 08:38:50');
 CREATE TABLE mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
-CREATE TABLE mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), valor REAL DEFAULT 0.0);
-INSERT INTO "mural_recados" VALUES(2,'Pagar Sanepar','atrasado','Aleksandro','Todos','baixa','tarefa','a_fazer','blue','','','2026-05-27 10:23:51','2026-05-27 12:09:51',115000.0);
-INSERT INTO "mural_recados" VALUES(4,'Empenhar Maicon','Ar condicionado','Aleksandro','Todos','baixa','tarefa','concluido','blue','Luana','29/05/2026 15:25','2026-05-27 10:35:24','2026-05-29 15:25:46',0.0);
-INSERT INTO "mural_recados" VALUES(5,'Emitir O.P para enfermeira Larissa de 2026','Enviar para ela','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','28/05/2026 14:24','2026-05-27 11:27:15','2026-05-28 14:24:09',0.0);
-INSERT INTO "mural_recados" VALUES(6,'LIQUIDAR NF ELETROMEGA','liquidar','Aleksandro','Luana','media','tarefa','concluido','yellow','Luana','27/05/2026 14:44','2026-05-27 12:04:10','2026-05-27 14:48:32',0.0);
-INSERT INTO "mural_recados" VALUES(7,'Checar quais NFs foram pagas para a Traz valor.','no periodo de 2025 a 2026','Aleksandro','Todos','baixa','tarefa','concluido','blue','Aleksandro','28/05/2026 14:19','2026-05-27 12:08:22','2026-05-28 14:19:51',0.0);
-INSERT INTO "mural_recados" VALUES(8,'Ver questão da cobrança da Transresíduos','dez/2026','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-27 12:14:16','2026-05-27 16:35:17',0.0);
-INSERT INTO "mural_recados" VALUES(9,'Inserir conciliação do mes 04/2026','.','Aleksandro','Maicon','media','tarefa','a_fazer','yellow','','','2026-05-27 12:14:51','2026-05-27 12:14:51',0.0);
+CREATE TABLE mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), valor REAL DEFAULT 0.0, credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL);
+INSERT INTO "mural_recados" VALUES(2,'Pagar Sanepar','atrasado','Aleksandro','Todos','baixa','tarefa','a_fazer','blue','','','2026-05-27 10:23:51','2026-05-27 12:09:51',115000.0,NULL);
+INSERT INTO "mural_recados" VALUES(4,'Empenhar Maicon','Ar condicionado','Aleksandro','Todos','baixa','tarefa','concluido','blue','Luana','29/05/2026 15:25','2026-05-27 10:35:24','2026-05-29 15:25:46',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(5,'Emitir O.P para enfermeira Larissa de 2026','Enviar para ela','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','28/05/2026 14:24','2026-05-27 11:27:15','2026-05-28 14:24:09',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(6,'LIQUIDAR NF ELETROMEGA','liquidar','Aleksandro','Luana','media','tarefa','concluido','yellow','Luana','27/05/2026 14:44','2026-05-27 12:04:10','2026-05-27 14:48:32',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(7,'Checar quais NFs foram pagas para a Traz valor.','no periodo de 2025 a 2026','Aleksandro','Todos','baixa','tarefa','concluido','blue','Aleksandro','28/05/2026 14:19','2026-05-27 12:08:22','2026-05-28 14:19:51',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(8,'Ver questão da cobrança da Transresíduos','dez/2026','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-27 12:14:16','2026-05-27 16:35:17',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(9,'Inserir conciliação do mes 04/2026','.','Aleksandro','Maicon','media','tarefa','a_fazer','yellow','','','2026-05-27 12:14:51','2026-05-27 12:14:51',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(10,'Empenhar passagem de Onibus','Aquisição de 2 (duas) passagens de ônibus em favor de Maria José Ribeiro do Carmo, CPF nº 650.739.919-15, residente na Rua Vitória, nº 363, município de Inajá – PR, conforme Requerimento de Passagem emitido pelo Centro de Referência de Assistência Social – CRAS e Parecer da Divisão Social, nos termos da Lei Municipal nº 1.082/2019, de 16 de outubro de 2019. Trajeto de ida: Nova Esperança a Curitiba, data prevista: 28/05/2026; trajeto de volta: Curitiba a Nova Esperança, data prevista: 29/05/2026.
-Valor total: R$ 426,56 (quatrocentos e vinte e seis reais e cinquenta e seis centavos).','Aleksandro','Luana','urgente','tarefa','concluido','pink','Luana','29/05/2026 15:26','2026-05-27 15:40:05','2026-05-29 15:26:04',0.0);
-INSERT INTO "mural_recados" VALUES(11,'Pagar Eletromega após a folha de pagamento','Apos a folha de pagamento','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:12','2026-05-28 09:51:53',0.0);
-INSERT INTO "mural_recados" VALUES(12,'Pagar Prodasp após a folha de pagamento','Apos a folha','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:40','2026-05-28 14:02:26',0.0);
-INSERT INTO "mural_recados" VALUES(13,'FAZER OFICIO','colocar a conta pra fazer a devolução','Luana','Aleksandro','media','tarefa','concluido','yellow','Aleksandro','29/05/2026 15:27','2026-05-28 13:15:50','2026-05-29 15:27:50',0.0);
-INSERT INTO "mural_recados" VALUES(14,'Pagar Noroeste Medicamento','Abra o Anexo.','Aleksandro','Todos','urgente','tarefa','a_fazer','pink','','','2026-05-28 15:29:37','2026-05-28 15:31:14',0.0);
-INSERT INTO "mural_recados" VALUES(15,'Enviar Oficio para o Bradesco','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 15:26:50','2026-05-29 15:26:50',0.0);
-INSERT INTO "mural_recados" VALUES(16,'Checar Resposta do FALECOM BB sobre oficio','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 15:27:26','2026-05-29 15:27:26',0.0);
-INSERT INTO "mural_recados" VALUES(17,'Checar CIRAU','diz que esta atrazado 3 meses.','Aleksandro','Aleksandro','urgente','tarefa','concluido','pink','Aleksandro','01/06/2026 09:18','2026-05-29 15:29:11','2026-06-01 09:18:33',0.0);
-INSERT INTO "mural_recados" VALUES(18,'Oficio para controle interno respondendo que nao obtive resposta da educação e caixa da previdencia','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:30:30','2026-05-29 15:30:30',0.0);
-INSERT INTO "mural_recados" VALUES(19,'Checar com a INGA INFORMATICA se temos dividas','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:31:30','2026-05-29 15:31:30',0.0);
-INSERT INTO "mural_recados" VALUES(20,'Fazer relação dos pagamentos dos enfermeiros e valores repassados indevidamente cobrados indevidamente.','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 17:10:50','2026-05-29 17:10:50',0.0);
-INSERT INTO "mural_recados" VALUES(21,'Calcular novo repasse da camara','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-06-01 08:38:50','2026-06-01 08:38:50',0.0);
-INSERT INTO "mural_recados" VALUES(22,'Pagar 4 meses do CIRAU','.','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-06-01 09:24:17','2026-06-01 09:24:17',0.0);
+Valor total: R$ 426,56 (quatrocentos e vinte e seis reais e cinquenta e seis centavos).','Aleksandro','Luana','urgente','tarefa','concluido','pink','Luana','29/05/2026 15:26','2026-05-27 15:40:05','2026-05-29 15:26:04',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(11,'Pagar Eletromega após a folha de pagamento','Apos a folha de pagamento','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:12','2026-05-28 09:51:53',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(12,'Pagar Prodasp após a folha de pagamento','Apos a folha','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-05-28 08:40:40','2026-05-28 14:02:26',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(13,'FAZER OFICIO','colocar a conta pra fazer a devolução','Luana','Aleksandro','media','tarefa','concluido','yellow','Aleksandro','29/05/2026 15:27','2026-05-28 13:15:50','2026-05-29 15:27:50',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(14,'Pagar Noroeste Medicamento','Abra o Anexo.','Aleksandro','Todos','urgente','tarefa','a_fazer','pink','','','2026-05-28 15:29:37','2026-05-28 15:31:14',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(15,'Enviar Oficio para o Bradesco','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 15:26:50','2026-05-29 15:26:50',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(16,'Checar Resposta do FALECOM BB sobre oficio','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 15:27:26','2026-05-29 15:27:26',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(17,'Checar CIRAU','diz que esta atrazado 3 meses.','Aleksandro','Aleksandro','urgente','tarefa','concluido','pink','Aleksandro','01/06/2026 09:18','2026-05-29 15:29:11','2026-06-01 09:18:33',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(18,'Oficio para controle interno respondendo que nao obtive resposta da educação e caixa da previdencia','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:30:30','2026-05-29 15:30:30',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(19,'Checar com a INGA INFORMATICA se temos dividas','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:31:30','2026-05-29 15:31:30',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(20,'Fazer relação dos pagamentos dos enfermeiros e valores repassados indevidamente cobrados indevidamente.','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 17:10:50','2026-05-29 17:10:50',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(21,'Calcular novo repasse da camara','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-06-01 08:38:50','2026-06-01 08:38:50',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(22,'Pagar 4 meses do CIRAU','.','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-06-01 09:24:17','2026-06-01 09:24:17',0.0,NULL);
 CREATE TABLE prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
 CREATE TABLE protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL);
 CREATE TABLE protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
@@ -324,6 +332,7 @@ CREATE INDEX idx_audit_trail_tabela ON audit_trail(tabela);
 CREATE INDEX idx_audit_trail_operacao ON audit_trail(operacao);
 CREATE INDEX idx_audit_trail_timestamp ON audit_trail(timestamp DESC);
 CREATE INDEX idx_audit_trail_tabela_registro ON audit_trail(tabela, registro_id);
+CREATE INDEX idx_mural_recados_credor ON mural_recados(credor_id);
 CREATE VIEW v_classificador_despesa AS
             SELECT 
                 id, item, codigo_completo,
@@ -367,9 +376,9 @@ CREATE TRIGGER protocolos_fts_au AFTER UPDATE ON protocolos BEGIN
 PRAGMA writable_schema=OFF;
 DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('credores',29);
-INSERT INTO "sqlite_sequence" VALUES('documentos_centro',26);
+INSERT INTO "sqlite_sequence" VALUES('documentos_centro',30);
 INSERT INTO "sqlite_sequence" VALUES('empenhos',34);
-INSERT INTO "sqlite_sequence" VALUES('autentique_envios',0);
+INSERT INTO "sqlite_sequence" VALUES('autentique_envios',1);
 INSERT INTO "sqlite_sequence" VALUES('protocolos',0);
 INSERT INTO "sqlite_sequence" VALUES('logs',45);
 INSERT INTO "sqlite_sequence" VALUES('kanban_attachments',0);
@@ -380,4 +389,5 @@ INSERT INTO "sqlite_sequence" VALUES('usuarios',4);
 INSERT INTO "sqlite_sequence" VALUES('mural_recados',22);
 INSERT INTO "sqlite_sequence" VALUES('mural_anexos',7);
 INSERT INTO "sqlite_sequence" VALUES('audit_trail',8);
+INSERT INTO "sqlite_sequence" VALUES('autentique_contatos',2);
 COMMIT;
