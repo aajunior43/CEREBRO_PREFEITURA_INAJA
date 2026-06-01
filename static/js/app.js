@@ -2057,6 +2057,10 @@ function initAppDOM() {
     } else {
       hideAdmPanel();
     }
+    // Garante que a área de credores seja exibida ao navegar pela sidebar
+    if (typeof window.showCredoresArea === 'function') {
+      window.showCredoresArea();
+    }
   }
   
   // Desktop nav tabs
