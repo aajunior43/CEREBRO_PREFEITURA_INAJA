@@ -15,6 +15,14 @@ Arquitetura:
   services/          → lógica de negócio e integrações externas
 """
 
+# gevent monkey-patch must be first — before any stdlib imports — to enable SSE streaming
+try:
+    from gevent import monkey as _gmonkey
+    _gmonkey.patch_all(thread=True, socket=True)
+    _GEVENT_AVAILABLE = True
+except ImportError:
+    _GEVENT_AVAILABLE = False
+
 import gzip as _gzip
 import hashlib
 import json
@@ -1300,10 +1308,25 @@ if __name__ == "__main__":
         "INFO", "Para encerrar: feche esta janela ou pressione Ctrl+C", "cyan"
     )
 
-    app.run(
-        host=settings.host,
-        port=settings.port,
-        debug=settings.debug,
-        use_reloader=settings.reloader,
-        threaded=True,
-    )
+    if _GEVENT_AVAILABLE:
+        from gevent.pywsgi import WSGIServer as _GeventServer
+        _terminal_log("SERVER", "Usando gevent (SSE/streaming habilitado)", "green")
+        _GeventServer(
+            (settings.host, settings.port),
+            app,
+            log=None,
+            error_log=None,
+        ).serve_forever()
+    else:
+        import waitress
+        _terminal_log("SERVER", "gevent nao encontrado, usando Waitress (SSE limitado)", "yellow")
+        waitress.serve(
+            app,
+            host=settings.host,
+            port=settings.port,
+            threads=24,
+            connection_limit=2000,
+            channel_timeout=300,
+            cleanup_interval=10,
+            asyncore_use_poll=True,
+        )

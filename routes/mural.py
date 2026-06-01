@@ -6,7 +6,7 @@ import queue
 import json
 import threading
 from functools import wraps
-from flask import Blueprint, request, jsonify, session, send_file, Response
+from flask import Blueprint, request, jsonify, session, send_file, Response, stream_with_context
 from werkzeug.utils import secure_filename
 from routes._shared import get_db
 
@@ -218,7 +218,9 @@ def mural_atualizar(recado_id):
         if not row:
             return jsonify({"error": "Recado nao encontrado"}), 404
 
-        if not _pode_modificar(row["autor"]):
+        # Status change (mover entre colunas) é permitido para todos os autenticados
+        status_only = {"status", "concluido_por", "concluido_em"}
+        if not data.keys() <= status_only and not _pode_modificar(row["autor"]):
             return jsonify({"error": "Sem permissao para editar este recado. Apenas o autor ou o administrador pode editar."}), 403
 
         fields = {}
@@ -428,25 +430,39 @@ def mural_anexo_excluir(recado_id, attachment_id):
 @bp.route("/api/mural/events", methods=["GET"])
 @_require_auth
 def mural_events():
+    @stream_with_context
     def event_stream():
         q = queue.Queue(maxsize=100)
         with _mural_listeners_lock:
             _mural_listeners.append(q)
+        yield b": connected\n\n"
         try:
             while True:
                 try:
-                    msg = q.get(timeout=20.0)
+                    msg = q.get(timeout=5.0)
+                    if isinstance(msg, str):
+                        msg = msg.encode("utf-8")
                     yield msg
                 except queue.Empty:
-                    yield "event: heartbeat\ndata: {}\n\n"
+                    yield b"event: heartbeat\ndata: {}\n\n"
         except GeneratorExit:
+            pass
+        except Exception:
+            pass
+        finally:
             with _mural_listeners_lock:
                 if q in _mural_listeners:
                     _mural_listeners.remove(q)
 
-    resp = Response(event_stream(), mimetype="text/event-stream")
-    resp.headers["Cache-Control"] = "no-cache"
+    resp = Response(
+        event_stream(),
+        mimetype="text/event-stream",
+    )
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
     resp.headers["X-Accel-Buffering"] = "no"
+    resp.headers["Connection"] = "keep-alive"
     return resp
 
 

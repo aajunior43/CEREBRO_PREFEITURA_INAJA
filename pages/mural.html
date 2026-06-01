@@ -3169,6 +3169,9 @@
 
     let cacheRecados = [];
     let muralLoaded = false;
+    // Tracks in-flight Kanban moves: id -> novoStatus
+    // Prevents carregarMural() from reverting optimistic updates while PUT is still in-flight
+    const _pendingMoves = new Map();
 
     function showMuralToast(msg, type) {
       let container = document.getElementById('mural-toast-container');
@@ -3729,6 +3732,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         cacheRecados = recados;
+        // Re-apply in-flight moves so a slow PUT doesn't get overwritten by stale DB data
+        if (_pendingMoves.size > 0) {
+          _pendingMoves.forEach((status, moveId) => {
+            const r = cacheRecados.find(r => r.id === moveId);
+            if (r) r.status = status;
+          });
+        }
         muralLoaded = true;
         renderMural();
       } catch (e) {
@@ -4083,6 +4093,7 @@ document.addEventListener('DOMContentLoaded', function() {
       else if (prio === 'urgente') calculatedColor = 'pink';
       
       card.className = `mural-card card-color-${calculatedColor}`;
+      card.dataset.id = item.id;
       
       const hasValor = item.valor && parseFloat(item.valor) > 0;
       if (hasValor) {
@@ -4276,6 +4287,46 @@ document.addEventListener('DOMContentLoaded', function() {
       return card;
     }
 
+    function atualizarContagens() {
+      const cols = {
+        a_fazer: document.querySelector('#col-a_fazer .mural-col-list'),
+        em_andamento: document.querySelector('#col-em_andamento .mural-col-list'),
+        concluido: document.querySelector('#col-concluido .mural-col-list')
+      };
+      Object.keys(cols).forEach(col => {
+        const list = cols[col];
+        if (!list) return;
+        const cardCount = list.querySelectorAll('.mural-card').length;
+        const existingEmpty = list.querySelector('.mural-empty');
+        if (cardCount === 0 && !existingEmpty) {
+          const es = EMPTY_STATES[col] || { icon: '📭', title: 'Vazio', sub: '' };
+          list.insertAdjacentHTML('beforeend', `
+            <div class="mural-empty">
+              <div class="mural-empty-icon">${es.icon}</div>
+              <div class="mural-empty-title">${es.title}</div>
+              ${es.sub ? `<div class="mural-empty-sub">${es.sub}</div>` : ''}
+            </div>`);
+        } else if (cardCount > 0 && existingEmpty) {
+          existingEmpty.remove();
+        }
+        const countEl = document.getElementById('count-' + col);
+        if (countEl) countEl.textContent = cardCount;
+      });
+    }
+
+    function atualizarCard(item) {
+      const oldCard = document.querySelector(`[data-id="${item.id}"]`);
+      if (oldCard) oldCard.remove();
+      const newCard = criarCardElement(item);
+      const targetList = document.querySelector('#col-' + item.status + ' .mural-col-list');
+      if (targetList) {
+        const existingEmpty = targetList.querySelector('.mural-empty');
+        if (existingEmpty) existingEmpty.remove();
+        targetList.appendChild(newCard);
+      }
+      atualizarContagens();
+    }
+
     async function alterarStatusRecado(id, novoStatus) {
       const currentUser = sessionStorage.getItem('user_nome') || '';
       // Optimistic Update: change status instantly in memory cache and re-render
@@ -4300,12 +4351,14 @@ document.addEventListener('DOMContentLoaded', function() {
             createParticleExplosion(0, 0); // fallback coordinates
           }
         }
-        renderMural();
+        atualizarCard(item);
       }
 
       const body = { status: novoStatus };
       if (novoStatus === 'concluido' && currentUser) body.concluido_por = currentUser;
 
+      // Register pending move so carregarMural() doesn't revert the optimistic update
+      _pendingMoves.set(id, novoStatus);
       try {
         const res = await fetch(`/api/mural/${id}`, {
           method: 'PUT',
@@ -4313,19 +4366,25 @@ document.addEventListener('DOMContentLoaded', function() {
           body: JSON.stringify(body)
         });
         if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          showMuralToast(errData.error || 'Erro ao alterar status', 'error');
           if (item && oldStatus) {
             item.status = oldStatus;
-            renderMural();
+            atualizarCard(item);
           }
           carregarMural();
         }
       } catch (e) {
         console.error(e);
+        showMuralToast('Erro de rede ao alterar status', 'error');
         if (item && oldStatus) {
           item.status = oldStatus;
-          renderMural();
+          atualizarCard(item);
         }
         carregarMural();
+      } finally {
+        // Only clear if this is still the latest pending move for this card
+        if (_pendingMoves.get(id) === novoStatus) _pendingMoves.delete(id);
       }
     }
 
@@ -4585,8 +4644,11 @@ document.addEventListener('DOMContentLoaded', function() {
         listEl.classList.add('drag-over');
       });
 
-      listEl.addEventListener('dragleave', () => {
-        listEl.classList.remove('drag-over');
+      listEl.addEventListener('dragleave', (e) => {
+        // Only remove highlight when leaving the column list itself, not a child card
+        if (!listEl.contains(e.relatedTarget)) {
+          listEl.classList.remove('drag-over');
+        }
       });
 
       listEl.addEventListener('drop', async (e) => {
@@ -4738,20 +4800,42 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Realtime SSE Listener
+    let _sseSource = null;
+    let _sseFailCount = 0;
+    let _sseReconnectTimer = null;
+
     function initMuralSSE() {
+      if (_sseSource) {
+        try { _sseSource.close(); } catch (e) {}
+        _sseSource = null;
+      }
+      if (_sseReconnectTimer) {
+        clearTimeout(_sseReconnectTimer);
+        _sseReconnectTimer = null;
+      }
+
       const source = new EventSource('/api/mural/events');
-      
+      _sseSource = source;
+
+      const onConnect = function() {
+        _sseFailCount = 0;
+      };
+      source.addEventListener('open', onConnect);
+      source.addEventListener('create', onConnect);
+      source.addEventListener('update', onConnect);
+      source.addEventListener('delete', onConnect);
+      source.addEventListener('comment', onConnect);
+      source.addEventListener('heartbeat', onConnect);
+
       source.addEventListener('create', function(e) {
         const item = JSON.parse(e.data);
 
-        // Remove temp optimistic item (negative ID) from the same author if present
         const tempIdx = cacheRecados.findIndex(r => r.id < 0 && r.autor === item.autor && r.titulo === item.titulo);
         if (tempIdx !== -1) cacheRecados.splice(tempIdx, 1);
 
         if (!cacheRecados.some(r => r.id === item.id)) {
           cacheRecados.unshift(item);
 
-          // Sound and toast notification for destinatario
           const currentUser = (sessionStorage.getItem('user_nome') || '').toLowerCase().trim();
           if (currentUser) {
             const dest = (item.destinatario || '').toLowerCase().trim();
@@ -4764,7 +4848,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
           }
 
-          renderMural();
+          const targetList = document.querySelector('#col-' + item.status + ' .mural-col-list');
+          if (targetList) {
+            const empty = targetList.querySelector('.mural-empty');
+            if (empty) empty.remove();
+            targetList.prepend(criarCardElement(item));
+            atualizarContagens();
+          }
         }
       });
       
@@ -4772,27 +4862,41 @@ document.addEventListener('DOMContentLoaded', function() {
         const item = JSON.parse(e.data);
         const index = cacheRecados.findIndex(r => r.id === item.id);
         if (index !== -1) {
-          cacheRecados[index] = item;
-          renderMural();
-          
+          const old = cacheRecados[index];
+          if (old.status !== item.status || old.titulo !== item.titulo || old.conteudo !== item.conteudo) {
+            cacheRecados[index] = item;
+            atualizarCard(item);
+          } else {
+            cacheRecados[index] = item;
+          }
           const openId = document.getElementById('form-id').value;
           if (openId && parseInt(openId, 10) === item.id && backdrop.classList.contains('active')) {
             carregarComentarios(item.id);
           }
+        } else {
+          cacheRecados.unshift(item);
+          const targetList = document.querySelector('#col-' + item.status + ' .mural-col-list');
+          if (targetList) {
+            const empty = targetList.querySelector('.mural-empty');
+            if (empty) empty.remove();
+            targetList.appendChild(criarCardElement(item));
+            atualizarContagens();
+          }
         }
       });
-      
+
       source.addEventListener('delete', function(e) {
         const data = JSON.parse(e.data);
+        const card = document.querySelector('[data-id="' + data.id + '"]');
+        if (card) {
+          card.remove();
+          atualizarContagens();
+        }
         const index = cacheRecados.findIndex(r => r.id === data.id);
-        if (index !== -1) {
-          cacheRecados.splice(index, 1);
-          renderMural();
-          
-          const openId = document.getElementById('form-id').value;
-          if (openId && parseInt(openId, 10) === data.id) {
-            backdrop.classList.remove('active');
-          }
+        if (index !== -1) cacheRecados.splice(index, 1);
+        const openId = document.getElementById('form-id').value;
+        if (openId && parseInt(openId, 10) === data.id) {
+          backdrop.classList.remove('active');
         }
       });
       
@@ -4805,16 +4909,22 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       
       source.onerror = function() {
-        console.warn("SSE connection lost. Reconnecting...");
+        _sseFailCount++;
+        try { source.close(); } catch (e) {}
+        if (_sseSource === source) _sseSource = null;
+        // Never permanently disable SSE — just back off and retry
+        const delay = Math.min(10000, 1000 * Math.pow(2, _sseFailCount - 1));
+        _sseReconnectTimer = setTimeout(initMuralSSE, delay);
       };
     }
 
     // Init Page load
     carregarMural();
-    initMuralSSE();
-    
-    // Auto-refresh fallback every 30 seconds to ensure consistency
-    setInterval(carregarMural, 30000);
+    // Delay SSE start slightly so the auth check completes first
+    setTimeout(initMuralSSE, 500);
+
+    // Polling a cada 2s como garantia quando SSE tiver gaps
+    setInterval(carregarMural, 2000);
   </script>
 </body>
 </html>
