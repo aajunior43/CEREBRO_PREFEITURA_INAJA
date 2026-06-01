@@ -202,6 +202,7 @@ def create_app() -> Flask:
             "CREATE INDEX IF NOT EXISTS idx_kanban_attach_task ON kanban_attachments(task_id)",
             "CREATE INDEX IF NOT EXISTS idx_mural_attach_recado ON mural_anexos(recado_id)",
             "CREATE INDEX IF NOT EXISTS idx_mural_comentarios_recado ON mural_comentarios(recado_id)",
+            "CREATE INDEX IF NOT EXISTS idx_mural_recados_credor ON mural_recados(credor_id)",
             "CREATE INDEX IF NOT EXISTS idx_kanban_tasks_dates ON kanban_tasks(atualizado_em, criado_em)",
             "CREATE INDEX IF NOT EXISTS idx_protocolos_status ON protocolos(status)",
             "CREATE INDEX IF NOT EXISTS idx_protocolos_tipo ON protocolos(tipo)",
@@ -250,7 +251,7 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL CHECK (data_limite GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0 CHECK (resolvido IN (0,1)), criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido' CHECK (direcao IN ('recebido','enviado')), origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL CHECK (data_protocolo GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'), prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
-            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))", "CREATE TABLE IF NOT EXISTS mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', valor REAL DEFAULT 0.0, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))", "CREATE TABLE IF NOT EXISTS mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', valor REAL DEFAULT 0.0, credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexo_contents (attachment_id INTEGER PRIMARY KEY REFERENCES mural_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)",
             "CREATE TABLE IF NOT EXISTS mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
@@ -378,6 +379,7 @@ def create_app() -> Flask:
             "ALTER TABLE kanban_tasks ADD COLUMN concluido_em TEXT DEFAULT ''",
             "ALTER TABLE kanban_tasks ADD COLUMN valor REAL DEFAULT 0",
             "ALTER TABLE mural_recados ADD COLUMN valor REAL DEFAULT 0.0",
+            "ALTER TABLE mural_recados ADD COLUMN credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL",
         ]:
             try:
                 cur.execute(alter)
@@ -458,7 +460,7 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS classificador_despesa_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT NOT NULL, codigo_completo TEXT NOT NULL DEFAULT '', grupo TEXT DEFAULT '', modalidade TEXT DEFAULT '', elemento TEXT DEFAULT '', subelemento TEXT DEFAULT '', justificativa TEXT DEFAULT '', ponto_atencao TEXT DEFAULT '', confianca REAL DEFAULT 0.0, resultado_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS protocolos (id INTEGER PRIMARY KEY AUTOINCREMENT, numero TEXT NOT NULL UNIQUE, tipo TEXT NOT NULL, direcao TEXT DEFAULT 'recebido', origem_destino TEXT DEFAULT '', assunto TEXT NOT NULL, data_protocolo TEXT NOT NULL, prazo_resposta TEXT DEFAULT '', status TEXT DEFAULT 'recebido', observacoes TEXT DEFAULT '', doc_id INTEGER, criado_em TEXT DEFAULT (datetime('now','localtime')), FOREIGN KEY(doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL)",
-            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))", "CREATE TABLE IF NOT EXISTS mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', valor REAL DEFAULT 0.0, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))", "CREATE TABLE IF NOT EXISTS mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', valor REAL DEFAULT 0.0, credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexo_contents (attachment_id INTEGER PRIMARY KEY REFERENCES mural_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)",
             "CREATE TABLE IF NOT EXISTS mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
@@ -612,6 +614,34 @@ def create_app() -> Flask:
             .strip()
         )
         g._get_db = get_db
+
+    # ── Auth guard global para a API ─────────────────────────
+    # Toda rota /api/ exige sessao autenticada, exceto o fluxo de login
+    # e endpoints de monitoramento. Centraliza a protecao que antes
+    # faltava na maioria dos blueprints (credores, rpas, prazos, etc.).
+    _API_AUTH_WHITELIST = {
+        "/api/auth/login",
+        "/api/auth/adm",
+        "/api/auth/verificar",
+        "/api/auth/sair",
+        "/api/ping",
+        "/api/health",
+        "/api/autentique/webhook",  # chamado por servico externo (sem sessao)
+    }
+
+    @app.before_request
+    def require_api_auth():
+        from flask import session
+
+        path = request.path
+        if not path.startswith("/api/"):
+            return None
+        if request.method == "OPTIONS":  # preflight CORS
+            return None
+        if path in _API_AUTH_WHITELIST:
+            return None
+        if "usuario_id" not in session:
+            return jsonify({"error": "Nao autorizado"}), 401
 
     _COMPRESSIBLE = {
         "text/html",
@@ -828,6 +858,10 @@ def create_app() -> Flask:
         return Response(data, mimetype=mime, headers=headers)
 
     # ── Static routes ────────────────────────────────────────
+    @app.route("/favicon.ico")
+    def favicon():
+        return send_from_directory(os.path.join(BASE_DIR, "static", "img"), "brasao.png", mimetype="image/png")
+
     @app.route("/")
     def index():
         resp = _serve_cached("/pages/mural.html", "no-cache, no-store, must-revalidate")

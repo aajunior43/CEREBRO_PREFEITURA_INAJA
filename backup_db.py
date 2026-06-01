@@ -194,8 +194,8 @@ def backup():
 
     branch = current_branch()
     if branch != "main":
-        log(f"  AVISO: branch atual é '{branch}', esperado 'main'. Abortando.")
-        sys.exit(1)
+        log(f"  AVISO: branch atual '{branch}' nao e main.")
+        log("  Continuando; backup usa worktree separada.")
 
     for db in DATABASES:
         if db.exists():

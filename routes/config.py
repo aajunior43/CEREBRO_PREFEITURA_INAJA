@@ -1,6 +1,6 @@
 """Blueprint: Configurações do Sistema"""
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from config import settings
 from routes._shared import get_db, row_to_dict
 
@@ -18,6 +18,8 @@ ALLOWED_CONFIG_KEYS = {
 
 @bp.route("/api/config", methods=["GET"])
 def config_get():
+    if "usuario_id" not in session:
+        return jsonify({"error": "Nao autorizado"}), 403
     try:
         conn = get_db()
         rows = conn.execute("SELECT chave,valor FROM configuracoes").fetchall()
@@ -30,6 +32,8 @@ def config_get():
 
 @bp.route("/api/config", methods=["POST"])
 def config_set():
+    if session.get("usuario_nivel") != "admin":
+        return jsonify({"error": "Nao autorizado"}), 403
     d = request.get_json(force=True)
     try:
         conn = get_db()
@@ -47,6 +51,8 @@ def config_set():
 
 @bp.route("/api/admin/summary", methods=["GET"])
 def admin_summary():
+    if session.get("usuario_nivel") != "admin":
+        return jsonify({"error": "Nao autorizado"}), 403
     try:
         conn = get_db()
         rows = conn.execute(

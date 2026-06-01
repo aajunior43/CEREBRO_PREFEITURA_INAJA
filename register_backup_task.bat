@@ -26,9 +26,6 @@ schtasks /create ^
   /sc MINUTE ^
   /mo 30 ^
   /st 00:00 ^
-  /du 9999:59 ^
-  /ri 30 ^
-  /ru SYSTEM ^
   /f
 
 if %ERRORLEVEL% equ 0 (

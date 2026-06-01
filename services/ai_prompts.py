@@ -66,7 +66,51 @@ PROMPT_TEMPLATES = {
         ),
         user_template="{contexto}",
     ),
-    "extrato_categorizar": PromptTemplate(
+    "empenho_suggest_options": PromptTemplate(
+        system_template=(
+            "Você é um assistente de empenho da Prefeitura Municipal de Inajá/PE. Hoje é {today}. "
+            "{response_style} "
+            "Analise o texto base e os campos já preenchidos. "
+            "Para os campos pendentes listados, gere de 3 a 5 opções de múltipla escolha "
+            "contextualmente relevantes baseadas no conteúdo do documento. "
+            "Se algum campo puder ser inferido com alta confiança do texto (>=90%), coloque-o em 'inferidos'. "
+            "Responda APENAS com JSON válido no formato exato:\n"
+            '{{"inferidos":{{"campo":"valor",...}},"perguntas":[\n'
+            '  {{"campo":"secretaria","pergunta":"Qual a secretaria responsável?","opcoes":["Secretaria de Saúde","Secretaria de Educação","Secretaria de Obras"],"inferida":"Secretaria de Saúde"}},\n'
+            '  ...\n'
+            ']}}\n'
+            "Cada pergunta deve ter 3 a 5 opções realistas e plausíveis para administração municipal. "
+            "A opção 'inferida' (se houver) deve ser a primeira da lista. "
+            "Use somente português do Brasil. Se não houver perguntas a fazer, retorne perguntas como array vazio."
+        ),
+        user_template="{contexto}",
+    ),
+    "latex_suggest_options": PromptTemplate(
+        system_template=(
+            "Você é um assistente de documentos oficiais em LaTeX para prefeitura municipal. Hoje é {today}. "
+            "{response_style} "
+            "Analise o tipo de documento, o prompt do usuário e os dados já preenchidos. "
+            "Para os campos pendentes listados, gere de 3 a 5 opções de múltipla escolha "
+            "contextualmente relevantes para o tipo de documento solicitado. "
+            "Se algum campo puder ser inferido com alta confiança (>=90%) do prompt ou dos dados, coloque-o em 'inferidos'. "
+            "Responda APENAS com JSON válido no formato exato:\n"
+            '{{"inferidos":{{"campo":"valor",...}},"perguntas":[\n'
+            '  {{"campo":"destinatario","pergunta":"Quem é o destinatário do ofício?","opcoes":["Secretaria Estadual de Saúde","Ministério Público","Tribunal de Contas"],"inferida":"Secretaria Estadual de Saúde"}},\n'
+            '  ...\n'
+            ']}}\n'
+            "Cada pergunta deve ter 3 a 5 opções realistas para administração pública municipal. "
+            "A opção 'inferida' (se houver) deve ser a primeira da lista. "
+            "Use somente português do Brasil. Se não houver perguntas a fazer, retorne perguntas como array vazio."
+        ),
+        user_template=(
+            "=== TIPO DE DOCUMENTO ===\n{tipo}\n\n"
+            "=== ESTILO ===\n{estilo}\n\n"
+            "=== PROMPT / CONTEÚDO ===\n{prompt}\n\n"
+            "=== DADOS JÁ PREENCHIDOS ===\n{dados_preenchidos}\n\n"
+            "=== CAMPOS PENDENTES ===\n{campos_pendentes}"
+        ),
+    ),
+        "extrato_categorizar": PromptTemplate(
         system_template=(
             "Você analisa extratos bancários e documentos financeiros para classificação automática. "
             "{response_style} Responda apenas com JSON válido no formato "

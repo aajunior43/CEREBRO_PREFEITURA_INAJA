@@ -2002,7 +2002,31 @@
         async function quickMove(taskId, newStatus) {
             const task = tasks.find(t => t.id === taskId);
             if (!task) return;
+            const oldStatus = task.status;
             const updated = { ...task, status: newStatus };
+            try {
+                const res = await fetch(`/api/kanban/${taskId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        showToast('Sessão expirada. Faça login novamente.', 'error');
+                        setTimeout(() => window.location.href = '/login.html', 2000);
+                        return;
+                    }
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.error || `Erro ${res.status}`);
+                }
+                task.status = newStatus;
+                const statusNames = { todo: 'A Fazer', 'in-progress': 'Em andamento', done: 'Concluído' };
+                showToast(`✅ Movido para "${statusNames[newStatus]}"`, 'success');
+                renderBoard();
+                if (currentView === 'list') renderListView();
+            } catch (e) {
+                task.status = oldStatus;
+                renderBoard();
+                if (currentView === 'list') renderListView();
+                showToast(e.message || 'Erro ao mover tarefa', 'error');
+            }
+        }
             try {
                 await fetch(`/api/kanban/${taskId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) });
                 task.status = newStatus;
@@ -2230,11 +2254,26 @@
             if (!dragTaskId) return;
             const task = tasks.find(t => t.id === dragTaskId);
             if (task && task.status !== col) {
+                const oldStatus = task.status;
                 task.status = col;
                 try {
-                    await fetch(`/api/kanban/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(task) });
+                    const res = await fetch(`/api/kanban/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(task) });
+                    if (!res.ok) {
+                        if (res.status === 401) {
+                            showToast('Sessão expirada. Faça login novamente.', 'error');
+                            task.status = oldStatus;
+                            renderBoard();
+                            setTimeout(() => window.location.href = '/login.html', 2000);
+                            return;
+                        }
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || `Erro ${res.status}`);
+                    }
                     showToast(`Tarefa movida para "${colName(col)}"`, 'success');
-                } catch (e) { showToast('Erro ao mover tarefa', 'error'); }
+                } catch (e) {
+                    task.status = oldStatus;
+                    showToast(e.message || 'Erro ao mover tarefa', 'error');
+                }
                 renderBoard();
             }
         }

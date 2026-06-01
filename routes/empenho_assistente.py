@@ -1,8 +1,8 @@
-"""Blueprint: Empenho Assistente — IA para auxiliar na criação de empenhos"""
+"""Blueprint: Empenho Assistente - IA para auxiliar na criacao de empenhos"""
 
 import json as _json
 from flask import Blueprint, request, jsonify
-from routes._shared import get_db, _get_openrouter_config, _build_ai_facade
+from routes._shared import get_db, _get_openrouter_config, _build_ai_facade, require_login
 
 bp = Blueprint("empenho_assistente", __name__)
 
@@ -91,6 +91,8 @@ def _save_empenho_assistente_history(
         descricao_base = _clean_value(result.get("descricao_base"))
         descricao_melhorada = _clean_value(result.get("descricao_melhorada"))
         diff = result.get("diff") if isinstance(result.get("diff"), dict) else {}
+    elif action == "suggest_options" and isinstance(result, dict):
+        extracted = result.get("inferidos") if isinstance(result.get("inferidos"), dict) else {}
     result_payload = (
         serialize_task_result(result) if not isinstance(result, dict) else result
     )
@@ -115,24 +117,28 @@ def _save_empenho_assistente_history(
 
 
 @bp.route("/api/empenho-assistente", methods=["POST"])
+@require_login
 def empenho_assistente():
     from services.openrouter_service import AIServiceError
 
     data = request.get_json(silent=True) or {}
     action = (data.get("action") or "").strip()
     payload = _normalize_empenho_payload(data.get("payload") or {})
+    if action == "suggest_options":
+        payload["__missing_fields"] = data.get("payload", {}).get("__missing_fields", [])
     conn = get_db()
     api_key, model = _get_openrouter_config(conn)
     if not api_key:
-        return jsonify({"error": "Chave do OpenRouter não configurada."}), 400
+        return jsonify({"error": "Chave do OpenRouter nao configurada."}), 400
     if action not in {
         "extract_fields",
         "generate_description",
         "checklist",
         "improve_description",
         "review_bundle",
+        "suggest_options",
     }:
-        return jsonify({"error": "Ação inválida."}), 400
+        return jsonify({"error": "Acao invalida."}), 400
     try:
         facade = _build_ai_facade(api_key, model)
         result = facade.gerar_texto_empenho(payload, acao=action)
@@ -146,6 +152,15 @@ def empenho_assistente():
         history_id = _save_empenho_assistente_history(
             conn, action, payload, result, meta=meta
         )
+        if action == "suggest_options":
+            return jsonify(
+                {
+                    "action": action,
+                    "resultado": result if isinstance(result, dict) else {},
+                    "history_id": history_id,
+                    "meta": meta,
+                }
+            )
         if isinstance(result, dict):
             return jsonify(
                 {

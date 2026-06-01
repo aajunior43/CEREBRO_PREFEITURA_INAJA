@@ -1,12 +1,13 @@
 """Blueprint: IA Chat Proxy"""
 
 from flask import Blueprint, request, jsonify
-from routes._shared import get_db, _get_openrouter_config, _build_ai_service
+from routes._shared import get_db, _get_openrouter_config, _build_ai_service, require_login
 
 bp = Blueprint("ia", __name__)
 
 
 @bp.route("/api/ia/chat", methods=["POST"])
+@require_login
 def proxy_ia_chat():
     from services.openrouter_service import AIServiceError
 

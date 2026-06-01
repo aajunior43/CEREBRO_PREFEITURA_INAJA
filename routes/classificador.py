@@ -2,12 +2,13 @@
 
 import json as _json
 from flask import Blueprint, request, jsonify
-from routes._shared import get_db, _get_openrouter_config, _build_ai_facade
+from routes._shared import get_db, _get_openrouter_config, _build_ai_facade, require_login
 
 bp = Blueprint("classificador", __name__)
 
 
 @bp.route("/api/classificador-despesa", methods=["POST"])
+@require_login
 def classificador_despesa():
     from services.openrouter_service import AIServiceError
 

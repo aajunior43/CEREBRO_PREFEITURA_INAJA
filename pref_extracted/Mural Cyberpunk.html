@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mural · Inajá // cyberpunk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep:   #05070f;
+      --bg-panel:  #0a0e1c;
+      --bg-card:   #0f1426;
+      --line:      #1a2342;
+      --line-hi:   #2a3866;
+      --ink:       #e8eef8;
+      --ink-2:     #a0aec8;
+      --ink-3:     #5a6a8a;
+      --ink-4:     #3a4868;
+
+      --accent:    #00f0ff;   /* default cyan */
+      --accent-2:  #ff2d8e;   /* magenta */
+      --accent-3:  #c8ff2d;   /* lime */
+      --gold:      #ffc24a;
+
+      --p-urg:     #ff2d4f;
+      --p-alt:     #ff8a3d;
+      --p-med:     #ffc24a;
+      --p-bai:     #4dffa0;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg-deep);
+      color: var(--ink);
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* page-level grid + scanline layers */
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px) 0 0 / 100% 28px,
+        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px) 0 0 / 28px 100%;
+      mask: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 90%);
+      opacity: var(--grid-opacity, 0.5);
+    }
+    body::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 2;
+      background: repeating-linear-gradient(180deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
+      opacity: var(--scanline-opacity, 0.35);
+      mix-blend-mode: overlay;
+    }
+
+    /* ambient glow blobs */
+    .glow-blob {
+      position: fixed; pointer-events: none; z-index: 0;
+      width: 600px; height: 600px; border-radius: 50%;
+      filter: blur(120px); opacity: 0.18;
+    }
+    .glow-blob.a { top: -200px; left: -200px; background: var(--accent); }
+    .glow-blob.b { bottom: -200px; right: -200px; background: var(--accent-2); }
+
+    #root { position: relative; z-index: 3; }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="data.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="cyber-atoms.jsx"></script>
+  <script type="text/babel" src="cyber-layout.jsx"></script>
+  <script type="text/babel" src="cyber-app.jsx"></script>
+</head>
+<body>
+  <div class="glow-blob a"></div>
+  <div class="glow-blob b"></div>
+  <div id="root"></div>
+</body>
+</html>

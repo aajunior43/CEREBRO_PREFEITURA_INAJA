@@ -215,7 +215,7 @@ def atualizar_usuario(uid: int):
         return jsonify({"error": "Usuario nao encontrado"}), 404
 
     nome = (d.get("nome") or row["nome"]).strip()
-    email = d.get("email", row["email"] or "").strip()
+    email = (d.get("email") if d.get("email") is not None else (row["email"] or "")).strip()
     login = (d.get("login") or row["login"]).strip().lower()
     nivel = (d.get("nivel") or row["nivel"]).strip().lower()
     ativo = d.get("ativo", bool(row["ativo"]))

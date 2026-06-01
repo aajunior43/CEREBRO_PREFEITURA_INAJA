@@ -11,6 +11,21 @@ def get_db():
     return g._get_db()
 
 
+def require_login(fn):
+    """Decorator: exige sessao autenticada. Protege endpoints que gastam
+    creditos de IA ou recursos do servidor contra acesso anonimo."""
+    from functools import wraps
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        from flask import session, jsonify
+        if "usuario_id" not in session:
+            return jsonify({"error": "Nao autorizado"}), 403
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
 def registrar_auditoria(conn, tabela: str, registro_id, operacao: str,
                         dados_anteriores: dict = None, dados_novos: dict = None):
     """Insere uma entrada no audit_trail para rastrear criações, edições e exclusões."""
