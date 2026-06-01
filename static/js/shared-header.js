@@ -202,7 +202,6 @@
       { href: '/pages/classificador-despesa.html', name: 'Classificador de Despesas', desc: 'Identificar desdobramento correto da despesa (TCE-PR)' },
       { href: '/pages/visualizador.html',    name: 'Relação de Empenhos Emitidos',  desc: 'Visualizar e filtrar empenhos' },
       { href: '/pages/auditor.html',         name: 'Auditor de NF',          desc: 'Auditoria de notas fiscais com IA' },
-      { href: '/pages/protocolo.html',       name: 'Protocolo',              desc: 'Ofícios, memorandos e documentos' },
       { href: '/pages/autentique-assinatura.html', name: 'Assinatura Digital', desc: 'Enviar documento para assinatura' },
     ],
     financeiro: [
@@ -529,32 +528,6 @@
     }
 
     const IA_PAGE_CONFIG = {
-      '/pages/protocolo.html': {
-        title: 'IA de Protocolo',
-        subtitle: 'Assistente para ofícios, memorandos e acompanhamento documental',
-        chatPlaceholder: 'Ex: Quais protocolos vencem primeiro ou merecem resposta urgente?',
-        emptyMessage: 'Cadastre ou carregue protocolos antes de usar a IA.',
-        actions: [
-          { id: 'analisar', label: 'Analisar', description: 'Resume os protocolos, status e gargalos.' },
-          { id: 'prioridades', label: 'Prioridades', description: 'Mostra o que deve ser respondido primeiro.' },
-          { id: 'prazos', label: 'Prazos', description: 'Aponta vencimentos, atrasos e riscos.' },
-          { id: 'chat', label: 'Chat', description: 'Permite perguntar livremente sobre os protocolos.' }
-        ],
-        shortcuts: [
-          { label: 'Resumo geral', action: 'analisar' },
-          { label: 'Pendências urgentes', action: 'prioridades' },
-          { label: 'Prazos críticos', action: 'prazos' }
-        ],
-        contextBuilder() {
-          const rows = Array.from(document.querySelectorAll('.pr-item')).slice(0, 20).map((item) => ({
-            numero: item.querySelector('.pr-item-num')?.textContent?.trim() || '',
-            assunto: item.querySelector('.pr-item-title')?.textContent?.trim() || '',
-            meta: item.querySelector('.pr-item-meta')?.textContent?.replace(/\s+/g, ' ')?.trim() || '',
-            obs: item.querySelector('.pr-item-desc')?.textContent?.trim() || ''
-          }));
-          return { page: 'protocolo', protocolos_visiveis: rows };
-        }
-      },
       '/pages/documentos.html': {
         title: 'IA de Documentos',
         subtitle: 'Assistente para organização documental e critérios de arquivamento',
