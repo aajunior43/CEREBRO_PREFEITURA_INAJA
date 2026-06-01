@@ -267,17 +267,17 @@
     /* CARD STYLE */
     .mural-card {
       border-radius: 14px;
-      padding: 12px 14px;
+      padding: 12px 14px 12px 17px;
       box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--note-border, var(--border)) 10%, transparent), var(--shadow-sm);
       position: relative;
       transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s, border-color 0.22s;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      border-top: 3px solid var(--note-border);
-      border-left: 1px solid var(--border);
+      border-top: 1px solid var(--border);
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
+      border-left: 4px solid var(--note-border);
       overflow: visible;
       animation: cardSlideIn 0.22s ease both;
       min-width: 0;
@@ -286,8 +286,11 @@
     }
     .mural-card:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 24px -4px color-mix(in srgb, var(--note-border, var(--border)) 24%, transparent), var(--shadow);
-      border-color: color-mix(in srgb, var(--note-border) 40%, var(--border));
+      box-shadow: 0 8px 24px -4px color-mix(in srgb, var(--note-border, var(--border)) 28%, transparent), var(--shadow);
+      border-left-color: var(--note-border);
+      border-top-color: color-mix(in srgb, var(--note-border) 30%, var(--border));
+      border-right-color: color-mix(in srgb, var(--note-border) 18%, var(--border));
+      border-bottom-color: color-mix(in srgb, var(--note-border) 18%, var(--border));
     }
     .mural-card-dragging {
       opacity: 0.45 !important;
@@ -338,19 +341,24 @@
       gap: 8px;
     }
     .mural-card-assignee-avatar {
-      width: 28px;
-      height: 28px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 800;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-sm);
+      border: 2px solid color-mix(in srgb, var(--note-border, var(--border)) 55%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--note-border, var(--border)) 18%, transparent), var(--shadow-sm);
       flex-shrink: 0;
       user-select: none;
+      transition: box-shadow 0.18s, transform 0.18s;
+    }
+    .mural-card:hover .mural-card-assignee-avatar {
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--note-border, var(--border)) 30%, transparent), var(--shadow);
+      transform: scale(1.07);
     }
     .mural-filter-chip {
       display: inline-flex;
@@ -465,8 +473,9 @@
       align-items: center;
       font-size: 10.5px;
       color: var(--text-3);
-      padding-top: 8px;
-      border-top: 1px dashed var(--border);
+      padding-top: 7px;
+      margin-top: 1px;
+      border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
       flex-wrap: wrap;
       gap: 6px;
     }
@@ -481,9 +490,19 @@
       flex: 1 1 auto;
     }
     .mural-card-author {
-      font-weight: 800;
+      font-weight: 700;
       color: var(--text-2);
     }
+    /* ── Age chip ── */
+    .mural-card-age-chip {
+      display: inline-flex; align-items: center;
+      font-size: 9px; font-weight: 700;
+      padding: 1px 6px; border-radius: 999px;
+      letter-spacing: 0.02em; white-space: nowrap;
+    }
+    .age-chip-new  { background: color-mix(in srgb, var(--border) 50%, transparent); color: var(--text-3); border: 1px solid var(--border); }
+    .age-chip-warn { background: rgba(245,158,11,.12); color: #d97706; border: 1px solid rgba(245,158,11,.28); }
+    .age-chip-old  { background: rgba(239,68,68,.12); color: #dc2626; border: 1px solid rgba(239,68,68,.22); animation: pulse-urgente 2.5s ease-in-out infinite; }
     
     /* Badges */
     .mural-badge {
@@ -950,6 +969,7 @@
     html.theme-cyberpunk .mural-card {
       border-radius: 2px !important;
       border: 1px solid var(--line) !important;
+      border-left: none !important;
       background: var(--bg-card) !important;
       clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px)) !important;
       border-top: none !important;
@@ -1285,6 +1305,7 @@
     html.theme-netflix .mural-card {
       border-radius: 4px !important;
       border: 1px solid #2b2b2b !important;
+      border-left: 4px solid var(--note-border, #e50914) !important;
       background: #2f2f2f !important;
       transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s !important;
     }
@@ -3101,9 +3122,18 @@
 
         <!-- Cor e urgência integradas automaticamente -->
 
+        <div class="mural-form-group">
+          <label class="mural-label" for="form-credor">Credor / Fornecedor (Opcional)</label>
+          <select id="form-credor" class="mural-select" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px; min-height:42px;">
+            <option value="">Nenhum (valor manual)</option>
+          </select>
+          <small id="credor-info" style="font-size:10px; color:var(--text-3); margin-top:2px; display:none;"></small>
+        </div>
+
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="mural-form-group">
             <label class="mural-label" for="form-valor">Valor R$ (Opcional)</label>
+            <small id="valor-hint" style="font-size:10px; color:var(--green); display:none;"></small>
             <input type="text" id="form-valor" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" placeholder="Ex: 1.500,00" />
           </div>
           <div class="mural-form-group">
@@ -3159,6 +3189,66 @@
         setTimeout(() => toast.remove(), 300);
       }, 4000);
     }
+
+    async function loadCredoresDropdown(query) {
+      var select = document.getElementById('form-credor');
+      if (!select) return;
+      try {
+        var url = query ? '/api/mural/credores?q=' + encodeURIComponent(query) : '/api/mural/credores';
+        var res = await fetch(url);
+        if (res.ok) {
+          var credores = await res.json();
+          select.innerHTML = '<option value="">Nenhum (valor manual)</option>';
+          credores.forEach(function(c) {
+            var opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.nome + ' ' + Number(c.valor).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+            opt.dataset.valor = c.valor;
+            opt.dataset.tipo = c.tipo_valor;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar credores:', e);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var credorSelect2 = document.getElementById('form-credor');
+      if (credorSelect2) {
+        credorSelect2.addEventListener('change', function() {
+          var selected = this.options[this.selectedIndex];
+          var valorInput2 = document.getElementById('form-valor');
+          var valorHint2 = document.getElementById('valor-hint');
+          var credorInfo2 = document.getElementById('credor-info');
+          if (selected && selected.value) {
+            var credorValor = parseFloat(selected.dataset.valor);
+            var tipo = selected.dataset.tipo;
+            if (!isNaN(credorValor)) {
+              valorInput2.value = credorValor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            valorInput2.style.background = 'color-mix(in srgb, var(--green) 8%, var(--bg))';
+            if (tipo === 'VARIAVEL') {
+              valorHint2.textContent = 'Valor variável - pode ser alterado manualmente';
+              valorHint2.style.color = 'var(--orange)';
+            } else {
+              valorHint2.textContent = 'Valor preenchido automaticamente do credor';
+              valorHint2.style.color = 'var(--green)';
+            }
+            valorHint2.style.display = 'block';
+            credorInfo2.textContent = 'Tipo: ' + (tipo === 'VARIAVEL' ? 'Variável' : 'Fixo');
+            credorInfo2.style.display = 'block';
+          } else {
+            valorInput2.value = '';
+            valorInput2.style.background = '';
+            valorHint2.style.display = 'none';
+            valorHint2.textContent = '';
+            credorInfo2.style.display = 'none';
+            credorInfo2.textContent = '';
+          }
+        });
+      }
+    });
 
     const EMPTY_STATES = {
       a_fazer:      { icon: '📋', title: 'Nenhuma tarefa',  sub: 'Clique em + Criar Recado para começar' },
@@ -3240,7 +3330,7 @@
         }
 
         return `
-          <div class="mural-filter-chip ${activeClass}" onclick="setFiltroResponsavel('${esc(name)}')" title="Filtrar por: ${esc(name)}">
+          <div class="mural-filter-chip ${activeClass}" data-filter-name="${esc(name)}" onclick="setFiltroResponsavel('${esc(name)}')" title="Filtrar por: ${esc(name)}">
             <span class="mural-filter-avatar" style="background:${bg};">${initial}</span>
             <span class="mural-filter-name">${esc(name)}</span>
           </div>
@@ -3251,7 +3341,7 @@
     window.setFiltroResponsavel = function(name) {
       filtroResponsavel = name;
       document.querySelectorAll('.mural-filter-chip').forEach(chip => {
-        if (chip.title.includes(name)) {
+        if (chip.dataset.filterName === name) {
           chip.classList.add('active');
         } else {
           chip.classList.remove('active');
@@ -3379,6 +3469,7 @@
 document.addEventListener('DOMContentLoaded', function() {
       populateUserChip();
       loadDestinatarios();
+      loadCredoresDropdown();
 
       // Controles de filtros adicionais (busca e prioridade)
       const searchInput = document.getElementById('mural-search-input');
@@ -4049,7 +4140,10 @@ document.addEventListener('DOMContentLoaded', function() {
       let valorBadge = '';
       if (item.valor && parseFloat(item.valor) > 0) {
         const formatted = Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        valorBadge = `<span class="mural-valor-badge">💰 ${formatted}</span>`;
+        valorBadge = '<span class="mural-valor-badge">💰 ' + formatted + '</span>';
+        if (item.credor_nome) {
+          valorBadge = '<span class="mural-valor-badge" title="Credor: ' + esc(item.credor_nome) + '">💰 ' + formatted + ' <small style="opacity:0.7;">' + esc(item.credor_nome) + '</small></span>';
+        }
       }
 
       const dest = item.destinatario || 'Todos';
@@ -4077,11 +4171,29 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       `;
 
+      function cardAgeChip(createdAt, status) {
+        if (status === 'concluido') return '';
+        const d = new Date((createdAt || '').replace(' ', 'T'));
+        if (isNaN(d)) return '';
+        const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+        if (days < 1) return '';
+        const label = days === 1 ? '1 dia' : `${days} dias`;
+        const cls = days >= 7 ? 'age-chip-old' : days >= 3 ? 'age-chip-warn' : 'age-chip-new';
+        return `<span class="mural-card-age-chip ${cls}">⏱ ${label}</span>`;
+      }
+
       // Calcula se está estagnado (mais de 3 dias nas colunas A Fazer ou Em Progresso)
       let stagnantDot = '';
       if (item.status !== 'concluido' && isStagnant(item.criado_em)) {
         stagnantDot = `<span class="mural-pulse-dot" title="Pendente há mais de 3 dias!"></span>`;
       }
+
+      let credorFooter = '';
+      if (item.credor_nome) {
+        credorFooter = '<div style="font-size:9px; color:var(--text-3); margin-top:2px;">🏛️ ' + esc(item.credor_nome) + (item.credor_tipo_valor === 'VARIAVEL' ? ' (Variável)' : '') + '</div>';
+      }
+
+      const ageChip = cardAgeChip(item.criado_em, item.status);
 
       card.innerHTML = `
         <div class="mural-card-header" style="display:flex; gap:10px; align-items:flex-start;">
@@ -4091,7 +4203,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="display:flex; gap:4px; align-items:center; flex-wrap:wrap; margin-top:5px;">
               ${valorBadge}
               <span class="mural-badge badge-prioridade-${item.prioridade}">${esc(item.prioridade)}${stagnantDot}</span>
-              <span class="mural-badge" style="background:rgba(0,0,0,0.04); color:var(--text-2); border:1px solid var(--border); text-transform:none;">👤 ${esc(dest)}</span>
             </div>
           </div>
           <div class="mural-card-actions" style="margin-left:auto;">
@@ -4103,12 +4214,14 @@ document.addEventListener('DOMContentLoaded', function() {
           ${attachmentsList}
         </div>
         <div class="mural-card-footer">
-          <div class="mural-card-meta" style="font-size:9px;">
-            <span class="mural-card-author">✍ ${esc(item.autor)}</span>
-            <span style="opacity:0.5;">•</span>
-            <span style="opacity:0.7;">📅 ${esc((item.criado_em || '').split(' ')[0])}</span>
-            ${completionMeta ? `<span style="opacity:0.5;">•</span>${completionMeta}` : ''}
+          <div class="mural-card-meta" style="font-size:9.5px;">
+            <span class="mural-card-author" title="Autor">✍ ${esc(item.autor)}</span>
+            <span style="opacity:0.35; font-size:8px;">|</span>
+            <span style="color:var(--text-3);" title="Data de criação">🕐 ${esc((item.criado_em || '').split(' ')[0])}</span>
+            ${ageChip}
+            ${completionMeta ? '<span style="opacity:0.35; font-size:8px;">|</span>' + completionMeta : ''}
           </div>
+          ${credorFooter}
         </div>
       `;
       // Drag & Drop to attach files directly to the card
@@ -4266,6 +4379,21 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('form-destinatario').value = item.destinatario || 'Todos';
       document.getElementById('form-valor').value = item.valor ? Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
       
+      // Set credor dropdown
+      const credorSelect = document.getElementById('form-credor');
+      if (credorSelect && item.credor_id) {
+        let opt = credorSelect.querySelector(`option[value="${item.credor_id}"]`);
+        if (!opt && item.credor_nome) {
+          opt = document.createElement('option');
+          opt.value = item.credor_id;
+          opt.textContent = item.credor_nome;
+          credorSelect.appendChild(opt);
+        }
+        if (opt) opt.selected = true;
+      } else if (credorSelect) {
+        credorSelect.value = '';
+      }
+      
       document.getElementById('modal-title').textContent = 'Editar Recado / Tarefa';
       document.getElementById('mural-comments-section').style.display = 'block';
       carregarComentarios(item.id);
@@ -4279,6 +4407,13 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('mural-form').reset();
       document.getElementById('form-id').value = '';
       document.getElementById('form-valor').value = '';
+      const cs = document.getElementById('form-credor');
+      if (cs) { cs.value = ''; }
+      const vh = document.getElementById('valor-hint');
+      if (vh) { vh.style.display = 'none'; vh.textContent = ''; }
+      const ci = document.getElementById('credor-info');
+      if (ci) { ci.style.display = 'none'; ci.textContent = ''; }
+      document.getElementById('form-valor').style.background = '';
       document.getElementById('modal-title').textContent = 'Novo Recado no Mural';
       document.getElementById('mural-comments-section').style.display = 'none';
       loadSessionAuthor();
@@ -4300,6 +4435,9 @@ document.addEventListener('DOMContentLoaded', function() {
       else if (prio === 'alta') calculatedColor = 'orange';
       else if (prio === 'urgente') calculatedColor = 'pink';
 
+      const credorSelect = document.getElementById('form-credor');
+      const credorId = credorSelect && credorSelect.value ? parseInt(credorSelect.value) : null;
+
       const rawValor = document.getElementById('form-valor').value.trim();
       let valorNum = 0.0;
       if (rawValor) {
@@ -4319,7 +4457,8 @@ document.addEventListener('DOMContentLoaded', function() {
         autor: document.getElementById('form-autor').value.trim(),
         destinatario: document.getElementById('form-destinatario').value.trim(),
         cor: calculatedColor,
-        valor: valorNum
+        valor: valorNum,
+        credor_id: credorId
       };
 
       const url = id ? `/api/mural/${id}` : '/api/mural';
@@ -4330,11 +4469,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Optimistic update for Edit Mode
       let originalItem = null;
+      let originalSnapshot = null;
       if (id) {
         const itemId = parseInt(id, 10);
         originalItem = cacheRecados.find(r => r.id === itemId);
         if (originalItem) {
-          // Temporarily merge payload
+          originalSnapshot = Object.assign({}, originalItem);
           Object.assign(originalItem, payload);
           renderMural();
         }
@@ -4391,7 +4531,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const idx = cacheRecados.findIndex(r => r.id === tempItem.id);
             if (idx !== -1) cacheRecados.splice(idx, 1);
           }
-          if (originalItem) Object.assign(originalItem, originalItem);
+          if (originalItem && originalSnapshot) Object.assign(originalItem, originalSnapshot);
           let errMsg = 'Erro ao salvar recado.';
           try {
             const errData = await res.json();
@@ -4463,6 +4603,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const task = cacheRecados.find(r => r.id === taskId);
             if (task && task.status !== targetStatus) {
               if (targetStatus === 'concluido') {
+                playSuccessSound();
                 createParticleExplosion(e.clientX, e.clientY);
               }
               await alterarStatusRecado(taskId, targetStatus);
@@ -4561,7 +4702,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div style="background:var(--bg-2, var(--surface-2)); padding:8px 10px; border-radius:10px; font-size:11px; line-height:1.3; border: 1px solid var(--border);">
               <div style="display:flex; justify-content:space-between; font-weight:800; font-size:10px; color:var(--text-2); margin-bottom:2px;">
                 <span>${esc(c.autor)}</span>
-                <span style="font-weight:normal; opacity:0.7; font-size:9px; margin-left:auto;">${esc(c.criado_em.split(' ')[1] || c.criado_em)}</span>
+                <span style="font-weight:normal; opacity:0.7; font-size:9px; margin-left:auto;">${esc(c.criado_em.split(' ')[1] || c.criado_em.split(' ')[0])}</span>
               </div>
               <div style="color:var(--text); white-space:pre-wrap;">${esc(c.texto)}</div>
             </div>
