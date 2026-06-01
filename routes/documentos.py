@@ -223,6 +223,26 @@ def documentos_download(doc_id):
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/api/documentos/<int:doc_id>/view", methods=["GET"])
+def documentos_view(doc_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Documento não encontrado"}), 404
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
+        if not os.path.exists(abs_path):
+            return jsonify({"error": "Arquivo físico não encontrado"}), 404
+        mime, _ = mimetypes.guess_type(abs_path)
+        return send_file(abs_path, mimetype=mime or "application/pdf", as_attachment=False)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/api/documentos/<int:doc_id>", methods=["DELETE"])
 def documentos_excluir(doc_id):
     try:
@@ -779,6 +799,119 @@ def autentique_download_assinado(envio_id):
             as_attachment=True,
             download_name=row["nome_original"],
         )
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@bp_autentique.route("/api/autentique/envios/<int:envio_id>/view-assinado", methods=["GET"])
+def autentique_view_assinado(envio_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT e.assinado_doc_id, d.nome_original, d.caminho_relativo "
+            "FROM autentique_envios e LEFT JOIN documentos_centro d ON d.id = e.assinado_doc_id "
+            "WHERE e.id=?", (envio_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Envio não encontrado"}), 404
+        if not row["assinado_doc_id"] or not row["caminho_relativo"]:
+            return jsonify({"error": "Documento assinado não disponível"}), 404
+        abs_path = os.path.join(DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep))
+        if not os.path.exists(abs_path):
+            return jsonify({"error": "Arquivo assinado não encontrado"}), 404
+        mime, _ = mimetypes.guess_type(abs_path)
+        return send_file(abs_path, mimetype=mime or "application/pdf", as_attachment=False)
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
+
+
+@bp_autentique.route("/api/autentique/envios/<int:envio_id>/sincronizar", methods=["POST"])
+def autentique_sincronizar_envio(envio_id):
+    try:
+        conn = get_db()
+        data = request.get_json(silent=True) or {}
+        api_key = _get_autentique_config(
+            conn, api_key_override=(data.get("api_key") or "").strip()
+        )
+        if not api_key:
+            return jsonify({"error": "Chave da Autentique não configurada."}), 400
+        row = conn.execute(
+            "SELECT * FROM autentique_envios WHERE id=?", (envio_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Envio não encontrado"}), 404
+        autentique_doc_id = (row["autentique_document_id"] or "").strip()
+        if not autentique_doc_id:
+            return jsonify({"error": "ID do documento na Autentique não disponível"}), 400
+        query = """
+        query GetDocument($id: UUID!) {
+          document(id: $id) {
+            id name
+            files { signed original }
+            signatures { public_id name signed { created_at } action { name } }
+          }
+        }"""
+        resp = requests.post(
+            "https://api.autentique.com.br/v2/graphql",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={"query": query, "variables": {"id": autentique_doc_id}},
+            timeout=35,
+        )
+        payload = resp.json()
+        if resp.status_code >= 400 or payload.get("errors"):
+            message = (payload.get("errors") or [{}])[0].get(
+                "message"
+            ) or f"Erro HTTP {resp.status_code}"
+            return jsonify({"error": message}), 400
+        doc_data = (payload.get("data") or {}).get("document") or {}
+        signed_url = (doc_data.get("files") or {}).get("signed") or ""
+        signatures = doc_data.get("signatures") or []
+        sigs_info = [
+            {
+                "nome": sig.get("name") or "",
+                "assinado": sig.get("signed") is not None,
+                "assinado_em": (sig.get("signed") or {}).get("created_at") or "",
+            }
+            for sig in signatures
+        ]
+        sigs_total = len(sigs_info)
+        sigs_signed = sum(1 for s in sigs_info if s["assinado"])
+        is_signed = sigs_signed > 0 and signed_url
+        if not is_signed:
+            return jsonify({
+                "ok": True, "status": "pendente",
+                "sigs_total": sigs_total, "sigs_signed": sigs_signed,
+                "signatures": sigs_info,
+                "message": f"Documento ainda não foi assinado. ({sigs_signed}/{sigs_total})",
+            })
+        if row["assinado_doc_id"]:
+            return jsonify({
+                "ok": True, "status": "assinado",
+                "assinado_doc_id": row["assinado_doc_id"],
+                "sigs_total": sigs_total, "sigs_signed": sigs_signed,
+                "signatures": sigs_info, "message": "Já sincronizado.",
+            })
+        original_name = row["documento_nome"] or "documento"
+        saved_doc = _autentique_save_signed_document(signed_url, original_name, api_key)
+        signed_doc_id = saved_doc["id"] if saved_doc else None
+        conn.execute(
+            "UPDATE autentique_envios SET status='assinado', assinado_doc_id=?, "
+            "assinado_em=COALESCE(NULLIF(assinado_em,''), datetime('now','localtime')), "
+            "atualizado_em=datetime('now','localtime') WHERE id=?",
+            (signed_doc_id, envio_id),
+        )
+        conn.commit()
+        return jsonify({
+            "ok": True, "status": "assinado",
+            "assinado_doc_id": signed_doc_id,
+            "sigs_total": sigs_total, "sigs_signed": sigs_signed,
+            "signatures": sigs_info,
+        })
+    except requests.RequestException as err:
+        return jsonify({"error": f"Falha de conexão: {err}"}), 502
     except Exception as err:
         return jsonify({"error": str(err)}), 500
 

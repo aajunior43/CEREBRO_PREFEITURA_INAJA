@@ -241,8 +241,9 @@
 
     /* ── STATUS & RESULT ── */
     .aut-status { display: none; margin-top: 13px; padding: 10px 13px; border-radius: 11px; font-size: 12px; font-weight: 700; }
-    .aut-status.ok  { display: flex; gap: 6px; align-items: center; background: color-mix(in srgb, var(--green) 11%, transparent); color: var(--green-dark); border: 1px solid color-mix(in srgb, var(--green) 24%, transparent); }
-    .aut-status.err { display: flex; gap: 6px; align-items: center; background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.2); }
+    .aut-status.ok   { display: flex; gap: 6px; align-items: center; background: color-mix(in srgb, var(--green) 11%, transparent); color: var(--green-dark); border: 1px solid color-mix(in srgb, var(--green) 24%, transparent); }
+    .aut-status.err  { display: flex; gap: 6px; align-items: center; background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.2); }
+    .aut-status.info { display: flex; gap: 6px; align-items: center; background: color-mix(in srgb, var(--blue) 9%, transparent); color: var(--text-2); border: 1px solid color-mix(in srgb, var(--blue) 18%, transparent); }
     .aut-result {
       display: none; margin-top: 14px; padding: 14px 16px; border-radius: 14px;
       background: color-mix(in srgb, var(--green) 8%, var(--surface));
@@ -308,6 +309,34 @@
     }
     .aut-mini-btn:hover { background: var(--surface); color: var(--text); border-color: var(--border-hover); }
     .aut-envios-empty { margin-top: 14px; padding: 22px; border-radius: 12px; color: var(--text-3); font-size: 13px; text-align: center; border: 1px dashed var(--border); }
+
+    /* ── PDF MODAL ── */
+    .pdf-modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,.72); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .pdf-modal-overlay.open { display: flex; }
+    .pdf-modal {
+      position: relative; width: min(92vw, 980px); height: min(90vh, 860px);
+      border-radius: 20px; overflow: hidden;
+      background: var(--surface); border: 1px solid var(--border);
+      box-shadow: 0 32px 80px rgba(0,0,0,.5);
+      display: flex; flex-direction: column;
+    }
+    .pdf-modal-bar {
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border); background: var(--surface-2); flex-shrink: 0;
+    }
+    .pdf-modal-title { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pdf-modal-close {
+      width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      color: var(--text-2); cursor: pointer; font-size: 16px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pdf-modal-close:hover { background: var(--surface); color: var(--text); }
+    .pdf-modal iframe { flex: 1; border: none; width: 100%; }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 860px)  { .aut-envio-grid { grid-template-columns: 1fr; } }
@@ -481,9 +510,12 @@
       <span class="aut-step">Acompanhamento</span>
       <div class="aut-monitor-head">
         <h2>Histórico de Envios</h2>
-        <button id="aut-refresh-envios" class="aut-btn aut-btn-secondary" type="button">↺ Atualizar</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button id="aut-sync-all-btn" class="aut-btn aut-btn-secondary" type="button">🔄 Verificar todos</button>
+          <button id="aut-refresh-envios" class="aut-btn aut-btn-secondary" type="button">↺ Atualizar lista</button>
+        </div>
       </div>
-      <div class="aut-monitor-note">O status atualiza automaticamente via webhook da Autentique. Quando assinado, o download fica disponível aqui.</div>
+      <div class="aut-monitor-note">Status atualiza automaticamente. Clique em "Verificar todos" para consultar a Autentique e baixar documentos já assinados.</div>
       <code id="aut-webhook-url" class="aut-webhook-url"></code>
       <div id="aut-envios" class="aut-envios"></div>
       <div id="aut-envios-empty" class="aut-envios-empty" style="display:none;">Nenhum envio registrado ainda.</div>
@@ -492,6 +524,18 @@
 
 </div><!-- /aut-wrap -->
 </div><!-- /aut-page -->
+
+<!-- PDF MODAL -->
+<div class="pdf-modal-overlay" id="pdf-modal-overlay">
+  <div class="pdf-modal">
+    <div class="pdf-modal-bar">
+      <span class="pdf-modal-title" id="pdf-modal-title">Visualizar PDF</span>
+      <a id="pdf-modal-download" class="aut-mini-btn" href="#" download style="flex-shrink:0;">⬇ Baixar</a>
+      <button class="pdf-modal-close" id="pdf-modal-close" type="button">✕</button>
+    </div>
+    <iframe id="pdf-modal-frame" src="" title="Visualizar PDF"></iframe>
+  </div>
+</div>
 
 <input type="file" id="mural-hidden-file-input" style="display:none;" />
 
@@ -534,7 +578,7 @@
   function fmtDate(v){ if(!v) return ''; const d=new Date(v.replace(' ','T')); return isNaN(d)?v:d.toLocaleString('pt-BR'); }
   function normalizePhoneDigits(v){ const d=String(v||'').replace(/\D+/g,''); if(!d) return ''; if(d.startsWith('55')) return d; if(d.length===10||d.length===11) return '55'+d; return d; }
   function formatPhoneBR(v){ const d=normalizePhoneDigits(v); if(!d) return ''; let l=d.startsWith('55')?d.slice(2):d; if(l.length>11) l=l.slice(0,11); if(l.length<=2) return `+55 (${l}`; if(l.length<=7) return `+55 (${l.slice(0,2)}) ${l.slice(2)}`; if(l.length<=10) return `+55 (${l.slice(0,2)}) ${l.slice(2,6)}-${l.slice(6)}`; return `+55 (${l.slice(0,2)}) ${l.slice(2,7)}-${l.slice(7)}`; }
-  function setStatus(msg,ok){ statusEl.textContent=msg; statusEl.className=`aut-status ${ok?'ok':'err'}`; }
+  function setStatus(msg,ok){ statusEl.textContent=msg; statusEl.className=`aut-status ${ok===true?'ok':ok===false?'err':'info'}`; }
   function clearStatus(){ statusEl.textContent=''; statusEl.className='aut-status'; }
 
   /* ── tabs ── */
@@ -638,28 +682,38 @@
   /* ── envios ── */
   function renderEnvios(items){
     const list=Array.isArray(items)?items:[];
-    enviosEl.innerHTML = list.map(item=>`
-      <div class="aut-envio">
+    enviosEl.innerHTML = list.map(item=>{
+      const assinado = !!item.assinado_doc_id;
+      const envioId  = Number(item.id);
+      const docNome  = esc(item.documento_nome||item.documento_origem_nome||'Documento sem nome');
+      const docAssinadoNome = item.documento_assinado_nome||item.documento_nome||'assinado.pdf';
+      return `
+      <div class="aut-envio" id="envio-row-${envioId}">
         <div class="aut-envio-top">
-          <div>
-            <div class="aut-envio-title">${esc(item.documento_nome||item.documento_origem_nome||'Documento sem nome')}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="aut-envio-title">${docNome}</div>
             <div class="aut-envio-meta">
-              Signatário: ${esc(item.signatario_nome||'-')} &nbsp;·&nbsp; WhatsApp: ${esc(item.signatario_phone||'-')}<br/>
+              Signatário: ${esc(item.signatario_nome||'-')} &nbsp;·&nbsp; ${esc(item.signatario_phone||'-')}<br/>
               Criado: ${esc(fmtDate(item.criado_em)||'-')}
-              ${item.assinado_em?` &nbsp;·&nbsp; Assinado: ${esc(fmtDate(item.assinado_em))}`:''}
+              ${item.assinado_em?` &nbsp;·&nbsp; ✅ Assinado: <strong style="color:var(--green-dark)">${esc(fmtDate(item.assinado_em))}</strong>`:''}
             </div>
           </div>
           <div class="aut-envio-badges">
-            <span class="aut-status-badge ${escAttr(item.status||'pendente')}">${esc(item.status||'pendente')}</span>
+            <span class="aut-status-badge ${escAttr(item.status||'pendente')}">${assinado?'✔ assinado':esc(item.status||'pendente')}</span>
           </div>
         </div>
         <div class="aut-envio-actions">
-          ${item.documento_centro_id?`<a class="aut-mini-btn" href="/api/documentos/${Number(item.documento_centro_id)}/download">⬇ Original</a>`:''}
+          ${item.documento_centro_id?`<button class="aut-mini-btn" type="button" data-view-doc="${Number(item.documento_centro_id)}" data-view-title="${escAttr(item.documento_origem_nome||'Original')}">👁 Ver original</button>`:''}
+          ${assinado?`
+            <button class="aut-mini-btn" type="button" data-view-signed="${envioId}" data-view-title="${escAttr(docAssinadoNome)}">👁 Ver assinado</button>
+            <a class="aut-mini-btn" href="/api/autentique/envios/${envioId}/download-assinado" download="${escAttr(docAssinadoNome)}">⬇ Baixar assinado</a>
+          `:`<button class="aut-mini-btn" type="button" data-envio-sync="${envioId}">🔄 Verificar assinado</button>`}
           ${item.assinatura_link?`<a class="aut-mini-btn" href="${escAttr(item.assinatura_link)}" target="_blank" rel="noopener">🔗 Abrir link</a>`:''}
-          ${item.assinado_doc_id?`<a class="aut-mini-btn" href="/api/autentique/envios/${Number(item.id)}/download-assinado">✅ Baixar assinado</a>`:''}
-          <button class="aut-mini-btn" type="button" data-envio-delete="${Number(item.id)}">Remover</button>
+          ${(!assinado && item.assinatura_link)?`<button class="aut-mini-btn" type="button" data-envio-resend="${envioId}" title="Reenviar link pelo WhatsApp">📲 Reenviar</button>`:''}
+          <button class="aut-mini-btn" type="button" data-envio-delete="${envioId}">🗑 Remover</button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     enviosEmptyEl.style.display = list.length?'none':'';
   }
   async function loadEnvios(showErrors=false){
@@ -669,6 +723,85 @@
   async function deleteEnvio(id){
     try{ const r=await fetch(`/api/autentique/envios/${Number(id)}`,{method:'DELETE'}); const d=await r.json(); if(!r.ok) throw new Error(d.error||'Erro'); await loadEnvios(); setStatus('Envio removido.',true); }
     catch(err){ setStatus(err.message||'Erro.',false); }
+  }
+  async function syncEnvio(id, btn){
+    const prev=btn?btn.textContent:''; if(btn){ btn.disabled=true; btn.textContent='⏳ Verificando...'; }
+    try{
+      const apiKey = keySelectEl?.value||'';
+      const r=await fetch(`/api/autentique/envios/${Number(id)}/sincronizar`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:apiKey})});
+      const d=await r.json();
+      if(!r.ok) throw new Error(d.error||'Erro');
+      if(d.status==='assinado'){
+        setStatus('Documento assinado encontrado e salvo!',true);
+        await loadEnvios();
+        return true;
+      } else {
+        if(btn){ btn.disabled=false; btn.textContent=prev; }
+        return false;
+      }
+    }catch(err){
+      if(btn){ btn.disabled=false; btn.textContent=prev; }
+      console.warn('syncEnvio', id, err.message);
+      return false;
+    }
+  }
+  async function syncAllPending(){
+    const btn=document.getElementById('aut-sync-all-btn');
+    const prev=btn.textContent; btn.disabled=true;
+    const rows=[...enviosEl.querySelectorAll('[data-envio-sync]')];
+    if(!rows.length){ btn.disabled=false; setStatus('Nenhum envio pendente para verificar.',null); return; }
+    btn.textContent=`⏳ Verificando 0/${rows.length}…`;
+    let found=0;
+    for(let i=0;i<rows.length;i++){
+      btn.textContent=`⏳ Verificando ${i+1}/${rows.length}…`;
+      const id=Number(rows[i].dataset.envioSync);
+      const ok=await syncEnvio(id,null);
+      if(ok) found++;
+    }
+    btn.disabled=false; btn.textContent=prev;
+    if(found>0){ setStatus(`${found} documento(s) assinado(s) sincronizado(s)!`,true); await loadEnvios(); }
+    else setStatus('Nenhum documento novo assinado encontrado.',null);
+  }
+
+  /* ── PDF Modal ── */
+  const pdfOverlay = document.getElementById('pdf-modal-overlay');
+  const pdfFrame   = document.getElementById('pdf-modal-frame');
+  const pdfTitle   = document.getElementById('pdf-modal-title');
+  const pdfDl      = document.getElementById('pdf-modal-download');
+  function openPdfModal(url, title, dlUrl){
+    pdfTitle.textContent = title||'Visualizar PDF';
+    pdfFrame.src = url;
+    pdfDl.href   = dlUrl||url; pdfDl.download = title||'documento.pdf';
+    pdfOverlay.classList.add('open');
+    document.body.style.overflow='hidden';
+  }
+  function closePdfModal(){
+    pdfOverlay.classList.remove('open');
+    pdfFrame.src='';
+    document.body.style.overflow='';
+  }
+  document.getElementById('pdf-modal-close').addEventListener('click', closePdfModal);
+  pdfOverlay.addEventListener('click', e=>{ if(e.target===pdfOverlay) closePdfModal(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePdfModal(); });
+
+  /* ── Reenviar WhatsApp ── */
+  async function resendEnvio(id){
+    const row=enviosEl.querySelector(`[data-envio-resend="${id}"]`);
+    if(row){ row.disabled=true; row.textContent='⏳...'; }
+    try{
+      const r=await fetch('/api/autentique/envios');
+      const list=await r.json();
+      const envio=(Array.isArray(list)?list:[]).find(e=>Number(e.id)===Number(id));
+      if(!envio||!envio.assinatura_link) throw new Error('Link de assinatura não disponível');
+      const apiKey=keySelectEl?.value||'';
+      const msg=`📄 *${envio.documento_nome||'Documento'}*\n\nSeu link de assinatura:\n${envio.assinatura_link}`;
+      const phone=String(envio.signatario_phone||'').replace(/\D+/g,'');
+      const sendR=await fetch('/api/whatsapp/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,message:msg,api_key:apiKey})});
+      const sendD=await sendR.json();
+      if(!sendR.ok) throw new Error(sendD.error||'Erro ao enviar');
+      setStatus('Link reenviado pelo WhatsApp!',true);
+    }catch(err){ setStatus(err.message||'Erro ao reenviar.',false); }
+    finally{ if(row){ row.disabled=false; row.textContent='📲 Reenviar'; } }
   }
 
   /* ── docs list ── */
@@ -705,7 +838,7 @@
   async function loadDocs(){
     const r=await fetch('/api/documentos'); const d=await r.json();
     if(!r.ok) throw new Error(d.error||'Erro ao carregar documentos');
-    docsCache=d; renderDocs();
+    docsCache=Array.isArray(d)?d:(d.items||[]); renderDocs();
   }
   function selectDoc(docId){
     selectedDoc=docsCache.find(doc=>Number(doc.id)===Number(docId))||null;
@@ -765,6 +898,7 @@
   document.getElementById('aut-send-btn').addEventListener('click', sendForSignature);
   document.getElementById('aut-test-btn').addEventListener('click', testAutentique);
   document.getElementById('aut-refresh-envios').addEventListener('click', ()=>loadEnvios(true));
+  document.getElementById('aut-sync-all-btn').addEventListener('click', syncAllPending);
   document.getElementById('aut-refresh-balance').addEventListener('click', ()=>loadBalance(true));
   keySelectEl.addEventListener('change', ()=>loadBalance(true));
   signerPhoneEl.addEventListener('input',  e=>{ const f=formatPhoneBR(e.target.value); if(f) e.target.value=f; });
@@ -777,7 +911,13 @@
     const u=e.target.closest('[data-contact-use]');    if(u){ useSavedContact(Number(u.dataset.contactUse));   return; }
     const d=e.target.closest('[data-contact-delete]'); if(d)  deleteSavedContact(Number(d.dataset.contactDelete));
   });
-  enviosEl.addEventListener('click', e=>{ const d=e.target.closest('[data-envio-delete]'); if(d) deleteEnvio(Number(d.dataset.envioDelete)); });
+  enviosEl.addEventListener('click', e=>{
+    const d=e.target.closest('[data-envio-delete]');  if(d){ deleteEnvio(Number(d.dataset.envioDelete)); return; }
+    const s=e.target.closest('[data-envio-sync]');    if(s){ syncEnvio(Number(s.dataset.envioSync), s); return; }
+    const r=e.target.closest('[data-envio-resend]');  if(r){ resendEnvio(Number(r.dataset.envioResend)); return; }
+    const vs=e.target.closest('[data-view-signed]');  if(vs){ const id=Number(vs.dataset.viewSigned); openPdfModal(`/api/autentique/envios/${id}/view-assinado`,vs.dataset.viewTitle,`/api/autentique/envios/${id}/download-assinado`); return; }
+    const vd=e.target.closest('[data-view-doc]');     if(vd){ const id=Number(vd.dataset.viewDoc); openPdfModal(`/api/documentos/${id}/view`,vd.dataset.viewTitle,`/api/documentos/${id}/download`); }
+  });
 
   /* upload zone */
   const uploadZone  = document.getElementById('aut-upload-zone');
@@ -803,7 +943,11 @@
   loadContacts();
   loadDocs().catch(err=>setStatus(err.message||'Erro ao carregar documentos.',false));
   loadEnvios();
-  enviosTimer = window.setInterval(()=>loadEnvios(false), 30000);
+  enviosTimer = window.setInterval(async()=>{
+    await loadEnvios(false);
+    const pending=[...enviosEl.querySelectorAll('[data-envio-sync]')];
+    for(const btn of pending) await syncEnvio(Number(btn.dataset.envioSync), null);
+  }, 30000);
 </script>
 </body>
 </html>
