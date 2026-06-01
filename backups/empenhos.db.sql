@@ -1,4 +1,4 @@
--- Backup: 2026-06-01T10:00:05.558643
+-- Backup: 2026-06-01T10:30:05.055515
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -15,7 +15,7 @@ CREATE TABLE autentique_contatos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEX
 INSERT INTO "autentique_contatos" VALUES(1,'Luana','+5544991344277','2026-06-01 09:48:47','2026-06-01 09:48:47');
 INSERT INTO "autentique_contatos" VALUES(2,'Aleksandro','+5544991842415','2026-06-01 09:52:29','2026-06-01 09:52:29');
 CREATE TABLE autentique_envios (id INTEGER PRIMARY KEY AUTOINCREMENT, documento_centro_id INTEGER NOT NULL, autentique_document_id TEXT DEFAULT '', autentique_signature_public_id TEXT DEFAULT '', documento_nome TEXT DEFAULT '', signatario_nome TEXT NOT NULL, signatario_phone TEXT NOT NULL, status TEXT DEFAULT 'pendente', delivery_method TEXT DEFAULT 'DELIVERY_METHOD_WHATSAPP', assinatura_link TEXT DEFAULT '', webhook_evento TEXT DEFAULT '', webhook_payload TEXT DEFAULT '', assinado_doc_id INTEGER, assinado_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(documento_centro_id) REFERENCES documentos_centro(id) ON DELETE CASCADE, FOREIGN KEY(assinado_doc_id) REFERENCES documentos_centro(id) ON DELETE SET NULL);
-INSERT INTO "autentique_envios" VALUES(1,30,'24bb0569804a69c2fb9264afe536875296582aa550cd200d9','40212e025db911f1bb8342010a2b6020','DIARISTAS.pdf','Aleksandro','+5544991842415','pendente','DELIVERY_METHOD_WHATSAPP','','','',NULL,'','2026-06-01 09:55:43','2026-06-01 09:55:43');
+INSERT INTO "autentique_envios" VALUES(1,30,'24bb0569804a69c2fb9264afe536875296582aa550cd200d9','40212e025db911f1bb8342010a2b6020','DIARISTAS.pdf','Aleksandro','+5544991842415','assinado','DELIVERY_METHOD_WHATSAPP','','','',31,'2026-06-01 10:02:26','2026-06-01 09:55:43','2026-06-01 10:02:26');
 CREATE TABLE classificador_despesa_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT NOT NULL, codigo_completo TEXT NOT NULL DEFAULT '', grupo TEXT DEFAULT '', modalidade TEXT DEFAULT '', elemento TEXT DEFAULT '', subelemento TEXT DEFAULT '', justificativa TEXT DEFAULT '', ponto_atencao TEXT DEFAULT '', confianca REAL DEFAULT 0.0, resultado_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
 CREATE TABLE configuracoes (chave TEXT PRIMARY KEY, valor TEXT NOT NULL DEFAULT '', atualizado_em TEXT DEFAULT (datetime('now', 'localtime')));
 INSERT INTO "configuracoes" VALUES('api_autentique_key','356865d1aa95cd57f4839756be5fea65a98aac48e1af3bd95e82fe98e1c532fd','2026-06-01 09:49:52');
@@ -122,6 +122,7 @@ INSERT INTO "documentos_centro" VALUES(27,'Oficio_014_2026_SF_Devolucao.pdf','17
 INSERT INTO "documentos_centro" VALUES(28,'Orçamento 258585 - BBS-6375.pdf','1780318359827_1aedc1d8d3.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',189571,'.pdf','contratos/assinatura-autentique/1780318359827_1aedc1d8d3.pdf','2026-06-01 09:52:39');
 INSERT INTO "documentos_centro" VALUES(29,'Orçamento 258585 - BBS-6375.pdf','1780318364066_956a5d627f.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',189571,'.pdf','contratos/assinatura-autentique/1780318364066_956a5d627f.pdf','2026-06-01 09:52:44');
 INSERT INTO "documentos_centro" VALUES(30,'DIARISTAS.pdf','1780318540542_c2f113294d.pdf','contratos','assinatura-autentique','Arquivo enviado para assinatura digital',377869,'.pdf','contratos/assinatura-autentique/1780318540542_c2f113294d.pdf','2026-06-01 09:55:40');
+INSERT INTO "documentos_centro" VALUES(31,'DIARISTAS-assinado.pdf','1780318946920_e9ba9b3bb1.pdf','assinados_autentique','assinatura-digital','Documento assinado pela Autentique',573280,'.pdf','assinados_autentique/assinatura-digital/1780318946920_e9ba9b3bb1.pdf','2026-06-01 10:02:26');
 CREATE TABLE empenho_assistente_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, payload_json TEXT NOT NULL DEFAULT '{}', resultado_json TEXT NOT NULL DEFAULT '{}', campos_json TEXT NOT NULL DEFAULT '{}', checklist_json TEXT NOT NULL DEFAULT '{}', descricao_base TEXT DEFAULT '', descricao_melhorada TEXT DEFAULT '', diff_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
 CREATE TABLE empenhos (id INTEGER PRIMARY KEY AUTOINCREMENT, credor_id INTEGER NOT NULL, ano INTEGER NOT NULL, mes INTEGER NOT NULL, empenhado INTEGER DEFAULT 1, timestamp TEXT, UNIQUE(credor_id, ano, mes), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE CASCADE);
 INSERT INTO "empenhos" VALUES(1,19,2026,4,1,'2026-05-11 09:28:50');
@@ -376,7 +377,7 @@ CREATE TRIGGER protocolos_fts_au AFTER UPDATE ON protocolos BEGIN
 PRAGMA writable_schema=OFF;
 DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('credores',29);
-INSERT INTO "sqlite_sequence" VALUES('documentos_centro',30);
+INSERT INTO "sqlite_sequence" VALUES('documentos_centro',31);
 INSERT INTO "sqlite_sequence" VALUES('empenhos',34);
 INSERT INTO "sqlite_sequence" VALUES('autentique_envios',1);
 INSERT INTO "sqlite_sequence" VALUES('protocolos',0);
