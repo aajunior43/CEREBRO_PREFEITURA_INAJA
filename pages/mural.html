@@ -3137,8 +3137,8 @@
             <input type="text" id="form-valor" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" placeholder="Ex: 1.500,00" />
           </div>
           <div class="mural-form-group">
-            <label class="mural-label" for="form-file">Anexar Arquivo (Opcional)</label>
-            <input type="file" id="form-file" class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" />
+            <label class="mural-label" for="form-file">Anexar Arquivos (Opcional)</label>
+            <input type="file" id="form-file" multiple class="mural-search-input" style="width:100%; box-shadow:var(--neo-in-sm); background:var(--bg); border: 1px solid var(--border); border-radius:12px; padding:10px 14px;" />
           </div>
         </div>
 
@@ -3162,7 +3162,7 @@
     </div>
   </div>
 
-  <input type="file" id="mural-hidden-file-input" style="display:none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar,.jpg,.jpeg,.png,.gif,.svg,.mp4,.mp3" />
+  <input type="file" id="mural-hidden-file-input" multiple style="display:none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar,.jpg,.jpeg,.png,.gif,.svg,.mp4,.mp3" />
 
   <script>
     'use strict';
@@ -4256,8 +4256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         card.style.transform = '';
 
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          const file = e.dataTransfer.files[0];
-          await enviarAnexoArquivo(item.id, file);
+          for (const f of Array.from(e.dataTransfer.files)) await enviarAnexoArquivo(item.id, f);
         }
       });
 
@@ -4514,16 +4513,15 @@ document.addEventListener('DOMContentLoaded', function() {
             renderMural();
           }
 
-          // Handle file attachment if any
+          // Handle file attachments if any
           const modalFileInput = document.getElementById('form-file');
           if (modalFileInput.files && modalFileInput.files.length > 0) {
-            const formData = new FormData();
-            formData.append('file', modalFileInput.files[0]);
-            await fetch(`/api/mural/${createdRecado.id}/attachments`, {
-              method: 'POST',
-              body: formData
-            });
-            carregarMural(); // reload only when there's an attachment to sync
+            for (const f of Array.from(modalFileInput.files)) {
+              const formData = new FormData();
+              formData.append('file', f);
+              await fetch(`/api/mural/${createdRecado.id}/attachments`, { method: 'POST', body: formData });
+            }
+            carregarMural();
           }
         } else {
           // Rollback temp item and show error
@@ -4657,12 +4655,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.handleAnexoFileChange = async function() {
       const fileInput = document.getElementById('mural-hidden-file-input');
       if (!fileInput.files || fileInput.files.length === 0 || !currentUploadRecadoId) return;
-      
-      const file = fileInput.files[0];
+      const files = Array.from(fileInput.files);
       const id = currentUploadRecadoId;
       currentUploadRecadoId = null;
       fileInput.value = '';
-      await enviarAnexoArquivo(id, file);
+      for (const f of files) await enviarAnexoArquivo(id, f);
     };
 
     // Registra o listener de change via addEventListener como reforço robusto
