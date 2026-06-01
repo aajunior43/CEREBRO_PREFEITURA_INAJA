@@ -29,10 +29,10 @@ class Settings:
     }
     admin_password: str = os.environ.get("ADM_PASSWORD", "")
     openrouter_default_model: str = os.environ.get(
-        "OPENROUTER_DEFAULT_MODEL", "openai/gpt-4o-mini"
+        "OPENROUTER_DEFAULT_MODEL", "opencode-go/deepseek-v4-flash"
     )
     openrouter_chat_model: str = os.environ.get(
-        "OPENROUTER_CHAT_MODEL", "meta-llama/llama-3.3-70b-instruct:free"
+        "OPENROUTER_CHAT_MODEL", "opencode-go/deepseek-v4-flash"
     )
     openrouter_referer: str = os.environ.get("OPENROUTER_REFERER", "https://localhost")
     openrouter_title: str = os.environ.get("OPENROUTER_TITLE", "CEREBRO_PREFEITURA")
