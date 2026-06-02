@@ -96,20 +96,22 @@
 }
 
 /* ===== Calendar Card ===== */
+/* ===== Calendar Card ===== */
 .cal-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: 22px;
+  padding: 24px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  transition: box-shadow 0.25s ease;
+  gap: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .cal-card:hover {
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
 }
 
 .cal-head {
@@ -117,20 +119,20 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 
 .cal-title {
-  font-size: 10.5px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 1.2px;
+  letter-spacing: 1.5px;
   color: var(--text-3);
   font-weight: 800;
 }
 
 .cal-legend {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   font-size: 11px;
   color: var(--text-2);
 }
@@ -138,12 +140,13 @@
 .cal-legend span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  font-weight: 500;
 }
 
 .cal-legend .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -151,84 +154,99 @@
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--border);
+  gap: 6px; /* Softer layout, grid cells are separated cleanly */
+  background: transparent;
+  border: none;
 }
 
 .cal-dow {
-  background: var(--surface-2);
-  padding: 10px;
+  padding: 8px 0;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 1px;
   color: var(--text-3);
   font-weight: 800;
   text-align: center;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 4px;
 }
 
 .cal-cell {
-  background: var(--surface);
+  background: var(--surface-2);
   padding: 8px;
-  min-height: 84px;
+  height: 80px; /* Fixed height for perfectly standardized day cells */
+  box-sizing: border-box;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   cursor: pointer;
   position: relative;
-  transition: background 120ms;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
 }
 
 .cal-cell:hover {
-  background: var(--surface-2);
+  background: var(--surface-3, rgba(120, 120, 120, 0.08));
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
 }
 
 .cal-cell.muted {
-  background: rgba(0, 0, 0, 0.015);
-}
-
-[data-theme="dark"] .cal-cell.muted,
-[data-theme="cosmos"] .cal-cell.muted {
-  background: rgba(255, 255, 255, 0.015);
-}
-
-.cal-cell.muted .num {
-  color: var(--text-3);
-  opacity: 0.4;
+  background: transparent;
+  border-color: transparent;
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
 }
 
 .cal-cell .num {
-  font-family: monospace;
+  font-family: var(--font-mono, monospace);
   font-size: 12px;
   color: var(--text-2);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  font-weight: 700;
   margin-bottom: 4px;
 }
 
 .cal-cell.today {
-  background: var(--surface-2);
+  background: rgba(212, 175, 55, 0.06) !important;
+  border-color: #d4af37 !important;
+  box-shadow: inset 0 0 0 1px #d4af37, 0 2px 10px rgba(212, 175, 55, 0.15) !important;
 }
 
 .cal-cell.today .num {
-  background: var(--blue);
-  color: #fff;
-  width: 22px;
-  height: 22px;
+  background: #d4af37 !important;
+  color: #1a1a1a !important; /* High contrast dark text for gold background */
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: inline-grid;
   place-items: center;
-  margin-left: -4px;
   font-weight: 800;
-  font-size: 11px;
-  box-shadow: 0 2px 8px var(--brand-glow, rgba(37,99,235,0.3));
+  font-size: 10px;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4) !important;
+}
+
+/* Weekend columns styled in soft, premium green */
+.cal-cell.weekend:not(.muted):not(.today):not(.selected) {
+  background: rgba(16, 185, 129, 0.05) !important;
+  border-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+.cal-cell.weekend:not(.muted):hover {
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.cal-dow.weekend {
+  color: #10b981 !important;
+  border-bottom-color: #10b981 !important;
 }
 
 .cal-cell.selected {
-  outline: 2px solid var(--blue);
-  outline-offset: -2px;
-  background: var(--blue-light) !important;
+  border-color: var(--blue) !important;
+  background: rgba(37, 99, 235, 0.08) !important;
+  box-shadow: 0 0 0 1.5px var(--blue);
 }
 
 [data-theme="dark"] .cal-cell.selected,
@@ -239,46 +257,52 @@
 .cal-events {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   overflow: hidden;
+  margin-top: auto;
 }
 
 .cal-evt {
-  font-size: 10px;
-  color: var(--text);
-  padding: 2px 5px;
+  font-size: 9px;
+  color: var(--text-2);
+  padding: 2px 6px;
   border-radius: 4px;
-  background: var(--surface-2);
-  border-left: 3px solid var(--blue);
+  background: var(--surface);
+  border-left: 3.5px solid var(--blue);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
-  font-weight: 500;
+  line-height: 1.2;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .cal-evt.amber {
   border-left-color: var(--orange);
-  background: var(--orange-bg);
+  background: rgba(245, 158, 11, 0.08);
 }
 
 .cal-evt.red {
   border-left-color: var(--red);
-  background: var(--red-bg);
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .cal-evt.green {
   border-left-color: var(--green);
-  background: var(--green-bg);
+  background: rgba(16, 185, 129, 0.08);
 }
 
 .cal-more {
-  font-size: 9.5px;
+  font-size: 9px;
   color: var(--text-3);
   padding: 0 4px;
-  font-weight: 700;
-  font-family: monospace;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  align-self: flex-end;
 }
 
 /* ===== Day Detail Popover ===== */
@@ -735,15 +759,9 @@
 /* ===== Bottom Row ===== */
 .dash-bottom-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
   animation: fadeSlideUp 0.5s 0.22s ease both;
-}
-
-@media (max-width: 768px) {
-  .dash-bottom-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .dash-panel {
@@ -793,6 +811,23 @@
 .dash-activity-list {
   display: flex;
   flex-direction: column;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.dash-activity-list::-webkit-scrollbar {
+  width: 5px;
+}
+.dash-activity-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.dash-activity-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.dash-activity-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
 }
 
 .dash-activity-row {
@@ -893,3 +928,132 @@
   font-weight: 700;
   box-shadow: 0 1px 0 var(--border);
 }
+
+/* ── Spotlight / Glow Card Effects ── */
+[data-glow] {
+  --radius: 16;
+  --border: 1.5;
+  --backdrop: rgba(128, 128, 128, 0.05);
+  --backup-border: var(--backdrop);
+  --size: 280;
+  --outer: 1;
+  --border-size: calc(var(--border, 2) * 1px);
+  --spotlight-size: calc(var(--size, 150) * 1px);
+  --hue: calc(var(--base, 210) + (var(--xp, 0) * var(--spread, 0)));
+  
+  position: relative;
+  touch-action: none;
+  border: var(--border-size) solid var(--backup-border) !important;
+  
+  background-image: radial-gradient(
+    var(--spotlight-size) var(--spotlight-size) at
+    calc(var(--x, 0) * 1px)
+    calc(var(--y, 0) * 1px),
+    hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.08)), transparent
+  ) !important;
+  background-color: var(--backdrop, transparent) !important;
+  background-size: calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size))) !important;
+  background-position: 50% 50% !important;
+  background-attachment: fixed !important;
+  border-radius: calc(var(--radius) * 1px) !important;
+  overflow: hidden;
+}
+
+[data-glow]::before,
+[data-glow]::after {
+  pointer-events: none;
+  content: "";
+  position: absolute;
+  inset: calc(var(--border-size) * -1);
+  border: var(--border-size) solid transparent;
+  border-radius: calc(var(--radius) * 1px);
+  background-attachment: fixed;
+  background-size: calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  mask: linear-gradient(transparent, transparent), linear-gradient(white, white);
+  mask-clip: padding-box, border-box;
+  mask-composite: intersect;
+  -webkit-mask: linear-gradient(transparent, transparent), linear-gradient(white, white);
+  -webkit-mask-clip: padding-box, border-box;
+  -webkit-mask-composite: source-in, xor;
+  -webkit-mask-composite: intersect;
+  z-index: 2;
+}
+
+[data-glow]::before {
+  background-image: radial-gradient(
+    calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+    calc(var(--x, 0) * 1px)
+    calc(var(--y, 0) * 1px),
+    hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 50) * 1%) / var(--border-spot-opacity, 0.85)), transparent 100%
+  );
+  filter: brightness(1.8);
+}
+
+[data-glow]::after {
+  background-image: radial-gradient(
+    calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
+    calc(var(--x, 0) * 1px)
+    calc(var(--y, 0) * 1px),
+    hsl(0 100% 100% / var(--border-light-opacity, 0.6)), transparent 100%
+  );
+}
+
+/* Inner glow container */
+[data-glow] [data-glow] {
+  position: absolute;
+  inset: 0;
+  will-change: filter;
+  opacity: var(--outer, 1);
+  border-radius: calc(var(--radius) * 1px);
+  border-width: calc(var(--border-size) * 20);
+  filter: blur(calc(var(--border-size) * 10));
+  background: none;
+  pointer-events: none;
+  border: none !important;
+  z-index: 1;
+}
+
+[data-glow] > [data-glow]::before {
+  inset: -10px;
+  border-width: 10px;
+  background-image: radial-gradient(
+    calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+    calc(var(--x, 0) * 1px)
+    calc(var(--y, 0) * 1px),
+    hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 50) * 1%) / var(--border-spot-opacity, 0.85)), transparent 100%
+  );
+}
+
+/* Color definitions */
+[data-glow-color="blue"] {
+  --base: 220;
+  --spread: 200;
+}
+[data-glow-color="purple"] {
+  --base: 280;
+  --spread: 300;
+}
+[data-glow-color="green"] {
+  --base: 120;
+  --spread: 200;
+}
+[data-glow-color="red"] {
+  --base: 0;
+  --spread: 200;
+}
+[data-glow-color="orange"] {
+  --base: 30;
+  --spread: 200;
+}
+
+/* Default variables if not set */
+:root {
+  --border-spot-opacity: 0.85;
+  --border-light-opacity: 0.6;
+  --bg-spot-opacity: 0.12;
+  --saturation: 90;
+  --lightness: 65;
+}
+

@@ -672,29 +672,98 @@
   const TYPE_EMOJIS  = { PAYMENT:'💰', COMMITMENT:'📋', HOLIDAY:'🏖', NOTE:'📝' };
 
   // ── Persistent Data ───────────────────────────────────────────
-  // customEvents: { "YYYY-MM-DD": [{ id, type, text }, ...] }
-  //   undefined = use auto-generated defaults
-  //   [] = customized (no events)
-  //   [...] = customized events
-  let customEvents = (() => {
+  let customEvents = {};
+  let calRules = {};
+  let overridesSet = new Set();
+
+  async function carregarDadosCalendario(mes) {
     try {
-      const raw = JSON.parse(localStorage.getItem('cal_custom_events') || '{}');
-      // Migrate old single-event format
-      const out = {};
-      for (const [k, v] of Object.entries(raw)) {
-        if (Array.isArray(v)) { out[k] = v; }
-        else if (v && v.type) {
-          if (v.type === 'CLEAR') out[k] = [];
-          else out[k] = [{ id: 'mig_' + Math.random().toString(36).slice(2,8), type: v.type, text: v.text || '' }];
+      const res = await fetch(`/api/calendario?mes=${mes}`);
+      if (res.ok) {
+        const data = await res.json();
+        // customEvents formatted as { "YYYY-MM-DD": [{ id, type, text }, ...] }
+        customEvents = {};
+        if (data.eventos) {
+          data.eventos.forEach(evt => {
+            if (!customEvents[evt.data]) customEvents[evt.data] = [];
+            customEvents[evt.data].push({ id: evt.id, type: evt.tipo, text: evt.texto });
+          });
+        }
+        overridesSet = new Set(data.overrides || []);
+        calRules = data.regras || {};
+      }
+    } catch (e) {
+      console.error("Erro ao carregar dados do calendário:", e);
+    }
+  }
+
+  async function migrarLocalStorage() {
+    if (localStorage.getItem('cal_migrated') === 'true') return;
+    
+    let localEvents = {};
+    let localRules = {};
+    try {
+      localEvents = JSON.parse(localStorage.getItem('cal_custom_events') || '{}');
+      localRules = JSON.parse(localStorage.getItem('cal_rules') || '{}');
+    } catch(e) {
+      return;
+    }
+
+    // Se não houver nada no localStorage, apenas marca como migrado
+    const keys = Object.keys(localEvents);
+    const ruleKeys = Object.keys(localRules);
+    if (keys.length === 0 && ruleKeys.length === 0) {
+      localStorage.setItem('cal_migrated', 'true');
+      return;
+    }
+
+    try {
+      // 1. Salvar regras
+      if (ruleKeys.length > 0) {
+        await fetch('/api/calendario/regras', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(localRules)
+        });
+      }
+
+      // 2. Salvar eventos e overrides
+      for (const key of keys) {
+        let evts = localEvents[key];
+        // Normaliza para array (lidando com formatos antigos)
+        if (!Array.isArray(evts)) {
+          if (evts && evts.type) {
+            if (evts.type === 'CLEAR') evts = [];
+            else evts = [{ type: evts.type, text: evts.text || '' }];
+          } else {
+            evts = [];
+          }
+        }
+
+        // Primeiro envia override
+        await fetch('/api/calendario/override', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ data: key })
+        });
+
+        // Envia cada evento individualmente
+        for (const ev of evts) {
+          await fetch('/api/calendario/eventos', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ data: key, tipo: ev.type, texto: ev.text })
+          });
         }
       }
-      return out;
-    } catch(e) { return {}; }
-  })();
-  let calRules = (() => { try { return JSON.parse(localStorage.getItem('cal_rules') || '{}'); } catch(e) { return {}; } })();
 
-  function saveCustomEvents() { localStorage.setItem('cal_custom_events', JSON.stringify(customEvents)); }
-  function saveCalRules()     { localStorage.setItem('cal_rules', JSON.stringify(calRules)); }
+      // Sucesso na migração: marca para não migrar novamente
+      localStorage.setItem('cal_migrated', 'true');
+    } catch(e) {
+      console.error("Falha ao migrar dados para o banco, mantendo local para nova tentativa:", e);
+    }
+  }
+
   function getRule(key, def)  { return calRules[key] || def; }
   function dateKey(y, m, d)   { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
   function newId()            { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
@@ -777,17 +846,38 @@
   }
 
   // ── Materialize defaults into custom for a day ────────────────
-  function materializeDay(key) {
-    if (customEvents[key] !== undefined) return;
+  // Agora apenas registra o override no banco (sem criar eventos automáticos no banco)
+  async function materializeDay(key) {
+    if (overridesSet.has(key)) return; // já está no banco
     const [y, m, d] = key.split('-').map(Number);
     const date = new Date(y, m - 1, d);
     const lbDays = getLastBusinessDays(y, m - 1, 2);
     const biz = { lastBiz: lbDays[0], secondLastBiz: lbDays[1],
       copelDay: findNextBusinessDay(y, m - 1, 15), oficDay10: findNextBusinessDay(y, m - 1, 10) };
     const defs = getDefaultEvents(y, m - 1, d, date, biz);
-    customEvents[key] = defs.map(e => ({ ...e, id: newId() }));
-    saveCustomEvents();
+    // Registra o override no banco e insere os eventos padrão como customizados
+    try {
+      await fetch('/api/calendario/override', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ data: key })
+      });
+      for (const e of defs) {
+        const res = await fetch('/api/calendario/eventos', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ data: key, tipo: e.type, texto: e.text })
+        });
+        if (res.ok) {
+          const created = await res.json();
+          if (!customEvents[key]) customEvents[key] = [];
+          customEvents[key].push({ id: created.id, type: created.tipo, text: created.texto });
+        }
+      }
+      overridesSet.add(key);
+    } catch(err) {
+      console.error('Erro ao materializar dia:', err);
+    }
   }
+
 
   // ── Generate calendar days ────────────────────────────────────
   function generateCalendarDays(year, month) {
@@ -808,11 +898,12 @@
       const holiday = getHolidayName(date);
       const wknd = isWeekend(date);
       let events, isCustom;
-      if (customEvents[key] !== undefined) {
-        events = customEvents[key]; isCustom = true;
+      if (overridesSet.has(key)) {
+        events = customEvents[key] || []; isCustom = true;
       } else {
         events = getDefaultEvents(year, month, i, date, biz); isCustom = false;
       }
+
       const type = getPrimaryType(events, holiday, wknd);
       days.push({ date, dayOfMonth: i, isCurrentMonth: true, type, events, isCustom, holidayName: holiday });
     }
@@ -828,9 +919,23 @@
   let state = { year: new Date().getFullYear(), month: new Date().getMonth(), selectedDay: null, days: [] };
   function getLastBizDay() { return getLastBusinessDays(state.year, state.month, 1)[0] || 1; }
 
-  // ── Render Calendar ───────────────────────────────────────────
-  function renderCalendar() {
+  // ── Render Calendar (async — carrega dados do mês antes de renderizar) ────
+  async function renderCalendar() {
+    const mes = `${state.year}-${String(state.month + 1).padStart(2,'0')}`;
+    await carregarDadosCalendario(mes);
+    _renderCalendarSync();
+  }
+
+  function _renderCalendarSync() {
     state.days = generateCalendarDays(state.year, state.month);
+
+    // Determina isCustom usando overridesSet
+    state.days.forEach(d => {
+      if (d.isCurrentMonth) {
+        const k = dateKey(d.date.getFullYear(), d.date.getMonth(), d.date.getDate());
+        d.isCustom = overridesSet.has(k);
+      }
+    });
 
     // Refresh selectedDay reference so info panel reflects latest data
     if (state.selectedDay) {
@@ -890,7 +995,8 @@
         el.appendChild(dot);
       }
 
-      el.addEventListener('click', () => { state.selectedDay = day; renderCalendar(); renderInfoPanel(); });
+      el.addEventListener('click', () => { state.selectedDay = day; _renderCalendarSync(); renderInfoPanel(); });
+
       container.appendChild(el);
     });
 
@@ -960,19 +1066,24 @@
   }
 
   // ── Event CRUD ────────────────────────────────────────────────
-  function deleteEvent(key, eventId) {
-    if (customEvents[key] === undefined) materializeDay(key);
-    customEvents[key] = (customEvents[key] || []).filter(e => e.id !== eventId);
-    saveCustomEvents();
-    renderCalendar();
+  async function deleteEvent(key, eventId) {
+    try {
+      await fetch(`/api/calendario/eventos/${eventId}`, { method: 'DELETE' });
+      if (customEvents[key]) customEvents[key] = customEvents[key].filter(e => e.id !== eventId);
+    } catch(err) { console.error(err); }
+    await renderCalendar();
   }
 
-  function resetDay(key) {
+  async function resetDay(key) {
     if (!confirm('Resetar este dia para os eventos automáticos? Suas alterações serão perdidas.')) return;
-    delete customEvents[key];
-    saveCustomEvents();
-    renderCalendar();
+    try {
+      await fetch(`/api/calendario/override/${key}`, { method: 'DELETE' });
+      delete customEvents[key];
+      overridesSet.delete(key);
+    } catch(err) { console.error(err); }
+    await renderCalendar();
   }
+
 
   // ── Add / Edit Event Modal ────────────────────────────────────
   let _evtKey = null;
@@ -993,10 +1104,8 @@
   }
 
   function openEditEventModal(key, eventId) {
-    if (customEvents[key] === undefined) materializeDay(key);
-    // After materialization, find event (id may have changed) — try by id first
-    let evt = (customEvents[key] || []).find(e => e.id === eventId);
-    // If not found (was a default _id), try to match by original _id after materialization
+    // Busca evento no estado em memória (já foi carregado da API)
+    let evt = (customEvents[key] || []).find(e => e.id == eventId);
     if (!evt && customEvents[key] && customEvents[key].length > 0) evt = customEvents[key][0];
     if (!evt) return;
 
@@ -1020,47 +1129,66 @@
     btn.classList.add('sel');
   }
 
-  function saveEventModal() {
+  async function saveEventModal() {
     const selType = document.querySelector('#modal-event .type-btn.sel');
     if (!selType) { alert('Selecione um tipo de evento.'); return; }
-    const type = selType.dataset.type;
-    const text = document.getElementById('evt-text').value.trim();
+    const tipo = selType.dataset.type;
+    const texto = document.getElementById('evt-text').value.trim();
     const newKey = document.getElementById('evt-date').value;
-    if (!text)   { alert('Informe uma descrição.'); document.getElementById('evt-text').focus(); return; }
+    if (!texto)   { alert('Informe uma descrição.'); document.getElementById('evt-text').focus(); return; }
     if (!newKey.match(/^\d{4}-\d{2}-\d{2}$/)) { alert('Data inválida.'); return; }
 
-    if (_evtId) {
-      // Remove from old key
-      if (customEvents[_evtKey]) customEvents[_evtKey] = customEvents[_evtKey].filter(e => e.id !== _evtId);
-      // Add to new key (may be different date)
-      if (customEvents[newKey] === undefined) materializeDay(newKey);
-      if (!customEvents[newKey]) customEvents[newKey] = [];
-      customEvents[newKey].push({ id: _evtId, type, text });
-    } else {
-      if (customEvents[newKey] === undefined) materializeDay(newKey);
-      if (!customEvents[newKey]) customEvents[newKey] = [];
-      customEvents[newKey].push({ id: newId(), type, text });
+    try {
+      if (_evtId) {
+        // Editar evento existente
+        const res = await fetch(`/api/calendario/eventos/${_evtId}`, {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ data: newKey, tipo, texto })
+        });
+        if (!res.ok) throw new Error('Erro ao salvar');
+        // Atualiza memória
+        const old_key = _evtKey;
+        if (customEvents[old_key]) customEvents[old_key] = customEvents[old_key].filter(e => e.id != _evtId);
+        if (!customEvents[newKey]) customEvents[newKey] = [];
+        customEvents[newKey].push({ id: _evtId, type: tipo, text: texto });
+        overridesSet.add(newKey);
+      } else {
+        // Criar novo evento
+        const res = await fetch('/api/calendario/eventos', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ data: newKey, tipo, texto })
+        });
+        if (!res.ok) throw new Error('Erro ao salvar');
+        const created = await res.json();
+        if (!customEvents[newKey]) customEvents[newKey] = [];
+        customEvents[newKey].push({ id: created.id, type: tipo, text: texto });
+        overridesSet.add(newKey);
+      }
+    } catch(err) {
+      alert('Erro ao salvar evento: ' + err.message);
+      return;
     }
-    saveCustomEvents();
+
     closeEventModal();
-    // Navigate to the date of the saved event
     const [y, m] = newKey.split('-').map(Number);
     state.year = y; state.month = m - 1;
-    // Re-select the day
     state.selectedDay = null;
-    renderCalendar();
+    await renderCalendar();
     const target = state.days.find(d => d.isCurrentMonth && dateKey(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()) === newKey);
     if (target) { state.selectedDay = target; renderInfoPanel(); }
   }
 
-  function deleteEventFromModal() {
+  async function deleteEventFromModal() {
     if (!_evtId || !_evtKey) return;
     if (!confirm('Excluir este evento?')) return;
-    if (customEvents[_evtKey]) customEvents[_evtKey] = customEvents[_evtKey].filter(e => e.id !== _evtId);
-    saveCustomEvents();
+    try {
+      await fetch(`/api/calendario/eventos/${_evtId}`, { method: 'DELETE' });
+      if (customEvents[_evtKey]) customEvents[_evtKey] = customEvents[_evtKey].filter(e => e.id != _evtId);
+    } catch(err) { console.error(err); }
     closeEventModal();
-    renderCalendar();
+    await renderCalendar();
   }
+
 
   // ── All Events Management Modal ───────────────────────────────
   function openAllEventsModal() {
@@ -1074,12 +1202,12 @@
   function renderAllEventsList() {
     const container    = document.getElementById('all-events-list');
     const filterType   = document.getElementById('all-evt-filter-type').value;
-    const filterMonth  = document.getElementById('all-evt-filter-month').value; // "YYYY-MM"
+    const filterMonth  = document.getElementById('all-evt-filter-month').value;
 
     const allEvts = [];
     for (const [key, evts] of Object.entries(customEvents)) {
       if (!Array.isArray(evts)) continue;
-      evts.forEach(evt => allEvts.push({ key, ...evt }));
+      evts.forEach(evt => allEvts.push({ key, id: evt.id, type: evt.type, text: evt.text }));
     }
     allEvts.sort((a, b) => a.key.localeCompare(b.key));
 
@@ -1111,7 +1239,6 @@
     }).join('');
   }
 
-  // ── Rules Modal ───────────────────────────────────────────────
   function openRulesModal() {
     ['paymentLastBizText','paymentDay10Text','commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'].forEach(key => {
       const el = document.getElementById('rule-' + key);
@@ -1120,24 +1247,35 @@
     document.getElementById('modal-rules').classList.add('open');
   }
   function closeRulesModal() { document.getElementById('modal-rules').classList.remove('open'); }
-  function saveRulesModal() {
+  async function saveRulesModal() {
+    const newRules = {};
     ['paymentLastBizText','paymentDay10Text','commitmentSecondLastText','commitmentDay15Text','commitmentDay5to7Text'].forEach(key => {
       const el = document.getElementById('rule-' + key);
-      if (el && el.value.trim()) calRules[key] = el.value.trim(); else delete calRules[key];
+      if (el && el.value.trim()) newRules[key] = el.value.trim(); else newRules[key] = '';
     });
-    saveCalRules(); closeRulesModal(); renderCalendar();
+    try {
+      await fetch('/api/calendario/regras', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(newRules)
+      });
+      calRules = {};
+      Object.entries(newRules).forEach(([k, v]) => { if (v) calRules[k] = v; });
+    } catch(err) { console.error(err); }
+    closeRulesModal();
+    await renderCalendar();
   }
+
 
   // ── Button bindings ───────────────────────────────────────────
   document.getElementById('btn-rules').addEventListener('click', openRulesModal);
   document.getElementById('btn-all-events').addEventListener('click', openAllEventsModal);
-  document.getElementById('btn-prev-month').addEventListener('click', () => {
+  document.getElementById('btn-prev-month').addEventListener('click', async () => {
     if (state.month === 0) { state.month = 11; state.year--; } else state.month--;
-    state.selectedDay = null; renderCalendar();
+    state.selectedDay = null; await renderCalendar();
   });
-  document.getElementById('btn-next-month').addEventListener('click', () => {
+  document.getElementById('btn-next-month').addEventListener('click', async () => {
     if (state.month === 11) { state.month = 0; state.year++; } else state.month++;
-    state.selectedDay = null; renderCalendar();
+    state.selectedDay = null; await renderCalendar();
   });
   ['modal-event','modal-rules','modal-all-events'].forEach(id => {
     document.getElementById(id).addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
@@ -1207,23 +1345,33 @@
           </div>
         </div>`;
       const printEl = document.getElementById('printable-cal');
-      printEl.style.cssText = 'position:fixed;top:-9999px;left:-9999px;z-index:-1;';
+      // Posiciona fora da tela mas visível para html2canvas capturar corretamente
+      printEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:220mm;background:white;z-index:0;';
       printEl.innerHTML = printHtml;
-      const canvas = await html2canvas(printEl.firstElementChild, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+      // Aguarda o browser renderizar o conteúdo
+      await new Promise(r => setTimeout(r, 300));
+      const canvas = await html2canvas(printEl.firstElementChild, {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        logging: false, allowTaint: true,
+        windowWidth: printEl.firstElementChild.scrollWidth,
+        windowHeight: printEl.firstElementChild.scrollHeight
+      });
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF('p', 'mm', 'a4');
       const w = pdf.internal.pageSize.getWidth(), h = pdf.internal.pageSize.getHeight();
       pdf.addImage(imgData, 'JPEG', 0, 0, w, h);
       pdf.save(`calendario-pagamento-inaja-${MESES[state.month]}-${state.year}.pdf`);
-      printEl.style.cssText = ''; printEl.innerHTML = '';
+      printEl.style.cssText = 'display:none;';
+      printEl.innerHTML = '';
     } catch (err) { console.error(err); alert('Erro ao gerar o PDF. Tente novamente.'); }
     btn.disabled = false;
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg> Baixar PDF`;
   });
 
   // ── Init ──────────────────────────────────────────────────────
-  renderCalendar();
+  // Migra dados do localStorage para o banco (one-time, se houver)
+  migrarLocalStorage().then(() => renderCalendar());
 
   </script>
 <script>

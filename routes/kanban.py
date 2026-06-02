@@ -297,6 +297,10 @@ def kanban_criar():
                 float(data.get("valor") or 0),
             ),
         )
+        conn.execute(
+            "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+            ("KANBAN_CRIAR", f"Criou a tarefa '{title}' (Prioridade: {priority.upper()})")
+        )
         conn.commit()
         row = conn.execute(
             "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em,valor FROM kanban_tasks WHERE id=?",
@@ -344,6 +348,10 @@ def kanban_atualizar(task_id):
                 task_id,
             ),
         )
+        conn.execute(
+            "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+            ("KANBAN_EDITAR", f"Atualizou a tarefa '{title}' (Status: {status.upper()}, Prioridade: {priority.upper()})")
+        )
         conn.commit()
         row = conn.execute(
             "SELECT id,title,description,status,priority,categoria,data_vencimento,responsavel,concluido_em,criado_em,atualizado_em,valor FROM kanban_tasks WHERE id=?",
@@ -358,7 +366,14 @@ def kanban_atualizar(task_id):
 def kanban_excluir(task_id):
     try:
         conn = get_db()
+        task_row = conn.execute("SELECT title FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        title = task_row["title"] if task_row else task_id
         cur = conn.execute("DELETE FROM kanban_tasks WHERE id=?", (task_id,))
+        if cur.rowcount > 0:
+            conn.execute(
+                "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+                ("KANBAN_EXCLUIR", f"Excluiu a tarefa '{title}'")
+            )
         conn.commit()
         if cur.rowcount == 0:
             return jsonify({"error": "Tarefa não encontrada"}), 404
@@ -628,10 +643,10 @@ def anexos_enviar(task_id):
         if len(content) > 10 * 1024 * 1024:
             return jsonify({"error": "Arquivo excede 10 MB"}), 413
         conn = get_db()
-        if not conn.execute(
-            "SELECT id,title FROM kanban_tasks WHERE id=?", (task_id,)
-        ).fetchone():
-            return jsonify({"error": "Tarefa não encontrada"}), 404
+        task_row = conn.execute(
+            "SELECT title FROM kanban_tasks WHERE id=?", (task_id,)
+        ).fetchone()
+        task_title = task_row["title"] if task_row else task_id
         cur = conn.execute(
             "INSERT INTO kanban_attachments (task_id,file_name,mime_type,file_size,criado_em) VALUES (?,?,?,?,datetime('now','localtime'))",
             (
@@ -645,6 +660,10 @@ def anexos_enviar(task_id):
         conn.execute(
             "INSERT INTO kanban_attachment_contents (attachment_id, content) VALUES (?, ?)",
             (attachment_id, content),
+        )
+        conn.execute(
+            "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+            ("KANBAN_ANEXAR", f"Anexou o arquivo '{file.filename}' à tarefa '{task_title}'")
         )
         conn.commit()
         row = conn.execute(
@@ -685,10 +704,19 @@ def anexo_download(task_id, attachment_id):
 def anexo_excluir(task_id, attachment_id):
     try:
         conn = get_db()
+        att_row = conn.execute("SELECT file_name FROM kanban_attachments WHERE id=?", (attachment_id,)).fetchone()
+        file_name = att_row["file_name"] if att_row else f"ID {attachment_id}"
+        task_row = conn.execute("SELECT title FROM kanban_tasks WHERE id=?", (task_id,)).fetchone()
+        task_title = task_row["title"] if task_row else task_id
         cur = conn.execute(
             "DELETE FROM kanban_attachments WHERE id=? AND task_id=?",
             (attachment_id, task_id),
         )
+        if cur.rowcount > 0:
+            conn.execute(
+                "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+                ("KANBAN_DESANEXAR", f"Removeu o anexo '{file_name}' da tarefa '{task_title}'")
+            )
         conn.commit()
         if cur.rowcount == 0:
             return jsonify({"error": "Anexo não encontrado"}), 404

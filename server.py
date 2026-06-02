@@ -263,6 +263,10 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS mural_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexo_contents (attachment_id INTEGER PRIMARY KEY REFERENCES mural_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)",
             "CREATE TABLE IF NOT EXISTS mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS calendario_eventos (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, tipo TEXT NOT NULL CHECK (tipo IN ('PAYMENT','COMMITMENT','HOLIDAY','NOTE')), texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS calendario_overrides (data TEXT PRIMARY KEY, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS calendario_regras (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)",
+
             "CREATE TABLE IF NOT EXISTS audit_trail (id INTEGER PRIMARY KEY AUTOINCREMENT, tabela TEXT NOT NULL, registro_id TEXT DEFAULT '', operacao TEXT NOT NULL, dados_anteriores TEXT DEFAULT '{}', dados_novos TEXT DEFAULT '{}', ip TEXT DEFAULT '', timestamp TEXT DEFAULT (datetime('now', 'localtime')))",
         ]:
             cur.execute(sql)
@@ -472,6 +476,10 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS mural_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS mural_anexo_contents (attachment_id INTEGER PRIMARY KEY REFERENCES mural_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)",
             "CREATE TABLE IF NOT EXISTS mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
+            "CREATE TABLE IF NOT EXISTS calendario_eventos (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, tipo TEXT NOT NULL CHECK (tipo IN ('PAYMENT','COMMITMENT','HOLIDAY','NOTE')), texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS calendario_overrides (data TEXT PRIMARY KEY, criado_em TEXT DEFAULT (datetime('now','localtime')))",
+            "CREATE TABLE IF NOT EXISTS calendario_regras (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)",
+
         ]:
             cur.execute(sql)
 
@@ -1208,6 +1216,7 @@ def create_app() -> Flask:
     # ── Register Blueprints ──────────────────────────────────
     from routes.credores import bp as bp_credores
     from routes.mural import bp as bp_mural
+    from routes.calendario import bp as bp_calendario
     from routes.empenhos import bp as bp_empenhos
     from routes.kanban import bp as bp_kanban
     from routes.documentos import bp as bp_documentos
@@ -1232,6 +1241,7 @@ def create_app() -> Flask:
 
     app.register_blueprint(bp_credores)
     app.register_blueprint(bp_mural)
+    app.register_blueprint(bp_calendario)
     app.register_blueprint(bp_empenhos)
     app.register_blueprint(bp_kanban)
     app.register_blueprint(bp_documentos)

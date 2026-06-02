@@ -15,36 +15,101 @@ def _hash(s: str) -> str:
 
 def init_usuarios_table(app):
     conn = app._get_db()
-    conn.execute("""CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nome TEXT NOT NULL,
-        email TEXT DEFAULT '',
-        login TEXT NOT NULL UNIQUE,
-        senha_hash TEXT NOT NULL,
-        nivel TEXT NOT NULL DEFAULT 'operador'
-            CHECK (nivel IN ('admin','operador','leitor')),
-        ativo INTEGER NOT NULL DEFAULT 1,
-        criado_em TEXT DEFAULT (datetime('now','localtime')),
-        atualizado_em TEXT DEFAULT (datetime('now','localtime'))
-    )""")
-    conn.commit()
+    
+    # Check if migration is needed
+    table_exists = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='usuarios'").fetchone()
+    if table_exists:
+        schema_row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='usuarios'").fetchone()
+        schema_sql = schema_row["sql"] if schema_row else ""
+        if "admin" in schema_sql or "operador" in schema_sql or "leitor" in schema_sql:
+            try:
+                conn.execute("ALTER TABLE usuarios RENAME TO usuarios_old")
+                conn.execute("""CREATE TABLE usuarios (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT NOT NULL,
+                    email TEXT DEFAULT '',
+                    login TEXT NOT NULL UNIQUE,
+                    senha_hash TEXT NOT NULL,
+                    nivel TEXT NOT NULL DEFAULT 'padrao'
+                        CHECK (nivel IN ('adm','padrao')),
+                    ativo INTEGER NOT NULL DEFAULT 1,
+                    criado_em TEXT DEFAULT (datetime('now','localtime')),
+                    atualizado_em TEXT DEFAULT (datetime('now','localtime'))
+                )""")
+                conn.execute("""
+                    INSERT INTO usuarios (id, nome, email, login, senha_hash, nivel, ativo, criado_em, atualizado_em)
+                    SELECT id, nome, email, login, senha_hash,
+                           CASE WHEN nivel = 'admin' THEN 'adm' ELSE 'padrao' END,
+                           ativo, criado_em, atualizado_em
+                    FROM usuarios_old
+                """)
+                conn.execute("DROP TABLE usuarios_old")
+                conn.commit()
+            except Exception as e:
+                try:
+                    conn.execute("ROLLBACK")
+                except Exception:
+                    pass
+                # Se falhar, tenta apenas atualizar os níveis na tabela atual
+                try:
+                    conn.execute("UPDATE usuarios SET nivel='adm' WHERE nivel='admin'")
+                    conn.execute("UPDATE usuarios SET nivel='padrao' WHERE nivel IN ('operador', 'leitor')")
+                    conn.commit()
+                except Exception:
+                    pass
+    else:
+        conn.execute("""CREATE TABLE usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            email TEXT DEFAULT '',
+            login TEXT NOT NULL UNIQUE,
+            senha_hash TEXT NOT NULL,
+            nivel TEXT NOT NULL DEFAULT 'padrao'
+                CHECK (nivel IN ('adm','padrao')),
+            ativo INTEGER NOT NULL DEFAULT 1,
+            criado_em TEXT DEFAULT (datetime('now','localtime')),
+            atualizado_em TEXT DEFAULT (datetime('now','localtime'))
+        )""")
+        conn.commit()
 
 
 def _seed_admin(admin_password, app):
     if not admin_password:
         return
     conn = app._get_db()
-    # Remove os usuarios legacy 'admin' e 'administrador' para garantir que o Aleksandro seja o unico administrador
     conn.execute("DELETE FROM usuarios WHERE login IN ('admin', 'administrador')")
     conn.commit()
     
     row = conn.execute("SELECT id FROM usuarios WHERE login='aleksandro' AND ativo=1").fetchone()
     if row:
-        return
-    conn.execute(
-        "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-        ("Aleksandro", "aleksandro@inaja.pr.gov.br", "aleksandro", _hash(admin_password), "admin"),
-    )
+        conn.execute("UPDATE usuarios SET nivel='adm' WHERE login='aleksandro'")
+        conn.commit()
+    else:
+        conn.execute(
+            "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
+            ("Aleksandro", "aleksandro@inaja.pr.gov.br", "aleksandro", _hash(admin_password), "adm"),
+        )
+        conn.commit()
+
+    # Garantir usuário Maicon como padrão
+    row_maicon = conn.execute("SELECT id FROM usuarios WHERE login='maicon'").fetchone()
+    if row_maicon:
+        conn.execute("UPDATE usuarios SET nivel='padrao' WHERE login='maicon'")
+    else:
+        conn.execute(
+            "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
+            ("Maicon", "maicon@inaja.pr.gov.br", "maicon", _hash("maicon"), "padrao"),
+        )
+
+    # Garantir usuário Luana como padrão
+    row_luana = conn.execute("SELECT id FROM usuarios WHERE login='luana'").fetchone()
+    if row_luana:
+        conn.execute("UPDATE usuarios SET nivel='padrao' WHERE login='luana'")
+    else:
+        conn.execute(
+            "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
+            ("Luana", "luana@inaja.pr.gov.br", "luana", _hash("luana"), "padrao"),
+        )
     conn.commit()
 
 
@@ -97,7 +162,8 @@ def login():
     session["usuario_id"] = row["id"]
     session["usuario_login"] = row["login"]
     session["usuario_nome"] = row["nome"]
-    session["usuario_nivel"] = row["nivel"]
+    # Normaliza nivel da sessão para aceitar 'admin' ou 'adm'
+    session["usuario_nivel"] = "admin" if row["nivel"] == "adm" else "padrao"
     session.permanent = False
 
     return jsonify({"ok": True, "usuario": _usuario_to_dict(row)})
@@ -139,7 +205,6 @@ def auth_adm_legacy():
         return jsonify({"ok": False, "error": "Senha incorreta"}), 401
 
     conn = get_db()
-    # Remove os usuarios legacy 'admin' e 'administrador' para garantir a limpeza do banco
     conn.execute("DELETE FROM usuarios WHERE login IN ('admin', 'administrador')")
     conn.commit()
     
@@ -147,7 +212,7 @@ def auth_adm_legacy():
     if not row:
         conn.execute(
             "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-            ("Aleksandro", "aleksandro@inaja.pr.gov.br", "aleksandro", _hash(admin_password), "admin"),
+            ("Aleksandro", "aleksandro@inaja.pr.gov.br", "aleksandro", _hash(admin_password), "adm"),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM usuarios WHERE login='aleksandro' AND ativo=1").fetchone()
@@ -164,7 +229,7 @@ def auth_adm_legacy():
 
 @bp.route("/api/auth/usuarios", methods=["GET"])
 def listar_usuarios():
-    if "usuario_id" not in session:
+    if "usuario_id" not in session or session.get("usuario_nivel") not in ("admin", "adm"):
         return jsonify({"error": "Nao autorizado"}), 403
     rows = get_db().execute(
         "SELECT * FROM usuarios ORDER BY ativo DESC, nome ASC"
@@ -174,20 +239,25 @@ def listar_usuarios():
 
 @bp.route("/api/auth/usuarios", methods=["POST"])
 def criar_usuario():
-    if session.get("usuario_nivel") != "admin":
+    if session.get("usuario_nivel") not in ("admin", "adm"):
         return jsonify({"error": "Nao autorizado"}), 403
     d = request.get_json(force=True) or {}
     nome = (d.get("nome") or "").strip()
     email = (d.get("email") or "").strip()
     login = (d.get("login") or "").strip().lower()
     senha = d.get("senha") or ""
-    nivel = (d.get("nivel") or "operador").strip().lower()
+    nivel = (d.get("nivel") or "padrao").strip().lower()
+
+    # Normalização
+    if nivel in ("admin", "adm"):
+        nivel = "adm"
+    else:
+        nivel = "padrao"
 
     errs = []
     if not nome: errs.append("Nome obrigatorio")
     if not login or len(login) < 3: errs.append("Login deve ter 3+ caracteres")
     if not senha or len(senha) < 4: errs.append("Senha deve ter 4+ caracteres")
-    if nivel not in ("admin", "operador", "leitor"): errs.append("Nivel invalido")
     if errs:
         return jsonify({"ok": False, "error": ". ".join(errs)}), 400
 
@@ -206,7 +276,7 @@ def criar_usuario():
 
 @bp.route("/api/auth/usuarios/<int:uid>", methods=["PUT"])
 def atualizar_usuario(uid: int):
-    if session.get("usuario_nivel") != "admin":
+    if session.get("usuario_nivel") not in ("admin", "adm"):
         return jsonify({"error": "Nao autorizado"}), 403
     d = request.get_json(force=True) or {}
     conn = get_db()
@@ -220,8 +290,11 @@ def atualizar_usuario(uid: int):
     nivel = (d.get("nivel") or row["nivel"]).strip().lower()
     ativo = d.get("ativo", bool(row["ativo"]))
 
-    if nivel not in ("admin", "operador", "leitor"):
-        return jsonify({"error": "Nivel invalido"}), 400
+    if nivel in ("admin", "adm"):
+        nivel = "adm"
+    else:
+        nivel = "padrao"
+
     if conn.execute("SELECT id FROM usuarios WHERE login=? AND id!=?", (login, uid)).fetchone():
         return jsonify({"error": f"Login '{login}' ja existe"}), 409
 
@@ -240,7 +313,7 @@ def atualizar_usuario(uid: int):
 
 @bp.route("/api/auth/usuarios/<int:uid>", methods=["DELETE"])
 def deletar_usuario(uid: int):
-    if session.get("usuario_nivel") != "admin":
+    if session.get("usuario_nivel") not in ("admin", "adm"):
         return jsonify({"error": "Nao autorizado"}), 403
     if session.get("usuario_id") == uid:
         return jsonify({"error": "Voce nao pode desativar a si mesmo"}), 400

@@ -448,6 +448,7 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
+    <div id="background-paths" style="position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0.35;"></div>
     <div class="login-bg-grid"></div>
   </div>
 
@@ -515,6 +516,9 @@
     <div class="login-security">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       <span>Conexão segura — Prefeitura de Inajá</span>
+    </div>
+    <div style="text-align: center; margin-top: 12px; font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.45); letter-spacing: 0.8px; text-transform: uppercase;">
+      DEV ALEKSANDRO ALVES
     </div>
   </div>
 
@@ -599,6 +603,57 @@
           btnArrow.style.display = '';
         });
       });
+    })();
+  </script>
+  <script>
+    (function() {
+      const container = document.getElementById('background-paths');
+      if (!container) return;
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 696 316");
+      svg.setAttribute("fill", "none");
+      svg.style.width = "100%";
+      svg.style.height = "100%";
+      svg.style.position = "absolute";
+      svg.style.inset = "0";
+      svg.setAttribute("preserveAspectRatio", "none");
+
+      const positions = [1, -1];
+      
+      positions.forEach(position => {
+        for (let i = 0; i < 36; i++) {
+          const d = `M${-(380 - i * 5 * position)} ${-(189 + i * 6)}C${-(380 - i * 5 * position)} ${-(189 + i * 6)} ${-(312 - i * 5 * position)} ${216 - i * 6} ${152 - i * 5 * position} ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${684 - i * 5 * position} ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`;
+          const width = 0.5 + i * 0.03;
+          const opacity = 0.1 + i * 0.03;
+          
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", d);
+          path.setAttribute("stroke", "currentColor");
+          path.setAttribute("stroke-width", width);
+          path.setAttribute("stroke-opacity", opacity);
+          // Standard style
+          path.style.color = "rgba(255, 255, 255, 0.4)";
+          path.style.strokeDasharray = "1200";
+          path.style.strokeDashoffset = "1200";
+          
+          svg.appendChild(path);
+
+          const duration = 20 + Math.random() * 10;
+          
+          path.animate([
+            { strokeDashoffset: "1200", strokeOpacity: 0.3 },
+            { strokeOpacity: 0.6 },
+            { strokeDashoffset: "-1200", strokeOpacity: 0.3 }
+          ], {
+            duration: duration * 1000,
+            iterations: Infinity,
+            easing: "linear"
+          });
+        }
+      });
+
+      container.appendChild(svg);
     })();
   </script>
 </body>

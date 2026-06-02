@@ -215,6 +215,7 @@
           </button>
           <div class="nav-group-menu nav-group-menu-sidebar" role="region">
             <a href="/pages/documentos.html" class="nav-group-item sidebar-nav-link" data-tooltip="Salvar e organizar arquivos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Centro de Documentos</span><span class="nav-group-item-desc">Salvar e organizar arquivos</span></div></a>
+            <a href="/pages/biblioteca.html" class="nav-group-item sidebar-nav-link" data-tooltip="Leis, decretos e manuais"><div class="nav-group-item-icon">📚</div><div class="nav-group-item-text"><span class="nav-group-item-name">Biblioteca</span><span class="nav-group-item-desc">Leis, decretos e manuais</span></div></a>
             <a href="/pages/rpa.html" class="nav-group-item sidebar-nav-link" data-tooltip="Recibo de Pagamento Autônomo"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de RPAs</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
             <a href="/pages/assistente-empenho.html" class="nav-group-item sidebar-nav-link" data-tooltip="IA para descricao e conferencia"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Descrição para Empenhos</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
             <a href="/pages/classificador-despesa.html" class="nav-group-item sidebar-nav-link" data-tooltip="Desdobramento correto via TCE-PR"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Classificador de Despesas</span><span class="nav-group-item-desc">Desdobramento correto via TCE-PR</span></div></a>
@@ -259,17 +260,42 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           <span>Logs</span>
         </button>
-        <button class="nav-tab nav-tab-sidebar sidebar-nav-link" id="sidebar-theme-toggle" data-tooltip="Alterar tema visual" data-glow-btn data-glow-btn-color="blue" style="display:flex;align-items:center;gap:8px;">
-          <span class="theme-toggle" style="display:inline-flex;align-items:center;justify-content:center;width:auto;height:auto;border:none;background:transparent;margin-left:0;padding:0;box-shadow:none;">
-            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;">
-              <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
-            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0;">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-          </span>
-          <span class="theme-label-sidebar">Tema Claro</span>
-        </button>
+        <div class="sidebar-theme-switch-container" style="padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 10px; font-weight: 800; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px;">🌌 Modo Dark / Light</span>
+          <label class="bb8-toggle">
+            <input class="bb8-toggle__checkbox" type="checkbox" id="bb8-theme-checkbox" />
+            <div class="bb8-toggle__container">
+              <div class="bb8-toggle__scenery">
+                <div class="bb8-toggle__star"></div>
+                <div class="bb8-toggle__star"></div>
+                <div class="bb8-toggle__star"></div>
+                <div class="bb8-toggle__star"></div>
+                <div class="bb8-toggle__star"></div>
+                <div class="bb8-toggle__star"></div>
+                <div class="bb8-toggle__star"></div>
+                <div class="tatto-1"></div>
+                <div class="tatto-2"></div>
+                <div class="gomrassen"></div>
+                <div class="hermes"></div>
+                <div class="chenini"></div>
+                <div class="bb8-toggle__cloud"></div>
+                <div class="bb8-toggle__cloud"></div>
+                <div class="bb8-toggle__cloud"></div>
+              </div>
+              <div class="bb8">
+                <div class="bb8__head-container">
+                  <div class="bb8__antenna"></div>
+                  <div class="bb8__antenna"></div>
+                  <div class="bb8__head"></div>
+                </div>
+                <div class="bb8__body"></div>
+              </div>
+              <div class="artificial__hidden">
+                <div class="bb8__shadow"></div>
+              </div>
+            </div>
+          </label>
+        </div>
       </div>
     </div>
   </aside>
@@ -375,7 +401,8 @@
     </div>
     
     <div class="dash-modules-grid">
-      <div class="dash-module-card featured" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
+      <div class="dash-module-card featured" data-glow data-glow-color="blue" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
+        <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <span class="dash-pill">Principal</span>
@@ -389,7 +416,8 @@
 
 
 
-      <div class="dash-module-card" onclick="window.location.href='/pages/mural.html'">
+      <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/mural.html'">
+        <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><span style="font-size:24px;">📌</span></div>
           <span class="dash-pill">Mural</span>
@@ -401,7 +429,8 @@
         </div>
       </div>
 
-      <div class="dash-module-card" onclick="window.location.href='/pages/assistente-empenho.html'">
+      <div class="dash-module-card" data-glow data-glow-color="purple" onclick="window.location.href='/pages/assistente-empenho.html'">
+        <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
         </div>
@@ -412,7 +441,8 @@
         </div>
       </div>
 
-      <div class="dash-module-card" onclick="window.location.href='/pages/despesa-prefeitura.html'">
+      <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-prefeitura.html'">
+        <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
         </div>
@@ -423,7 +453,8 @@
         </div>
       </div>
 
-      <div class="dash-module-card" onclick="window.location.href='/pages/documentos.html'">
+      <div class="dash-module-card" data-glow data-glow-color="red" onclick="window.location.href='/pages/documentos.html'">
+        <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
         </div>
@@ -446,20 +477,6 @@
         </div>
         <div class="dash-activity-list" id="dash-activity-list">
           <!-- Dinâmico via JS -->
-        </div>
-      </div>
-
-      <!-- Ações rápidas -->
-      <div class="dash-panel">
-        <div class="dash-panel-head">
-          <div class="dash-panel-title">Ações Rápidas</div>
-          <span class="dash-panel-link" style="font-family:monospace;font-size:11px;">Teclado</span>
-        </div>
-        <div class="dash-shortcuts-list">
-          <div class="dash-shortcut" onclick="abrirNovoEmpenhoFast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span class="dash-shortcut-text">Novo empenho</span><span class="dash-shortcut-kbd">N E</span></div>
-          <div class="dash-shortcut" onclick="abrirNovoCredorFast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg><span class="dash-shortcut-text">Cadastrar credor</span><span class="dash-shortcut-kbd">N C</span></div>
-          <div class="dash-shortcut" onclick="window.location.href=\'/pages/documentos.html\'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span class="dash-shortcut-text">Importar nota fiscal</span><span class="dash-shortcut-kbd">I N</span></div>
-
         </div>
       </div>
     </div>
@@ -555,9 +572,10 @@
         grid.innerHTML = "";
         
         // Add Days of Week headers
-        DOW_NAMES.forEach(d => {
+        DOW_NAMES.forEach((d, idx) => {
           const el = document.createElement("div");
           el.className = "cal-dow";
+          if (idx === 0 || idx === 6) el.classList.add("weekend");
           el.textContent = d;
           grid.appendChild(el);
         });
@@ -615,6 +633,9 @@
         for (let i = 0; i < totalCells; i++) {
           const cell = document.createElement("div");
           cell.className = "cal-cell";
+          if (i % 7 === 0 || i % 7 === 6) {
+            cell.classList.add("weekend");
+          }
           
           let day, isMuted = false;
           if (i < startDow) {
@@ -826,8 +847,9 @@
         if (!list) return;
         
         try {
-          const summary = await fetch('/api/admin/summary').then(r => r.json()).catch(() => ({}));
-          const logs = summary.recent_logs || [];
+          // Fetch from /api/logs which is accessible by all roles and tracks everything
+          const res = await fetch('/api/logs?limit=30').then(r => r.json()).catch(() => ({}));
+          const logs = res.logs || [];
           
           list.innerHTML = "";
           if (logs.length === 0) {
@@ -835,7 +857,7 @@
             return;
           }
           
-          logs.slice(0, 4).forEach(log => {
+          logs.forEach(log => {
             const row = document.createElement("div");
             row.className = "dash-activity-row";
             
@@ -847,17 +869,24 @@
             }
             
             // Friendly description
-            let text = `<strong>Sistema</strong> registrou uma ação`;
+            let text = log.detalhes || `Ação <strong>${log.acao}</strong> registrada no sistema.`;
             if (log.acao === 'CRIAR') text = `<strong>Equipe</strong> cadastrou credor <strong>${log.credor_nome}</strong>`;
             else if (log.acao === 'EDITAR') text = `<strong>Equipe</strong> alterou credor <strong>${log.credor_nome}</strong>`;
             else if (log.acao === 'EXCLUIR') text = `<strong>Equipe</strong> excluiu credor <strong>${log.credor_nome}</strong>`;
             else if (log.acao === 'EMPENHAR') text = `<strong>Equipe</strong> empenhou <strong>${log.credor_nome}</strong> (${log.detalhes})`;
             else if (log.acao === 'DESEMPENHAR') text = `<strong>Equipe</strong> desmarcou <strong>${log.credor_nome}</strong> (${log.detalhes})`;
             
+            // Map Actor Module
+            let actor = 'Cadastro';
+            if (log.acao.startsWith('KANBAN_')) actor = 'Tarefas';
+            else if (log.acao.startsWith('DOC_')) actor = 'Documentos';
+            else if (log.acao.startsWith('AUTENTIQUE_')) actor = 'Assinaturas';
+            else if (log.acao === 'EMPENHAR' || log.acao === 'DESEMPENHAR') actor = 'Empenhos';
+            
             row.innerHTML = `
               <span class="dash-activity-time">${timeLabel}</span>
               <span class="dash-activity-text" title="${log.detalhes || ''}">${text}</span>
-              <span class="dash-activity-actor">${log.acao === 'EMPENHAR' || log.acao === 'DESEMPENHAR' ? 'Empenhos' : 'Cadastro'}</span>
+              <span class="dash-activity-actor">${actor}</span>
             `;
             list.appendChild(row);
           });
@@ -1390,9 +1419,8 @@
         <div style="margin-bottom:10px;">
           <label class="login-label" for="uf-nivel">Nivel de Acesso</label>
           <select id="uf-nivel" class="login-input">
-            <option value="admin">Admin — acesso total</option>
-            <option value="operador" selected>Operador — usa o sistema</option>
-            <option value="leitor">Leitor — apenas visualizacao</option>
+            <option value="adm">Adm — acesso total</option>
+            <option value="padrao" selected>Padrão — acesso padrão</option>
           </select>
         </div>
         <div id="usuario-form-error" style="color:var(--red);font-size:12px;display:none;"></div>
@@ -2114,7 +2142,7 @@
             html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
             html += '<thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Login</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nome</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Nivel</th><th style="text-align:left;padding:8px;font-weight:700;color:var(--text-2);">Senha</th><th style="text-align:center;padding:8px;font-weight:700;color:var(--text-2);">Ativo</th><th style="padding:8px;"></th></tr></thead><tbody>';
             usuarios.forEach(function(u){
-              var nivelClass = u.nivel === 'admin' ? 'var(--red)' : u.nivel === 'operador' ? 'var(--green)' : 'var(--blue)';
+              var nivelClass = (u.nivel === 'adm' || u.nivel === 'admin') ? 'var(--red)' : 'var(--green)';
               html += '<tr style="border-bottom:1px solid var(--border);">';
               html += '<td style="padding:8px;"><strong>'+u.login+'</strong></td>';
               html += '<td style="padding:8px;">'+u.nome+'</td>';
@@ -2149,7 +2177,7 @@
           document.getElementById('uf-login').value = u.login;
           document.getElementById('uf-senha').value = '';
           document.getElementById('uf-senha').placeholder = 'Deixe vazio para manter';
-          document.getElementById('uf-nivel').value = u.nivel;
+          document.getElementById('uf-nivel').value = (u.nivel === 'admin' ? 'adm' : u.nivel);
           document.getElementById('usuario-form-title').textContent = 'Editar Usuario';
           document.getElementById('usuario-form-error').style.display = 'none';
           document.getElementById('usuario-form-overlay').style.display = 'flex';
@@ -2164,7 +2192,7 @@
       document.getElementById('uf-login').value = '';
       document.getElementById('uf-senha').value = '';
       document.getElementById('uf-senha').placeholder = 'Minimo 4 caracteres';
-      document.getElementById('uf-nivel').value = 'operador';
+      document.getElementById('uf-nivel').value = 'padrao';
       document.getElementById('usuario-form-title').textContent = 'Novo Usuario';
       document.getElementById('usuario-form-error').style.display = 'none';
       document.getElementById('usuario-form-overlay').style.display = 'flex';
@@ -2478,9 +2506,7 @@
 
     // Initial show + clock
     document.addEventListener('DOMContentLoaded', function() {
-      showCredoresArea();
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector('.nav-tab[data-tab="credores-fixos"]')?.classList.add('active');
+      showHomeScreen();
       updateClock();
       setInterval(updateClock, 1000);
     });

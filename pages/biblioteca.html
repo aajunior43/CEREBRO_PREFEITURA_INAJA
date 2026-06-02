@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Biblioteca Municipal – Prefeitura de Inajá</title>
+  <link rel="stylesheet" href="/static/css/index.css" />
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
+  <link rel="stylesheet" href="/static/css/fonts.css" />
+  <script defer src="/static/js/shared-header.js"></script>
+  <script src="/static/js/ia-chat-widget.js"></script>
+  <style>
+    .docs-wrap { max-width: 1120px; margin: 24px auto 70px; padding: 0 20px; }
+    .docs-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
+    .docs-hero h2 { font-size:24px; font-weight:800; color:var(--text); margin:0; }
+    .docs-hero p { font-size:13px; color:var(--text-3); margin-top:6px; max-width:720px; }
+    .docs-grid { display:grid; grid-template-columns: minmax(320px, 390px) minmax(0, 1fr); gap:18px; align-items:start; }
+    .docs-card { background:var(--bg); border-radius:var(--radius); box-shadow:var(--neo); padding:22px; }
+    .docs-card h3 { font-size:15px; font-weight:800; color:var(--text); margin:0 0 16px; }
+    .docs-form { display:flex; flex-direction:column; gap:12px; }
+    .docs-label { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; }
+    .docs-input, .docs-select, .docs-textarea { width:100%; background:var(--bg); border:none; border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); padding:12px 14px; font-family:inherit; font-size:13px; color:var(--text); outline:none; }
+    .docs-textarea { min-height:88px; resize:vertical; }
+    .docs-file { padding:10px; background:var(--bg); border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); }
+    .docs-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+    .docs-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:var(--radius-sm); padding:11px 16px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+    .docs-btn-primary { background:linear-gradient(135deg, var(--blue), var(--blue-dark)); color:#fff; box-shadow:3px 3px 10px rgba(79,128,200,.35); }
+    .docs-btn-secondary { background:var(--bg); color:var(--text-2); box-shadow:var(--neo-sm); }
+    .docs-toolbar { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; }
+    .docs-empty { text-align:center; padding:38px 16px; color:var(--text-3); font-size:13px; }
+    .docs-list { display:flex; flex-direction:column; gap:12px; }
+    .doc-item { background:var(--bg-2, rgba(0,0,0,.03)); border-radius:var(--radius-sm); padding:16px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; }
+    .doc-main { min-width:0; }
+    .doc-name { font-size:14px; font-weight:800; color:var(--text); word-break:break-word; }
+    .doc-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .doc-badge { font-size:11px; font-weight:700; color:var(--text-2); background:rgba(184,194,204,.16); border-radius:999px; padding:4px 10px; }
+    .doc-desc { font-size:12px; color:var(--text-3); margin-top:10px; line-height:1.6; white-space:pre-wrap; }
+    .doc-actions { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
+    .doc-link, .doc-danger { border:none; border-radius:10px; padding:9px 12px; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; }
+    .doc-link { background:rgba(79,128,200,.12); color:var(--blue); }
+    .doc-danger { background:rgba(239,68,68,.12); color:var(--red); }
+    .docs-status { display:none; margin-top:10px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:12px; }
+    .docs-status.ok { display:block; background:rgba(34,197,94,.12); color:#15803d; }
+    .docs-status.err { display:block; background:rgba(239,68,68,.12); color:#dc2626; }
+    @media (max-width: 900px) {
+      .docs-grid { grid-template-columns: 1fr; }
+      .docs-toolbar { grid-template-columns: 1fr; }
+      .doc-item { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="docs-wrap">
+    <div class="docs-hero">
+      <div>
+        <h2>📚 Biblioteca Municipal</h2>
+        <p>Acesse e armazene leis orgânicas, decretos do executivo, portarias administrativas, editais de licitação, manuais internos e modelos de documentos de uso recorrente.</p>
+      </div>
+    </div>
+
+    <div class="docs-grid">
+      <section class="docs-card">
+        <h3>⬆ Adicionar à Biblioteca</h3>
+        <form id="docs-form" class="docs-form">
+          <div>
+            <div class="docs-label">Tipo de Documento</div>
+            <select id="doc-categoria" class="docs-select">
+              <option value="biblioteca-leis">Leis Municipais / Federais</option>
+              <option value="biblioteca-decretos">Decretos</option>
+              <option value="biblioteca-portarias">Portarias</option>
+              <option value="biblioteca-editais">Editais & Licitações</option>
+              <option value="biblioteca-manuais">Manuais & Guias</option>
+              <option value="biblioteca-modelos">Modelos de Documento</option>
+              <option value="biblioteca-outros">Outros Arquivos</option>
+            </select>
+          </div>
+          <div>
+            <div class="docs-label">Referência / Ano</div>
+            <input id="doc-referencia" class="docs-input" type="text" placeholder="Ex: lei-2026-1042, portaria-45-2026, edital-002" />
+          </div>
+          <div>
+            <div class="docs-label">Descrição / Ementa</div>
+            <textarea id="doc-descricao" class="docs-textarea" placeholder="Breve resumo da ementa ou assunto do documento"></textarea>
+          </div>
+          <div>
+            <div class="docs-label">Arquivo</div>
+            <input id="doc-arquivo" class="docs-file" type="file" required />
+          </div>
+          <div class="docs-actions">
+            <button type="submit" class="docs-btn docs-btn-primary" id="doc-enviar-btn">Salvar na Biblioteca</button>
+            <button type="button" class="docs-btn docs-btn-secondary" id="doc-limpar-btn">Limpar</button>
+          </div>
+          <div id="docs-status" class="docs-status"></div>
+        </form>
+      </section>
+
+      <section class="docs-card">
+        <h3>🗂 Acervo Digital</h3>
+        <div class="docs-toolbar">
+          <select id="filtro-categoria" class="docs-select">
+            <option value="">Todos os tipos</option>
+            <option value="biblioteca-leis">Leis</option>
+            <option value="biblioteca-decretos">Decretos</option>
+            <option value="biblioteca-portarias">Portarias</option>
+            <option value="biblioteca-editais">Editais & Licitações</option>
+            <option value="biblioteca-manuais">Manuais & Guias</option>
+            <option value="biblioteca-modelos">Modelos</option>
+            <option value="biblioteca-outros">Outros</option>
+          </select>
+          <input id="filtro-referencia" class="docs-input" type="text" placeholder="Filtrar por referência" />
+          <input id="filtro-busca" class="docs-input" type="text" placeholder="Buscar por ementa/nome" />
+          <button class="docs-btn docs-btn-secondary" id="docs-atualizar-btn" type="button">Atualizar</button>
+        </div>
+        <div id="docs-list" class="docs-list"></div>
+        <div id="docs-empty" class="docs-empty" style="display:none;">Nenhum documento encontrado no acervo.</div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const docsForm = document.getElementById('docs-form');
+    const docsStatus = document.getElementById('docs-status');
+    const docsList = document.getElementById('docs-list');
+    const docsEmpty = document.getElementById('docs-empty');
+    const filtroCategoria = document.getElementById('filtro-categoria');
+    const filtroReferencia = document.getElementById('filtro-referencia');
+    const filtroBusca = document.getElementById('filtro-busca');
+    let docsCache = [];
+    let docsTimer = null;
+
+    function fmtBytes(n) {
+      const value = Number(n) || 0;
+      if (value < 1024) return `${value} B`;
+      if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+      return `${(value / (1024 * 1024)).toFixed(2)} MB`;
+    }
+
+    function setStatus(msg, ok) {
+      docsStatus.textContent = msg;
+      docsStatus.className = `docs-status ${ok ? 'ok' : 'err'}`;
+    }
+
+    function clearStatus() {
+      docsStatus.textContent = '';
+      docsStatus.className = 'docs-status';
+    }
+
+    function esc(v) {
+      return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function getFriendlyCategory(cat) {
+      const map = {
+        'biblioteca-leis': 'Leis',
+        'biblioteca-decretos': 'Decretos',
+        'biblioteca-portarias': 'Portarias',
+        'biblioteca-editais': 'Editais & Licitações',
+        'biblioteca-manuais': 'Manuais & Guias',
+        'biblioteca-modelos': 'Modelos',
+        'biblioteca-outros': 'Outros'
+      };
+      return map[cat] || cat;
+    }
+
+    function renderDocs() {
+      const search = (filtroBusca.value || '').trim().toLowerCase();
+      const ref = (filtroReferencia.value || '').trim().toLowerCase();
+      const categoria = filtroCategoria.value;
+      
+      const list = docsCache.filter(doc => {
+        // Only display library items
+        if (!(doc.categoria || '').startsWith('biblioteca-')) return false;
+        
+        if (categoria && doc.categoria !== categoria) return false;
+        if (ref && !(doc.referencia || '').toLowerCase().includes(ref)) return false;
+        if (search) {
+          const bucket = `${doc.nome_original || ''} ${doc.descricao || ''} ${doc.referencia || ''}`.toLowerCase();
+          if (!bucket.includes(search)) return false;
+        }
+        return true;
+      });
+
+      docsList.innerHTML = list.map(doc => `
+        <div class="doc-item">
+          <div class="doc-main">
+            <div class="doc-name">${esc(doc.nome_original)}</div>
+            <div class="doc-meta">
+              <span class="doc-badge" style="background:rgba(16,185,129,0.1);color:#10b981;">${esc(getFriendlyCategory(doc.categoria))}</span>
+              <span class="doc-badge">${esc(doc.referencia || 'sem referência')}</span>
+              <span class="doc-badge">${fmtBytes(doc.tamanho)}</span>
+              <span class="doc-badge">${esc(doc.criado_em || '')}</span>
+            </div>
+            ${doc.descricao ? `<div class="doc-desc">${esc(doc.descricao)}</div>` : ''}
+          </div>
+          <div class="doc-actions">
+            <a class="doc-link" href="/api/documentos/${doc.id}/download">Baixar</a>
+            <button class="doc-link" style="background:rgba(124,58,237,0.1);color:#7c3aed;" data-ia-rename-id="${doc.id}" type="button">🪄 Nomear com IA</button>
+            <button class="doc-danger" data-delete-id="${doc.id}" type="button">Excluir</button>
+          </div>
+        </div>
+      `).join('');
+
+      docsEmpty.style.display = list.length ? 'none' : '';
+    }
+
+    async function carregarDocumentos() {
+      const params = new URLSearchParams();
+      if (filtroCategoria.value) params.set('categoria', filtroCategoria.value);
+      if (filtroReferencia.value.trim()) params.set('referencia', filtroReferencia.value.trim());
+      
+      const res = await fetch('/api/documentos' + (params.toString() ? `?${params.toString()}` : ''));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Falha ao carregar biblioteca');
+      
+      // Support list structure directly or from items dictionary
+      docsCache = Array.isArray(data) ? data : (data.items || []);
+      renderDocs();
+    }
+
+    async function enviarDocumento(e) {
+      e.preventDefault();
+      clearStatus();
+      const arquivo = document.getElementById('doc-arquivo').files[0];
+      if (!arquivo) {
+        setStatus('Selecione um arquivo.', false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append('arquivo', arquivo);
+      fd.append('categoria', document.getElementById('doc-categoria').value);
+      fd.append('referencia', document.getElementById('doc-referencia').value.trim());
+      fd.append('descricao', document.getElementById('doc-descricao').value.trim());
+      const btn = document.getElementById('doc-enviar-btn');
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+      try {
+        const res = await fetch('/api/documentos', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao salvar arquivo');
+        docsForm.reset();
+        setStatus('Documento arquivado com sucesso na biblioteca.', true);
+        await carregarDocumentos();
+      } catch (err) {
+        setStatus(err.message || 'Erro ao arquivar documento.', false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar na Biblioteca';
+      }
+    }
+
+    async function excluirDocumento(id) {
+      if (!confirm('Deseja excluir este documento da biblioteca?')) return;
+      try {
+        const res = await fetch(`/api/documentos/${id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Erro ao excluir documento');
+        await carregarDocumentos();
+      } catch (err) {
+        setStatus(err.message || 'Erro ao excluir documento.', false);
+      }
+    }
+
+    async function sugerirNomeIa(id, btn) {
+      const origText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Pensando...';
+      clearStatus();
+      try {
+        const res = await fetch(`/api/documentos/${id}/sugerir-nome`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erro ao obter sugestão da IA');
+        
+        const confirmou = confirm(`Sugestão da IA para o arquivo:\n\n👉 "${data.sugestao}"\n\nMotivo:\n${data.justificativa}\n\nDeseja aplicar este novo nome?`);
+        if (confirmou) {
+          const updateRes = await fetch(`/api/documentos/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome_original: data.sugestao })
+          });
+          const updateData = await updateRes.json();
+          if (!updateRes.ok) throw new Error(updateData.error || 'Erro ao renomear arquivo');
+          setStatus('Arquivo renomeado com sucesso pela IA!', true);
+          await carregarDocumentos();
+        }
+      } catch (err) {
+        setStatus(err.message || 'Erro ao sugerir/aplicar nome com IA.', false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    docsForm.addEventListener('submit', enviarDocumento);
+    document.getElementById('doc-limpar-btn').addEventListener('click', () => { docsForm.reset(); clearStatus(); });
+    document.getElementById('docs-atualizar-btn').addEventListener('click', carregarDocumentos);
+    docsList.addEventListener('click', e => {
+      const btnDel = e.target.closest('[data-delete-id]');
+      if (btnDel) {
+        excluirDocumento(btnDel.dataset.deleteId);
+        return;
+      }
+      const btnRename = e.target.closest('[data-ia-rename-id]');
+      if (btnRename) {
+        sugerirNomeIa(btnRename.dataset.iaRenameId, btnRename);
+        return;
+      }
+    });
+
+    [filtroCategoria, filtroReferencia, filtroBusca].forEach(el => {
+      el.addEventListener('input', () => {
+        clearTimeout(docsTimer);
+        docsTimer = setTimeout(() => {
+          if (el === filtroCategoria || el === filtroReferencia) carregarDocumentos().catch(err => setStatus(err.message, false));
+          else renderDocs();
+        }, 120);
+      });
+      el.addEventListener('change', () => {
+        if (el === filtroCategoria || el === filtroReferencia) carregarDocumentos().catch(err => setStatus(err.message, false));
+        else renderDocs();
+      });
+    });
+
+    carregarDocumentos().catch(err => setStatus(err.message || 'Erro ao carregar acervo.', false));
+  </script>
+  <script>
+  (function() {
+    async function askIaBiblioteca(action, question) {
+      const cache = typeof docsCache !== 'undefined' ? docsCache.filter(d => (d.categoria || '').startsWith('biblioteca-')) : [];
+      const porCategoria = cache.reduce((acc, d) => { acc[d.categoria] = (acc[d.categoria] || 0) + 1; return acc; }, {});
+      const ctx = {
+        total: cache.length,
+        por_categoria: porCategoria,
+        documentos_recentes: cache.slice(0, 15).map(d => ({
+          nome: d.nome_original, categoria: d.categoria,
+          referencia: d.referencia, descricao: d.descricao, criado_em: d.criado_em
+        }))
+      };
+      const prompts = {
+        resumo:    'Apresente um diagnóstico do acervo da biblioteca: distribuição por leis, decretos, portarias, e indique as principais publicações recentes.',
+        organizar: 'Sugira formas ideais para nomear e organizar leis municipais, portarias e editais para auditorias.',
+        buscar:    'Indique quais leis ou editais do acervo se relacionam com a busca do usuário.',
+        chat:      question || 'Responda à pergunta sobre a biblioteca municipal.'
+      };
+      const userPrompt = [
+        prompts[action] || prompts.resumo, '', 'Contexto do acervo da biblioteca:', JSON.stringify(ctx, null, 2),
+        question && action !== 'chat' ? `Pergunta: ${question}` : ''
+      ].filter(Boolean).join('\n');
+      return await window.callIaFree([
+        { role: 'system', content: 'Você é o bibliotecário digital da Prefeitura de Inajá. Ajude a localizar e resumir leis, editais, manuais e portarias municipais de forma rápida e precisa.' },
+        { role: 'user', content: userPrompt }
+      ], { temperature: 0.2, max_tokens: 1200 });
+    }
+    function initIaBiblioteca() {
+      if (!window.IaChatWidget) { setTimeout(initIaBiblioteca, 300); return; }
+      window.IaChatWidget.create({
+        title: 'IA Biblioteca',
+        subtitle: 'Pesquisa e apoio em leis, editais e manuais',
+        buttonLabel: 'IA',
+        buttonTitle: 'Abrir Assistente da Biblioteca',
+        chatPlaceholder: 'Ex: Qual o número do edital de merenda?',
+        emptyMessage: 'Nenhum item catalogado na biblioteca.',
+        actions: [
+          { id: 'resumo',    label: 'Resumo do Acervo',         description: 'Diagnóstico rápido e distribuição de leis e decretos.' },
+          { id: 'organizar', label: 'Dicas de Catalogação',    description: 'Sugestões para nomeação de editais e manuais.' },
+          { id: 'buscar',    label: 'Buscar Leis e Portarias',  description: 'Procura itens relacionados à sua pesquisa.' },
+          { id: 'chat',      label: 'Chat Livre',               description: 'Perguntas gerais sobre o acervo.' }
+        ],
+        shortcuts: [
+          { label: 'Diagnóstico do Acervo',  action: 'resumo' },
+          { label: 'Dicas de Catalogação',   action: 'organizar' }
+        ],
+        hasData: () => (typeof docsCache !== 'undefined' && docsCache.some(d => (d.categoria || '').startsWith('biblioteca-'))),
+        onRun: ({ action, question }) => askIaBiblioteca(action, question)
+      });
+    }
+    initIaBiblioteca();
+  })();
+  </script>
+</body>
+</html>

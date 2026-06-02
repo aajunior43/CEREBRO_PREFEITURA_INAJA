@@ -8,7 +8,7 @@ import hashlib
 import mimetypes
 
 import requests
-from flask import Blueprint, request, jsonify, send_file
+from flask import Blueprint, request, jsonify, send_file, session
 
 from config import settings
 
@@ -87,6 +87,10 @@ def persist_document_file(
             caminho_relativo,
         ),
     )
+    conn.execute(
+        "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+        ("DOC_UPLOADO", f"Salvou documento: '{original_name}' (Categoria: {categoria})")
+    )
     conn.commit()
     row = conn.execute(
         "SELECT * FROM documentos_centro WHERE id=?", (cur.lastrowid,)
@@ -141,6 +145,12 @@ def documentos_enviar():
     descricao = (request.form.get("descricao") or "").strip()
     if not file or not file.filename:
         return jsonify({"error": "Arquivo é obrigatório"}), 400
+    
+    # Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca
+    if categoria.startswith("biblioteca-"):
+        if session.get("usuario_login") != "aleksandro":
+            return jsonify({"error": "Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca."}), 403
+
     try:
         nome_arquivo, relative_dir, abs_path = build_document_storage(
             categoria, referencia, file.filename
@@ -166,6 +176,10 @@ def documentos_enviar():
                 caminho_relativo,
             ),
         )
+        conn.execute(
+            "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+            ("DOC_UPLOADO", f"Enviou o arquivo: '{file.filename}' (Categoria: {categoria})")
+        )
         conn.commit()
         row = conn.execute(
             "SELECT * FROM documentos_centro WHERE id=?", (cur.lastrowid,)
@@ -185,6 +199,12 @@ def documentos_salvar_conteudo():
         arquivo = request.files.get("arquivo")
         if not nome or not arquivo:
             return jsonify({"error": "nome e arquivo são obrigatórios"}), 400
+        
+        # Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca
+        if categoria.startswith("biblioteca-"):
+            if session.get("usuario_login") != "aleksandro":
+                return jsonify({"error": "Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca."}), 403
+
         saved = persist_document_file(
             nome,
             arquivo.read(),
@@ -252,10 +272,21 @@ def documentos_excluir(doc_id):
         ).fetchone()
         if not row:
             return jsonify({"error": "Documento não encontrado"}), 404
+        
+        # Apenas o usuário 'aleksandro' pode excluir arquivos da biblioteca
+        categoria = row["categoria"] or ""
+        if categoria.startswith("biblioteca-"):
+            if session.get("usuario_login") != "aleksandro":
+                return jsonify({"error": "Apenas o usuário 'aleksandro' pode excluir arquivos da biblioteca."}), 403
+
         abs_path = os.path.join(
             DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
         )
         conn.execute("DELETE FROM documentos_centro WHERE id=?", (doc_id,))
+        conn.execute(
+            "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+            ("DOC_EXCLUIR", f"Excluiu o documento: '{row['nome_original']}'")
+        )
         conn.commit()
         file_removed = True
         if os.path.exists(abs_path):
@@ -995,3 +1026,115 @@ def autentique_webhook():
         )
     except Exception as err:
         return jsonify({"error": str(err)}), 500
+
+
+@bp.route("/api/documentos/<int:doc_id>", methods=["PUT"])
+def documentos_atualizar(doc_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Documento não encontrado"}), 404
+        
+        # Apenas o usuário 'aleksandro' pode alterar arquivos da biblioteca
+        categoria = row["categoria"] or ""
+        if categoria.startswith("biblioteca-"):
+            if session.get("usuario_login") != "aleksandro":
+                return jsonify({"error": "Apenas o usuário 'aleksandro' pode alterar arquivos da biblioteca."}), 403
+
+        data = request.get_json(force=True) or {}
+        novo_nome = (data.get("nome_original") or "").strip()
+        nova_descricao = data.get("descricao")
+        
+        if not novo_nome:
+            return jsonify({"error": "Nome do arquivo é obrigatório"}), 400
+            
+        # Limpar caracteres inválidos
+        novo_nome = os.path.basename(novo_nome)
+        
+        # Manter extensão original caso tenha sido omitida
+        _, ext_orig = os.path.splitext(row["nome_original"])
+        nome_base, ext_nova = os.path.splitext(novo_nome)
+        if not ext_nova:
+            novo_nome = nome_base + ext_orig
+            
+        conn.execute(
+            "UPDATE documentos_centro SET nome_original=?, descricao=? WHERE id=?",
+            (novo_nome, nova_descricao if nova_descricao is not None else row["descricao"], doc_id)
+        )
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/documentos/<int:doc_id>/sugerir-nome", methods=["GET"])
+def documentos_sugerir_nome(doc_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Documento não encontrado"}), 404
+
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
+        
+        texto_conteudo = ""
+        if os.path.exists(abs_path):
+            from renomer.file_processor import extrair_texto
+            from pathlib import Path
+            texto_conteudo = extrair_texto(Path(abs_path)) or ""
+            
+        from routes._shared import _get_openrouter_config, _build_ai_service
+        api_key, model = _get_openrouter_config(conn)
+        if not api_key:
+            return jsonify({"error": "Chave API OpenRouter não configurada."}), 400
+            
+        prompt = f"""Você é o Cérebro Municipal, assistente de IA da Prefeitura de Inajá.
+Analise os metadados e o conteúdo de um arquivo da biblioteca municipal e sugira um nome padronizado, limpo e profissional para o arquivo (exemplo: "Lei-Municipal-123-2024.pdf" ou "Manual-de-Contas-Waitress.pdf").
+
+METADADOS DO ARQUIVO:
+- Nome Original: {row['nome_original']}
+- Categoria: {row['categoria']}
+- Descrição: {row['descricao']}
+
+CONTEÚDO EXTRAÍDO DO ARQUIVO (PREVIEW):
+{texto_conteudo[:2500]}
+
+INSTRUÇÕES:
+- O nome deve ser conciso, legível, sem espaços (use hifens ou CamelCase) e manter a extensão original do arquivo ({row['extensao']}).
+- Sugira o nome mais adequado baseado nas informações do conteúdo ou do título original.
+- Responda estritamente em formato JSON contendo as chaves:
+  "sugestao": "o_nome_sugerido{row['extensao']}",
+  "justificativa": "breve explicação do porquê desse nome (ex: detectado número da Lei 123 de 2024)."
+"""
+
+        response = _build_ai_service(api_key, model).chat_by_task(
+            task_type="chat",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=250,
+            use_cache=True,
+            metadata={"feature": "sugerir_nome_documento", "doc_id": doc_id},
+        )
+        
+        from services.openrouter_service import extract_json_block
+        parsed = extract_json_block(response.text)
+        sugestao = parsed.get("sugestao") if parsed else None
+        justificativa = parsed.get("justificativa") if parsed else None
+        
+        if not sugestao:
+            sugestao = row["nome_original"]
+            justificativa = "Não foi possível obter sugestão da IA."
+            
+        return jsonify({
+            "sugestao": sugestao,
+            "justificativa": justificativa
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

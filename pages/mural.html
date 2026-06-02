@@ -259,6 +259,21 @@
     .mural-col-list::-webkit-scrollbar-track { background: transparent; }
     .mural-col-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
+    /* Coluna "A Fazer" expande livremente — sem limite de altura e sem scrollbar */
+    .mural-col-todo {
+      max-height: none !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    .mural-col-todo .mural-col-list {
+      overflow-y: visible !important;
+      overflow: visible !important;
+      max-height: none !important;
+      height: auto !important;
+      scrollbar-width: none !important;
+    }
+    .mural-col-todo .mural-col-list::-webkit-scrollbar { display: none !important; }
+
     @keyframes cardSlideIn {
       from { opacity: 0; transform: translateY(-10px) scale(0.97); }
       to   { opacity: 1; transform: translateY(0)    scale(1); }
@@ -321,8 +336,18 @@
     .card-color-pink    { --note-border: var(--red); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(239, 68, 68, 0.03)); animation: urgente-card-flash 2.2s ease-in-out infinite; }
 
     @keyframes urgente-card-flash {
-      0%, 100% { box-shadow: var(--shadow-sm); }
-      50%      { box-shadow: 0 0 7px 2px rgba(220, 38, 38, 0.28), var(--shadow-sm); }
+      0%, 100% {
+        box-shadow: var(--shadow-sm);
+        border-left-color: rgba(220, 38, 38, 0.6);
+      }
+      50% {
+        box-shadow:
+          0 0 0 2px rgba(220, 38, 38, 0.35),
+          0 0 14px 4px rgba(220, 38, 38, 0.55),
+          0 0 28px 8px rgba(220, 38, 38, 0.25),
+          var(--shadow-sm);
+        border-left-color: rgba(220, 38, 38, 1);
+      }
     }
     .card-color-purple  { --note-border: var(--purple); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(139, 92, 246, 0.03)); }
     .card-color-orange  { --note-border: var(--orange-dark); background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, transparent), rgba(249, 115, 22, 0.03)); }
@@ -543,9 +568,27 @@
     .badge-prioridade-urgente { background: rgba(239, 68, 68, 0.15); color: #dc2626; animation: pulse-urgente 2s infinite; font-weight: 800; }
     
     @keyframes pulse-urgente {
-      0% { opacity: 1; }
-      50% { opacity: 0.7; }
-      100% { opacity: 1; }
+      0%   { opacity: 1;   transform: scale(1);    letter-spacing: 0.2px; }
+      50%  { opacity: 0.5; transform: scale(1.08); letter-spacing: 0.5px; }
+      100% { opacity: 1;   transform: scale(1);    letter-spacing: 0.2px; }
+    }
+
+    /* ── Desativa TODAS as animações de urgência na coluna Concluído ── */
+    #col-concluido .card-color-pink {
+      animation: none !important;
+      box-shadow: var(--shadow-sm) !important;
+      border-left-color: color-mix(in srgb, var(--red) 50%, var(--border)) !important;
+    }
+    #col-concluido .badge-prioridade-urgente {
+      animation: none !important;
+      transform: none !important;
+      opacity: 1 !important;
+    }
+    #col-concluido .mural-pulse-dot {
+      display: none !important;
+    }
+    #col-concluido .age-chip-old {
+      animation: none !important;
     }
 
 
@@ -584,6 +627,50 @@
     .mural-card-act-delete {
       color: #dc2626;
     }
+
+    /* Setas de navegação entre colunas */
+    .mural-card-arrow {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--text-3);
+      transition: all 0.18s ease;
+      box-shadow: var(--shadow-sm);
+      flex-shrink: 0;
+    }
+    .mural-card-arrow:hover {
+      transform: scale(1.15) translateY(-1px);
+      box-shadow: var(--shadow);
+    }
+    .mural-card-arrow-prev:hover {
+      background: color-mix(in srgb, var(--blue) 14%, var(--surface));
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+    .mural-card-arrow-next:hover {
+      background: color-mix(in srgb, var(--green) 14%, var(--surface));
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .mural-card-footer-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding-top: 8px;
+      margin-top: 2px;
+      border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    }
+
 
     /* Modal Backdrop style upgrade */
     .mural-modal-backdrop {
@@ -4147,6 +4234,20 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       actButtons += `<button class="mural-card-act mural-card-act-delete" onclick="excluirRecado(${item.id})" title="Excluir recado">✕</button>`;
 
+      // Setas de navegação entre colunas
+      const STATUS_ORDER = ['a_fazer', 'em_andamento', 'concluido'];
+      const STATUS_LABELS = { a_fazer: 'A Fazer', em_andamento: 'Em Progresso', concluido: 'Concluído' };
+      const curIdx = STATUS_ORDER.indexOf(item.status);
+      const prevStatus = curIdx > 0 ? STATUS_ORDER[curIdx - 1] : null;
+      const nextStatus = curIdx < STATUS_ORDER.length - 1 ? STATUS_ORDER[curIdx + 1] : null;
+      const arrowPrev = prevStatus
+        ? `<button class="mural-card-arrow mural-card-arrow-prev" onclick="alterarStatusRecado(${item.id}, '${prevStatus}')" title="Mover para: ${STATUS_LABELS[prevStatus]}">‹</button>`
+        : `<span style="width:28px;"></span>`;
+      const arrowNext = nextStatus
+        ? `<button class="mural-card-arrow mural-card-arrow-next" onclick="alterarStatusRecado(${item.id}, '${nextStatus}')" title="Mover para: ${STATUS_LABELS[nextStatus]}">›</button>`
+        : `<span style="width:28px;"></span>`;
+
+
       // Render valor badge if present
       let valorBadge = '';
       if (item.valor && parseFloat(item.valor) > 0) {
@@ -4224,17 +4325,20 @@ document.addEventListener('DOMContentLoaded', function() {
           <div style="line-height:1.45; color:var(--text-2); font-weight:500;">${esc(item.conteudo)}</div>
           ${attachmentsList}
         </div>
-        <div class="mural-card-footer">
-          <div class="mural-card-meta" style="font-size:9.5px;">
+        <div class="mural-card-footer-nav">
+          ${arrowPrev}
+          <div class="mural-card-meta" style="font-size:9.5px; flex:1; justify-content:center;">
             <span class="mural-card-author" title="Autor">✍ ${esc(item.autor)}</span>
             <span style="opacity:0.35; font-size:8px;">|</span>
             <span style="color:var(--text-3);" title="Data de criação">🕐 ${esc((item.criado_em || '').split(' ')[0])}</span>
             ${ageChip}
             ${completionMeta ? '<span style="opacity:0.35; font-size:8px;">|</span>' + completionMeta : ''}
           </div>
-          ${credorFooter}
+          ${arrowNext}
         </div>
+        ${credorFooter}
       `;
+
       // Drag & Drop to attach files directly to the card
       card.addEventListener('dragover', (e) => {
         if (e.dataTransfer.types.includes('Files')) {
@@ -4923,8 +5027,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Delay SSE start slightly so the auth check completes first
     setTimeout(initMuralSSE, 500);
 
-    // Polling a cada 2s como garantia quando SSE tiver gaps
-    setInterval(carregarMural, 2000);
+    // Polling leve a cada 60s apenas como fallback de segurança (SSE cuida do tempo real)
+    setInterval(carregarMural, 60000);
   </script>
 </body>
 </html>

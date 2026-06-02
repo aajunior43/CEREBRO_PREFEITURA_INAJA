@@ -195,6 +195,7 @@
   const NAV_ITEMS = {
     documentos: [
       { href: '/pages/documentos.html',      name: 'Centro de Documentos',   desc: 'Salvar e organizar arquivos' },
+      { href: '/pages/biblioteca.html',      name: 'Biblioteca',             desc: 'Leis, decretos e manuais' },
       { href: '/pages/mural.html',           name: 'Mural Interativo',       desc: 'Avisos e tarefas compartilhadas' },
       { href: '/pages/rpa.html',             name: 'Gerador de RPAs',        desc: 'Recibo de Pagamento Autônomo' },
       { href: '/pages/latex-pdf.html',       name: 'Gerador PDF LaTeX',      desc: 'Criar documentos com IA' },
@@ -995,6 +996,16 @@
         closeMobile();
       }
     });
+
+    // Auto-apply animated glowing search bars to search/filter fields
+    if (typeof window.applyGlowingSearchBars === 'function') {
+      window.applyGlowingSearchBars();
+    }
+
+    // Auto-inject status check badges to avatars
+    if (typeof window.initAvatarCheckBadges === 'function') {
+      window.initAvatarCheckBadges();
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -1057,4 +1068,127 @@ window.callIaFree = async function callIaFree(messages, { temperature = 0.2, max
   }
 
   throw new Error('Todos os modelos gratuitos falharam:\n' + errors.join('\n'));
+};
+
+/* ── Auto-wrapper para campos de busca com efeito brilhante ── */
+window.applyGlowingSearchBars = function applyGlowingSearchBars() {
+  const inputs = document.querySelectorAll('input[type="text"], input[type="search"]');
+  inputs.forEach(input => {
+    if (input.classList.contains('glowing-search-input')) return;
+    
+    const placeholder = (input.placeholder || '').toLowerCase();
+    const id = (input.id || '').toLowerCase();
+    const className = (input.className || '').toLowerCase();
+    
+    // Do not wrap comment inputs
+    if (
+      id.includes('comment') || 
+      className.includes('comment') || 
+      placeholder.includes('coment')
+    ) {
+      return;
+    }
+    
+    if (
+      placeholder.includes('buscar') ||
+      placeholder.includes('pesquisar') ||
+      placeholder.includes('busca') ||
+      placeholder.includes('filtro') ||
+      placeholder.includes('filtrar') ||
+      placeholder.includes('pesquisa') ||
+      id.includes('search') ||
+      id.includes('busca') ||
+      id.includes('filtro') ||
+      className.includes('search') ||
+      className.includes('filtro')
+    ) {
+      const container = document.createElement('div');
+      container.className = 'glowing-search-container';
+      
+      const poda = document.createElement('div');
+      poda.className = 'glowing-search-poda';
+      
+      poda.innerHTML = `
+        <div class="glow-layer-1"></div>
+        <div class="glow-layer-2"></div>
+        <div class="glow-layer-3"></div>
+        <div class="glow-layer-4"></div>
+        <div class="glowing-search-main">
+          <div class="glowing-search-mask-pink"></div>
+          <div class="glowing-search-right-glow"></div>
+          <div class="glowing-search-icon-filter">
+            <svg preserveAspectRatio="none" height="18" width="18" viewBox="4.8 4.56 14.832 15.408" fill="none">
+              <path d="M8.16 6.65002H15.83C16.47 6.65002 16.99 7.17002 16.99 7.81002V9.09002C16.99 9.56002 16.7 10.14 16.41 10.43L13.91 12.64C13.56 12.93 13.33 13.51 13.33 13.98V16.48C13.33 16.83 13.1 17.29 12.81 17.47L12 17.98C11.24 18.45 10.2 17.92 10.2 16.99V13.91C10.2 13.5 9.97 12.98 9.73 12.69L7.52 10.36C7.23 10.08 7 9.55002 7 9.20002V7.87002C7 7.17002 7.52 6.65002 8.16 6.65002Z" stroke="#d6d6e6" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+          <div class="glowing-search-icon-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+        </div>
+      `;
+      
+      input.classList.add('glowing-search-input');
+      
+      const parent = input.parentNode;
+      parent.insertBefore(container, input);
+      container.appendChild(poda);
+      const mainDiv = poda.querySelector('.glowing-search-main');
+      mainDiv.insertBefore(input, mainDiv.firstChild);
+    }
+  });
+};
+
+/* ── Auto-injetor de status check badges para avatares ── */
+window.initAvatarCheckBadges = function initAvatarCheckBadges() {
+  const selector = '.mural-user-avatar, .mural-card-assignee-avatar, .mural-filter-avatar, .kb-avatar';
+  
+  // Executa uma primeira verificação nos existentes
+  const initial = document.querySelectorAll(selector);
+  initial.forEach(avatar => {
+    if (!avatar.querySelector('.avatar-badge-check')) {
+      const badge = document.createElement('span');
+      badge.className = 'avatar-badge-check';
+      avatar.appendChild(badge);
+    }
+  });
+
+  // Cria um observador para tratar novos avatares carregados dinamicamente
+  if (window._avatarObserver) {
+    window._avatarObserver.disconnect();
+  }
+  
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const avatars = node.querySelectorAll(selector);
+        avatars.forEach(avatar => {
+          if (!avatar.querySelector('.avatar-badge-check')) {
+            const badge = document.createElement('span');
+            badge.className = 'avatar-badge-check';
+            avatar.appendChild(badge);
+          }
+        });
+        
+        if (node.classList && (
+          node.classList.contains('mural-user-avatar') || 
+          node.classList.contains('mural-card-assignee-avatar') || 
+          node.classList.contains('mural-filter-avatar') || 
+          node.classList.contains('kb-avatar')
+        )) {
+          if (!node.querySelector('.avatar-badge-check')) {
+            const badge = document.createElement('span');
+            badge.className = 'avatar-badge-check';
+            node.appendChild(badge);
+          }
+        }
+      });
+    });
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+  window._avatarObserver = observer;
 };

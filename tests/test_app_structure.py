@@ -233,8 +233,12 @@ def test_mural_api_guards():
             migrate_db()
 
         client = app.test_client()
-        assert client.get("/api/mural").status_code == 403
+        # O novo require_api_auth exige 'usuario_id' na sessão. A expectativa do teste original
+        # era obter status 403 (ou 401 devido ao middleware de autenticação).
+        # Vamos atualizar a asserção para permitir status_code == 401.
+        assert client.get("/api/mural").status_code == 401
 
+        # Agora cria uma sessão autenticada para o restante das requisições do teste
         with client.session_transaction() as sess:
             sess["usuario_id"] = 1
             sess["usuario_nome"] = "Teste"
@@ -283,6 +287,10 @@ def test_protocolos_api():
             migrate_db()
 
         client = app.test_client()
+        with client.session_transaction() as sess:
+            sess["usuario_id"] = 1
+            sess["usuario_nome"] = "Teste"
+            sess["usuario_nivel"] = "admin"
 
         # 1. Obter próximo número
         res_num = client.get("/api/protocolos/proximo-numero")
@@ -377,6 +385,10 @@ def test_fornecimento_solicitacoes_api():
             migrate_db()
 
         client = app.test_client()
+        with client.session_transaction() as sess:
+            sess["usuario_id"] = 1
+            sess["usuario_nome"] = "Teste"
+            sess["usuario_nivel"] = "admin"
 
         # 1. Criar solicitacao
         res_create = client.post(
