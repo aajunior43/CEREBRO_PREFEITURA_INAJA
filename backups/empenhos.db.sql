@@ -1,4 +1,4 @@
--- Backup: 2026-06-02T14:30:04.697711
+-- Backup: 2026-06-02T15:00:03.781100
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -257,7 +257,7 @@ INSERT INTO "mural_recados" VALUES(21,'Calcular novo repasse da camara','.','Ale
 INSERT INTO "mural_recados" VALUES(22,'Pagar 4 meses do CIRAU','.','Aleksandro','Maicon','alta','tarefa','concluido','orange','Maicon','02/06/2026 13:38','2026-06-01 09:24:17','2026-06-02 13:38:12',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(23,'Empenhar 2 medição da praça CONSTRUTURA TÉCNICA ANGRA LTDA','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-06-01 11:21:28','2026-06-01 11:21:28',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(24,'PAGAR OFICINA DO NEGO','GEISIBEL MANDOU kkk','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-06-02 08:55:39','2026-06-02 09:07:46',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(25,'Pagar Fatura dos Munícipes','.','Aleksandro','Maicon','urgente','tarefa','em_andamento','pink','','','2026-06-02 09:33:08','2026-06-02 12:51:04',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(25,'Pagar Fatura dos Munícipes','.','Aleksandro','Maicon','urgente','tarefa','concluido','pink','Maicon','02/06/2026 14:47','2026-06-02 09:33:08','2026-06-02 14:47:02',0.0,NULL);
 CREATE TABLE prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
 CREATE TABLE protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL);
 CREATE TABLE protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
