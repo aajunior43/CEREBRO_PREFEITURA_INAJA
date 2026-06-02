@@ -1,4 +1,4 @@
--- Backup: 2026-06-02T12:00:03.677307
+-- Backup: 2026-06-02T12:30:04.976487
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -234,7 +234,7 @@ INSERT INTO "mural_anexos" VALUES(7,21,'RelatorioLimiteDespesaPoderLegislativo.p
 INSERT INTO "mural_anexos" VALUES(8,23,'02med_rre_praca_da_matriz_assinado-1.pdf','application/pdf',2603278,'2026-06-01 11:27:41');
 CREATE TABLE mural_comentarios (id INTEGER PRIMARY KEY AUTOINCREMENT, recado_id INTEGER NOT NULL REFERENCES mural_recados(id) ON DELETE CASCADE, autor TEXT NOT NULL, texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
 CREATE TABLE mural_recados (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, conteudo TEXT NOT NULL, autor TEXT NOT NULL, destinatario TEXT DEFAULT 'Todos', prioridade TEXT DEFAULT 'media', categoria TEXT DEFAULT 'tarefa', status TEXT DEFAULT 'a_fazer', cor TEXT DEFAULT 'yellow', concluido_por TEXT DEFAULT '', concluido_em TEXT DEFAULT '', criado_em TEXT DEFAULT (datetime('now', 'localtime')), atualizado_em TEXT DEFAULT (datetime('now', 'localtime')), valor REAL DEFAULT 0.0, credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL);
-INSERT INTO "mural_recados" VALUES(2,'Pagar Sanepar','atrasado','Aleksandro','Todos','baixa','tarefa','a_fazer','blue','','','2026-05-27 10:23:51','2026-05-27 12:09:51',115000.0,NULL);
+INSERT INTO "mural_recados" VALUES(2,'Pagar Sanepar','atrasado','Aleksandro','Todos','baixa','tarefa','a_fazer','blue','','','2026-05-27 10:23:51','2026-06-02 12:21:29',115000.0,NULL);
 INSERT INTO "mural_recados" VALUES(4,'Empenhar Maicon','Ar condicionado','Aleksandro','Todos','baixa','tarefa','concluido','blue','Luana','29/05/2026 15:25','2026-05-27 10:35:24','2026-05-29 15:25:46',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(5,'Emitir O.P para enfermeira Larissa de 2026','Enviar para ela','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','28/05/2026 14:24','2026-05-27 11:27:15','2026-05-28 14:24:09',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(6,'LIQUIDAR NF ELETROMEGA','liquidar','Aleksandro','Luana','media','tarefa','concluido','yellow','Luana','27/05/2026 14:44','2026-05-27 12:04:10','2026-05-27 14:48:32',0.0,NULL);
