@@ -9,6 +9,14 @@
   <link rel="stylesheet" href="/static/css/fonts.css" />
   <script defer src="/static/js/shared-header.js"></script>
   <script src="/static/js/ia-chat-widget.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    try {
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    } catch(e) {}
+  </script>
   <style>
     .docs-wrap { max-width: 1120px; margin: 24px auto 70px; padding: 0 20px; }
     .docs-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
@@ -29,8 +37,10 @@
     .docs-toolbar { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; }
     .docs-empty { text-align:center; padding:38px 16px; color:var(--text-3); font-size:13px; }
     .docs-list { display:flex; flex-direction:column; gap:12px; }
-    .doc-item { background:var(--bg-2, rgba(0,0,0,.03)); border-radius:var(--radius-sm); padding:16px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; }
-    .doc-main { min-width:0; }
+    .doc-item { background:var(--bg-2, rgba(0,0,0,.03)); border-radius:var(--radius-sm); padding:16px; display:flex; gap:16px; align-items:flex-start; }
+    .doc-cover { width:70px; height:95px; background:var(--bg-3, rgba(0,0,0,.05)); border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; border:1px solid var(--border); }
+    .doc-cover canvas { width:100%; height:100%; object-fit:cover; display:block; }
+    .doc-main { flex:1; min-width:0; }
     .doc-name { font-size:14px; font-weight:800; color:var(--text); word-break:break-word; }
     .doc-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .doc-badge { font-size:11px; font-weight:700; color:var(--text-2); background:rgba(184,194,204,.16); border-radius:999px; padding:4px 10px; }
@@ -45,7 +55,8 @@
     @media (max-width: 900px) {
       .docs-grid { grid-template-columns: 1fr; }
       .docs-toolbar { grid-template-columns: 1fr; }
-      .doc-item { grid-template-columns:1fr; }
+      .doc-item { flex-direction:column; align-items:stretch; }
+      .doc-cover { align-self:center; }
     }
   </style>
 </head>
@@ -182,6 +193,9 @@
 
       docsList.innerHTML = list.map(doc => `
         <div class="doc-item">
+          <div class="doc-cover" data-doc-id="${doc.id}" data-ext="${(doc.extensao || '').toLowerCase()}" data-url="/api/documentos/${doc.id}/view">
+            <span style="font-size:24px;opacity:0.6;">📄</span>
+          </div>
           <div class="doc-main">
             <div class="doc-name">${esc(doc.nome_original)}</div>
             <div class="doc-meta">
@@ -199,6 +213,38 @@
           </div>
         </div>
       `).join('');
+
+      // Render cover thumbnails for PDFs asynchronously
+      document.querySelectorAll('.doc-cover[data-ext=".pdf"]').forEach(async el => {
+        const url = el.dataset.url;
+        try {
+          const loadingTask = pdfjsLib.getDocument(url);
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+          
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          
+          const viewport = page.getViewport({ scale: 1.0 });
+          const scale = Math.min(70 / viewport.width, 95 / viewport.height);
+          const scaledViewport = page.getViewport({ scale: scale });
+          
+          canvas.width = scaledViewport.width;
+          canvas.height = scaledViewport.height;
+          
+          const renderContext = {
+            canvasContext: context,
+            viewport: scaledViewport
+          };
+          await page.render(renderContext).promise;
+          
+          el.innerHTML = '';
+          el.appendChild(canvas);
+        } catch (err) {
+          console.warn("Failed to render PDF thumbnail:", err);
+          el.innerHTML = '<span style="font-size:16px;font-weight:bold;color:var(--red);">PDF</span>';
+        }
+      });
 
       docsEmpty.style.display = list.length ? 'none' : '';
     }
