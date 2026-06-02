@@ -93,14 +93,14 @@ function Clear-Port {
         return
     }
     foreach ($c in $conns) {
-        $pid = $c.OwningProcess
+        $portPid = $c.OwningProcess
         try {
-            $proc = Get-Process -Id $pid -ErrorAction SilentlyContinue
+            $proc = Get-Process -Id $portPid -ErrorAction SilentlyContinue
             $procName = if ($proc) { $proc.ProcessName } else { "Desconhecido" }
-            Write-Info "Finalizando processo em uso na porta 5000: $procName (PID: $pid)..."
-            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+            Write-Info "Finalizando processo em uso na porta 5000: $procName (PID: $portPid)..."
+            Stop-Process -Id $portPid -Force -ErrorAction SilentlyContinue
         } catch {
-            Write-Fail "Não foi possível encerrar PID $pid na porta 5000."
+            Write-Fail "Não foi possível encerrar PID $portPid na porta 5000."
         }
     }
     Start-Sleep 1
