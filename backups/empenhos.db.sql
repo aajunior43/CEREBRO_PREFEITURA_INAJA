@@ -1,4 +1,4 @@
--- Backup: 2026-06-02T09:00:05.066966
+-- Backup: 2026-06-02T09:30:03.842924
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -252,11 +252,11 @@ INSERT INTO "mural_recados" VALUES(16,'Checar Resposta do FALECOM BB sobre ofici
 INSERT INTO "mural_recados" VALUES(17,'Checar CIRAU','diz que esta atrazado 3 meses.','Aleksandro','Aleksandro','urgente','tarefa','concluido','pink','Aleksandro','02/06/2026 08:50','2026-05-29 15:29:11','2026-06-02 08:50:51',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(18,'Oficio para controle interno respondendo que nao obtive resposta da educação e caixa da previdencia','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:30:30','2026-05-29 15:30:30',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(19,'Checar com a INGA INFORMATICA se temos dividas','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:31:30','2026-05-29 15:31:30',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(20,'Fazer relação dos pagamentos dos enfermeiros e valores repassados indevidamente cobrados indevidamente.','.','Aleksandro','Aleksandro','urgente','tarefa','a_fazer','pink','','','2026-05-29 17:10:50','2026-05-29 17:10:50',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(20,'Fazer relação dos pagamentos dos enfermeiros e valores repassados indevidamente cobrados indevidamente.','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 17:10:50','2026-06-02 09:04:17',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(21,'Calcular novo repasse da camara','.','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','01/06/2026 11:27','2026-06-01 08:38:50','2026-06-01 11:27:09',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(22,'Pagar 4 meses do CIRAU','.','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-06-01 09:24:17','2026-06-01 09:24:17',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(23,'Empenhar 2 medição da praça CONSTRUTURA TÉCNICA ANGRA LTDA','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-06-01 11:21:28','2026-06-01 11:21:28',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(24,'PAGAR OFICINA DO NEGO','GEISIBEL MANDOU','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-06-02 08:55:39','2026-06-02 08:55:39',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(24,'PAGAR OFICINA DO NEGO','GEISIBEL MANDOU kkk','Aleksandro','Maicon','urgente','tarefa','a_fazer','pink','','','2026-06-02 08:55:39','2026-06-02 09:07:46',0.0,NULL);
 CREATE TABLE prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
 CREATE TABLE protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL);
 CREATE TABLE protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
