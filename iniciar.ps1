@@ -1,4 +1,4 @@
-﻿# =============================================================================
+# =============================================================================
 # iniciar.ps1 - Servidor Web Flask
 # Prefeitura Municipal de Inaja - Cérebro Municipal
 # =============================================================================
@@ -188,14 +188,15 @@ try {
     Write-Host "  │        🧠 CÉREBRO MUNICIPAL - PAINEL DE CONTROLE 🧠      │" -ForegroundColor Green
     Write-Host "  └──────────────────────────────────────────────────────────┘" -ForegroundColor Green
     Write-Host ""
-    
-    # ASCII Art do CÉREBRO
-    Write-Host "   ██████╗███████╗██████╗ ███████╗██████╗ ██████╗  ██████╗  " -ForegroundColor Cyan
-    Write-Host "  ██╔════╝██╔════╝██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔═══██╗ " -ForegroundColor Cyan
-    Write-Host "  ██║     █████╗  ██████╔╝█████╗  ██████╔╝██████╔╝██║   ██║ " -ForegroundColor Green
-    Write-Host "  ██║     ██╔══╝  ██╔══██╗██╔══╝  ██╔══██╗██╔══██╗██║   ██║ " -ForegroundColor Green
-    Write-Host "  ╚██████╗███████╗██║  ██║███████╗██████╔╝██║  ██║╚██████╔╝ " -ForegroundColor Yellow
-    Write-Host "   ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝  " -ForegroundColor Yellow
+    # ASCII Art do INAJÁ
+    Write-Host "                                                 ██╗  " -ForegroundColor Cyan
+    Write-Host "                                                ╚═╝   " -ForegroundColor Cyan
+    Write-Host "  ██╗ ███╗   ██╗  █████╗       ██╗  █████╗ " -ForegroundColor Cyan
+    Write-Host "  ██║ ████╗  ██║ ██╔══██╗      ██║ ██╔══██╗" -ForegroundColor Green
+    Write-Host "  ██║ ██╔██╗ ██║ ███████║      ██║ ███████║" -ForegroundColor Green
+    Write-Host "  ██║ ██║╚██╗██║ ██╔══██║ ██   ██║ ██╔══██║" -ForegroundColor Yellow
+    Write-Host "  ██║ ██║ ╚████║ ██║  ██║ ╚█████╔╝ ██║  ██║" -ForegroundColor Yellow
+    Write-Host "  ╚═╝ ╚═╝  ╚═══╝ ╚═╝  ╚═╝  ╚════╝  ╚═╝  ╚═╝" -ForegroundColor Yellow
     Write-Host ""
 
     $py = Find-Python
