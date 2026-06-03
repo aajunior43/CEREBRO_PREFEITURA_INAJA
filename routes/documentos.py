@@ -11,6 +11,10 @@ import requests
 from flask import Blueprint, request, jsonify, send_file, session
 
 from config import settings
+from routes._shared import require_login
+from routes.helpers import slugify
+
+import base64
 
 bp = Blueprint("documentos", __name__)
 bp_autentique = Blueprint("autentique", __name__)
@@ -20,19 +24,68 @@ DOCUMENTS_DIR = os.path.join(settings.base_dir, "documentos_centro")
 
 def get_db():
     from flask import g
-
     return g._get_db()
+
+
+def extrair_texto_pdf(abs_path):
+    try:
+        import PyPDF2
+        texto = []
+        with open(abs_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            # Limit page scanning to prevent excessive cpu use
+            for page in reader.pages[:100]:
+                t = page.extract_text()
+                if t:
+                    texto.append(t)
+        return "\n".join(texto)
+    except Exception as e:
+        print(f"Erro ao extrair texto do PDF {abs_path}: {e}")
+        return ""
+
+
+def indexar_documento(doc_id, abs_path):
+    import threading
+    import sqlite3
+    db_path = str(settings.db_path)
+
+    def _worker():
+        try:
+            conn = sqlite3.connect(db_path, timeout=30.0)
+            conn.row_factory = sqlite3.Row
+            row = conn.execute("SELECT 1 FROM documentos_texto WHERE documento_id=?", (doc_id,)).fetchone()
+            if row:
+                conn.close()
+                return
+            if not os.path.exists(abs_path):
+                conn.close()
+                return
+            _, ext = os.path.splitext(abs_path)
+            texto = ""
+            if ext.lower() == ".pdf":
+                texto = extrair_texto_pdf(abs_path)
+            elif ext.lower() in [".txt", ".json", ".csv", ".xml"]:
+                try:
+                    with open(abs_path, "r", encoding="utf-8", errors="ignore") as f:
+                        texto = f.read()
+                except Exception:
+                    pass
+            if texto:
+                conn.execute("INSERT OR REPLACE INTO documentos_texto (documento_id, texto_conteudo) VALUES (?,?)", (doc_id, texto))
+                conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Erro ao indexar documento {doc_id} em background: {e}")
+
+    threading.Thread(target=_worker, daemon=True).start()
+
 
 
 def row_to_dict(row):
     return dict(row)
 
 
-def slugify(value: str, fallback: str = "geral") -> str:
-    text = (value or "").strip().lower()
-    text = re.sub(r"[^a-z0-9_-]+", "-", text)
-    text = re.sub(r"-+", "-", text).strip("-")
-    return text or fallback
+
 
 
 def build_document_storage(
@@ -92,21 +145,41 @@ def persist_document_file(
         ("DOC_UPLOADO", f"Salvou documento: '{original_name}' (Categoria: {categoria})")
     )
     conn.commit()
+    doc_id = cur.lastrowid
+    try:
+        indexar_documento(doc_id, abs_path)
+    except Exception:
+        pass
     row = conn.execute(
-        "SELECT * FROM documentos_centro WHERE id=?", (cur.lastrowid,)
+        "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
     ).fetchone()
     return row_to_dict(row)
 
 
 # ── Documentos CRUD ──────────────────────────────────────────
 @bp.route("/api/documentos", methods=["GET"])
+@require_login
 def documentos_listar():
     try:
         limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
         offset = max(0, request.args.get("offset", 0, type=int))
         categoria = (request.args.get("categoria") or "").strip()
         referencia = (request.args.get("referencia") or "").strip()
+        busca = (request.args.get("busca") or "").strip()
+        
         conn = get_db()
+        
+        # On-the-fly indexing check (index up to 15 unindexed PDFs/files per request)
+        try:
+            unindexed = conn.execute(
+                "SELECT id, caminho_relativo FROM documentos_centro WHERE id NOT IN (SELECT documento_id FROM documentos_texto) AND extensao IN ('.pdf', '.txt', '.json', '.xml', '.csv') LIMIT 15"
+            ).fetchall()
+            for u in unindexed:
+                u_path = os.path.join(DOCUMENTS_DIR, u["caminho_relativo"].replace("/", os.sep))
+                indexar_documento(u["id"], u_path)
+        except Exception:
+            pass
+
         sql = "SELECT * FROM documentos_centro WHERE 1=1"
         count_sql = "SELECT COUNT(*) AS total FROM documentos_centro WHERE 1=1"
         params, count_params = [], []
@@ -121,6 +194,17 @@ def documentos_listar():
             like = f"%{referencia}%"
             params.append(like)
             count_params.append(like)
+            
+        if busca:
+            like_busca = f"%{busca}%"
+            clause = """ AND (nome_original LIKE ? OR descricao LIKE ? OR referencia LIKE ? OR id IN (
+                SELECT documento_id FROM documentos_texto WHERE texto_conteudo LIKE ?
+            ))"""
+            sql += clause
+            count_sql += clause
+            params.extend([like_busca, like_busca, like_busca, like_busca])
+            count_params.extend([like_busca, like_busca, like_busca, like_busca])
+            
         total = conn.execute(count_sql, count_params).fetchone()["total"]
         sql += " ORDER BY criado_em DESC, id DESC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
@@ -138,6 +222,7 @@ def documentos_listar():
 
 
 @bp.route("/api/documentos", methods=["POST"])
+@require_login
 def documentos_enviar():
     file = request.files.get("arquivo")
     categoria = (request.form.get("categoria") or "geral").strip()
@@ -181,8 +266,13 @@ def documentos_enviar():
             ("DOC_UPLOADO", f"Enviou o arquivo: '{file.filename}' (Categoria: {categoria})")
         )
         conn.commit()
+        doc_id = cur.lastrowid
+        try:
+            indexar_documento(doc_id, abs_path)
+        except Exception:
+            pass
         row = conn.execute(
-            "SELECT * FROM documentos_centro WHERE id=?", (cur.lastrowid,)
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
         ).fetchone()
         return jsonify(row_to_dict(row)), 201
     except Exception as e:
@@ -190,6 +280,7 @@ def documentos_enviar():
 
 
 @bp.route("/api/documentos/conteudo", methods=["POST"])
+@require_login
 def documentos_salvar_conteudo():
     try:
         nome = (request.form.get("nome") or "").strip()
@@ -219,6 +310,7 @@ def documentos_salvar_conteudo():
 
 
 @bp.route("/api/documentos/<int:doc_id>/download", methods=["GET"])
+@require_login
 def documentos_download(doc_id):
     try:
         conn = get_db()
@@ -244,6 +336,7 @@ def documentos_download(doc_id):
 
 
 @bp.route("/api/documentos/<int:doc_id>/view", methods=["GET"])
+@require_login
 def documentos_view(doc_id):
     try:
         conn = get_db()
@@ -264,6 +357,7 @@ def documentos_view(doc_id):
 
 
 @bp.route("/api/documentos/<int:doc_id>", methods=["DELETE"])
+@require_login
 def documentos_excluir(doc_id):
     try:
         conn = get_db()
@@ -478,6 +572,7 @@ def _autentique_save_signed_document(
 
 
 @bp_autentique.route("/api/autentique/testar", methods=["POST"])
+@require_login
 def autentique_testar():
     data = request.get_json(silent=True) or {}
     try:
@@ -511,6 +606,7 @@ def autentique_testar():
 
 
 @bp_autentique.route("/api/autentique/saldo", methods=["GET"])
+@require_login
 def autentique_saldo():
     try:
         conn = get_db()
@@ -559,6 +655,7 @@ def autentique_saldo():
 
 
 @bp_autentique.route("/api/autentique/chaves", methods=["GET"])
+@require_login
 def autentique_listar_chaves():
     try:
         conn = get_db()
@@ -584,6 +681,7 @@ def autentique_listar_chaves():
 
 
 @bp_autentique.route("/api/autentique/enviar-whatsapp", methods=["POST"])
+@require_login
 def autentique_enviar_whatsapp():
     data = request.get_json(silent=True) or {}
     doc_id = data.get("documento_id")
@@ -709,6 +807,7 @@ def autentique_enviar_whatsapp():
 
 
 @bp_autentique.route("/api/autentique/envios", methods=["GET"])
+@require_login
 def autentique_listar_envios():
     try:
         conn = get_db()
@@ -725,6 +824,7 @@ def autentique_listar_envios():
 
 
 @bp_autentique.route("/api/autentique/envios/<int:envio_id>", methods=["DELETE"])
+@require_login
 def autentique_excluir_envio(envio_id):
     try:
         conn = get_db()
@@ -740,6 +840,7 @@ def autentique_excluir_envio(envio_id):
 
 
 @bp_autentique.route("/api/autentique/contatos", methods=["GET"])
+@require_login
 def autentique_listar_contatos():
     try:
         conn = get_db()
@@ -752,6 +853,7 @@ def autentique_listar_contatos():
 
 
 @bp_autentique.route("/api/autentique/contatos", methods=["POST"])
+@require_login
 def autentique_salvar_contato():
     data = request.get_json(silent=True) or {}
     nome = (data.get("nome") or "").strip()
@@ -790,6 +892,7 @@ def autentique_salvar_contato():
 
 
 @bp_autentique.route("/api/autentique/contatos/<int:contato_id>", methods=["DELETE"])
+@require_login
 def autentique_excluir_contato(contato_id):
     try:
         conn = get_db()
@@ -807,6 +910,7 @@ def autentique_excluir_contato(contato_id):
 @bp_autentique.route(
     "/api/autentique/envios/<int:envio_id>/download-assinado", methods=["GET"]
 )
+@require_login
 def autentique_download_assinado(envio_id):
     try:
         conn = get_db()
@@ -835,6 +939,7 @@ def autentique_download_assinado(envio_id):
 
 
 @bp_autentique.route("/api/autentique/envios/<int:envio_id>/view-assinado", methods=["GET"])
+@require_login
 def autentique_view_assinado(envio_id):
     try:
         conn = get_db()
@@ -857,6 +962,7 @@ def autentique_view_assinado(envio_id):
 
 
 @bp_autentique.route("/api/autentique/envios/<int:envio_id>/sincronizar", methods=["POST"])
+@require_login
 def autentique_sincronizar_envio(envio_id):
     try:
         conn = get_db()
@@ -1029,6 +1135,7 @@ def autentique_webhook():
 
 
 @bp.route("/api/documentos/<int:doc_id>", methods=["PUT"])
+@require_login
 def documentos_atualizar(doc_id):
     try:
         conn = get_db()
@@ -1071,6 +1178,7 @@ def documentos_atualizar(doc_id):
 
 
 @bp.route("/api/documentos/<int:doc_id>/sugerir-nome", methods=["GET"])
+@require_login
 def documentos_sugerir_nome(doc_id):
     try:
         conn = get_db()
@@ -1138,3 +1246,240 @@ INSTRUÇÕES:
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/documentos/<int:doc_id>/thumbnail", methods=["GET"])
+@require_login
+def documentos_obter_thumbnail(doc_id):
+    try:
+        thumb_path = os.path.join(DOCUMENTS_DIR, "thumbnails", f"{doc_id}.png")
+        if not os.path.exists(thumb_path):
+            return jsonify({"error": "Thumbnail não encontrada"}), 404
+        return send_file(thumb_path, mimetype="image/png")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/documentos/<int:doc_id>/thumbnail", methods=["POST"])
+@require_login
+def documentos_salvar_thumbnail(doc_id):
+    try:
+        # Apenas 'aleksandro' pode salvar ou atualizar capas na biblioteca
+        if session.get("usuario_login") != "aleksandro":
+            return jsonify({"error": "Apenas o usuário 'aleksandro' pode salvar capas na biblioteca."}), 403
+            
+        data = request.get_json(silent=True) or {}
+        img_b64 = data.get("image")
+        if not img_b64:
+            return jsonify({"error": "Dados da imagem vazios"}), 400
+            
+        if "base64," in img_b64:
+            img_b64 = img_b64.split("base64,")[1]
+            
+        img_data = base64.b64decode(img_b64)
+        
+        thumb_dir = os.path.join(DOCUMENTS_DIR, "thumbnails")
+        os.makedirs(thumb_dir, exist_ok=True)
+        thumb_path = os.path.join(thumb_dir, f"{doc_id}.png")
+        
+        with open(thumb_path, "wb") as f:
+            f.write(img_data)
+            
+        return jsonify({"ok": True}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/documentos/<int:doc_id>/sugerir-metadados-csv", methods=["POST"])
+@require_login
+def documentos_sugerir_metadados_csv(doc_id):
+    try:
+        conn = get_db()
+        row = conn.execute(
+            "SELECT * FROM documentos_centro WHERE id=?", (doc_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"error": "Documento não encontrado"}), 404
+
+        abs_path = os.path.join(
+            DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
+        )
+        
+        texto_conteudo = ""
+        if os.path.exists(abs_path):
+            try:
+                with open(abs_path, "r", encoding="utf-8", errors="ignore") as f:
+                    lines = [f.readline() for _ in range(150)]
+                    texto_conteudo = "".join(lines)
+            except Exception:
+                pass
+            
+        from routes._shared import _get_openrouter_config, _build_ai_service
+        api_key, model = _get_openrouter_config(conn)
+        if not api_key:
+            return jsonify({"error": "Chave API OpenRouter não configurada."}), 400
+            
+        prompt = f"""Você é o Cérebro Municipal, assistente de IA da Prefeitura de Inajá.
+Analise a estrutura e o conteúdo de um arquivo CSV de relatório municipal para identificar o tipo de dados, dotações, período e finalidade.
+Sugira uma Referência de período adequada (ex: "Exercício 2026", "Junho 2026"), uma Descrição limpa do relatório, e um nome profissional para o arquivo mantendo a extensão '.csv'.
+
+NOME ORIGINAL DO ARQUIVO: {row['nome_original']}
+
+PRIMEIRAS LINHAS DO CONTEÚDO CSV:
+{texto_conteudo[:3000]}
+
+INSTRUÇÕES:
+- Identifique a data, ano, exercício fiscal ou período de referência contido nos cabeçalhos ou dados.
+- O nome sugerido deve ser conciso, legível, sem espaços (use hifens) e terminar em '.csv'.
+- Responda estritamente em formato JSON contendo as chaves:
+  "referencia": "o_periodo_sugerido",
+  "descricao": "breve_descricao_do_relatorio",
+  "nome_sugerido": "nome-do-arquivo.csv"
+"""
+
+        response = _build_ai_service(api_key, model).chat_by_task(
+            task_type="chat",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.1,
+            max_tokens=250,
+            use_cache=True,
+            metadata={"feature": "sugerir_metadados_csv", "doc_id": doc_id},
+        )
+        
+        from services.openrouter_service import extract_json_block
+        parsed = extract_json_block(response.text)
+        
+        if parsed:
+            referencia = parsed.get("referencia") or "Sem ref."
+            descricao = parsed.get("descricao") or "Relatório CSV"
+            nome_sugerido = parsed.get("nome_sugerido") or row["nome_original"]
+            if not nome_sugerido.endswith(".csv"):
+                nome_sugerido += ".csv"
+                
+            conn.execute(
+                "UPDATE documentos_centro SET nome_original=?, referencia=?, descricao=? WHERE id=?",
+                (nome_sugerido, referencia, descricao, doc_id)
+            )
+            
+            # Auto-import CSV content to csv_importacoes if applicable
+            _tipo_detectado = None
+            try:
+                import csv
+                # Detect delimiter
+                delimiter = ';'
+                if os.path.exists(abs_path):
+                    with open(abs_path, 'r', encoding='utf-8', errors='ignore') as f_detect:
+                        sample = f_detect.read(2048)
+                        if ',' in sample and sample.count(',') > sample.count(';'):
+                            delimiter = ','
+                    
+                    with open(abs_path, 'r', encoding='utf-8', errors='ignore') as f_parse:
+                        reader = csv.reader(f_parse, delimiter=delimiter)
+                        headers = next(reader)
+                        # Clean headers (strip and handle BOM)
+                        headers = [h.strip().replace('\ufeff', '') for h in headers]
+                        
+                        # Score-based type detection with normalized headers
+                        _hl = []
+                        for _raw in headers:
+                            _n = _raw.lower()
+                            for _f, _t in [(' ', '_'), ('.', ''), ('ç', 'c'), ('ã', 'a'),
+                                           ('á', 'a'), ('â', 'a'), ('é', 'e'), ('ê', 'e'),
+                                           ('í', 'i'), ('ó', 'o'), ('ô', 'o'), ('ú', 'u'), ('º', '')]:
+                                _n = _n.replace(_f, _t)
+                            _hl.append(_n)
+                        _EMP_STRONG = ('empenho', 'dotacao', 'subelemento', 'unidade_gestora',
+                                       'unidade_orc', 'funcao', 'subfuncao', 'fonte_recurso',
+                                       'modalidade_lic', 'acao_orc', 'nota_empenho', 'num_emp',
+                                       'nro_emp', 'nr_emp')
+                        _DES_STRONG = ('nota_pag', 'nota_liq', 'data_pag', 'data_liq',
+                                       'vlr_pago', 'valor_pago', 'valor_liq', 'vlr_liq',
+                                       'secretaria', 'departamento', 'tipo_despesa',
+                                       'categoria_econ', 'grupo_desp')
+                        _EMP_WEAK   = ('credor', 'favorecido', 'processo', 'licitacao')
+                        _DES_WEAK   = ('saldo', 'orgao', 'competencia', 'mes_ref')
+                        _score_emp = (sum(2 for h in _hl if any(t in h for t in _EMP_STRONG)) +
+                                      sum(1 for h in _hl if any(t in h for t in _EMP_WEAK)))
+                        _score_des = (sum(2 for h in _hl if any(t in h for t in _DES_STRONG)) +
+                                      sum(1 for h in _hl if any(t in h for t in _DES_WEAK)))
+
+                        if _score_emp > 0 or _score_des > 0:
+                            tipo = 'empenho' if _score_emp >= _score_des else 'despesa'
+                            _tipo_detectado = tipo
+                            linhas_csv = []
+                            for r_csv in reader:
+                                if not r_csv:
+                                    continue
+                                r_dict = {}
+                                for i, val in enumerate(r_csv):
+                                    if i < len(headers):
+                                        r_dict[headers[i]] = val.strip()
+                                linhas_csv.append(r_dict)
+                            
+                            from datetime import datetime as _dt
+                            now_str = _dt.now().strftime("%Y-%m-%d %H:%M:%S")
+                            
+                            # Check if table csv_importacoes exists
+                            has_unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+                            
+                            if has_unified:
+                                cur_u = conn.cursor()
+                                cur_u.execute(
+                                    "INSERT INTO csv_importacoes (tipo, periodo, descricao, arquivo, total_rows, colunas, importado_em) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                    (tipo, referencia, descricao, nome_sugerido, len(linhas_csv), json.dumps(headers, ensure_ascii=False), now_str)
+                                )
+                                imp_id = cur_u.lastrowid
+                                cur_u.executemany(
+                                    "INSERT INTO csv_linhas (importacao_id, dados) VALUES (?, ?)",
+                                    [(imp_id, json.dumps(row_item, ensure_ascii=False)) for row_item in linhas_csv]
+                                )
+                            else:
+                                # Fallback to old tables
+                                old_table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
+                                old_lines = "empenhos_linhas" if tipo == "empenho" else "despesas_linhas"
+                                cur_u = conn.cursor()
+                                if tipo == "empenho":
+                                    cur_u.execute(
+                                        f"INSERT INTO {old_table} (periodo, descricao, arquivo, total_rows, importado_em) VALUES (?, ?, ?, ?, ?)",
+                                        (referencia, descricao, nome_sugerido, len(linhas_csv), now_str)
+                                    )
+                                else:
+                                    cur_u.execute(
+                                        f"INSERT INTO {old_table} (periodo, descricao, arquivo, total_rows, colunas, importado_em) VALUES (?, ?, ?, ?, ?, ?)",
+                                        (referencia, descricao, nome_sugerido, len(linhas_csv), json.dumps(headers, ensure_ascii=False), now_str)
+                                    )
+                                imp_id = cur_u.lastrowid
+                                cur_u.executemany(
+                                    f"INSERT INTO {old_lines} (importacao_id, dados) VALUES (?, ?)",
+                                    [(imp_id, json.dumps(row_item, ensure_ascii=False)) for row_item in linhas_csv]
+                                )
+                            
+                            conn.execute(
+                                "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+                                ("DOC_ATUALIZADO", f"CSV importado e integrado no banco automaticamente: '{nome_sugerido}' ({len(linhas_csv)} linhas)")
+                            )
+            except Exception as e_import:
+                conn.execute(
+                    "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+                    ("ERRO_SISTEMA", f"Falha na importação automática de CSV {doc_id}: {str(e_import)}")
+                )
+            
+            conn.execute(
+                "INSERT INTO logs (acao, detalhes) VALUES (?, ?)",
+                ("DOC_ATUALIZADO", f"IA atualizou metadados do relatório CSV {doc_id}: '{nome_sugerido}' ({referencia})")
+            )
+            conn.commit()
+            
+            return jsonify({
+                "ok": True,
+                "referencia": referencia,
+                "descricao": descricao,
+                "nome_sugerido": nome_sugerido,
+                "tipo": _tipo_detectado
+            })
+        else:
+            return jsonify({"error": "Não foi possível obter sugestão da IA estruturada em JSON."}), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
