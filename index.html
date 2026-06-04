@@ -344,20 +344,7 @@
         </div>
       </div>
 
-      <!-- Painel Hoje -->
-      <aside class="today-panel">
-        <div class="today-head">
-          <div class="today-eyebrow">Hoje</div>
-          <div class="today-date" id="dash-today-date">Qua, 04 Fev</div>
-          <div class="today-day" id="dash-today-day">Dia — / — · Sem —</div>
-        </div>
-        <div class="today-list" id="dash-today-list">
-          <!-- Dinâmico via JS -->
-        </div>
-        <div class="today-footer">
-          <a href="/pages/mural.html">Mural Interativo <i class="ph ph-arrow-right"></i></a>
-        </div>
-      </aside>
+
     </div>
 
     <div class="dash-section-head">
@@ -365,6 +352,7 @@
     </div>
     
     <div class="dash-modules-grid">
+      <!-- 1. Gestão de Credores Fixos -->
       <div class="dash-module-card featured" data-glow data-glow-color="blue" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
         <div data-glow></div>
         <div class="dash-module-card-top">
@@ -378,8 +366,7 @@
         </div>
       </div>
 
-
-
+      <!-- 2. Mural Interativo -->
       <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/mural.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
@@ -393,6 +380,7 @@
         </div>
       </div>
 
+      <!-- 3. Gerador de Descrição -->
       <div class="dash-module-card" data-glow data-glow-color="purple" onclick="window.location.href='/pages/assistente-empenho.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
@@ -405,10 +393,11 @@
         </div>
       </div>
 
+      <!-- 4. Dotação Orçamentária -->
       <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-prefeitura.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 0 02 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
         </div>
         <h3>Dotação Orçamentária</h3>
         <p>Saldos, desdobramentos e execução orçamentária municipal.</p>
@@ -417,6 +406,7 @@
         </div>
       </div>
 
+      <!-- 5. Comparativo Orçamentário -->
       <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-relatorios.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
@@ -429,6 +419,7 @@
         </div>
       </div>
 
+      <!-- 6. Solicitação de Compra / Serviço -->
       <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/fornecimento.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
@@ -441,12 +432,13 @@
         </div>
       </div>
 
+      <!-- 7. Centro de Documentos -->
       <div class="dash-module-card" data-glow data-glow-color="red" onclick="window.location.href='/pages/documentos.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
         </div>
-        <h3>Documentos</h3>
+        <h3>Centro de Documentos</h3>
         <p>Notas fiscais, contratos e comprovantes arquivados.</p>
         <div class="dash-module-card-foot">
           <span class="dash-module-stat" id="dash-stat-documentos">— arquivos</span>

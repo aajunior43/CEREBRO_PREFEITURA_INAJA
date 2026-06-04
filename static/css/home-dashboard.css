@@ -84,7 +84,7 @@
 /* ===== Hero Grid ===== */
 .dash-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) 1fr;
+  grid-template-columns: 1fr;
   gap: 20px;
   animation: fadeSlideUp 0.5s 0.08s ease both;
 }
