@@ -141,68 +141,70 @@ PROMPT_TEMPLATES = {
             "Contabilidade Aplicada ao Setor Público (MCASP) vigente (11ª edição/2025 em diante). "
             "Hoje é {today}. A Prefeitura Municipal de Inajá-PR deseja classificar a despesa corretamente. "
             "{response_style} "
-            "Siga ESTE PROCESSO em ordem:\n"
-            "1ª ETAPA — Leia os resultados da busca web (seção CONTEXTO WEB). "
-            "2ª ETAPA — PENSE ANTES DE RESPONDER. Analise o item considerando: "
-            "O que é exatamente? É material, serviço, obra ou equipamento? "
-            "Quem fornece? Pessoa física ou jurídica? "
-            "Qual a natureza? Consumo imediato, uso contínuo, investimento permanente? "
-            "Quais classificações são possíveis? Qual é a mais adequada e por quê? "
-            "3ª ETAPA — Identifique a categoria do item usando as regras abaixo. "
-            "4ª ETAPA — Cruze busca web + análise + regras e defina a classificação mais precisa. "
-            "\n=== REGRAS DE CLASSIFICAÇÃO (use estas regras, não invente) ===\n"
-            "MATERIAL DE CONSUMO (3.3.90.30 — Custeio, Elemento 30): "
+            "Siga ESTE PROCESSO analítico em ordem:\n"
+            "1ª ETAPA — Leia os resultados da busca web (seção CONTEXTO WEB).\n"
+            "2ª ETAPA — PENSE ANTES DE RESPONDER. Analise o item considerando:\n"
+            "   a) O que é exatamente? É material de consumo, serviço, obra ou equipamento permanente?\n"
+            "   b) Quem é o prestador/fornecedor? Pessoa física ou jurídica?\n"
+            "   c) Aplique os 5 critérios do MCASP para identificar se é Consumo (Custeio) ou Permanente (Capital/Investimento):\n"
+            "      - Durabilidade: O bem dura menos de 2 anos em uso normal?\n"
+            "      - Fragilidade: O bem se quebra ou se danifica facilmente, perdendo sua identidade?\n"
+            "      - Perecibilidade: O bem está sujeito a modificações químicas ou físicas pelo tempo?\n"
+            "      - Incorporabilidade: O bem será incorporado a outro, perdendo sua individualidade (ex: peças de reposição)?\n"
+            "      - Transformabilidade: O bem foi adquirido para ser transformado em outro?\n"
+            "      * Se responder SIM a qualquer um dos 5 critérios acima, o item deve ser classificado como MATERIAL DE CONSUMO (Custeio - 3.3.90.30).\n"
+            "      * Apenas se responder NÃO a todos os 5 critérios, e o bem tiver vida útil superior a 2 anos e conservar sua individualidade, será EQUIPAMENTO E MATERIAL PERMANENTE (Capital - 4.4.90.52).\n"
+            "   d) Diferencie Material vs. Serviço: Aquisição de material com instalação incluída, onde a mão de obra é o fator predominante do preço, deve ser classificada como SERVIÇO (3.3.90.39) e não como material.\n"
+            "3ª ETAPA — Identifique a categoria exata com base nas regras contábeis abaixo.\n"
+            "4ª ETAPA — Cruze a análise com as regras e preencha a estrutura de dados.\n"
+            "\n=== REGRAS DE CLASSIFICAÇÃO (use estas regras contábeis oficiais, não invente códigos) ===\n"
+            "MATERIAL DE CONSUMO (3.3.90.30 — Custeio, Elemento 30):\n"
             "papel, toner, cartucho de tinta, material de escritório, material de limpeza, material elétrico, "
-            "material hidráulico, material de construção (pequenos reparos), material esportivo, material médico-hospitalar, "
-            "material odontológico, material de laboratório, gêneros alimentícios, combustíveis, lubrificantes, "
-            "gás, água, materiais descartáveis, uniformes, EPIs, peças de reposição para veículos e equipamentos "
-            "(manutenção corrente, sem aumento de vida útil).\n"
-            "SERVIÇOS — PESSOA FÍSICA (3.3.90.36 — Custeio, Elemento 36): "
-            "diárias, passagens, indenizações, transporte de servidor, locação de mão de obra temporária (PF), "
-            "hospedagem e alimentação de servidor em viagem oficial.\n"
-            "SERVIÇOS — PESSOA JURÍDICA (3.3.90.39 — Custeio, Elemento 39): "
+            "material hidráulico, material de construção (pequenos reparos e manutenção de imóveis), material esportivo, "
+            "material médico-hospitalar, material odontológico, material de laboratório, gêneros alimentícios, combustíveis, "
+            "lubrificantes, gás, água em galão/garrafa, materiais descartáveis, uniformes, EPIs, peças de reposição para veículos "
+            "e equipamentos (manutenção corrente, sem aumento de vida útil do bem).\n\n"
+            "SERVIÇOS DE TERCEIROS — PESSOA FÍSICA (3.3.90.36 — Custeio, Elemento 36):\n"
+            "Serviços prestados por pessoas físicas de forma eventual sem vínculo empregatício. Exemplos: palestrantes, "
+            "peritos judiciais, locação de mão de obra temporária (PF), pequenas consultorias de autônomos, diárias e "
+            "passagens pagas diretamente a prestadores PF.\n\n"
+            "SERVIÇOS DE TERCEIROS — PESSOA JURÍDICA (3.3.90.39 — Custeio, Elemento 39):\n"
             "contabilidade, auditoria, consultoria, assessoria jurídica, certificação digital (A1, A3, e-CPF, e-CNPJ), "
-            "licenças de software, assinaturas de sistemas, SaaS, manutenção de equipamentos e veículos, "
-            "limpeza, segurança, vigilância, capina e roçagem, poda de árvores, coleta de lixo, "
-            "manutenção de ar-condicionado, manutenção de elevadores, energia elétrica, água e esgoto, "
-            "telecomunicações, internet, telefonia, correios, frete, transporte de materiais, "
-            "serviços gráficos, publicação de editais, serviços de TI, hospedagem de sites, "
-            "serviços bancários, taxas de administração, comissões, serviços de saúde terceirizados, "
-            "serviços educacionais terceirizados, alimentação escolar terceirizada, "
-            "serviços de engenharia (projetos, fiscalização, laudos), "
-            "locação de imóveis, locação de veículos, locação de máquinas e equipamentos, "
-            "serviços de publicidade e propaganda, serviços de comunicação visual.\n"
-            "OBRAS E INSTALAÇÕES (4.4.90.51 — Investimento, Elemento 51): "
-            "construção de prédios, construção de estradas, construção de calçadas, reforma que amplia área ou "
-            "aumenta vida útil do imóvel, pavimentação, drenagem, instalação de rede de água/esgoto, "
-            "instalação de rede elétrica, reforma estrutural de prédios públicos.\n"
-            "EQUIPAMENTOS E MATERIAL PERMANENTE (4.4.90.52 — Investimento, Elemento 52): "
-            "veículos (carros, motos, caminhões, ambulâncias, ônibus, vans), "
-            "computadores, notebooks, tablets, impressoras, monitores, "
-            "mobiliário (mesas, cadeiras, armários, estantes), "
-            "equipamentos médicos e odontológicos, equipamentos de laboratório, "
-            "equipamentos de comunicação (rádios, antenas), "
-            "máquinas e equipamentos em geral (tratores, motosserras, roçadeiras), "
-            "equipamentos de climatização (ar-condicionado split ou central — aquisição do equipamento), "
-            "ferramentas de longa duração.\n"
+            "licenças de software anuais ou temporárias, assinaturas de sistemas, SaaS, manutenção e suporte de software, "
+            "manutenção corretiva e preventiva de equipamentos e veículos, limpeza, segurança, vigilância, capina, roçagem, "
+            "poda de árvores, coleta de lixo, manutenção de ar-condicionado, manutenção de elevadores, energia elétrica, "
+            "água encanada e esgoto, telecomunicações, internet, telefonia fixa e móvel, correios, fretes e carretos, "
+            "serviços gráficos, publicação de atos oficiais/editais, hospedagem de sites e nuvem, serviços bancários, "
+            "tarifas, taxas de administração, exames e serviços de saúde terceirizados por clínicas/hospitais PJ, "
+            "serviços educacionais, alimentação escolar terceirizada, serviços de engenharia (projetos, fiscalização, laudos, "
+            "pequenas reformas que não alterem a estrutura do prédio), locação de imóveis, locação de veículos, "
+            "locação de máquinas e equipamentos, serviços de publicidade, propaganda e eventos.\n\n"
+            "OBRAS E INSTALAÇÕES (4.4.90.51 — Investimento, Elemento 51):\n"
+            "construção de prédios públicos, construção de estradas, pavimentação asfáltica, construção de calçadas, "
+            "reformas estruturais que ampliam a área construída ou aumentam significativamente a vida útil do imóvel, "
+            "implantação de redes de água, esgoto ou iluminação pública.\n\n"
+            "EQUIPAMENTOS E MATERIAL PERMANENTE (4.4.90.52 — Investimento, Elemento 52):\n"
+            "veículos (carros, motocicletas, caminhões, ambulâncias, ônibus, vans, tratores), computadores, notebooks, "
+            "tablets, impressoras, servidores de rede, projetores, mobiliário em geral (mesas, cadeiras de escritório, "
+            "armários de aço, estantes), equipamentos médicos e odontológicos fixos, eletrodomésticos duráveis (geladeira, "
+            "fogão industrial, microondas), ar-condicionado (apenas aquisição do aparelho físico de ar-condicionado), "
+            "ferramentas e equipamentos industriais/agrícolas de longa duração.\n"
             "\n=== FORMATO DE RESPOSTA ===\n"
-            "Responda APENAS com JSON válido no seguinte formato exato: "
+            "Responda APENAS com JSON válido no seguinte formato exato:\n"
             '{{"item_analisado":"...","analise":"...","codigo_completo":"...","grupo":"...","modalidade":"...","elemento":"...",'
             '"subelemento_codigo":"...","subelemento_nome":"...","justificativa":"...","ponto_atencao":"...",'
-            '"confianca":0.0,"alternativas":[]}} '
-            "IMPORTANTE — significado exato de cada campo:\n"
-            '- "analise": Sua análise detalhada. O que é o item? Quem fornece? Qual a natureza? Quais classificações são possíveis? Por que escolheu esta?\n'
-            '- "grupo": GND por extenso. Ex: "Investimento", "Custeio", "Inversões Financeiras"\n'
-            '- "modalidade": Sempre "Aplicação Direta" (não use códigos numéricos)\n'
-            '- "elemento": APENAS o número de 2 dígitos. Ex: "30", "36", "39", "51", "52"\n'
-            '- "subelemento_codigo": O código completo com pontos. Ex: "3.3.90.30", "4.4.90.52"\n'
-            '- "subelemento_nome": Nome do subelemento por extenso. Ex: "Material de Consumo", "Equipamentos e Material Permanente"\n'
-            '- "codigo_completo": Igual ao subelemento_codigo. Ex: "3.3.90.30", "4.4.90.52"\n'
-            "onde confianca é de 0.0 a 1.0 e ponto_atencao é string vazia se não houver exceção. "
-            'O campo "alternativas" deve ser um array vazio [] quando confianca >= 0.70. '
-            'Quando confianca < 0.70, preencha "alternativas" com 2 ou 3 objetos no formato: '
-            '{{"codigo_completo":"...","subelemento_nome":"...","justificativa":"..."}} '
-            "representando as classificações concorrentes mais prováveis, em ordem decrescente de probabilidade."
+            '"confianca":0.0,"alternativas":[]}}\n\n'
+            "IMPORTANTE — regras de preenchimento de cada campo:\n"
+            '- "analise": Sua análise contábil estruturada. Explique o que é o item, se aplica o teste dos 5 critérios do MCASP e qual a sua natureza econômica.\n'
+            '- "grupo": Use "Custeio" (para despesas correntes de custeio/manutenção) ou "Investimento" (para despesas de capital).\n'
+            '- "modalidade": Sempre "Aplicação Direta".\n'
+            '- "elemento": Apenas os 2 dígitos numéricos do elemento. Ex: "30", "36", "39", "51" ou "52".\n'
+            '- "subelemento_codigo" e "codigo_completo": Devem ser idênticos, informando o código estruturado da despesa de acordo com o MCASP. Exemplos: "3.3.90.30" ou "4.4.90.52".\n'
+            '- "subelemento_nome": Nome do elemento correspondente. Exemplos: "Material de Consumo" (para 3.3.90.30), "Outros Serviços de Terceiros - Pessoa Jurídica" (para 3.3.90.39), ou "Equipamentos e Material Permanente" (para 4.4.90.52).\n'
+            '- "justificativa": Explicação técnica clara e concisa citando as regras do MCASP ou a aplicação dos critérios de diferenciação.\n'
+            '- "ponto_atencao": Um alerta curto caso haja riscos ou exceções de classificação (ex: alertar que se houver mão de obra junto com o material, deve-se usar 39). Se não houver ressalvas, preencha com string vazia "".\n'
+            '- "confianca": Float de 0.0 a 1.0 indicando o nível de certeza contábil da classificação.\n'
+            '- "alternativas": Array de objetos no formato {{"codigo_completo":"...","subelemento_nome":"...","justificativa":"..."}} indicando as segundas opções mais prováveis. Obrigatório quando a confianca for inferior a 0.75.'
         ),
         user_template="CONTEXTO WEB (TAVILY):\n{web_context}\n\n---\n\nItem a classificar: {item}",
     ),
