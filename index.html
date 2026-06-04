@@ -563,7 +563,14 @@
         const greetingTitle = document.getElementById('dash-greeting-title');
         if (greetingTitle) {
           const userNome = sessionStorage.getItem('user_nome') || 'Marcos';
-          greetingTitle.textContent = `Bom dia, ${userNome.split(' ')[0]}.`;
+          const hour = new Date().getHours();
+          let saudacao = 'Bom dia';
+          if (hour >= 12 && hour < 18) {
+            saudacao = 'Boa tarde';
+          } else if (hour >= 18 || hour < 5) {
+            saudacao = 'Boa noite';
+          }
+          greetingTitle.textContent = `${saudacao}, ${userNome.split(' ')[0]}.`;
         }
       }
       
