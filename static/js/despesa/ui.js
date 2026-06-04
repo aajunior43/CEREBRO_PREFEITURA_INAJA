@@ -104,11 +104,17 @@
 
     if (printBtn) {
       printBtn.onclick = () => {
-        // Ensure the current row is selected for print card rendering
+        // Assegura que o ID selecionado no estado do App corresponda à dotação atual
         state.selectedId = row.__id;
+        
+        // Atualiza a tabela para refletir a seleção visual
+        if (selectHandler) selectHandler(row.__id);
+        
+        // Renderiza o cartão de impressão institucional correspondente
         window.App.ui.renderPrintCard();
         if (window.App.ui.setPrintDate) window.App.ui.setPrintDate();
 
+        // Adiciona classe de impressão e executa
         document.body.classList.add("print-selected");
         const cleanup = () => {
           document.body.classList.remove("print-selected");
