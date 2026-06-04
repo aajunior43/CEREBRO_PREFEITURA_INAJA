@@ -552,11 +552,22 @@ h3 {
   }
 
   /* Hide everything except the print card */
-  .bg-orb, .hero, #filters, #stats, .panel.table,
-  .site-footer, #modalOverlay, header, main,
+  .bg-orb, .hero, #filters, #stats,
+  .site-footer, #modalOverlay, header,
   #ia-painel, #historico-painel, #comparativo-overlay,
   .shd-header, .shd-mobile-nav, .shd-breadcrumb {
     display: none !important;
+  }
+
+  body:not(.print-selected) main,
+  body:not(.print-selected) .layout {
+    display: none !important;
+  }
+
+  body.print-selected .panel.table {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
   }
 
   /* Show print card */
