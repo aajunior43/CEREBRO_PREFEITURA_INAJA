@@ -30,7 +30,7 @@
       const resp = await fetch('/api/despesas/importar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ periodo, descricao, arquivo, colunas: colsParaSalvar, linhas })
+        body: JSON.stringify({ periodo, descricao, arquivo, colunas: colsParaSalvar, linhas, tipo: "despesa" })
       });
       let data;
       const text = await resp.text();
@@ -48,14 +48,14 @@
 
   // ── Listar importações ───────────────────────────────────
   window.DespesaHistorico.listar = async function () {
-    const resp = await fetch('/api/despesas/importacoes');
+    const resp = await fetch('/api/despesas/importacoes?tipo=despesa');
     if (!resp.ok) throw new Error('Erro ao listar importações');
     return resp.json();
   };
 
   // ── Carregar importação ──────────────────────────────────
   window.DespesaHistorico.carregar = async function (id) {
-    const resp = await fetch(`/api/despesas/importacoes/${id}`);
+    const resp = await fetch(`/api/despesas/importacoes/${id}?tipo=despesa`);
     if (!resp.ok) throw new Error('Importação não encontrada');
     const { importacao, linhas } = await resp.json();
 
@@ -113,7 +113,7 @@
 
   // ── Excluir importação ───────────────────────────────────
   window.DespesaHistorico.excluir = async function (id) {
-    const resp = await fetch(`/api/despesas/importacoes/${id}`, { method: 'DELETE' });
+    const resp = await fetch(`/api/despesas/importacoes/${id}?tipo=despesa`, { method: 'DELETE' });
     if (!resp.ok) throw new Error('Erro ao excluir');
     return resp.json();
   };

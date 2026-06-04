@@ -543,11 +543,16 @@
               logToConsole('Integração no banco de dados concluída com sucesso!', 'success');
 
               // Monta card de destino inline (substitui o drop-zone temporariamente)
+              const impId = aiData.csv_importacao_id || null;
               const destinos = {
                 empenho: { label: 'Visualizador de Empenhos', url: '/pages/visualizador.html', icon: '📊', cor: '#2563eb' },
                 despesa: { label: 'Despesas da Prefeitura',   url: '/pages/despesa-prefeitura.html', icon: '💰', cor: '#059669' },
               };
               const dest = destinos[aiData.tipo] || null;
+              // Acrescenta imp_id na URL para auto-carregar os dados
+              const destUrl = dest && impId && aiData.tipo === 'empenho'
+                ? dest.url + '?imp_id=' + impId
+                : dest ? dest.url : null;
               const dropCard = document.querySelector('.drop-card');
               const oldCard = document.getElementById('upload-success-card');
               if (oldCard) oldCard.remove();
@@ -562,13 +567,13 @@
                     <div style="font-size:11px;color:var(--text-3);margin-top:2px;">${aiData.nome_sugerido} · ${aiData.referencia}</div>
                   </div>
                 </div>
-                ${dest ? `
+               ${dest && destUrl ? `
                 <div style="background:color-mix(in srgb,${dest.cor} 8%,transparent);border:1px solid color-mix(in srgb,${dest.cor} 25%,transparent);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <div>
                     <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;">Dados disponíveis em</div>
                     <div style="font-size:13px;font-weight:800;color:var(--text);">${dest.icon} ${dest.label}</div>
                   </div>
-                  <a href="${dest.url}" style="background:${dest.cor};color:#fff;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">Ver dados →</a>
+                  <a href="${destUrl}" style="background:${dest.cor};color:#fff;padding:9px 16px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;">Ver dados →</a>
                 </div>` : '<div style="font-size:12px;color:var(--text-3);">Tipo de dado não identificado — verifique os cabeçalhos do CSV.</div>'}
                 <button onclick="document.getElementById('upload-success-card').remove();uploadForm.reset();selectedFile=null;selectedFileInfo.style.display='none';submitBtn.disabled=true;" style="background:none;border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-2);align-self:flex-start;">+ Enviar outro arquivo</button>
               `;

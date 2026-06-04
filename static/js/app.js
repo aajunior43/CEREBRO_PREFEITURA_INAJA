@@ -2132,11 +2132,13 @@ function applyGlowingSearchBars() {
     const id = (input.id || '').toLowerCase();
     const className = (input.className || '').toLowerCase();
     
-    // Do not wrap comment inputs
+    // Do not wrap comment inputs or sidebar search
     if (
       id.includes('comment') || 
       className.includes('comment') || 
-      placeholder.includes('coment')
+      placeholder.includes('coment') ||
+      id === 'sidebarsearch' ||
+      className.includes('sidebar-search')
     ) {
       return;
     }

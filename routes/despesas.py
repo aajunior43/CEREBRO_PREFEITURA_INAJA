@@ -4,7 +4,7 @@ import json
 import io as _io
 import datetime
 from flask import Blueprint, request, jsonify
-from routes._shared import get_db, row_to_dict, _get_openrouter_config, _build_ai_service
+from routes._shared import get_db, row_to_dict, _get_openrouter_config, _build_ai_service, require_login
 
 bp = Blueprint("despesas", __name__)
 
@@ -13,6 +13,7 @@ bp = Blueprint("despesas", __name__)
 
 
 @bp.route("/api/despesas/importacoes", methods=["GET"])
+@require_login
 def despesas_listar_importacoes():
     conn = get_db()
     tipo = (request.args.get("tipo") or "despesa").strip()
@@ -37,6 +38,7 @@ def despesas_listar_importacoes():
 
 
 @bp.route("/api/despesas/importar", methods=["POST"])
+@require_login
 def despesas_importar():
     try:
         d = request.get_json(force=True)
@@ -130,6 +132,7 @@ def despesas_importar():
 
 
 @bp.route("/api/despesas/importacoes/<int:imp_id>", methods=["GET"])
+@require_login
 def despesas_carregar(imp_id):
     conn = get_db()
     tipo = (request.args.get("tipo") or "despesa").strip()
@@ -178,6 +181,7 @@ def despesas_carregar(imp_id):
 
 
 @bp.route("/api/despesas/importacoes/<int:imp_id>", methods=["DELETE"])
+@require_login
 def despesas_excluir(imp_id):
     conn = get_db()
     tipo = (request.args.get("tipo") or "despesa").strip()
@@ -200,6 +204,7 @@ def despesas_excluir(imp_id):
 
 
 @bp.route("/api/despesas/importacoes/<int:imp_id>/resumo", methods=["GET"])
+@require_login
 def despesas_resumo(imp_id):
     conn = get_db()
     unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
@@ -299,6 +304,7 @@ def despesas_resumo(imp_id):
 
 
 @bp.route("/api/despesas/ia", methods=["POST"])
+@require_login
 def despesas_ia():
     from services.openrouter_service import AIServiceError
 
@@ -396,6 +402,7 @@ def despesas_ia():
 
 
 @bp.route("/api/empenhos-csv/importar", methods=["POST"])
+@require_login
 def empenhos_csv_importar():
     try:
         d = request.get_json(force=True) or {}
@@ -437,6 +444,7 @@ def empenhos_csv_importar():
 
 
 @bp.route("/api/empenhos-csv/importacoes", methods=["GET"])
+@require_login
 def empenhos_csv_listar():
     conn = get_db()
     unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
@@ -452,6 +460,7 @@ def empenhos_csv_listar():
 
 
 @bp.route("/api/empenhos-csv/importacoes/<int:imp_id>", methods=["GET"])
+@require_login
 def empenhos_csv_carregar(imp_id):
     conn = get_db()
     unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
@@ -467,6 +476,7 @@ def empenhos_csv_carregar(imp_id):
 
 
 @bp.route("/api/empenhos-csv/importacoes/<int:imp_id>", methods=["DELETE"])
+@require_login
 def empenhos_csv_excluir(imp_id):
     conn = get_db()
     unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()

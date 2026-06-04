@@ -56,6 +56,70 @@ DATA_JS = str(settings.data_js_path)
 DOCUMENTS_DIR = os.path.join(BASE_DIR, "documentos_centro")
 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
 
+# ── Startup & Environment Logging ────────────────────────────
+_startup_logger = None
+
+def _setup_startup_logger():
+    global _startup_logger
+    if _startup_logger is not None:
+        return _startup_logger
+    
+    import platform
+    log_dir = settings.log_dir
+    os.makedirs(str(log_dir), exist_ok=True)
+    startup_log_path = log_dir / "startup.log"
+    
+    logger = logging.getLogger("startup")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    
+    if not logger.handlers:
+        handler = RotatingFileHandler(
+            str(startup_log_path),
+            maxBytes=1024 * 1024,
+            backupCount=2,
+            encoding="utf-8"
+        )
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+        )
+        logger.addHandler(handler)
+        
+        # Log system info on initial configuration
+        logger.info("=" * 80)
+        logger.info("INICIANDO BOOT DO SERVIDOR CÉREBRO MUNICIPAL")
+        logger.info("=" * 80)
+        logger.info(f"Python: {sys.version}")
+        logger.info(f"S.O.: {platform.platform()}")
+        logger.info(f"Diretório Base: {BASE_DIR}")
+        logger.info(f"Host: {settings.host} | Porta: {settings.port} | Debug: {settings.debug}")
+        
+        def check_env(var):
+            val = os.environ.get(var)
+            if val:
+                return f"CONFIGURADO (tamanho: {len(val)})"
+            return "NÃO CONFIGURADO"
+            
+        logger.info(f"Chave ADM_PASSWORD: {'CONFIGURADA' if settings.admin_password else 'NÃO CONFIGURADA (usando padrão)'}")
+        logger.info(f"Chave OPENROUTER_API_KEY: {check_env('OPENROUTER_API_KEY')}")
+        logger.info(f"Chave OPENCODE_GO_API_KEY: {check_env('OPENCODE_GO_API_KEY')}")
+        logger.info(f"Chave TAVILY_API_KEY: {check_env('TAVILY_API_KEY')}")
+        logger.info(f"gevent disponível: {_GEVENT_AVAILABLE}")
+        
+    _startup_logger = logger
+    return logger
+
+def _log_startup(message: str, level: str = "INFO"):
+    logger = _setup_startup_logger()
+    if level == "INFO":
+        logger.info(message)
+    elif level == "WARNING":
+        logger.warning(message)
+    elif level == "ERROR":
+        logger.error(message)
+    elif level == "CRITICAL":
+        logger.critical(message)
+
 # ── Terminal colors ──────────────────────────────────────────
 _TERM_COLORS = {
     "reset": "\033[0m",
@@ -242,10 +306,12 @@ def create_app() -> Flask:
                 pass
 
     def migrate_db():
+        _log_startup("Iniciando migrações do banco de dados (migrate_db)...")
         conn = get_db()
         cur = conn.cursor()
         
         # 1. Base Table Creation (without _contents tables)
+        _log_startup("Verificando/criando tabelas base...")
         for sql in [
             "CREATE TABLE IF NOT EXISTS logs (id INTEGER PRIMARY KEY AUTOINCREMENT, acao TEXT NOT NULL, credor_id INTEGER, credor_nome TEXT, credor_departamento TEXT DEFAULT '', credor_cnpj TEXT DEFAULT '', detalhes TEXT, data TEXT DEFAULT (datetime('now', 'localtime')), FOREIGN KEY(credor_id) REFERENCES credores(id) ON DELETE SET NULL)",
             "CREATE TABLE IF NOT EXISTS rpas (id INTEGER PRIMARY KEY AUTOINCREMENT, numero_rpa TEXT, nome_prestador TEXT NOT NULL, cpf_prestador TEXT NOT NULL DEFAULT '', endereco_prestador TEXT, descricao_servico TEXT, periodo_referencia TEXT, carga_horaria TEXT, local_execucao TEXT, valor_bruto REAL DEFAULT 0 CHECK (valor_bruto >= 0), num_dependentes INTEGER DEFAULT 0, pensao_alimenticia REAL DEFAULT 0, inss REAL DEFAULT 0, iss REAL DEFAULT 0, deducao_dependentes REAL DEFAULT 0, base_calculo_irrf REAL DEFAULT 0, aliquota_irrf REAL DEFAULT 0, parcela_deduzir_irrf REAL DEFAULT 0, ir REAL DEFAULT 0, valor_liquido REAL DEFAULT 0 CHECK (valor_liquido >= 0), observacoes TEXT, data_emissao TEXT, criado_em TEXT DEFAULT (datetime('now', 'localtime')))",
@@ -270,6 +336,7 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS audit_trail (id INTEGER PRIMARY KEY AUTOINCREMENT, tabela TEXT NOT NULL, registro_id TEXT DEFAULT '', operacao TEXT NOT NULL, dados_anteriores TEXT DEFAULT '{}', dados_novos TEXT DEFAULT '{}', ip TEXT DEFAULT '', timestamp TEXT DEFAULT (datetime('now', 'localtime')))",
         ]:
             cur.execute(sql)
+        _log_startup("Tabelas base verificadas/criadas.")
 
         # Helper for migrating foreign keys
         def migrate_table_foreign_keys(table_name, create_sql, check_key_column=None, expected_on_delete=None):
@@ -285,6 +352,7 @@ def create_app() -> Flask:
                     needs_migration = True
                     
             if needs_migration:
+                _log_startup(f"Tabela '{table_name}' precisa de migração de foreign key. Executando...")
                 cur.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
                 if cur.fetchone():
                     try:
@@ -295,8 +363,10 @@ def create_app() -> Flask:
                         cols_str = ", ".join(old_cols)
                         cur.execute(f"INSERT INTO {table_name} ({cols_str}) SELECT {cols_str} FROM {table_name}_old")
                         cur.execute(f"DROP TABLE {table_name}_old")
+                        _log_startup(f"Migração de foreign key para '{table_name}' realizada com sucesso.")
                     except Exception as e:
                         app.logger.warning(f"Erro ao migrar foreign keys da tabela {table_name}: {e}")
+                        _log_startup(f"Erro ao migrar foreign keys da tabela '{table_name}': {e}", "WARNING")
 
         # Migrate empenhos (ON DELETE CASCADE)
         migrate_table_foreign_keys(
@@ -334,6 +404,7 @@ def create_app() -> Flask:
         cur.execute("PRAGMA table_info(kanban_attachments)")
         cols = [r["name"] for r in cur.fetchall()]
         if "content" in cols:
+            _log_startup("Executando divisão da tabela 'kanban_attachments' (removendo blob content da tabela principal)...")
             try:
                 cur.execute("ALTER TABLE kanban_attachments RENAME TO kanban_attachments_old")
                 cur.execute("CREATE TABLE kanban_attachments (id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES kanban_tasks(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))")
@@ -341,25 +412,31 @@ def create_app() -> Flask:
                 cur.execute("INSERT INTO kanban_attachments (id, task_id, file_name, mime_type, file_size, criado_em) SELECT id, task_id, file_name, mime_type, file_size, criado_em FROM kanban_attachments_old")
                 cur.execute("INSERT OR IGNORE INTO kanban_attachment_contents (attachment_id, content) SELECT id, content FROM kanban_attachments_old WHERE content IS NOT NULL")
                 cur.execute("DROP TABLE kanban_attachments_old")
+                _log_startup("Divisão da tabela 'kanban_attachments' realizada com sucesso.")
             except Exception as e:
                 app.logger.warning(f"Erro ao dividir tabela kanban_attachments: {e}")
+                _log_startup(f"Erro ao dividir tabela 'kanban_attachments': {e}", "WARNING")
         else:
             cur.execute("CREATE TABLE IF NOT EXISTS kanban_attachment_contents (attachment_id INTEGER PRIMARY KEY REFERENCES kanban_attachments(id) ON DELETE CASCADE, content BLOB NOT NULL)")
             cur.execute("PRAGMA foreign_key_list(kanban_attachment_contents)")
             fks = [dict(r) for r in cur.fetchall()]
             if any(fk["table"] == "kanban_attachments_old" for fk in fks):
+                _log_startup("Corrigindo FK órfã em 'kanban_attachment_contents'...")
                 try:
                     cur.execute("ALTER TABLE kanban_attachment_contents RENAME TO kanban_attachment_contents_old")
                     cur.execute("CREATE TABLE kanban_attachment_contents (attachment_id INTEGER PRIMARY KEY REFERENCES kanban_attachments(id) ON DELETE CASCADE, content BLOB NOT NULL)")
                     cur.execute("INSERT INTO kanban_attachment_contents (attachment_id, content) SELECT attachment_id, content FROM kanban_attachment_contents_old")
                     cur.execute("DROP TABLE kanban_attachment_contents_old")
+                    _log_startup("FK em 'kanban_attachment_contents' corrigida com sucesso.")
                 except Exception as e:
                     app.logger.warning(f"Erro ao corrigir FK de kanban_attachment_contents: {e}")
+                    _log_startup(f"Erro ao corrigir FK de 'kanban_attachment_contents': {e}", "WARNING")
 
         # Split BLOB table: protocolo_anexos
         cur.execute("PRAGMA table_info(protocolo_anexos)")
         cols = [r["name"] for r in cur.fetchall()]
         if "content" in cols:
+            _log_startup("Executando divisão da tabela 'protocolo_anexos' (removendo blob content da tabela principal)...")
             try:
                 cur.execute("ALTER TABLE protocolo_anexos RENAME TO protocolo_anexos_old")
                 cur.execute("CREATE TABLE protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')))")
@@ -367,20 +444,25 @@ def create_app() -> Flask:
                 cur.execute("INSERT INTO protocolo_anexos (id, protocolo_id, file_name, mime_type, file_size, criado_em) SELECT id, protocolo_id, file_name, mime_type, file_size, criado_em FROM protocolo_anexos_old")
                 cur.execute("INSERT OR IGNORE INTO protocolo_anexo_contents (anexo_id, content) SELECT id, content FROM protocolo_anexos_old WHERE content IS NOT NULL")
                 cur.execute("DROP TABLE protocolo_anexos_old")
+                _log_startup("Divisão da tabela 'protocolo_anexos' realizada com sucesso.")
             except Exception as e:
                 app.logger.warning(f"Erro ao dividir tabela protocolo_anexos: {e}")
+                _log_startup(f"Erro ao dividir tabela 'protocolo_anexos': {e}", "WARNING")
         else:
             cur.execute("CREATE TABLE IF NOT EXISTS protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)")
             cur.execute("PRAGMA foreign_key_list(protocolo_anexo_contents)")
             fks = [dict(r) for r in cur.fetchall()]
             if any(fk["table"] == "protocolo_anexos_old" for fk in fks):
+                _log_startup("Corrigindo FK órfã em 'protocolo_anexo_contents'...")
                 try:
                     cur.execute("ALTER TABLE protocolo_anexo_contents RENAME TO protocolo_anexo_contents_old")
                     cur.execute("CREATE TABLE protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL)")
                     cur.execute("INSERT INTO protocolo_anexo_contents (anexo_id, content) SELECT anexo_id, content FROM protocolo_anexo_contents_old")
                     cur.execute("DROP TABLE protocolo_anexo_contents_old")
+                    _log_startup("FK em 'protocolo_anexo_contents' corrigida com sucesso.")
                 except Exception as e:
                     app.logger.warning(f"Erro ao corrigir FK de protocolo_anexo_contents: {e}")
+                    _log_startup(f"Erro ao corrigir FK de 'protocolo_anexo_contents': {e}", "WARNING")
 
         ensure_db_indexes(cur)
         for alter in [
@@ -450,8 +532,10 @@ def create_app() -> Flask:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_login ON usuarios(login)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_usuarios_nivel ON usuarios(nivel)")
         conn.commit()
+        _log_startup("Migrações do banco de dados (migrate_db) concluídas com sucesso.")
 
     def init_db():
+        _log_startup("Iniciando estrutura principal do banco de dados (init_db)...")
         conn = get_db()
         cur = conn.cursor()
         for sql in [
@@ -578,15 +662,18 @@ def create_app() -> Flask:
 
         count = cur.execute("SELECT COUNT(*) FROM credores").fetchone()[0]
         if count == 0 and os.path.exists(DATA_JS):
+            _log_startup("Banco de dados vazio. Populando dados iniciais de data.js...")
             print("Populando banco com dados do data.js...")
             _seed_from_data_js(cur)
         ensure_db_indexes(cur)
         conn.commit()
+        _log_startup("Estrutura principal do banco de dados (init_db) e triggers FTS5 gravadas e consolidadas.")
 
         try:
             conn.execute("VACUUM")
-        except Exception:
-            pass
+            _log_startup("Comando SQLite VACUUM executado com sucesso.")
+        except Exception as e:
+            _log_startup(f"Aviso: Falha ao rodar SQLite VACUUM: {e}", "WARNING")
 
     def _seed_from_data_js(cur):
         with open(DATA_JS, encoding="utf-8") as f:
@@ -806,12 +893,20 @@ def create_app() -> Flask:
         count, total_kb = 0, 0
         started_at = _time.perf_counter()
         _terminal_log("BOOT", "Pré-carregando arquivos estáticos em RAM...", "cyan")
+        _log_startup("Pré-carregamento de arquivos estáticos em RAM iniciado...")
         for root, dirs, files in os.walk(BASE_DIR):
-            dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
+            dirs[:] = [
+                d for d in dirs 
+                if d not in _SKIP_DIRS 
+                and not d.startswith(".") 
+                and d not in {"tests", "scripts", "services", "routes", "tmp", "scratch", "pref_extracted"}
+            ]
             rel_root = os.path.relpath(root, BASE_DIR).replace("\\", "/")
             if rel_root == ".":
                 rel_root = ""
             for fname in files:
+                if fname.startswith("."):
+                    continue
                 ext = os.path.splitext(fname)[1].lower()
                 if ext in _SKIP_EXTS:
                     continue
@@ -830,6 +925,7 @@ def create_app() -> Flask:
             f"{count} arquivos carregados em RAM ({_fmt_bytes(total_kb * 1024)})",
             "green",
         )
+        _log_startup(f"Pré-carregamento finalizado. {count} arquivos carregados em RAM ({_fmt_bytes(total_kb * 1024)})")
         enc_count = max(len(_brotli_cache), len(_gzip_cache))
         enc_name = "brotli+gzip" if _BROTLI_OK else "gzip"
         _terminal_log(
@@ -837,6 +933,7 @@ def create_app() -> Flask:
             f"{enc_count} arquivos com versão {enc_name} prontos em {elapsed_ms:.1f} ms",
             "green",
         )
+        _log_startup(f"Versões comprimidas prontas ({enc_count} arquivos em {elapsed_ms:.1f} ms)")
 
     def _serve_cached(url, cache_control):
         if settings.debug:
@@ -1239,6 +1336,7 @@ def create_app() -> Flask:
         bp_latex_pdf,
     )
 
+    _log_startup("Registrando blueprints no aplicativo Flask...")
     app.register_blueprint(bp_credores)
     app.register_blueprint(bp_mural)
     app.register_blueprint(bp_calendario)
@@ -1261,12 +1359,15 @@ def create_app() -> Flask:
     app.register_blueprint(bp_empenho_assistente)
     app.register_blueprint(bp_classificador)
     app.register_blueprint(bp_latex_pdf)
+    _log_startup("Todos os 22 blueprints registrados com sucesso.")
 
     # Init auth hash (compat) + multi-user auth
+    _log_startup("Inicializando hashes e sistema de autenticação multiusuário...")
     from routes.all_routes import init_auth_hash
     init_auth_hash(settings.admin_password)
     from routes.auth import init_auth_system
     init_auth_system(settings.admin_password, app)
+    _log_startup("Sistema de autenticação inicializado.")
 
     return app, _preload_static_files, init_db, migrate_db
 
@@ -1274,69 +1375,91 @@ def create_app() -> Flask:
 # ── MAIN ─────────────────────────────────────────────────────
 if __name__ == "__main__":
     import socket
+    import traceback
 
     logging.getLogger("werkzeug").setLevel(logging.ERROR)
     boot_started_at = _time.perf_counter()
 
-    app, _preload_static_files, init_db, migrate_db = create_app()
-
-    _terminal_section("Sistema de Empenhos – Prefeitura Municipal de Inajá")
-    _terminal_log("BOOT", "Iniciando servidor Flask...", "cyan")
-    init_db()
-    _terminal_log("BOOT", "Estrutura principal do banco verificada", "green")
-    migrate_db()
-    _terminal_log("BOOT", "Migrações do banco aplicadas", "green")
-    _preload_static_files()
-
     try:
-        from werkzeug.serving import WSGIRequestHandler
+        app, _preload_static_files, init_db, migrate_db = create_app()
 
-        WSGIRequestHandler.address_string = lambda self: self.client_address[0]
-        WSGIRequestHandler.protocol_version = "HTTP/1.1"
-    except Exception:
-        pass
+        _terminal_section("Sistema de Empenhos – Prefeitura Municipal de Inajá")
+        _terminal_log("BOOT", "Iniciando servidor Flask...", "cyan")
+        _log_startup("Iniciando banco de dados...")
+        
+        init_db()
+        _terminal_log("BOOT", "Estrutura principal do banco verificada", "green")
+        
+        migrate_db()
+        _terminal_log("BOOT", "Migrações do banco aplicadas", "green")
+        
+        _preload_static_files()
 
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-    except OSError:
-        local_ip = "127.0.0.1"
+        if not settings.admin_password:
+            _terminal_log("WARN", "ADM_PASSWORD nao configurada em seu ambiente/.env! Utilizando senha administrativa padrao e secret_key estatica.", "yellow")
+            _log_startup("Aviso: ADM_PASSWORD não configurada no ambiente/.env! Usando credenciais padrão.", "WARNING")
 
-    boot_elapsed_ms = (_time.perf_counter() - boot_started_at) * 1000
-    _terminal_section("Servidor pronto")
-    _terminal_log("LOCAL", f"http://localhost:{settings.port}", "green")
-    _terminal_log("REDE", f"http://{local_ip}:{settings.port}", "green")
-    _terminal_log(
-        "INFO",
-        f"Modo debug: {'ligado' if settings.debug else 'desligado'} | Host: {settings.host}",
-        "yellow",
-    )
-    _terminal_log("TIME", f"Startup concluído em {boot_elapsed_ms:.1f} ms", "magenta")
-    _terminal_log(
-        "INFO", "Para encerrar: feche esta janela ou pressione Ctrl+C", "cyan"
-    )
+        try:
+            from werkzeug.serving import WSGIRequestHandler
 
-    if _GEVENT_AVAILABLE:
-        from gevent.pywsgi import WSGIServer as _GeventServer
-        _terminal_log("SERVER", "Usando gevent (SSE/streaming habilitado)", "green")
-        _GeventServer(
-            (settings.host, settings.port),
-            app,
-            log=None,
-            error_log=None,
-        ).serve_forever()
-    else:
-        import waitress
-        _terminal_log("SERVER", "gevent nao encontrado, usando Waitress (SSE limitado)", "yellow")
-        waitress.serve(
-            app,
-            host=settings.host,
-            port=settings.port,
-            threads=24,
-            connection_limit=2000,
-            channel_timeout=300,
-            cleanup_interval=10,
-            asyncore_use_poll=True,
+            WSGIRequestHandler.address_string = lambda self: self.client_address[0]
+            WSGIRequestHandler.protocol_version = "HTTP/1.1"
+        except Exception:
+            pass
+
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except OSError:
+            local_ip = "127.0.0.1"
+
+        boot_elapsed_ms = (_time.perf_counter() - boot_started_at) * 1000
+        _terminal_section("Servidor pronto")
+        _terminal_log("LOCAL", f"http://localhost:{settings.port}", "green")
+        _terminal_log("REDE", f"http://{local_ip}:{settings.port}", "green")
+        _terminal_log(
+            "INFO",
+            f"Modo debug: {'ligado' if settings.debug else 'desligado'} | Host: {settings.host}",
+            "yellow",
         )
+        _terminal_log("TIME", f"Startup concluído em {boot_elapsed_ms:.1f} ms", "magenta")
+        _log_startup(f"Servidor Cérebro Municipal pronto. Startup concluído em {boot_elapsed_ms:.1f} ms. Local: http://localhost:{settings.port} | Rede: http://{local_ip}:{settings.port}")
+        _terminal_log(
+            "INFO", "Para encerrar: feche esta janela ou pressione Ctrl+C", "cyan"
+        )
+
+        if _GEVENT_AVAILABLE:
+            from gevent.pywsgi import WSGIServer as _GeventServer
+            _terminal_log("SERVER", "Usando gevent (SSE/streaming habilitado)", "green")
+            _log_startup("Inicializando gevent WSGIServer...")
+            _GeventServer(
+                (settings.host, settings.port),
+                app,
+                log=None,
+                error_log=None,
+            ).serve_forever()
+        else:
+            import waitress
+            _terminal_log("SERVER", "gevent nao encontrado, usando Waitress (SSE limitado)", "yellow")
+            _log_startup("gevent não disponível, inicializando Waitress WSGI server...")
+            waitress.serve(
+                app,
+                host=settings.host,
+                port=settings.port,
+                threads=24,
+                connection_limit=2000,
+                channel_timeout=300,
+                cleanup_interval=10,
+                asyncore_use_poll=True,
+            )
+    except Exception as e:
+        tb = traceback.format_exc()
+        _terminal_log("FATAL", f"Erro fatal ao iniciar servidor: {e}", "red")
+        print(tb, file=sys.stderr)
+        try:
+            _log_startup(f"ERRO FATAL NO BOOT DO SERVIDOR: {e}\n{tb}", "CRITICAL")
+        except Exception:
+            pass
+        sys.exit(1)

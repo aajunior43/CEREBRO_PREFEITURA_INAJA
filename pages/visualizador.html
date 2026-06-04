@@ -1974,8 +1974,256 @@
   </script>
 
   <!-- ── Salvar no banco e Histórico ────────────────────────────── -->
+  <script>
   (function () {
     const API_VIZ = '/api/empenhos-csv';
+    const salvarWrap   = document.getElementById('viz-salvar-wrap');
+    const btnSalvar    = document.getElementById('btn-viz-salvar');
+    const btnHist      = document.getElementById('btn-viz-historico');
+    const painel       = document.getElementById('viz-historico-painel');
+    const lista        = document.getElementById('viz-historico-lista');
+    const btnFechar    = document.getElementById('viz-fechar-historico');
+    const inputPeriodo = document.getElementById('viz-input-periodo');
+    const inputDesc    = document.getElementById('viz-input-descricao');
+
+    // ── Helper: aguarda window.App estar pronto ───────────────────
+    function waitForApp(cb, tries) {
+      if (window.App && window.App.stateManager) { cb(); return; }
+      if ((tries || 0) > 100) { console.warn('App não inicializou a tempo'); return; }
+      setTimeout(() => waitForApp(cb, (tries || 0) + 1), 50);
+    }
+
+    // ── Override de setData: mostra painel de salvar após CSV carregado ──
+    waitForApp(function() {
+      const orig = window.App.stateManager.setData;
+      window.App.stateManager.setData = function(newData) {
+        orig.call(this, newData);
+        if (newData && newData.length > 0) {
+          salvarWrap.style.display = 'flex';
+          if (!inputPeriodo.value) {
+            const now = new Date();
+            const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            inputPeriodo.value = `${String(now.getDate()).padStart(2,'0')}/${meses[now.getMonth()]}/${now.getFullYear()}`;
+          }
+        }
+      };
+    });
+
+    // ── Salvar no banco ───────────────────────────────────────────
+    btnSalvar && btnSalvar.addEventListener('click', async () => {
+      const periodo = inputPeriodo.value.trim();
+      if (!periodo) { inputPeriodo.focus(); inputPeriodo.style.borderColor = '#ef4444'; return; }
+      inputPeriodo.style.borderColor = 'rgba(255,255,255,0.15)';
+      const data = window.App && window.App.state && window.App.state.data;
+      if (!data || !data.length) { alert('Nenhum dado carregado.'); return; }
+      const arquivo = document.getElementById('csvFile')?.files[0]?.name || '';
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = 'Salvando…';
+      try {
+        const resp = await fetch(API_VIZ + '/importar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            periodo, descricao: inputDesc.value.trim(), arquivo,
+            linhas: data.map(item => ({ ...item.raw, _id: item.id, _credor: item.credor, _valor: item.valor, _data: item.data, _situacao: item.situacao }))
+          })
+        });
+        const result = await resp.json();
+        if (!resp.ok) throw new Error(result.error || 'Erro ao salvar');
+        btnSalvar.textContent = '✓ Salvo!';
+        btnSalvar.style.borderColor = '#10b981'; btnSalvar.style.color = '#10b981'; btnSalvar.style.background = 'rgba(16,185,129,0.12)';
+        setTimeout(() => {
+          btnSalvar.disabled = false;
+          btnSalvar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Salvar no banco';
+          btnSalvar.style.borderColor = '#c9a961'; btnSalvar.style.color = '#c9a961'; btnSalvar.style.background = 'rgba(201,169,97,0.12)';
+        }, 3000);
+      } catch (e) {
+        alert('Erro ao salvar: ' + e.message);
+        btnSalvar.disabled = false; btnSalvar.textContent = 'Salvar no banco';
+      }
+    });
+
+    // ── Histórico ─────────────────────────────────────────────────
+    function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    async function renderHistorico() {
+      lista.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">Carregando…</div>';
+      try {
+        const imps = await fetch(API_VIZ + '/importacoes').then(r => r.json());
+        if (!imps.length) {
+          lista.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">Nenhuma importação salva. Carregue um CSV e clique em "Salvar no banco".</div>';
+          return;
+        }
+        lista.innerHTML = '';
+        imps.forEach(imp => {
+          const item = document.createElement('div');
+          item.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;margin-bottom:6px;';
+          const dt = imp.importado_em ? new Date(imp.importado_em.replace(' ','T')).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+          item.innerHTML = `
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:13px;color:#f1f5f9;">${escH(imp.periodo)}${imp.descricao ? ' – ' + escH(imp.descricao) : ''}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${imp.total_rows} empenhos${imp.arquivo ? ' · ' + escH(imp.arquivo) : ''} · ${dt}</div>
+            </div>
+            <div style="display:flex;gap:6px;margin-left:12px;">
+              <button class="vbtn vbtn-outline viz-hist-load" data-id="${imp.id}" style="font-size:11px;padding:4px 10px;">Carregar</button>
+              <button class="vbtn vbtn-outline viz-hist-del" data-id="${imp.id}" style="font-size:11px;padding:4px 10px;border-color:#ef4444;color:#ef4444;">✕</button>
+            </div>`;
+          lista.appendChild(item);
+        });
+        lista.querySelectorAll('.viz-hist-load').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.disabled = true; btn.textContent = '…';
+            try {
+              const resp = await fetch(API_VIZ + '/importacoes/' + btn.dataset.id).then(r => r.json());
+              const linhas = _mapLinhasFromDB(resp.linhas);
+              window.App.stateManager.setData(linhas);
+              window.App.ui.renderFilters();
+              window.App.ui.populateDespesaFilter && window.App.ui.populateDespesaFilter(linhas);
+              window.App.logic.applyFilters();
+              window.App.ui.renderTable();
+              window.App.ui.renderPagination();
+              window.App.ui.renderStats();
+              painel.style.display = 'none';
+              const pe = document.getElementById('viz-periodo-ativo');
+              if (pe) pe.textContent = '📂 ' + resp.importacao.periodo;
+            } catch(e) { alert('Erro ao carregar: ' + e.message); }
+            finally { btn.disabled = false; btn.textContent = 'Carregar'; }
+          });
+        });
+        lista.querySelectorAll('.viz-hist-del').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Excluir esta importação?')) return;
+            await fetch(API_VIZ + '/importacoes/' + btn.dataset.id, { method: 'DELETE' });
+            btn.closest('div[style]').remove();
+            if (!lista.querySelector('[data-id]')) renderHistorico();
+          });
+        });
+      } catch(e) {
+        lista.innerHTML = '<div style="color:#ef4444;font-size:13px;">Erro ao carregar histórico.</div>';
+      }
+    }
+
+    btnHist && btnHist.addEventListener('click', () => {
+      const open = painel.style.display === 'block';
+      painel.style.display = open ? 'none' : 'block';
+      if (!open) renderHistorico();
+    });
+    btnFechar && btnFechar.addEventListener('click', () => { painel.style.display = 'none'; });
+
+    // ── Mapeador de linhas do banco → formato App ─────────────────
+    function _mapLinhasFromDB(rawLinhas) {
+      const utils = window.App.utils;
+      const logic = window.App.logic;
+      return rawLinhas.map((row, i) => {
+        const getExact = (key) => {
+          const kn = key.toLowerCase().replace(/\s+/g,'');
+          for (const k of Object.keys(row)) {
+            if (k.toLowerCase().replace(/\s+/g,'') === kn) return row[k] || '';
+          }
+          return '';
+        };
+        const findVal = (patterns) => {
+          for (const p of patterns) {
+            const pn = p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+            for (const k of Object.keys(row)) {
+              const kn = k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+              if (kn === pn || kn.includes(pn)) return row[k] || '';
+            }
+          }
+          return '';
+        };
+        const numEmp = getExact('numeroEmpenho') || getExact('numEmpenho') || getExact('nroEmpenho');
+        const anoEmp = getExact('anoEmpenho') || '';
+        const id = row._id || (numEmp && anoEmp ? numEmp + '/' + anoEmp : numEmp) || findVal(['numero empenho','num empenho','nro empenho','idempenho']) || String(i + 1);
+        let dataStr = row._data || getExact('data') || findVal(['data emissao','data empenho','dataemissao']);
+        if (dataStr && /^\d{2}\/\d{2}\/\d{2}(\s|$)/.test(dataStr)) {
+          const parts = dataStr.split(' ')[0].split('/');
+          let y = parseInt(parts[2]);
+          if (y < 100) y += (y < 50 ? 2000 : 1900);
+          dataStr = parts[0] + '/' + parts[1] + '/' + y;
+        }
+        const credor = row._credor || getExact('nomeCredor') || getExact('nomecredor') || findVal(['credor','fornecedor','razao social','nome credor']) || 'Desconhecido';
+        const valor = typeof row._valor === 'number' ? row._valor : utils.parseBRL(row._valor || getExact('valorEmpenhadoBruto') || getExact('valorempenhado') || findVal(['valor empenhado','valorempenhadob','vl empenhado','valor']));
+        const vlLiq = utils.parseBRL(getExact('valorLiquidadoBruto') || getExact('valorliquidado') || findVal(['valor liquidado','vl liquidado','vlrliquidado']));
+        const vlPago = utils.parseBRL(getExact('valorBaixadoBruto') || getExact('saldoBaixado') || getExact('valorPago') || getExact('valorbaixado') || findVal(['valor pago','vl pago','vlrpago','saldo baixado']));
+        const saldoPagar = utils.parseBRL(getExact('saldoPagar') || '');
+        let situacao = row._situacao || getExact('situacao') || getExact('situação') || findVal(['situacao','status','fase','situação']);
+        if (!situacao) {
+          if (vlPago > 0 && saldoPagar <= 0.01) situacao = 'Pago';
+          else if (vlLiq > 0 && saldoPagar > 0.01) situacao = 'Liquidado';
+          else if (vlLiq > 0) situacao = 'Em Liquidação';
+          else situacao = 'Empenhado';
+        }
+        const historico = getExact('especificacao') || getExact('especificação') || findVal(['especificacao','historico','descricao','objeto']);
+        const processo  = getExact('numProcesso') || findVal(['processo','num processo','nro processo']);
+        const unidade   = getExact('numDespesa') || getExact('numAcao') || findVal(['unidade','unidade orcamentaria','orgao','departamento']);
+        const funcao    = getExact('numFuncao') || findVal(['funcao','função']);
+        const subfuncao = getExact('numSubfuncao') || findVal(['subfuncao','subfunção']);
+        const dataLiq   = findVal(['data liquidacao','dt liquidacao','dataliquidacao']);
+        const rawNat    = getExact('numNaturezaDesp') || getExact('numNaturezaEmp') || findVal(['natureza despesa','natureza','elemento despesa','numnaturezadesp']);
+        const natCode   = (rawNat || '').replace(/\D/g,'').substring(0,6);
+        const credorId  = getExact('idCredor') || '';
+        const credorDig = credorId.replace(/\D/g,'') || credor.replace(/\D/g,'');
+        let credorType  = 'PF';
+        if (credorDig.length === 14) credorType = 'PJ';
+        else if (credorDig.length !== 11) {
+          const up = credor.toUpperCase();
+          if (['LTDA','ME','EPP','S.A','SA','EIRELI','INSTITUTO','ASSOCIACAO','PREFEITURA','MUNICIPIO','SECRETARIA','FUNDO','BANCO','COOPERATIVA'].some(k => up.includes(k))) credorType = 'PJ';
+        }
+        const dateTs   = logic.parseDateForSort(dataStr);
+        const liqTs    = logic.parseDateForSort(dataLiq);
+        const dateParts = (dataStr || '').split('/');
+        return {
+          id, data: dataStr, credor, historico, processo, unidade, situacao,
+          valor, valorLiquidado: vlLiq, valorPago: vlPago,
+          funcao, subfuncao, dataLiquidacao: dataLiq, raw: row,
+          numeroEmpenho: id, nomeCredor: credor, especificacao: historico,
+          _dateTs: dateTs, _liquidacaoTs: liqTs,
+          _year: dateParts.length >= 3 ? dateParts[2].substring(0,4) : '',
+          _month: dateParts.length >= 2 ? parseInt(dateParts[1]) || 0 : 0,
+          _naturezaCode: natCode, _credorType: credorType,
+          _execPct: valor > 0 ? (vlPago / valor) * 100 : 0,
+          _searchable: [id, credor, historico, processo, unidade, situacao, getExact('tipoEmpenho'), getExact('modalidade'), getExact('contrato'), getExact('licitacao')].join(' ').toLowerCase()
+        };
+      });
+    }
+
+    // ── Auto-load: carrega importação da URL ou a mais recente do banco ──
+    (async function autoLoadFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      let impId = params.get('imp_id');
+      try {
+        if (!impId) {
+          const listaImps = await fetch(API_VIZ + '/importacoes').then(r => r.json()).catch(() => []);
+          if (!listaImps || !listaImps.length) return;
+          impId = listaImps[0].id;
+        }
+        const resp = await fetch(API_VIZ + '/importacoes/' + impId).then(r => r.json());
+        if (!resp || !resp.linhas || !resp.linhas.length) return;
+        // Aguarda App inicializar (máx 5s)
+        const tryLoad = (tries) => {
+          if (!window.App || !window.App.stateManager || !window.App.utils) {
+            if (tries < 50) setTimeout(() => tryLoad(tries + 1), 100);
+            return;
+          }
+          const linhas = _mapLinhasFromDB(resp.linhas);
+          window.App.stateManager.setData(linhas);
+          window.App.ui.renderFilters();
+          window.App.ui.populateDespesaFilter && window.App.ui.populateDespesaFilter(linhas);
+          window.App.logic.applyFilters();
+          window.App.ui.renderTable();
+          window.App.ui.renderPagination();
+          window.App.ui.renderStats();
+          const pe = document.getElementById('viz-periodo-ativo');
+          if (pe) pe.textContent = '📂 ' + (resp.importacao.periodo || 'Importação carregada');
+        };
+        tryLoad(0);
+      } catch(e) { console.warn('Auto-load falhou:', e); }
+    })();
+
+  })();
+  </script>
+
     const salvarWrap = document.getElementById('viz-salvar-wrap');
     const btnSalvar  = document.getElementById('btn-viz-salvar');
     const btnHist    = document.getElementById('btn-viz-historico');
@@ -1985,10 +2233,19 @@
     const inputPeriodo  = document.getElementById('viz-input-periodo');
     const inputDesc     = document.getElementById('viz-input-descricao');
 
-    // Mostra/oculta "Salvar no banco" após carregar CSV
-    const origSetData = window.App.stateManager.setData;
-    window.App.stateManager.setData = function(newData) {
-      origSetData.call(this, newData);
+    // Aguarda window.App estar pronto antes de fazer override de setData
+    function waitForApp(cb, maxTries) {
+      if (window.App && window.App.stateManager) { cb(); return; }
+      if ((maxTries || 0) > 100) return;
+      setTimeout(() => waitForApp(cb, (maxTries || 0) + 1), 50);
+    }
+
+    waitForApp(function() {
+      // Mostra/oculta "Salvar no banco" após carregar CSV
+      const origSetData = window.App.stateManager.setData;
+      window.App.stateManager.setData = function(newData) {
+        origSetData.call(this, newData);
+
       if (newData && newData.length > 0) {
         salvarWrap.style.display = 'flex';
         // Preenche período com a data atual se ainda estiver vazio
@@ -2077,12 +2334,7 @@
             btn.disabled = true; btn.textContent = '…';
             try {
               const resp = await fetch(API_VIZ + '/importacoes/' + btn.dataset.id).then(r => r.json());
-              const linhas = resp.linhas.map(row => ({
-                id: row._id || '', credor: row._credor || '', valor: row._valor || 0,
-                data: row._data || '', situacao: row._situacao || '', raw: row,
-                historico: '', processo: '', unidade: '', valorLiquidado: 0, valorPago: 0,
-                funcao: '', subfuncao: '', dataLiquidacao: ''
-              }));
+              const linhas = _mapLinhasFromDB(resp.linhas);
               window.App.stateManager.setData(linhas);
               window.App.ui.renderFilters();
               window.App.ui.populateDespesaFilter(linhas);
@@ -2118,6 +2370,183 @@
     btnFechar.addEventListener('click', () => { painel.style.display = 'none'; });
 
     function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    // Helper: re-mapeia linhas salvas no banco para o formato do App.state.data
+    // Suporta tanto formato camelCase do sistema municipal quanto CSV genérico
+    function _mapLinhasFromDB(rawLinhas) {
+      const utils = window.App.utils;
+      const logic = window.App.logic;
+      return rawLinhas.map((row, i) => {
+        // Busca um campo pelo nome exato (case-insensitive, ignora acentos e espaços)
+        const getExact = (key) => {
+          const kn = key.toLowerCase().replace(/\s+/g,'');
+          for (const k of Object.keys(row)) {
+            if (k.toLowerCase().replace(/\s+/g,'') === kn) return row[k] || '';
+          }
+          return '';
+        };
+        // Busca por múltiplos padrões (qualquer parte do nome)
+        const findVal = (patterns) => {
+          for (const p of patterns) {
+            const pn = p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+            for (const k of Object.keys(row)) {
+              const kn = k.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+              if (kn === pn || kn.includes(pn)) return row[k] || '';
+            }
+          }
+          return '';
+        };
+
+        // ── Identificação do empenho ──────────────────────────────
+        // Formato municipal: numeroEmpenho, anoEmpenho
+        const numEmp = getExact('numeroEmpenho') || getExact('numEmpenho') || getExact('nroEmpenho');
+        const anoEmp = getExact('anoEmpenho') || getExact('anoEmpenho') || '';
+        const id = row._id
+          || (numEmp && anoEmp ? numEmp + '/' + anoEmp : numEmp)
+          || findVal(['numero empenho','num empenho','nro empenho','idempenho'])
+          || String(i + 1);
+
+        // ── Data ─────────────────────────────────────────────────
+        // Formato municipal: "05/01/26 00:00" → converte para "05/01/2026"
+        let dataStr = row._data || getExact('data') || findVal(['data emissao','data empenho','dataemissao']);
+        if (dataStr && /^\d{2}\/\d{2}\/\d{2}(\s|$)/.test(dataStr)) {
+          const parts = dataStr.split(' ')[0].split('/');
+          let y = parseInt(parts[2]);
+          if (y < 100) y += (y < 50 ? 2000 : 1900);
+          dataStr = parts[0] + '/' + parts[1] + '/' + y;
+        }
+
+        // ── Credor ───────────────────────────────────────────────
+        const credor = row._credor
+          || getExact('nomeCredor') || getExact('nomecredor')
+          || findVal(['credor','fornecedor','razao social','nome credor'])
+          || 'Desconhecido';
+
+        // ── Valores ──────────────────────────────────────────────
+        // Formato municipal: valorEmpenhadoBruto, valorLiquidadoBruto, valorBaixadoBruto
+        const valor = typeof row._valor === 'number'
+          ? row._valor
+          : utils.parseBRL(
+              row._valor
+              || getExact('valorEmpenhadoBruto') || getExact('valorempenhado')
+              || findVal(['valor empenhado','valorempenhadob','vl empenhado','valor'])
+            );
+        const vlLiq = utils.parseBRL(
+          getExact('valorLiquidadoBruto') || getExact('valorliquidado')
+          || findVal(['valor liquidado','vl liquidado','vlrliquidado'])
+        );
+        // Pago = baixado (sistema PR) ou campo específico
+        const vlPago = utils.parseBRL(
+          getExact('valorBaixadoBruto') || getExact('saldoBaixado')
+          || getExact('valorPago') || getExact('valorbaixado')
+          || findVal(['valor pago','vl pago','vlrpago','saldo baixado'])
+        );
+        const saldoPagar = utils.parseBRL(getExact('saldoPagar') || '');
+        const saldoLiquidar = utils.parseBRL(getExact('saldoLiquidar') || '');
+
+        // ── Situação / Status ─────────────────────────────────────
+        // Infere situação a partir dos saldos quando não há campo explícito
+        let situacao = row._situacao || getExact('situacao') || getExact('situação')
+          || findVal(['situacao','status','fase','situação']);
+        if (!situacao) {
+          if (vlPago > 0 && saldoPagar <= 0.01) situacao = 'Pago';
+          else if (vlLiq > 0 && saldoPagar > 0.01) situacao = 'Liquidado';
+          else if (vlLiq > 0) situacao = 'Em Liquidação';
+          else situacao = 'Empenhado';
+        }
+
+        // ── Outros campos ─────────────────────────────────────────
+        const historico = getExact('especificacao') || getExact('especificação')
+          || findVal(['especificacao','historico','descricao','objeto']);
+        const processo  = getExact('numProcesso')
+          || findVal(['processo','num processo','nro processo']);
+        const unidade   = getExact('numDespesa') || getExact('numAcao')
+          || findVal(['unidade','unidade orcamentaria','orgao','departamento']);
+        const funcao    = getExact('numFuncao')
+          || findVal(['funcao','função']);
+        const subfuncao = getExact('numSubfuncao')
+          || findVal(['subfuncao','subfunção']);
+        const dataLiq   = findVal(['data liquidacao','dt liquidacao','dataliquidacao']);
+        const rawNat    = getExact('numNaturezaDesp') || getExact('numNaturezaEmp')
+          || findVal(['natureza despesa','natureza','elemento despesa','numnaturezadesp']);
+        const natCode   = (rawNat || '').replace(/\D/g,'').substring(0,6);
+
+        // ── Tipo de credor ────────────────────────────────────────
+        const credorId  = getExact('idCredor') || '';
+        const credorDig = credorId.replace(/\D/g,'') || credor.replace(/\D/g,'');
+        let credorType  = 'PF';
+        if (credorDig.length === 14) credorType = 'PJ';
+        else if (credorDig.length !== 11) {
+          const up = credor.toUpperCase();
+          if (['LTDA','ME','EPP','S.A','SA','EIRELI','INSTITUTO','ASSOCIACAO',
+               'PREFEITURA','MUNICIPIO','SECRETARIA','FUNDO','BANCO','COOPERATIVA']
+              .some(k => up.includes(k))) credorType = 'PJ';
+        }
+
+        const dateTs   = logic.parseDateForSort(dataStr);
+        const liqTs    = logic.parseDateForSort(dataLiq);
+        const dateParts = (dataStr || '').split('/');
+        return {
+          id, data: dataStr, credor, historico, processo, unidade, situacao,
+          valor, valorLiquidado: vlLiq, valorPago: vlPago,
+          funcao, subfuncao, dataLiquidacao: dataLiq, raw: row,
+          numeroEmpenho: id,
+          nomeCredor: credor,
+          especificacao: historico,
+          _dateTs: dateTs, _liquidacaoTs: liqTs,
+          _year: dateParts.length >= 3 ? dateParts[2].substring(0,4) : '',
+          _month: dateParts.length >= 2 ? parseInt(dateParts[1]) || 0 : 0,
+          _naturezaCode: natCode, _credorType: credorType,
+          _execPct: valor > 0 ? (vlPago / valor) * 100 : 0,
+          _searchable: [id, credor, historico, processo, unidade, situacao,
+                        getExact('tipoEmpenho'), getExact('modalidade'),
+                        getExact('contrato'), getExact('licitacao')]
+                        .join(' ').toLowerCase()
+        };
+      });
+    }
+
+    // Auto-carregar importação: usa ?imp_id=<id> na URL ou busca a mais recente
+    (async function autoLoadFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      let impId = params.get('imp_id');
+
+      try {
+        // Se não veio imp_id na URL, busca a importação de empenho mais recente
+        if (!impId) {
+          const lista = await fetch(API_VIZ + '/importacoes').then(r => r.json()).catch(() => []);
+          if (!lista || !lista.length) return; // Nada importado ainda
+          // Pega a mais recente (lista já vem ordenada por importado_em DESC)
+          impId = lista[0].id;
+        }
+
+        const resp = await fetch(API_VIZ + '/importacoes/' + impId).then(r => r.json());
+        if (!resp || !resp.linhas || !resp.linhas.length) return;
+
+        const linhas = _mapLinhasFromDB(resp.linhas);
+
+        // Aguarda inicialização do App antes de injetar os dados
+        const tryLoad = (tentativas) => {
+          if (!window.App || !window.App.stateManager) {
+            if ((tentativas || 0) < 50) setTimeout(() => tryLoad((tentativas || 0) + 1), 100);
+            return;
+          }
+          window.App.stateManager.setData(linhas);
+          window.App.ui.renderFilters();
+          if (window.App.ui.populateDespesaFilter) window.App.ui.populateDespesaFilter(linhas);
+          window.App.logic.applyFilters();
+          window.App.ui.renderTable();
+          window.App.ui.renderPagination();
+          window.App.ui.renderStats();
+          const periodoEl = document.getElementById('viz-periodo-ativo');
+          if (periodoEl) periodoEl.textContent = '📂 ' + (resp.importacao.periodo || 'Importação carregada');
+        };
+        tryLoad(0);
+      } catch(e) { console.warn('Auto-load falhou:', e); }
+    })();
+
+    }); // fim waitForApp
+
   })();
 
   </script>
