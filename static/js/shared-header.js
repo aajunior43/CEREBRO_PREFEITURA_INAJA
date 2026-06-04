@@ -217,6 +217,7 @@
       { href: '/pages/calculadora-diarias.html', name: 'Calculadora de Diárias', desc: 'Calcular diárias de viagens' },
 
       { href: '/pages/calendario.html', name: 'Calendário', desc: 'Calendário de pagamentos' },
+      { href: '/pages/upload-dados.html', name: 'Upload de Dados', desc: 'Central de upload de relatórios CSV' },
       { href: '/pages/manual.html',     name: 'Manual do Sistema',      desc: 'Guia completo do sistema' },
     ],
   };
@@ -517,12 +518,13 @@
       document.head.appendChild(style);
     }
 
-    // Sincroniza chaves do banco → localStorage (garante que módulos de IA funcionem mesmo após limpeza de cache)
-    if (!localStorage.getItem('api_openrouter_key')) {
+    // Remove chaves de API armazenadas em localStorage (devem ficar apenas no servidor)
+    localStorage.removeItem('api_openrouter_key');
+    localStorage.removeItem('ext_ia_key');
+
+    // Sincroniza apenas configurações não-sensíveis do banco → localStorage
+    if (!localStorage.getItem('api_openrouter_modelo')) {
       fetch('/api/config').then(r => r.json()).then(cfg => {
-        const model = cfg.api_openrouter_modelo || '';
-        const iaKey = model.startsWith('opencode-go/') ? (cfg.api_opencode_go_key || cfg.api_openrouter_key) : cfg.api_openrouter_key;
-        if (iaKey)                     { localStorage.setItem('api_openrouter_key',    iaKey);                    localStorage.setItem('ext_ia_key',    iaKey); }
         if (cfg.api_openrouter_modelo) { localStorage.setItem('api_openrouter_modelo', cfg.api_openrouter_modelo); localStorage.setItem('ext_ia_modelo', cfg.api_openrouter_modelo); }
         if (cfg.api_cnpja_key)         { localStorage.setItem('api_cnpja_key',          cfg.api_cnpja_key); }
       }).catch(() => {});
@@ -838,9 +840,7 @@
     }
 
     async function runGenericIaRequest(pageConfig, action, question) {
-      const apiKey = localStorage.getItem('api_openrouter_key') || localStorage.getItem('ext_ia_key') || '';
-      if (!apiKey && !pageConfig.endpoint) throw new Error('Configure a chave OpenRouter em ADM antes de usar a IA.');
-      const model = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || 'opencode-go/deepseek-v4-flash';
+      const model = localStorage.getItem('api_openrouter_modelo') || localStorage.getItem('ext_ia_modelo') || '';
       const context = typeof pageConfig.contextBuilder === 'function' ? pageConfig.contextBuilder() : buildGenericIaContext();
 
       if (pageConfig.endpoint) {
@@ -877,7 +877,6 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          api_key: apiKey,
           model,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.2
@@ -1016,58 +1015,25 @@
 
 })();
 
-/* ── callIaFree: helper global com fallback automático entre modelos free ── */
+/* ── callIaFree: proxy via backend (chave nunca exposta no cliente) ── */
 window.callIaFree = async function callIaFree(messages, { temperature = 0.2, max_tokens = 1200 } = {}) {
-  const api_key = (localStorage.getItem('api_openrouter_key') || '').trim();
+  const model = (localStorage.getItem('api_openrouter_modelo') || '').trim();
 
-  // Lista de modelos free em ordem de preferência
-  const preferred = (localStorage.getItem('api_openrouter_modelo') || '').trim();
-  const FREE_MODELS = [
-    preferred,
-    'meta-llama/llama-3.3-70b-instruct:free',
-    'mistralai/mistral-7b-instruct:free',
-    'google/gemma-2-9b-it:free',
-    'qwen/qwen-2-7b-instruct:free',
-    'opencode-go/deepseek-v4-flash',
-    'openrouter/free'
-  ].filter((v, i, a) => v && a.indexOf(v) === i); // deduplica e remove vazios
+  const resp = await fetch('/api/ia/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, messages, temperature, max_tokens })
+  });
 
-  const errors = [];
+  const data = await resp.json().catch(() => ({}));
 
-  for (const model of FREE_MODELS) {
-    try {
-      const resp = await fetch('/api/ia/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, api_key, messages, temperature, max_tokens })
-      });
-
-      // Erros que justificam tentar o próximo modelo
-      if (resp.status === 429 || resp.status === 503 || resp.status === 502) {
-        errors.push(`${model}: sobrecarregado (${resp.status})`);
-        continue;
-      }
-
-      const data = await resp.json().catch(() => ({}));
-
-      if (!resp.ok) {
-        errors.push(`${model}: ${data?.error?.message || data?.error || resp.status}`);
-        continue; // tenta próximo modelo
-      }
-
-      const content = (data?.choices?.[0]?.message?.content || '').trim();
-      if (!content) { errors.push(`${model}: resposta vazia`); continue; }
-
-      // Salva o modelo que funcionou
-      if (model !== preferred) localStorage.setItem('api_openrouter_modelo', model);
-
-      return content;
-    } catch (e) {
-      errors.push(`${model}: ${e.message}`);
-    }
+  if (!resp.ok) {
+    throw new Error(data?.error?.message || data?.error || `Erro IA: ${resp.status}`);
   }
 
-  throw new Error('Todos os modelos gratuitos falharam:\n' + errors.join('\n'));
+  const content = (data?.choices?.[0]?.message?.content || '').trim();
+  if (!content) throw new Error('A IA retornou uma resposta vazia.');
+  return content;
 };
 
 /* ── Auto-wrapper para campos de busca com efeito brilhante ── */

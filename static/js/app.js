@@ -1290,15 +1290,6 @@ function attachEvents() {
 
   document.getElementById('btn-delete-credor').addEventListener('click', () => {
     openDeleteConfirmModal();
-    return;
-    if (confirm('Tem certeza que deseja remover este credor?')) {
-      const password = prompt('Digite a senha de administrador para confirmar a exclusão:');
-      if (password === '1999') {
-        onDeleteCredor();
-      } else if (password !== null) {
-        showToast('Senha incorreta', 'error');
-      }
-    }
   });
 
   document.getElementById('delete-confirm-close').addEventListener('click', closeDeleteConfirmModal);
@@ -1312,12 +1303,7 @@ function attachEvents() {
     const nomeCredor = credor?.nome || getCurrentCredorName();
     const deleteId = pendingDeleteCredorId;
     closeDeleteConfirmModal();
-    const password = prompt(`Digite a senha de administrador para confirmar a exclusão de ${nomeCredor}:`);
-    if (password === '1999') {
-      await onDeleteCredor(deleteId);
-    } else if (password !== null) {
-      showToast('Senha incorreta', 'error');
-    }
+    await onDeleteCredor(deleteId);
   });
 
   document.addEventListener('keydown', e => {
@@ -1390,8 +1376,8 @@ function attachEvents() {
         const res = await apiGet('/logs?' + params.toString());
 
         // Suporte ao novo formato {logs, total} e ao antigo array
-        const logs = Array.isArray(res) ? res : res.logs;
-        currentTotal = Array.isArray(res) ? logs.length : res.total;
+        const logs = Array.isArray(res) ? res : (res.items || res.logs || []);
+        currentTotal = Array.isArray(res) ? logs.length : (res.total || 0);
 
         countEl.textContent = currentTotal > 0 ? `${currentTotal}` : '';
 

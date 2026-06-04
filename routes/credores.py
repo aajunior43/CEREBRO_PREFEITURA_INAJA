@@ -6,7 +6,7 @@ CRUD, lixeira, restaurar, duplicar
 import json
 import time as _time
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 
 from routes.helpers import (
     credor_payload,
@@ -14,7 +14,7 @@ from routes.helpers import (
     montar_filtros_credores,
     parse_bool,
 )
-from routes._shared import registrar_auditoria
+from routes._shared import registrar_auditoria, require_login
 
 bp = Blueprint("credores", __name__)
 
@@ -62,6 +62,7 @@ def _get_summary(conn):
 
 
 @bp.route("/api/credores", methods=["GET"])
+@require_login
 def get_credores():
     try:
         limit = max(1, min(request.args.get("limit", 50, type=int), 1000))
@@ -107,6 +108,7 @@ def get_credores():
 
 
 @bp.route("/api/credores", methods=["POST"])
+@require_login
 def add_credor():
     data = request.get_json(force=True) or {}
     payload, errors = credor_payload(data, partial=False)
@@ -156,6 +158,7 @@ def add_credor():
 
 
 @bp.route("/api/credores/<int:cid>", methods=["PUT"])
+@require_login
 def update_credor(cid):
     from routes.helpers import normalizar_cnpj
 
@@ -231,7 +234,10 @@ def update_credor(cid):
 
 
 @bp.route("/api/credores/<int:cid>", methods=["DELETE"])
+@require_login
 def delete_credor(cid):
+    if session.get("usuario_nivel") != "adm":
+        return jsonify({"error": "Apenas administradores podem excluir credores."}), 403
     try:
         conn = get_db()
         row = conn.execute(
@@ -253,6 +259,7 @@ def delete_credor(cid):
 
 
 @bp.route("/api/credores/deletados", methods=["GET"])
+@require_login
 def listar_deletados():
     try:
         conn = get_db()
@@ -265,6 +272,7 @@ def listar_deletados():
 
 
 @bp.route("/api/credores/<int:cid>/restaurar", methods=["PUT"])
+@require_login
 def restaurar_credor(cid):
     try:
         conn = get_db()
@@ -306,6 +314,7 @@ def restaurar_credor(cid):
 
 
 @bp.route("/api/credores/<int:cid>/duplicate", methods=["POST"])
+@require_login
 def duplicate_credor(cid):
     try:
         conn = get_db()

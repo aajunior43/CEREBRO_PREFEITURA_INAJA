@@ -98,7 +98,7 @@ def _seed_admin(admin_password, app):
     else:
         conn.execute(
             "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-            ("Maicon", "maicon@inaja.pr.gov.br", "maicon", _hash("maicon"), "padrao"),
+            ("Maicon", "maicon@inaja.pr.gov.br", "maicon", _hash("Inaja@2025!"), "padrao"),
         )
 
     # Garantir usuário Luana como padrão
@@ -108,7 +108,7 @@ def _seed_admin(admin_password, app):
     else:
         conn.execute(
             "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-            ("Luana", "luana@inaja.pr.gov.br", "luana", _hash("luana"), "padrao"),
+            ("Luana", "luana@inaja.pr.gov.br", "luana", _hash("Inaja@2025!"), "padrao"),
         )
     conn.commit()
 
@@ -140,6 +140,7 @@ def _usuario_to_dict(row) -> dict:
 
 @bp.route("/api/auth/login", methods=["POST"])
 def login():
+    from flask import current_app
     d = request.get_json(force=True) or {}
     login_input = (d.get("login") or "").strip().lower()
     senha = d.get("senha") or ""
@@ -149,6 +150,7 @@ def login():
 
     ip = request.remote_addr or "unknown"
     if rate_limited(f"login:{ip}", max_hits=10, window=60):
+        current_app.logger.warning("Tentativa de login bloqueada por rate limit para o IP %s", ip)
         return jsonify({"ok": False, "error": "Muitas tentativas. Aguarde 1 minuto."}), 429
 
     conn = get_db()
@@ -157,6 +159,7 @@ def login():
     ).fetchone()
 
     if not row or row["senha_hash"] != _hash(senha):
+        current_app.logger.warning("Falha na tentativa de login para o usuário '%s' a partir do IP %s", login_input, ip)
         return jsonify({"ok": False, "error": "Login ou senha invalidos"}), 401
 
     session["usuario_id"] = row["id"]
@@ -165,6 +168,8 @@ def login():
     # Normaliza nivel da sessão para aceitar 'admin' ou 'adm'
     session["usuario_nivel"] = "admin" if row["nivel"] == "adm" else "padrao"
     session.permanent = False
+
+    current_app.logger.info("Usuário '%s' (Nível: %s) autenticado com sucesso a partir do IP %s", row["login"], row["nivel"], ip)
 
     return jsonify({"ok": True, "usuario": _usuario_to_dict(row)})
 
@@ -187,8 +192,12 @@ def verificar_auth():
 
 @bp.route("/api/auth/sair", methods=["POST"])
 def logout():
+    from flask import current_app
+    user_login = session.get("usuario_login") or "Anonymous"
     for k in ("usuario_id", "usuario_login", "usuario_nome", "usuario_nivel"):
         session.pop(k, None)
+    ip = request.remote_addr or "unknown"
+    current_app.logger.info("Usuário '%s' deslogou (IP %s)", user_login, ip)
     return jsonify({"ok": True})
 
 
@@ -327,12 +336,14 @@ def deletar_usuario(uid: int):
 
 @bp.route("/api/auth/senha", methods=["PUT"])
 def alterar_senha():
+    from flask import current_app
     if "usuario_id" not in session:
         return jsonify({"error": "Nao autenticado"}), 401
     d = request.get_json(force=True) or {}
     senha_atual = d.get("senha_atual", "")
     senha_nova = d.get("senha_nova", "")
 
+    ip = request.remote_addr or "unknown"
     if not senha_atual or not senha_nova:
         return jsonify({"ok": False, "error": "Informe senha atual e nova senha"}), 400
     if len(senha_nova) < 4:
@@ -342,6 +353,7 @@ def alterar_senha():
     uid = session["usuario_id"]
     row = conn.execute("SELECT * FROM usuarios WHERE id=?", (uid,)).fetchone()
     if not row or row["senha_hash"] != _hash(senha_atual):
+        current_app.logger.warning("Falha ao alterar senha: senha atual incorreta para o usuário '%s' (IP %s)", session.get("usuario_login"), ip)
         return jsonify({"ok": False, "error": "Senha atual incorreta"}), 401
 
     conn.execute(
@@ -349,6 +361,7 @@ def alterar_senha():
         (_hash(senha_nova), uid),
     )
     conn.commit()
+    current_app.logger.info("Senha alterada com sucesso para o usuário '%s' (IP %s)", row["login"], ip)
     return jsonify({"ok": True, "mensagem": "Senha alterada com sucesso"})
 
 
@@ -361,9 +374,27 @@ def ping():
 
 @bp.route("/api/health", methods=["GET"])
 def health():
+    import time
+    from flask import current_app
     try:
         get_db().execute("SELECT 1").fetchone()
         db_ok = True
-    except Exception:
+    except Exception as e:
         db_ok = False
-    return jsonify({"status": "ok" if db_ok else "degraded", "db": db_ok})
+        current_app.logger.error("Erro na conectividade do banco de dados no Health Check: %s", str(e))
+
+    startup_time = current_app.config.get("STARTUP_TIME", time.time())
+    uptime_s = int(time.time() - startup_time)
+    
+    error_count = getattr(current_app, "error_count", 0)
+    slow_requests = getattr(current_app, "slow_request_count", 0)
+
+    return jsonify({
+        "status": "ok" if (db_ok and error_count < 10) else "degraded",
+        "db": db_ok,
+        "uptime_s": uptime_s,
+        "error_count": error_count,
+        "slow_requests": slow_requests,
+        "cache_files": len(getattr(current_app, "file_cache", {})),
+        "cache_gzip": len(getattr(current_app, "gzip_cache", {}))
+    })

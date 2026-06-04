@@ -230,11 +230,16 @@ def documentos_enviar():
     descricao = (request.form.get("descricao") or "").strip()
     if not file or not file.filename:
         return jsonify({"error": "Arquivo é obrigatório"}), 400
-    
-    # Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca
+
+    _ext = os.path.splitext(file.filename)[1].lower()
+    _ALLOWED = {'.pdf', '.csv', '.xlsx', '.xls', '.doc', '.docx', '.txt', '.xml', '.png', '.jpg', '.jpeg', '.zip', '.ods'}
+    if _ext not in _ALLOWED:
+        return jsonify({"error": f"Tipo de arquivo não permitido. Formatos aceitos: {', '.join(sorted(_ALLOWED))}"}), 400
+
+    # Apenas administradores podem adicionar arquivos à biblioteca
     if categoria.startswith("biblioteca-"):
-        if session.get("usuario_login") != "aleksandro":
-            return jsonify({"error": "Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca."}), 403
+        if session.get("usuario_nivel") != "adm":
+            return jsonify({"error": "Apenas administradores podem adicionar arquivos à biblioteca."}), 403
 
     try:
         nome_arquivo, relative_dir, abs_path = build_document_storage(
@@ -291,10 +296,10 @@ def documentos_salvar_conteudo():
         if not nome or not arquivo:
             return jsonify({"error": "nome e arquivo são obrigatórios"}), 400
         
-        # Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca
+        # Apenas administradores podem adicionar arquivos à biblioteca
         if categoria.startswith("biblioteca-"):
-            if session.get("usuario_login") != "aleksandro":
-                return jsonify({"error": "Apenas o usuário 'aleksandro' pode adicionar arquivos à biblioteca."}), 403
+            if session.get("usuario_nivel") != "adm":
+                return jsonify({"error": "Apenas administradores podem adicionar arquivos à biblioteca."}), 403
 
         saved = persist_document_file(
             nome,
@@ -367,11 +372,11 @@ def documentos_excluir(doc_id):
         if not row:
             return jsonify({"error": "Documento não encontrado"}), 404
         
-        # Apenas o usuário 'aleksandro' pode excluir arquivos da biblioteca
+        # Apenas administradores podem excluir arquivos da biblioteca
         categoria = row["categoria"] or ""
         if categoria.startswith("biblioteca-"):
-            if session.get("usuario_login") != "aleksandro":
-                return jsonify({"error": "Apenas o usuário 'aleksandro' pode excluir arquivos da biblioteca."}), 403
+            if session.get("usuario_nivel") != "adm":
+                return jsonify({"error": "Apenas administradores podem excluir arquivos da biblioteca."}), 403
 
         abs_path = os.path.join(
             DOCUMENTS_DIR, row["caminho_relativo"].replace("/", os.sep)
@@ -1145,11 +1150,11 @@ def documentos_atualizar(doc_id):
         if not row:
             return jsonify({"error": "Documento não encontrado"}), 404
         
-        # Apenas o usuário 'aleksandro' pode alterar arquivos da biblioteca
+        # Apenas administradores podem alterar arquivos da biblioteca
         categoria = row["categoria"] or ""
         if categoria.startswith("biblioteca-"):
-            if session.get("usuario_login") != "aleksandro":
-                return jsonify({"error": "Apenas o usuário 'aleksandro' pode alterar arquivos da biblioteca."}), 403
+            if session.get("usuario_nivel") != "adm":
+                return jsonify({"error": "Apenas administradores podem alterar arquivos da biblioteca."}), 403
 
         data = request.get_json(force=True) or {}
         novo_nome = (data.get("nome_original") or "").strip()
@@ -1264,9 +1269,9 @@ def documentos_obter_thumbnail(doc_id):
 @require_login
 def documentos_salvar_thumbnail(doc_id):
     try:
-        # Apenas 'aleksandro' pode salvar ou atualizar capas na biblioteca
-        if session.get("usuario_login") != "aleksandro":
-            return jsonify({"error": "Apenas o usuário 'aleksandro' pode salvar capas na biblioteca."}), 403
+        # Apenas administradores podem salvar ou atualizar capas na biblioteca
+        if session.get("usuario_nivel") != "adm":
+            return jsonify({"error": "Apenas administradores podem salvar capas na biblioteca."}), 403
             
         data = request.get_json(silent=True) or {}
         img_b64 = data.get("image")
