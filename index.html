@@ -137,16 +137,6 @@
         </a>
       </div>
 
-      <!-- Botão de expandir/recolher todos os grupos -->
-      <div class="sidebar-expand-all-wrap">
-        <button class="sidebar-expand-all-btn btn-ripple" id="btn-sidebar-expand-all" title="Expandir ou recolher todos os grupos do menu">
-          <svg id="sidebar-expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-          <span id="sidebar-expand-label">Expandir tudo</span>
-        </button>
-      </div>
-
       <!-- Busca rápida na sidebar -->
       <div class="sidebar-search">
         <svg class="sidebar-search__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -179,71 +169,43 @@
 
       <div class="sidebar-section">
         <div class="sidebar-label">Financeiro</div>
-        <div class="nav-group nav-group-sidebar">
-          <button class="nav-group-btn sidebar-group-toggle" role="button" aria-expanded="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 9v1"/></svg>
-            Financeiro
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-group-menu nav-group-menu-sidebar" role="region">
-
-            <a href="/pages/fornecimento.html" class="nav-group-item sidebar-nav-link" data-tooltip="Controle de fornecedores">
-              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-              <div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Solicitação de Compra ou Serviço</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
-            </a>
-            <a href="/pages/despesa-prefeitura.html" class="nav-group-item sidebar-nav-link" data-tooltip="Dotações e execução orçamentária">
-              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-              <div class="nav-group-item-text"><span class="nav-group-item-name">Dotação Orçamentária</span><span class="nav-group-item-desc">Dotações e execução orçamentária</span></div>
-            </a>
-            <a href="/pages/despesa-relatorios.html" class="nav-group-item sidebar-nav-link" data-tooltip="Comparar períodos e histórico">
-              <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
-              <div class="nav-group-item-text"><span class="nav-group-item-name">Relatórios</span><span class="nav-group-item-desc">Comparar períodos e histórico</span></div>
-            </a>
-          </div>
-        </div>
+        <a href="/pages/fornecimento.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Controle de fornecedores">
+          <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+          <div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Solicitação de Compra ou Serviço</span><span class="nav-group-item-desc">Controle de fornecedores</span></div>
+        </a>
+        <a href="/pages/despesa-prefeitura.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Dotações e execução orçamentária">
+          <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+          <div class="nav-group-item-text"><span class="nav-group-item-name">Dotação Orçamentária</span><span class="nav-group-item-desc">Dotações e execução orçamentária</span></div>
+        </a>
+        <a href="/pages/despesa-relatorios.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Comparar períodos e histórico">
+          <div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg></div>
+          <div class="nav-group-item-text"><span class="nav-group-item-name">Relatórios</span><span class="nav-group-item-desc">Comparar períodos e histórico</span></div>
+        </a>
       </div>
 
       <hr class="sidebar-divider">
 
       <div class="sidebar-section">
         <div class="sidebar-label">Documentos</div>
-        <div class="nav-group nav-group-sidebar">
-          <button class="nav-group-btn sidebar-group-toggle" role="button" aria-expanded="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Documentos
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-group-menu nav-group-menu-sidebar" role="region">
-            <a href="/pages/documentos.html" class="nav-group-item sidebar-nav-link" data-tooltip="Salvar e organizar arquivos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Centro de Documentos</span><span class="nav-group-item-desc">Salvar e organizar arquivos</span></div></a>
-            <a href="/pages/biblioteca.html" class="nav-group-item sidebar-nav-link" data-tooltip="Leis, decretos e manuais"><div class="nav-group-item-icon">📚</div><div class="nav-group-item-text"><span class="nav-group-item-name">Biblioteca</span><span class="nav-group-item-desc">Leis, decretos e manuais</span></div></a>
-            <a href="/pages/rpa.html" class="nav-group-item sidebar-nav-link" data-tooltip="Recibo de Pagamento Autônomo"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de RPAs</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
-            <a href="/pages/assistente-empenho.html" class="nav-group-item sidebar-nav-link" data-tooltip="IA para descricao e conferencia"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Descrição para Empenhos</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
-            <a href="/pages/classificador-despesa.html" class="nav-group-item sidebar-nav-link" data-tooltip="Desdobramento correto via TCE-PR"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Classificador de Despesas</span><span class="nav-group-item-desc">Desdobramento correto via TCE-PR</span></div></a>
-            <a href="/pages/visualizador.html" class="nav-group-item sidebar-nav-link" data-tooltip="Documentos e contratos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Relação de Empenhos Emitidos</span><span class="nav-group-item-desc">Documentos e contratos</span></div></a>
-            <a href="/pages/auditor.html" class="nav-group-item sidebar-nav-link" data-tooltip="Auditoria e notas fiscais"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Auditor NF</span><span class="nav-group-item-desc">Auditoria e notas fiscais</span></div></a>
-            <a href="/pages/autentique-assinatura.html" class="nav-group-item sidebar-nav-link" data-tooltip="Autentique e envio por WhatsApp"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Assinatura Digital</span><span class="nav-group-item-desc">Autentique e envio por WhatsApp</span></div></a>
-          </div>
-        </div>
+        <a href="/pages/documentos.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Salvar e organizar arquivos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Centro de Documentos</span><span class="nav-group-item-desc">Salvar e organizar arquivos</span></div></a>
+        <a href="/pages/biblioteca.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Leis, decretos e manuais"><div class="nav-group-item-icon">📚</div><div class="nav-group-item-text"><span class="nav-group-item-name">Biblioteca</span><span class="nav-group-item-desc">Leis, decretos e manuais</span></div></a>
+        <a href="/pages/rpa.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Recibo de Pagamento Autônomo"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de RPAs</span><span class="nav-group-item-desc">Recibo de Pagamento Autônomo</span></div></a>
+        <a href="/pages/assistente-empenho.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="IA para descricao e conferencia"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/><path d="M5 5h.01"/><path d="M19 19h.01"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Gerador de Descrição para Empenhos</span><span class="nav-group-item-desc">IA para descricao e conferencia</span></div></a>
+        <a href="/pages/classificador-despesa.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Desdobramento correto via TCE-PR"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Classificador de Despesas</span><span class="nav-group-item-desc">Desdobramento correto via TCE-PR</span></div></a>
+        <a href="/pages/visualizador.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Documentos e contratos"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.2-4.03 6-9 6s-9-4.8-9-6c0-1.2 4.03-6 9-6s9 4.8 9 6z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Relação de Empenhos Emitidos</span><span class="nav-group-item-desc">Documentos e contratos</span></div></a>
+        <a href="/pages/auditor.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Auditoria e notas fiscais"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Auditor NF</span><span class="nav-group-item-desc">Auditoria e notas fiscais</span></div></a>
+        <a href="/pages/autentique-assinatura.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Autentique e envio por WhatsApp"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Assinatura Digital</span><span class="nav-group-item-desc">Autentique e envio por WhatsApp</span></div></a>
       </div>
 
       <hr class="sidebar-divider">
 
       <div class="sidebar-section">
         <div class="sidebar-label">Ferramentas</div>
-        <div class="nav-group nav-group-sidebar">
-          <button class="nav-group-btn sidebar-group-toggle" role="button" aria-expanded="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            Ferramentas
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
-          <div class="nav-group-menu nav-group-menu-sidebar" role="region">
-            <a href="/pages/cnpj.html" class="nav-group-item sidebar-nav-link" data-tooltip="Consultar dados de empresas"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">CNPJ</span><span class="nav-group-item-desc">Consultar dados de empresas</span></div></a>
+        <a href="/pages/cnpj.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Consultar dados de empresas"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">CNPJ</span><span class="nav-group-item-desc">Consultar dados de empresas</span></div></a>
 
-            <a href="/pages/calculadora-diarias.html" class="nav-group-item sidebar-nav-link" data-tooltip="Cálculo de diárias de viagem"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Calc. Diárias</span><span class="nav-group-item-desc">Cálculo de diárias de viagem</span></div></a>
-            <a href="/pages/upload-dados.html" class="nav-group-item sidebar-nav-link" data-tooltip="Importar relatórios CSV para alimentar o sistema"><div class="nav-group-item-icon">📤</div><div class="nav-group-item-text"><span class="nav-group-item-name">Upload de Dados</span><span class="nav-group-item-desc">Importar relatórios CSV</span></div></a>
-            <a href="/pages/manual.html" class="nav-group-item sidebar-nav-link" data-tooltip="Guia completo do sistema"><div class="nav-group-item-icon">📖</div><div class="nav-group-item-text"><span class="nav-group-item-name">Manual</span><span class="nav-group-item-desc">Guia completo do sistema</span></div></a>
-          </div>
-        </div>
+        <a href="/pages/calculadora-diarias.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Cálculo de diárias de viagem"><div class="nav-group-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="2" width="18" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8.01" y2="18"/><line x1="8" y1="14" x2="8.01" y2="14"/><line x1="8" y1="10" x2="8.01" y2="10"/><line x1="12" y1="10" x2="16" y2="10"/><line x1="8" y1="6" x2="16" y2="6"/></svg></div><div class="nav-group-item-text"><span class="nav-group-item-name">Calc. Diárias</span><span class="nav-group-item-desc">Cálculo de diárias de viagem</span></div></a>
+        <a href="/pages/upload-dados.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Importar relatórios CSV para alimentar o sistema"><div class="nav-group-item-icon">📤</div><div class="nav-group-item-text"><span class="nav-group-item-name">Upload de Dados</span><span class="nav-group-item-desc">Importar relatórios CSV</span></div></a>
+        <a href="/pages/manual.html" class="nav-group-item nav-group-item-inline sidebar-nav-link" data-tooltip="Guia completo do sistema"><div class="nav-group-item-icon">📖</div><div class="nav-group-item-text"><span class="nav-group-item-name">Manual</span><span class="nav-group-item-desc">Guia completo do sistema</span></div></a>
       </div>
 
       <hr class="sidebar-divider">
