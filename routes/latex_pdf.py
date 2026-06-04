@@ -353,6 +353,7 @@ def compilar_latex_pdf():
             "-no-shell-escape",
             "documento.tex",
         ]
+
         last_output = ""
         env = os.environ.copy()
         env.update(
@@ -376,6 +377,65 @@ def compilar_latex_pdf():
             )
             last_output = (proc.stdout or "") + "\n" + (proc.stderr or "")
             if proc.returncode != 0:
+                # Tenta auto-correção com IA
+                try:
+                    conn = get_db()
+                    api_key, model = _get_openrouter_config(conn)
+                    if api_key:
+                        log_tail = "\n".join(last_output.splitlines()[-35:])
+                        debug_prompt = f"""Você é um especialista em LaTeX. O documento a seguir falhou ao compilar.
+Analise o erro de compilação e corrija o código LaTeX para torná-lo compilável.
+
+ERRO DO COMPILADOR:
+{log_tail}
+
+CÓDIGO LATEX ORIGINAL:
+{source}
+
+INSTRUÇÕES:
+- Corrija os erros encontrados (como caracteres especiais %, _, $ sem escape, delimitadores desbalanceados, chaves ausentes ou pacotes inexistentes).
+- Mantenha exatamente o mesmo conteúdo textual do documento original.
+- Retorne APENAS o código LaTeX corrigido final, sem markdown, sem explicações e sem cercas de código.
+"""
+                        response = _build_ai_service(api_key, model).chat_by_task(
+                            task_type="chat",
+                            messages=[{"role": "user", "content": debug_prompt}],
+                            temperature=0.15,
+                            max_tokens=3500,
+                            use_cache=False,
+                            metadata={"feature": "latex_auto_debug"},
+                        )
+                        fixed_source = _normalize_latex_source(_strip_code_fences(response.text))
+                        valid_err = _validate_latex_source(fixed_source)
+                        if not valid_err:
+                            with open(tex_path, "w", encoding="utf-8") as tex_file:
+                                tex_file.write(fixed_source)
+                            proc_retry = subprocess.run(
+                                cmd,
+                                cwd=tmpdir,
+                                capture_output=True,
+                                text=True,
+                                encoding="utf-8",
+                                errors="replace",
+                                timeout=45,
+                                env=env,
+                            )
+                            if proc_retry.returncode == 0:
+                                last_output = (proc_retry.stdout or "") + "\n" + (proc_retry.stderr or "")
+                                source = fixed_source
+                                # Roda mais uma vez para referências/tabelas se necessário
+                                subprocess.run(
+                                    cmd,
+                                    cwd=tmpdir,
+                                    capture_output=False,
+                                    timeout=45,
+                                    env=env,
+                                )
+                                # Sai do loop de tentativas e continua
+                                break
+                except Exception:
+                    pass
+
                 tail = "\n".join(last_output.splitlines()[-45:])
                 return jsonify({"error": "Falha ao compilar o LaTeX.", "log": tail}), 400
 

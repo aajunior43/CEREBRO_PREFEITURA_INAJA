@@ -118,7 +118,43 @@
     <div class="pz-layout">
       <!-- New prazo form -->
       <div class="pz-panel">
-        <h3>➕ Novo Prazo</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+          <h3 style="margin:0;">➕ Novo Prazo</h3>
+          <button type="button" class="pz-btn pz-btn-ghost" style="font-size:11px; padding:6px 12px; height:auto; width:auto; border:1px dashed var(--blue); color:var(--blue); font-weight:700;" onclick="togglePrazosAiSection()">🤖 Extrair com IA</button>
+        </div>
+        
+        <!-- Seção de IA (oculta por padrão) -->
+        <div id="prazos-ai-section" style="display:none; border:1px solid var(--border); border-radius:10px; padding:12px; background:rgba(0,0,0,0.02); margin-bottom:16px;">
+          <h4 style="font-size:12px; font-weight:700; margin:0 0 8px; color:var(--text-2);">🤖 Assistente de Prazos</h4>
+          <p style="font-size:11px; color:var(--text-3); margin:0 0 10px; line-height:1.4;">Cole o texto de um edital ou faça upload de um arquivo para que a IA extraia os prazos automaticamente.</p>
+          
+          <div style="margin-bottom:10px;">
+            <textarea id="pz-ai-text" class="pz-textarea" placeholder="Cole o texto do documento aqui..." style="font-size:12px; min-height:80px;"></textarea>
+          </div>
+          
+          <div style="margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+            <label style="font-size:11px; font-weight:700; color:var(--text-3); cursor:pointer; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:6px 10px; display:inline-block;">
+              📁 Escolher arquivo (PDF, TXT...)
+              <input type="file" id="pz-ai-file" style="display:none;" onchange="document.getElementById('pz-ai-file-label').textContent = this.files[0]?.name || 'Nenhum arquivo';" />
+            </label>
+            <span id="pz-ai-file-label" style="font-size:11px; color:var(--text-3); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle;">Nenhum arquivo</span>
+          </div>
+          
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="pz-btn pz-btn-primary" style="font-size:11px; padding:6px 12px; height:auto; width:auto;" onclick="processarPrazosComAi()">Processar</button>
+            <button type="button" class="pz-btn pz-btn-ghost" style="font-size:11px; padding:6px 12px; height:auto; width:auto;" onclick="limparPrazosAi()">Limpar</button>
+          </div>
+          
+          <!-- Lista de Prazos Extraídos -->
+          <div id="pz-ai-results" style="display:none; margin-top:14px; border-top:1px dashed var(--border); padding-top:12px;">
+            <strong style="display:block; font-size:11px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span>Prazos Extraídos:</span>
+              <button type="button" class="pz-btn pz-btn-primary" style="font-size:9px; padding:4px 8px; height:auto; width:auto;" onclick="salvarPrazosSelecionados()">Salvar Selecionados</button>
+            </strong>
+            <div id="pz-ai-results-list" style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto; padding-right:4px;"></div>
+          </div>
+        </div>
+
         <form class="pz-form" id="pz-form">
           <div>
             <div class="pz-label">Título *</div>
@@ -266,10 +302,12 @@
     try {
       const r = await fetch(`${API}/credores?somente_vencidos=1`);
       if (!r.ok) return;
-      const vencidos = await r.json();
+      const resVencidos = await r.json();
+      const vencidos = Array.isArray(resVencidos) ? resVencidos : (resVencidos.items || []);
 
       const r30 = await fetch(`${API}/credores?vencendo_dias=30`);
-      const vencendo30 = r30.ok ? await r30.json() : [];
+      const resVencendo30 = r30.ok ? await r30.json() : [];
+      const vencendo30 = Array.isArray(resVencendo30) ? resVencendo30 : (resVencendo30.items || []);
       const sec = document.getElementById('pz-credores-section');
       const listEl = document.getElementById('pz-credores-list');
       const todos = [...vencidos, ...vencendo30.filter(v => !vencidos.find(x => x.id === v.id))];
@@ -293,7 +331,8 @@
     try {
       const status = modoResolvidos ? 'resolvidos' : 'ativos';
       const r = await fetch(`${API}/prazos?status=${status}`);
-      prazosCache = await r.json();
+      const resJson = await r.json();
+      prazosCache = Array.isArray(resJson) ? resJson : (resJson.items || []);
       renderPrazos();
     } catch(e) { setStatus('Erro ao carregar prazos', false); }
   }
@@ -355,6 +394,122 @@
     if (resolveBtn) resolverPrazo(resolveBtn.dataset.resolve);
     if (deleteBtn)  excluirPrazo(deleteBtn.dataset.delete);
   });
+
+  // ── IA EXTRAÇÃO DE PRAZOS ──────────────────────────────────────────────
+  let ultimoPrazosExtraidos = [];
+
+  window.togglePrazosAiSection = function() {
+    const sec = document.getElementById('prazos-ai-section');
+    sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.limparPrazosAi = function() {
+    document.getElementById('pz-ai-text').value = '';
+    document.getElementById('pz-ai-file').value = '';
+    document.getElementById('pz-ai-file-label').textContent = 'Nenhum arquivo';
+    document.getElementById('pz-ai-results').style.display = 'none';
+    document.getElementById('pz-ai-results-list').innerHTML = '';
+    ultimoPrazosExtraidos = [];
+    clearStatus();
+  };
+
+  window.processarPrazosComAi = async function() {
+    clearStatus();
+    const txt = document.getElementById('pz-ai-text').value.trim();
+    const fileInput = document.getElementById('pz-ai-file');
+    const file = fileInput.files[0];
+
+    if (!txt && !file) {
+      setStatus('Informe um texto ou faça upload de um arquivo.', false);
+      return;
+    }
+
+    setStatus('⏳ Processando documento com IA... Por favor, aguarde.', true);
+    document.getElementById('pz-ai-results').style.display = 'none';
+    
+    try {
+      let res;
+      if (file) {
+        const form = new FormData();
+        form.append('arquivo', file);
+        res = await fetch(`${API}/prazos/ai/extrair`, {
+          method: 'POST',
+          body: form
+        });
+      } else {
+        res = await fetch(`${API}/prazos/ai/extrair`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texto: txt })
+        });
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      if (data.prazos && data.prazos.length) {
+        ultimoPrazosExtraidos = data.prazos;
+        const listEl = document.getElementById('pz-ai-results-list');
+        
+        listEl.innerHTML = data.prazos.map((p, idx) => {
+          const catLabel = { geral: 'Geral', contrato: 'Contrato', licitacao: 'Licitação', processo: 'Processo', oficio: 'Ofício', financeiro: 'Financeiro', outro: 'Outro' };
+          return `
+            <div style="border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; background: #fff; display: flex; gap: 8px; align-items: flex-start; font-size: 11px; margin-bottom: 6px;">
+              <input type="checkbox" id="pz-ai-chk-${idx}" checked style="margin-top: 2px; cursor: pointer;" />
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 700; color: var(--text);">${esc(p.titulo)}</div>
+                <div style="font-size: 10px; color: var(--text-3); margin-top: 2px;">
+                  📅 ${fmtDate(p.data_limite)} · 🏷️ ${catLabel[p.categoria] || p.categoria}
+                </div>
+                ${p.descricao ? `<div style="color: var(--text-2); margin-top: 4px; line-height: 1.3;">${esc(p.descricao)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        document.getElementById('pz-ai-results').style.display = 'block';
+        setStatus(`✅ ${data.prazos.length} prazos extraídos com sucesso pelo modelo ${data.model || 'IA'}!`, true);
+      } else {
+        throw new Error('Nenhum prazo foi identificado no documento.');
+      }
+    } catch (err) {
+      setStatus(`Erro ao extrair prazos: ${err.message}`, false);
+    }
+  };
+
+  window.salvarPrazosSelecionados = async function() {
+    clearStatus();
+    if (!ultimoPrazosExtraidos || !ultimoPrazosExtraidos.length) return;
+
+    setStatus('⏳ Salvando prazos selecionados...', true);
+    let salvos = 0;
+    
+    for (let i = 0; i < ultimoPrazosExtraidos.length; i++) {
+      const chk = document.getElementById(`pz-ai-chk-${i}`);
+      if (chk && chk.checked) {
+        const p = ultimoPrazosExtraidos[i];
+        try {
+          const r = await fetch(`${API}/prazos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(p)
+          });
+          if (r.ok) salvos++;
+        } catch (err) {
+          console.error('Erro ao salvar prazo extraído', err);
+        }
+      }
+    }
+
+    if (salvos > 0) {
+      setStatus(`✅ ${salvos} prazos importados com sucesso!`, true);
+      limparPrazosAi();
+      document.getElementById('prazos-ai-section').style.display = 'none';
+      await Promise.all([carregarPrazos(), carregarResumo()]);
+    } else {
+      setStatus('Nenhum prazo foi importado.', false);
+    }
+  };
 
   // Initialize
   Promise.all([carregarResumo(), carregarPrazos(), carregarCredores()]);

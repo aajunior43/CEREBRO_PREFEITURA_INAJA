@@ -1368,6 +1368,7 @@ INSTRUÇÕES:
             
             # Auto-import CSV content to csv_importacoes if applicable
             _tipo_detectado = None
+            _csv_imp_id = None
             try:
                 import csv
                 # Detect delimiter
@@ -1434,6 +1435,8 @@ INSTRUÇÕES:
                                     (tipo, referencia, descricao, nome_sugerido, len(linhas_csv), json.dumps(headers, ensure_ascii=False), now_str)
                                 )
                                 imp_id = cur_u.lastrowid
+                                _csv_imp_id = imp_id
+                                _tipo_detectado = tipo  # garante que o tipo seja definido antes do retorno
                                 cur_u.executemany(
                                     "INSERT INTO csv_linhas (importacao_id, dados) VALUES (?, ?)",
                                     [(imp_id, json.dumps(row_item, ensure_ascii=False)) for row_item in linhas_csv]
@@ -1454,6 +1457,7 @@ INSTRUÇÕES:
                                         (referencia, descricao, nome_sugerido, len(linhas_csv), json.dumps(headers, ensure_ascii=False), now_str)
                                     )
                                 imp_id = cur_u.lastrowid
+                                _csv_imp_id = imp_id
                                 cur_u.executemany(
                                     f"INSERT INTO {old_lines} (importacao_id, dados) VALUES (?, ?)",
                                     [(imp_id, json.dumps(row_item, ensure_ascii=False)) for row_item in linhas_csv]
@@ -1480,7 +1484,8 @@ INSTRUÇÕES:
                 "referencia": referencia,
                 "descricao": descricao,
                 "nome_sugerido": nome_sugerido,
-                "tipo": _tipo_detectado
+                "tipo": _tipo_detectado,
+                "csv_importacao_id": _csv_imp_id
             })
         else:
             return jsonify({"error": "Não foi possível obter sugestão da IA estruturada em JSON."}), 500

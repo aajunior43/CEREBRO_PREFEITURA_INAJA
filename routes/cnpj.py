@@ -5,30 +5,12 @@ import re
 import urllib.request as _urllib_req
 import urllib.error as _urllib_err
 from flask import Blueprint, request, jsonify
+from routes._shared import require_login
 
 bp = Blueprint("cnpj", __name__)
 
 
-def _cnpj_so_numeros(cnpj: str) -> str:
-    return re.sub(r"\D", "", cnpj)
-
-
-def _cnpj_valido(cnpj: str) -> bool:
-    digits = _cnpj_so_numeros(cnpj)
-    if len(digits) != 14 or digits == digits[0] * 14:
-        return False
-    nums = [int(ch) for ch in digits]
-    pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma1 = sum(nums[i] * pesos1[i] for i in range(12))
-    resto1 = soma1 % 11
-    dv1 = 0 if resto1 < 2 else 11 - resto1
-    if nums[12] != dv1:
-        return False
-    pesos2 = [6] + pesos1
-    soma2 = sum(nums[i] * pesos2[i] for i in range(12)) + dv1 * pesos2[12]
-    resto2 = soma2 % 11
-    dv2 = 0 if resto2 < 2 else 11 - resto2
-    return nums[13] == dv2
+from routes.helpers import normalizar_cnpj, cnpj_valido
 
 
 def _fmt_moeda(v):
@@ -188,13 +170,14 @@ def _buscar_brasilapi(cnpj: str) -> dict:
 
 
 @bp.route("/api/cnpj/buscar", methods=["POST"])
+@require_login
 def cnpj_buscar():
     d = request.get_json() or {}
-    cnpj = _cnpj_so_numeros(d.get("cnpj", ""))
+    cnpj = normalizar_cnpj(d.get("cnpj", ""))
     api_key = d.get("api_key_cnpja", "").strip()
     if len(cnpj) != 14:
         return jsonify({"error": "CNPJ deve ter 14 dígitos"}), 400
-    if not _cnpj_valido(cnpj):
+    if not cnpj_valido(cnpj):
         return jsonify({"error": "CNPJ inválido"}), 400
     
     # 1. Se possuir chave para o CNPJá, tenta primeiro por ele

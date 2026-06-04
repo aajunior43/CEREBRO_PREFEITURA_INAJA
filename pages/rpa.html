@@ -504,7 +504,8 @@ async function carregarRPAs() {
   try {
     const res = await fetch(`${API}/rpas`);
     if (!res.ok) throw new Error('Erro ao carregar RPAs');
-    const dados = await res.json();
+    const resJson = await res.json();
+    const dados = Array.isArray(resJson) ? resJson : (resJson.items || []);
     rpas = dados.map(dbParaRPA);
   } catch (e) {
     console.error(e);

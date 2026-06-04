@@ -3,6 +3,7 @@
 import io as _io
 import time as _time
 from flask import Blueprint, request, jsonify, send_file
+from routes._shared import require_login
 
 bp = Blueprint("protocolos", __name__)
 
@@ -29,6 +30,7 @@ def _proximo_numero_protocolo(conn):
 
 
 @bp.route("/api/protocolos/proximo-numero", methods=["GET"])
+@require_login
 def protocolo_proximo_numero():
     try:
         return jsonify({"numero": _proximo_numero_protocolo(get_db())})
@@ -37,6 +39,7 @@ def protocolo_proximo_numero():
 
 
 @bp.route("/api/protocolos", methods=["GET"])
+@require_login
 def protocolos_listar():
     try:
         limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
@@ -75,6 +78,7 @@ def protocolos_listar():
 
 
 @bp.route("/api/protocolos", methods=["POST"])
+@require_login
 def protocolos_criar():
     try:
         data = request.get_json(force=True) or {}
@@ -115,6 +119,7 @@ def protocolos_criar():
 
 
 @bp.route("/api/protocolos/<int:prot_id>", methods=["PUT"])
+@require_login
 def protocolos_atualizar(prot_id):
     try:
         data = request.get_json(force=True) or {}
@@ -162,6 +167,7 @@ def protocolos_atualizar(prot_id):
 
 
 @bp.route("/api/protocolos/<int:prot_id>", methods=["DELETE"])
+@require_login
 def protocolos_excluir(prot_id):
     try:
         conn = get_db()
@@ -177,6 +183,7 @@ def protocolos_excluir(prot_id):
 
 
 @bp.route("/api/protocolos/<int:prot_id>/anexos", methods=["GET"])
+@require_login
 def protocolo_anexos_listar(prot_id):
     try:
         conn = get_db()
@@ -190,6 +197,7 @@ def protocolo_anexos_listar(prot_id):
 
 
 @bp.route("/api/protocolos/<int:prot_id>/anexos", methods=["POST"])
+@require_login
 def protocolo_anexos_upload(prot_id):
     try:
         conn = get_db()
@@ -235,6 +243,7 @@ def protocolo_anexos_upload(prot_id):
 @bp.route(
     "/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>/download", methods=["GET"]
 )
+@require_login
 def protocolo_anexo_download(prot_id, anexo_id):
     try:
         conn = get_db()
@@ -260,6 +269,7 @@ def protocolo_anexo_download(prot_id, anexo_id):
 @bp.route(
     "/api/protocolos/<int:prot_id>/anexos/<int:anexo_id>", methods=["DELETE"]
 )
+@require_login
 def protocolo_anexo_excluir(prot_id, anexo_id):
     try:
         conn = get_db()

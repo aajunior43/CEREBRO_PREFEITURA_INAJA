@@ -1573,6 +1573,54 @@
                             <div class="kb-file-help">Máx 10 MB. Enviado após salvar.</div>
                         </div>
                     </details>
+                    
+                    <!-- Painel de IA Integrado (visível apenas ao editar) -->
+                    <div id="task-ai-section" style="display:none; margin-top:16px; border-top:1px dashed var(--border); padding-top:16px;">
+                        <h4 style="font-size:12px; margin-bottom:8px; font-weight:700; color:var(--text-3); display:flex; align-items:center; gap:6px;">
+                            🤖 Ações de Inteligência Artificial
+                        </h4>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                            <button type="button" class="kb-btn kb-btn-ghost" id="modal-ai-plan-btn" style="font-size:11px; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; height:auto; width:auto;" onclick="executarTarefaAi('plan')">📅 Plano</button>
+                            <button type="button" class="kb-btn kb-btn-ghost" id="modal-ai-improve-btn" style="font-size:11px; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; height:auto; width:auto;" onclick="executarTarefaAi('improve')">✨ Melhorar</button>
+                            <button type="button" class="kb-btn kb-btn-ghost" id="modal-ai-professional-btn" style="font-size:11px; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; height:auto; width:auto;" onclick="executarTarefaAi('professional_rewrite')">👔 Tom Formal</button>
+                            <button type="button" class="kb-btn kb-btn-ghost" id="modal-ai-breakdown-btn" style="font-size:11px; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; height:auto; width:auto;" onclick="executarTarefaAi('breakdown')">🧩 Subtarefas</button>
+                            <button type="button" class="kb-btn kb-btn-ghost" id="modal-ai-classify-btn" style="font-size:11px; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; height:auto; width:auto;" onclick="executarTarefaAi('classify')">🏷️ Categorizar</button>
+                            <button type="button" class="kb-btn kb-btn-ghost" id="modal-ai-stale-btn" style="font-size:11px; padding:4px 8px; display:inline-flex; align-items:center; gap:4px; height:auto; width:auto;" onclick="executarTarefaAi('stale')">⏱️ Inatividade</button>
+                        </div>
+                        
+                        <!-- Painel de Resultados de IA -->
+                        <div id="task-ai-plan-panel" style="display:none; border:1px solid var(--border); border-radius:8px; padding:10px; background:rgba(0,0,0,0.02); font-size:12px; margin-top:8px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-weight:700; color:var(--text-3); font-size:10px; text-transform:uppercase; margin-bottom:6px;">
+                                <span>Resultado IA</span>
+                                <span id="task-ai-plan-model" style="font-weight:400; font-style:italic;"></span>
+                            </div>
+                            
+                            <div id="task-ai-plan-classification" style="display:none; background:rgba(59,130,246,0.1); border-left:3px solid #3b82f6; padding:6px; border-radius:4px; margin-bottom:8px; font-weight:600; font-size:11px; color:#1e40af;"></div>
+                            <div id="task-ai-plan-stale" style="display:none; background:rgba(245,158,11,0.1); border-left:3px solid #f59e0b; padding:6px; border-radius:4px; margin-bottom:8px; font-weight:600; font-size:11px; color:#92400e;"></div>
+                            
+                            <div id="task-ai-plan-summary-section" style="margin-bottom:8px;">
+                                <strong style="display:block;">Resumo:</strong>
+                                <span id="task-ai-plan-summary"></span>
+                            </div>
+                            <div id="task-ai-plan-next-section" style="margin-bottom:8px;">
+                                <strong style="display:block;">Próxima Ação:</strong>
+                                <span id="task-ai-plan-next"></span>
+                            </div>
+                            
+                            <div id="task-ai-plan-checklist-section" style="margin-bottom:8px; display:none;">
+                                <strong style="display:block; margin-bottom:4px;">Checklist Recomendado:</strong>
+                                <ul id="task-ai-plan-checklist" style="padding-left:16px; margin:0;"></ul>
+                            </div>
+                            
+                            <div id="task-ai-plan-subtasks-section" style="margin-bottom:8px; display:none;">
+                                <strong style="display:block; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>Subtarefas Recomendadas:</span>
+                                    <button type="button" class="kb-btn kb-btn-cyan" id="btn-import-subtasks" style="font-size:9px; padding:2px 6px; height:auto; width:auto;" onclick="importarSubtarefasRecomendadas()">Criar Subtarefas</button>
+                                </strong>
+                                <ul id="task-ai-plan-subtasks" style="list-style-type:none; padding-left:0; margin:0; display:flex; flex-direction:column; gap:4px;"></ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="kb-modal-foot">
                     <button class="kb-btn kb-btn-ghost" onclick="closeTaskModal()">Cancelar</button>
@@ -2302,6 +2350,7 @@
         }
 
         function updateTaskModalAiButtons() {
+            document.getElementById('task-ai-section').style.display = editingId ? 'block' : 'none';
             document.getElementById('modal-ai-plan-btn').style.display = editingId ? 'inline-flex' : 'none';
             document.getElementById('modal-ai-improve-btn').style.display = editingId ? 'inline-flex' : 'none';
             document.getElementById('modal-ai-professional-btn').style.display = editingId ? 'inline-flex' : 'none';
@@ -2321,8 +2370,24 @@
             document.getElementById('t-valor').value = (task.valor && task.valor > 0) ? task.valor : '';
         }
 
-        function openTaskModal() { editingId = null; pendingModalFile = null; document.getElementById('modal-title').textContent = 'Nova Tarefa'; fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); document.getElementById('t-file').value = ''; syncDropzoneLabel(); document.getElementById('task-modal').style.display = 'flex'; setTimeout(() => document.getElementById('t-title').focus(), 100); }
-        function closeTaskModal() { document.getElementById('task-modal').style.display = 'none'; editingId = null; }
+        function openTaskModal() { 
+            editingId = null; 
+            pendingModalFile = null; 
+            document.getElementById('modal-title').textContent = 'Nova Tarefa'; 
+            fillTaskModal({ title: '', description: '', status: 'todo', priority: 'medium', categoria: '', data_vencimento: '', responsavel: '' }); 
+            document.getElementById('t-file').value = ''; 
+            syncDropzoneLabel(); 
+            resetTaskAiPlanPanel();
+            updateTaskModalAiButtons();
+            document.getElementById('task-modal').style.display = 'flex'; 
+            setTimeout(() => document.getElementById('t-title').focus(), 100); 
+        }
+        
+        function closeTaskModal() { 
+            document.getElementById('task-modal').style.display = 'none'; 
+            editingId = null; 
+            resetTaskAiPlanPanel();
+        }
 
         function openEdit(id) {
             const task = tasks.find(t => t.id === id); if (!task) return;
@@ -2332,8 +2397,211 @@
             document.getElementById('t-file').value = '';
             pendingModalFile = null;
             syncDropzoneLabel();
+            resetTaskAiPlanPanel();
+            updateTaskModalAiButtons();
             document.getElementById('task-modal').style.display = 'flex';
             setTimeout(() => document.getElementById('t-title').focus(), 100);
+        }
+
+        let ultimoSubtasksRecomendados = [];
+
+        async function executarTarefaAi(action) {
+            if (!editingId) return;
+            const task = tasks.find(t => t.id === editingId);
+            if (!task) return;
+
+            // Coleta dados atuais dos campos do modal (caso o usuário tenha digitado algo novo)
+            const currentTaskData = {
+                id: editingId,
+                title: document.getElementById('t-title').value.trim(),
+                description: document.getElementById('t-desc').value.trim(),
+                status: document.getElementById('t-status').value,
+                priority: document.getElementById('t-prio').value,
+                categoria: document.getElementById('t-cat').value,
+                data_vencimento: document.getElementById('t-due').value,
+                responsavel: document.getElementById('t-resp').value.trim(),
+                valor: parseFloat(document.getElementById('t-valor').value) || 0
+            };
+
+            const modelWorking = localStorage.getItem('working_ai_model') || '';
+
+            // Limpa o painel de resultados anterior
+            resetTaskAiPlanPanel();
+            showToast('⏳ Processando com IA...', 'info');
+
+            try {
+                let url = '';
+                let payload = {};
+
+                if (action === 'plan') {
+                    url = '/api/kanban/ai/plan-task';
+                    payload = { task: currentTaskData, model: modelWorking };
+                } else if (action === 'improve') {
+                    url = '/api/kanban/ai/improve-task';
+                    payload = { task: currentTaskData, model: modelWorking };
+                } else if (action === 'professional_rewrite') {
+                    url = '/api/kanban/ai/professional-rewrite';
+                    payload = { task: currentTaskData, model: modelWorking };
+                } else if (action === 'breakdown') {
+                    url = '/api/kanban/ai/breakdown-task';
+                    payload = { task: currentTaskData, model: modelWorking };
+                } else if (action === 'classify') {
+                    url = '/api/kanban/ai/classify-task';
+                    payload = { task: currentTaskData, model: modelWorking };
+                } else if (action === 'stale') {
+                    url = '/api/kanban/ai/stale-task';
+                    payload = { task: currentTaskData, model: modelWorking };
+                }
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+                // Tratar os resultados de acordo com a ação
+                if (action === 'improve' || action === 'professional_rewrite') {
+                    if (data.title) document.getElementById('t-title').value = data.title;
+                    if (data.description) document.getElementById('t-desc').value = data.description;
+                    showToast('✨ Tarefa atualizada com a sugestão da IA!', 'success');
+                } else {
+                    const panel = document.getElementById('task-ai-plan-panel');
+                    panel.style.display = 'block';
+                    document.getElementById('task-ai-plan-model').textContent = data.model || modelWorking || 'IA';
+
+                    // Ocultar seções por padrão
+                    document.getElementById('task-ai-plan-checklist-section').style.display = 'none';
+                    document.getElementById('task-ai-plan-subtasks-section').style.display = 'none';
+
+                    if (action === 'plan') {
+                        document.getElementById('task-ai-plan-summary').textContent = data.summary || '—';
+                        document.getElementById('task-ai-plan-next').textContent = data.next_action || '—';
+
+                        if (data.checklist && data.checklist.length) {
+                            const ckEl = document.getElementById('task-ai-plan-checklist');
+                            ckEl.innerHTML = data.checklist.map(c => `<li>${esc(c)}</li>`).join('');
+                            document.getElementById('task-ai-plan-checklist-section').style.display = 'block';
+                        }
+
+                        if (data.subtarefas && data.subtarefas.length) {
+                            ultimoSubtasksRecomendados = data.subtarefas;
+                            const subEl = document.getElementById('task-ai-plan-subtasks');
+                            subEl.innerHTML = data.subtarefas.map(s => `
+                                <li style="border:1px solid var(--border); border-radius:6px; padding:6px; background:#fff; font-size:11px; margin-bottom:4px;">
+                                    <strong>${esc(s.title)}</strong>
+                                    ${s.description ? `<div style="color:var(--text-3); margin-top:2px;">${esc(s.description)}</div>` : ''}
+                                </li>
+                            `).join('');
+                            document.getElementById('task-ai-plan-subtasks-section').style.display = 'block';
+                        }
+                        showToast('📅 Plano gerado com sucesso!', 'success');
+                    } else if (action === 'breakdown') {
+                        document.getElementById('task-ai-plan-summary').textContent = 'Subtarefas sugeridas pela IA prontas para importação.';
+                        document.getElementById('task-ai-plan-next').textContent = 'Use o botão "Criar Subtarefas" para inseri-las no quadro.';
+                        
+                        if (data.tasks && data.tasks.length) {
+                            ultimoSubtasksRecomendados = data.tasks;
+                            const subEl = document.getElementById('task-ai-plan-subtasks');
+                            subEl.innerHTML = data.tasks.map(s => `
+                                <li style="border:1px solid var(--border); border-radius:6px; padding:6px; background:#fff; font-size:11px; margin-bottom:4px;">
+                                    <strong>${esc(s.title)}</strong>
+                                    ${s.description ? `<div style="color:var(--text-3); margin-top:2px;">${esc(s.description)}</div>` : ''}
+                                </li>
+                            `).join('');
+                            document.getElementById('task-ai-plan-subtasks-section').style.display = 'block';
+                        }
+                        showToast('🧩 Subtarefas geradas com sucesso!', 'success');
+                    } else if (action === 'classify') {
+                        document.getElementById('task-ai-plan-summary').textContent = `Justificativa: ${data.justificativa || '—'}`;
+                        document.getElementById('task-ai-plan-next').textContent = 'A categoria recomendada foi selecionada.';
+                        
+                        const classifEl = document.getElementById('task-ai-plan-classification');
+                        classifEl.innerHTML = `🏷️ Categoria Sugerida: <strong>${(data.categoria_ia || '—').toUpperCase()}</strong> (Confiança: ${Math.round(data.confianca * 100)}%)`;
+                        classifEl.style.display = 'block';
+
+                        if (data.categoria_ia) {
+                            const valUpper = data.categoria_ia.toUpperCase();
+                            const selectEl = document.getElementById('t-cat');
+                            // Tenta achar a categoria correta no select
+                            let found = false;
+                            for (let option of selectEl.options) {
+                                if (option.value === valUpper) {
+                                    selectEl.value = valUpper;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                selectEl.value = 'OUTROS';
+                            }
+                        }
+                        showToast('🏷️ Categoria sugerida aplicada!', 'success');
+                    } else if (action === 'stale') {
+                        document.getElementById('task-ai-plan-summary').textContent = data.resumo || '—';
+                        document.getElementById('task-ai-plan-next').textContent = data.sugestoes ? data.sugestoes.join('; ') : '—';
+                        
+                        const staleEl = document.getElementById('task-ai-plan-stale');
+                        const statusColors = { normal: '#16a34a', atencao: '#f59e0b', parada: '#dc2626' };
+                        const statusLabels = { normal: 'Normal', atencao: 'Atenção (Sem movimentação recente)', parada: 'Parada / Travada' };
+                        
+                        staleEl.innerHTML = `⏱️ Status de Atividade: <strong style="color:${statusColors[data.status] || '#555'}">${statusLabels[data.status] || data.status}</strong> · Dias sem alteração: ${data.dias_sem_atualizacao || 0}`;
+                        staleEl.style.display = 'block';
+                        showToast('⏱️ Análise de inatividade concluída!', 'success');
+                    }
+                }
+            } catch (err) {
+                showToast(`❌ Falha na IA: ${err.message}`, 'error');
+            }
+        }
+
+        async function importarSubtarefasRecomendadas() {
+            if (!ultimoSubtasksRecomendados || !ultimoSubtasksRecomendados.length) {
+                showToast('Nenhuma subtarefa disponível para importar.', 'error');
+                return;
+            }
+            showToast('⏳ Criando subtarefas no quadro...', 'info');
+            let criadas = 0;
+            const parentTask = tasks.find(t => t.id === editingId);
+            const parentTitle = parentTask ? parentTask.title : '';
+
+            for (const s of ultimoSubtasksRecomendados) {
+                try {
+                    const newTask = {
+                        id: uid(),
+                        title: s.title,
+                        description: s.description || `Subtarefa vinculada a: ${parentTitle}`,
+                        status: s.status || 'todo',
+                        priority: s.priority || 'medium',
+                        categoria: parentTask ? (parentTask.categoria || '').toUpperCase() : '',
+                        data_vencimento: parentTask ? (parentTask.data_vencimento || '') : '',
+                        responsavel: parentTask ? (parentTask.responsavel || '') : '',
+                        valor: 0
+                    };
+                    const res = await fetch('/api/kanban', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newTask)
+                    });
+                    if (res.ok) {
+                        const created = await res.json();
+                        tasks.push(created);
+                        criadas++;
+                    }
+                } catch (e) {
+                    console.error('Erro ao criar subtarefa recomendada', e);
+                }
+            }
+            if (criadas > 0) {
+                renderBoard();
+                showToast(`✅ ${criadas} subtarefas criadas com sucesso!`, 'success');
+                document.getElementById('task-ai-plan-subtasks-section').style.display = 'none';
+                ultimoSubtasksRecomendados = [];
+            } else {
+                showToast('Erro ao criar subtarefas recomendadas.', 'error');
+            }
         }
 
         async function uploadAttachment(taskId, file) {

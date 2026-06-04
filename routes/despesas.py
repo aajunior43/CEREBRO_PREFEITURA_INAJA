@@ -19,8 +19,16 @@ def despesas_listar_importacoes():
     tipo = (request.args.get("tipo") or "despesa").strip()
     if tipo not in ("despesa", "empenho"):
         return jsonify({"error": "tipo deve ser 'despesa' ou 'empenho'"}), 400
-    table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
-    try:
+
+    unified = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='csv_importacoes'").fetchone()
+    if unified:
+        rows = conn.execute(
+            "SELECT id,tipo,periodo,descricao,arquivo,total_rows,importado_em FROM csv_importacoes WHERE tipo=? ORDER BY importado_em DESC",
+            (tipo,),
+        ).fetchall()
+        return jsonify([row_to_dict(r) for r in rows])
+    else:
+        table = "empenhos_importacoes" if tipo == "empenho" else "despesas_importacoes"
         rows = conn.execute(
             f"SELECT id,periodo,descricao,arquivo,total_rows,importado_em FROM {table} ORDER BY importado_em DESC"
         ).fetchall()
@@ -28,13 +36,6 @@ def despesas_listar_importacoes():
         for r in result:
             r["tipo"] = tipo
         return jsonify(result)
-    except Exception:
-        # Fallback to unified table
-        rows = conn.execute(
-            "SELECT id,tipo,periodo,descricao,arquivo,total_rows,importado_em FROM csv_importacoes WHERE tipo=? ORDER BY importado_em DESC",
-            (tipo,),
-        ).fetchall()
-        return jsonify([row_to_dict(r) for r in rows])
 
 
 @bp.route("/api/despesas/importar", methods=["POST"])

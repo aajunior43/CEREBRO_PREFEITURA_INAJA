@@ -7,6 +7,8 @@ from collections import defaultdict
 from flask import Blueprint, request, jsonify, send_file
 import io as _io
 
+from routes._shared import require_login
+
 bp = Blueprint("kanban", __name__)
 
 
@@ -232,6 +234,7 @@ def _kanban_ai_completion(
 
 # ── CRUD ─────────────────────────────────────────────────────
 @bp.route("/api/kanban", methods=["GET"])
+@require_login
 def kanban_listar():
     try:
         limit = max(1, min(request.args.get("limit", 200, type=int), 2000))
@@ -267,6 +270,7 @@ def kanban_listar():
 
 
 @bp.route("/api/kanban", methods=["POST"])
+@require_login
 def kanban_criar():
     try:
         data = request.get_json(force=True) or {}
@@ -314,6 +318,7 @@ def kanban_criar():
 
 
 @bp.route("/api/kanban/<task_id>", methods=["PUT"])
+@require_login
 def kanban_atualizar(task_id):
     try:
         data = request.get_json(force=True) or {}
@@ -363,6 +368,7 @@ def kanban_atualizar(task_id):
 
 
 @bp.route("/api/kanban/<task_id>", methods=["DELETE"])
+@require_login
 def kanban_excluir(task_id):
     try:
         conn = get_db()
@@ -393,7 +399,8 @@ def _handle_ai_result(parsed, error, sanitizer):
 
 
 @bp.route("/api/kanban/ai/create-from-text", methods=["POST"])
-def ai_create():
+@require_login
+def kanban_ai_create():
     try:
         data = request.get_json(force=True) or {}
         prompt = (data.get("prompt") or "").strip()
@@ -413,7 +420,8 @@ def ai_create():
 
 
 @bp.route("/api/kanban/ai/improve-task", methods=["POST"])
-def ai_improve():
+@require_login
+def kanban_ai_improve():
     try:
         data = request.get_json(force=True) or {}
         task = data.get("task") or {}
@@ -432,7 +440,8 @@ def ai_improve():
 
 
 @bp.route("/api/kanban/ai/breakdown-task", methods=["POST"])
-def ai_breakdown():
+@require_login
+def kanban_ai_breakdown():
     try:
         data = request.get_json(force=True) or {}
         task = data.get("task") or {}
@@ -463,7 +472,8 @@ def ai_breakdown():
 
 
 @bp.route("/api/kanban/ai/plan-task", methods=["POST"])
-def ai_plan():
+@require_login
+def kanban_ai_plan():
     try:
         data = request.get_json(force=True) or {}
         task = data.get("task") or {}
@@ -506,7 +516,8 @@ def ai_plan():
 
 
 @bp.route("/api/kanban/ai/classify-task", methods=["POST"])
-def ai_classify():
+@require_login
+def kanban_ai_classify():
     try:
         data = request.get_json(force=True) or {}
         task = data.get("task") or {}
@@ -547,7 +558,8 @@ def ai_classify():
 
 
 @bp.route("/api/kanban/ai/stale-task", methods=["POST"])
-def ai_stale():
+@require_login
+def kanban_ai_stale():
     try:
         data = request.get_json(force=True) or {}
         task = data.get("task") or {}
@@ -595,7 +607,8 @@ def ai_stale():
 
 
 @bp.route("/api/kanban/ai/professional-rewrite", methods=["POST"])
-def ai_rewrite():
+@require_login
+def kanban_ai_professional_rewrite():
     try:
         data = request.get_json(force=True) or {}
         task = data.get("task") or {}
@@ -615,7 +628,8 @@ def ai_rewrite():
 
 # ── Anexos ───────────────────────────────────────────────────
 @bp.route("/api/kanban/<task_id>/attachments", methods=["GET"])
-def anexos_listar(task_id):
+@require_login
+def list_anexos(task_id):
     try:
         conn = get_db()
         if not conn.execute(
@@ -632,7 +646,8 @@ def anexos_listar(task_id):
 
 
 @bp.route("/api/kanban/<task_id>/attachments", methods=["POST"])
-def anexos_enviar(task_id):
+@require_login
+def upload_anexo(task_id):
     file = request.files.get("arquivo")
     if not file or not file.filename:
         return jsonify({"error": "Arquivo é obrigatório"}), 400
@@ -678,6 +693,7 @@ def anexos_enviar(task_id):
 @bp.route(
     "/api/kanban/<task_id>/attachments/<int:attachment_id>/download", methods=["GET"]
 )
+@require_login
 def anexo_download(task_id, attachment_id):
     try:
         conn = get_db()
@@ -701,6 +717,7 @@ def anexo_download(task_id, attachment_id):
 
 
 @bp.route("/api/kanban/<task_id>/attachments/<int:attachment_id>", methods=["DELETE"])
+@require_login
 def anexo_excluir(task_id, attachment_id):
     try:
         conn = get_db()

@@ -1067,6 +1067,23 @@
 
   // ── Event CRUD ────────────────────────────────────────────────
   async function deleteEvent(key, eventId) {
+    if (eventId && eventId.toString().startsWith('_')) {
+      const dayObj = state.days.find(d => d.isCurrentMonth && dateKey(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()) === key);
+      if (!dayObj) return;
+      const defEvt = dayObj.events.find(e => e.id === eventId);
+      if (!defEvt) return;
+      const defType = defEvt.type;
+
+      await materializeDay(key);
+
+      const newEvt = (customEvents[key] || []).find(e => e.type === defType);
+      if (!newEvt) {
+        await renderCalendar();
+        return;
+      }
+      eventId = newEvt.id;
+    }
+
     try {
       await fetch(`/api/calendario/eventos/${eventId}`, { method: 'DELETE' });
       if (customEvents[key]) customEvents[key] = customEvents[key].filter(e => e.id !== eventId);
@@ -1103,7 +1120,24 @@
     setTimeout(() => document.getElementById('evt-text').focus(), 50);
   }
 
-  function openEditEventModal(key, eventId) {
+  async function openEditEventModal(key, eventId) {
+    if (eventId && eventId.toString().startsWith('_')) {
+      const dayObj = state.days.find(d => d.isCurrentMonth && dateKey(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()) === key);
+      if (!dayObj) return;
+      const defEvt = dayObj.events.find(e => e.id === eventId);
+      if (!defEvt) return;
+      const defType = defEvt.type;
+
+      await materializeDay(key);
+
+      const newEvt = (customEvents[key] || []).find(e => e.type === defType);
+      if (!newEvt) {
+        await renderCalendar();
+        return;
+      }
+      eventId = newEvt.id;
+    }
+
     // Busca evento no estado em memória (já foi carregado da API)
     let evt = (customEvents[key] || []).find(e => e.id == eventId);
     if (!evt && customEvents[key] && customEvents[key].length > 0) evt = customEvents[key][0];
@@ -1345,14 +1379,15 @@
           </div>
         </div>`;
       const printEl = document.getElementById('printable-cal');
-      // Posiciona fora da tela mas visível para html2canvas capturar corretamente
-      printEl.style.cssText = 'position:fixed;left:-9999px;top:0;width:220mm;background:white;z-index:0;';
+      // Posiciona de forma absoluta com baixíssima opacidade para forçar o navegador a renderizar o layout
+      printEl.style.cssText = 'position:absolute;left:0;top:0;width:210mm;background:white;opacity:0.01;pointer-events:none;z-index:-9999;';
       printEl.innerHTML = printHtml;
       // Aguarda o browser renderizar o conteúdo
       await new Promise(r => setTimeout(r, 300));
       const canvas = await html2canvas(printEl.firstElementChild, {
         scale: 2, useCORS: true, backgroundColor: '#ffffff',
         logging: false, allowTaint: true,
+        scrollX: 0, scrollY: 0,
         windowWidth: printEl.firstElementChild.scrollWidth,
         windowHeight: printEl.firstElementChild.scrollHeight
       });

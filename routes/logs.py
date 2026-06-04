@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify, session, send_file
 import os
-from routes._shared import get_db, row_to_dict
+from routes._shared import get_db, row_to_dict, require_login
 from config import settings
 
 bp = Blueprint("logs", __name__)
 
 
 @bp.route("/api/logs", methods=["GET"])
+@require_login
 def get_logs():
     try:
         conn = get_db()
@@ -33,6 +34,7 @@ def get_logs():
 
 
 @bp.route("/api/audit-trail", methods=["GET"])
+@require_login
 def get_audit_trail():
     try:
         conn = get_db()
@@ -71,6 +73,7 @@ def get_audit_trail():
 
 
 @bp.route("/api/logs/server-log", methods=["GET"])
+@require_login
 def get_server_log():
     if session.get("usuario_nivel") != "admin":
         return jsonify({"error": "Não autorizado"}), 403

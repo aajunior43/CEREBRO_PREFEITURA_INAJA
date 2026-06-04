@@ -82,6 +82,27 @@ def admin_summary():
                 unique.append(item)
             return unique
 
+        import time as _time
+        from flask import current_app
+
+        # Conectividade real do banco
+        try:
+            conn.execute("SELECT 1").fetchone()
+            db_ok = True
+        except Exception as db_err:
+            db_ok = False
+            current_app.logger.error("Erro na conectividade do banco de dados no Diagnóstico: %s", str(db_err))
+
+        startup_time = current_app.config.get("STARTUP_TIME", _time.time())
+        uptime_s = int(_time.time() - startup_time)
+        
+        cache_files = len(getattr(current_app, "file_cache", {}))
+        cache_gzip = len(getattr(current_app, "gzip_cache", {}))
+        error_count = getattr(current_app, "error_count", 0)
+        slow_requests = getattr(current_app, "slow_request_count", 0)
+        
+        health_status = "ok" if (db_ok and error_count < 10) else "degraded"
+
         return jsonify(
             {
                 "overview": {
@@ -102,11 +123,11 @@ def admin_summary():
                     ).fetchone()["total"],
                 },
                 "health": {
-                    "status": "ok",
-                    "db": True,
-                    "uptime_s": 0,
-                    "cache_files": 0,
-                    "cache_gzip": 0,
+                    "status": health_status,
+                    "db": db_ok,
+                    "uptime_s": uptime_s,
+                    "cache_files": cache_files,
+                    "cache_gzip": cache_gzip,
                 },
                 "config_status": {
                     "openrouter_key_configured": bool(
@@ -154,6 +175,8 @@ def admin_summary():
                     "db_path": str(settings.db_path),
                     "log_file": str(settings.log_file),
                     "base_dir": str(settings.base_dir),
+                    "error_count": error_count,
+                    "slow_requests": slow_requests,
                 },
             }
         )

@@ -18,6 +18,7 @@
     } catch(e) {}
   </script>
   <style>
+    /* ── Layout ── */
     .docs-wrap { max-width: 1120px; margin: 24px auto 70px; padding: 0 20px; }
     .docs-hero { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
     .docs-hero h2 { font-size:24px; font-weight:800; color:var(--text); margin:0; }
@@ -25,38 +26,159 @@
     .docs-grid { display:grid; grid-template-columns: minmax(320px, 390px) minmax(0, 1fr); gap:18px; align-items:start; }
     .docs-card { background:var(--bg); border-radius:var(--radius); box-shadow:var(--neo); padding:22px; }
     .docs-card h3 { font-size:15px; font-weight:800; color:var(--text); margin:0 0 16px; }
+
+    /* ── Form ── */
     .docs-form { display:flex; flex-direction:column; gap:12px; }
     .docs-label { font-size:11px; font-weight:700; color:var(--text-3); text-transform:uppercase; letter-spacing:.5px; }
     .docs-input, .docs-select, .docs-textarea { width:100%; background:var(--bg); border:none; border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); padding:12px 14px; font-family:inherit; font-size:13px; color:var(--text); outline:none; }
     .docs-textarea { min-height:88px; resize:vertical; }
-    .docs-file { padding:10px; background:var(--bg); border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); }
     .docs-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
     .docs-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:var(--radius-sm); padding:11px 16px; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
     .docs-btn-primary { background:linear-gradient(135deg, var(--blue), var(--blue-dark)); color:#fff; box-shadow:3px 3px 10px rgba(79,128,200,.35); }
     .docs-btn-secondary { background:var(--bg); color:var(--text-2); box-shadow:var(--neo-sm); }
-    .docs-toolbar { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; }
+    .docs-status { display:none; margin-top:10px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:12px; }
+    .docs-status.ok { display:block; background:rgba(34,197,94,.12); color:#15803d; }
+    .docs-status.err { display:block; background:rgba(239,68,68,.12); color:#dc2626; }
+
+    /* ── Drag-and-drop zone ── */
+    .drop-zone {
+      position: relative;
+      border: 2px dashed rgba(184,194,204,.4);
+      border-radius: var(--radius-sm);
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: var(--bg);
+      box-shadow: var(--neo-in-sm);
+    }
+    .drop-zone.drag-over { border-color: var(--blue); background: rgba(79,128,200,.06); }
+    .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .drop-zone-icon { font-size:26px; margin-bottom:6px; }
+    .drop-zone-main { font-size:13px; font-weight:700; color:var(--text-2); }
+    .drop-zone-sub { font-size:11px; color:var(--text-3); margin-top:3px; }
+    .drop-zone-file { margin-top:8px; font-size:12px; font-weight:700; color:var(--blue); word-break:break-all; display:none; }
+
+    /* ── Toolbar / top controls ── */
+    .docs-toolbar-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .docs-toolbar { display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:10px; margin-bottom:10px; }
+    .docs-view-toggle { display:flex; gap:6px; }
+    .docs-view-btn {
+      width:36px; height:36px; border:none; border-radius:var(--radius-sm);
+      background:var(--bg); box-shadow:var(--neo-sm); cursor:pointer;
+      font-size:16px; display:flex; align-items:center; justify-content:center;
+      color:var(--text-3); transition:box-shadow .15s, color .15s;
+    }
+    .docs-view-btn.active { box-shadow:var(--neo-in-sm); color:var(--blue); }
+
+    /* ── Stats bar ── */
+    .docs-stats-bar { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; }
+    .docs-stat-chip {
+      font-size:11px; font-weight:700; padding:5px 12px; border-radius:999px;
+      background:var(--bg); color:var(--text-2); box-shadow:var(--neo-sm);
+      cursor:pointer; transition:box-shadow .15s, color .15s;
+    }
+    .docs-stat-chip:hover { color:var(--blue); }
+    .docs-stat-chip.active { box-shadow:var(--neo-in-sm); color:var(--blue); }
+
+    /* ── Document list (list view) ── */
     .docs-empty { text-align:center; padding:38px 16px; color:var(--text-3); font-size:13px; }
     .docs-list { display:flex; flex-direction:column; gap:12px; }
-    .doc-item { background:var(--bg-2, rgba(0,0,0,.03)); border-radius:var(--radius-sm); padding:16px; display:flex; gap:16px; align-items:flex-start; }
-    .doc-cover { width:70px; height:95px; background:var(--bg-3, rgba(0,0,0,.05)); border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; border:1px solid var(--border); }
+    .doc-item {
+      background:var(--bg-2, rgba(0,0,0,.03)); border-radius:var(--radius-sm);
+      padding:16px; display:flex; gap:16px; align-items:flex-start;
+      transition:box-shadow .15s;
+    }
+    .doc-item:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+    .doc-cover {
+      width:70px; height:95px; background:var(--bg-3, rgba(0,0,0,.05));
+      border-radius:var(--radius-sm); box-shadow:var(--neo-in-sm);
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; overflow:hidden; border:1px solid var(--border);
+      cursor:pointer; transition:opacity .15s;
+    }
+    .doc-cover:hover { opacity:.85; }
     .doc-cover canvas { width:100%; height:100%; object-fit:cover; display:block; }
     .doc-main { flex:1; min-width:0; }
-    .doc-name { font-size:14px; font-weight:800; color:var(--text); word-break:break-word; }
+    .doc-name { font-size:14px; font-weight:800; color:var(--text); word-break:break-word; cursor:pointer; }
+    .doc-name:hover { color:var(--blue); text-decoration:underline; }
     .doc-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .doc-badge { font-size:11px; font-weight:700; color:var(--text-2); background:rgba(184,194,204,.16); border-radius:999px; padding:4px 10px; }
     .doc-desc { font-size:12px; color:var(--text-3); margin-top:10px; line-height:1.6; white-space:pre-wrap; }
     .doc-actions { display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; }
-    .doc-link, .doc-danger { border:none; border-radius:10px; padding:9px 12px; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; }
+    .doc-link, .doc-danger { border:none; border-radius:10px; padding:9px 12px; font-size:12px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:5px; }
     .doc-link { background:rgba(79,128,200,.12); color:var(--blue); }
     .doc-danger { background:rgba(239,68,68,.12); color:var(--red); }
-    .docs-status { display:none; margin-top:10px; font-size:12px; font-weight:700; padding:10px 12px; border-radius:12px; }
-    .docs-status.ok { display:block; background:rgba(34,197,94,.12); color:#15803d; }
-    .docs-status.err { display:block; background:rgba(239,68,68,.12); color:#dc2626; }
+
+    /* ── Grid view ── */
+    .docs-list.grid-view {
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap:14px;
+    }
+    .docs-list.grid-view .doc-item {
+      flex-direction:column; align-items:stretch; padding:12px; gap:10px;
+    }
+    .docs-list.grid-view .doc-cover {
+      width:100%; height:160px; align-self:stretch;
+    }
+    .docs-list.grid-view .doc-main { flex:unset; }
+    .docs-list.grid-view .doc-name { font-size:12px; line-height:1.4; }
+    .docs-list.grid-view .doc-badge { font-size:10px; padding:3px 8px; }
+    .docs-list.grid-view .doc-desc { display:none; }
+    .docs-list.grid-view .doc-actions { margin-top:4px; gap:5px; }
+    .docs-list.grid-view .doc-link,
+    .docs-list.grid-view .doc-danger { font-size:11px; padding:6px 9px; }
+
+    /* ── PDF Modal ── */
+    .pdf-modal {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,.6); z-index:9999;
+      align-items:center; justify-content:center; padding:20px;
+    }
+    .pdf-modal.open { display:flex; }
+    .pdf-modal-box {
+      background:var(--bg); border-radius:var(--radius);
+      box-shadow:0 24px 80px rgba(0,0,0,.45);
+      width:100%; max-width:920px; height:90vh;
+      display:flex; flex-direction:column; overflow:hidden;
+      animation: modalIn .18s ease;
+    }
+    @keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(10px); } to { opacity:1; transform:none; } }
+    .pdf-modal-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px; border-bottom:1px solid var(--border, rgba(0,0,0,.08));
+      gap:12px;
+    }
+    .pdf-modal-title { font-size:14px; font-weight:800; color:var(--text); flex:1; word-break:break-word; }
+    .pdf-modal-actions { display:flex; gap:8px; flex-shrink:0; }
+    .pdf-modal-close {
+      width:32px; height:32px; border:none; border-radius:var(--radius-sm);
+      background:var(--bg); box-shadow:var(--neo-sm); font-size:16px;
+      cursor:pointer; color:var(--text-2);
+    }
+    .pdf-modal-dl {
+      padding:7px 14px; border:none; border-radius:var(--radius-sm);
+      background:rgba(79,128,200,.12); color:var(--blue);
+      font-size:12px; font-weight:700; cursor:pointer; text-decoration:none;
+      display:inline-flex; align-items:center; gap:5px;
+    }
+    .pdf-modal-body { flex:1; overflow:hidden; background:#555; }
+    .pdf-modal-body iframe { width:100%; height:100%; border:none; }
+    .pdf-modal-body .pdf-placeholder {
+      height:100%; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      color:#ccc; gap:10px; font-size:13px;
+    }
+    .pdf-modal-body .pdf-placeholder span { font-size:48px; }
+
     @media (max-width: 900px) {
       .docs-grid { grid-template-columns: 1fr; }
-      .docs-toolbar { grid-template-columns: 1fr; }
+      .docs-toolbar { grid-template-columns: 1fr 1fr; }
+      .docs-toolbar > *:last-child { grid-column: 1 / -1; }
       .doc-item { flex-direction:column; align-items:stretch; }
       .doc-cover { align-self:center; }
+      .docs-list.grid-view { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     }
   </style>
 </head>
@@ -70,6 +192,7 @@
     </div>
 
     <div class="docs-grid">
+      <!-- Upload form -->
       <section class="docs-card">
         <h3>⬆ Adicionar à Biblioteca</h3>
         <form id="docs-form" class="docs-form">
@@ -95,7 +218,13 @@
           </div>
           <div>
             <div class="docs-label">Arquivo</div>
-            <input id="doc-arquivo" class="docs-file" type="file" required />
+            <div class="drop-zone" id="drop-zone">
+              <div class="drop-zone-icon">📁</div>
+              <div class="drop-zone-main">Arraste o arquivo aqui</div>
+              <div class="drop-zone-sub">ou clique para selecionar</div>
+              <div class="drop-zone-file" id="drop-zone-file"></div>
+              <input id="doc-arquivo" type="file" required />
+            </div>
           </div>
           <div class="docs-actions">
             <button type="submit" class="docs-btn docs-btn-primary" id="doc-enviar-btn">Salvar na Biblioteca</button>
@@ -105,8 +234,15 @@
         </form>
       </section>
 
+      <!-- Acervo -->
       <section class="docs-card">
-        <h3>🗂 Acervo Digital</h3>
+        <div class="docs-toolbar-row">
+          <h3 style="margin:0;">🗂 Acervo Digital</h3>
+          <div class="docs-view-toggle">
+            <button class="docs-view-btn active" id="btn-view-list" title="Vista em lista">☰</button>
+            <button class="docs-view-btn" id="btn-view-grid" title="Vista em grade">⊞</button>
+          </div>
+        </div>
         <div class="docs-toolbar">
           <select id="filtro-categoria" class="docs-select">
             <option value="">Todos os tipos</option>
@@ -122,9 +258,27 @@
           <input id="filtro-busca" class="docs-input" type="text" placeholder="Buscar por ementa/nome" />
           <button class="docs-btn docs-btn-secondary" id="docs-atualizar-btn" type="button">Atualizar</button>
         </div>
+
+        <!-- Stats bar -->
+        <div class="docs-stats-bar" id="docs-stats-bar"></div>
+
         <div id="docs-list" class="docs-list"></div>
         <div id="docs-empty" class="docs-empty" style="display:none;">Nenhum documento encontrado no acervo.</div>
       </section>
+    </div>
+  </div>
+
+  <!-- PDF Modal -->
+  <div class="pdf-modal" id="pdf-modal">
+    <div class="pdf-modal-box">
+      <div class="pdf-modal-header">
+        <div class="pdf-modal-title" id="pdf-modal-title">Documento</div>
+        <div class="pdf-modal-actions">
+          <a class="pdf-modal-dl" id="pdf-modal-dl" href="#" download>⬇ Baixar</a>
+          <button class="pdf-modal-close" id="pdf-modal-close" title="Fechar">✕</button>
+        </div>
+      </div>
+      <div class="pdf-modal-body" id="pdf-modal-body"></div>
     </div>
   </div>
 
@@ -136,141 +290,210 @@
     const filtroCategoria = document.getElementById('filtro-categoria');
     const filtroReferencia = document.getElementById('filtro-referencia');
     const filtroBusca = document.getElementById('filtro-busca');
+    const statsBar = document.getElementById('docs-stats-bar');
     let docsCache = [];
     let docsTimer = null;
+    let currentView = localStorage.getItem('bib-view') || 'list';
 
+    // ── category config ──
+    const CAT_CFG = {
+      'biblioteca-leis':      { label:'Leis',           color:'rgba(59,130,246,.14)',  text:'#2563eb' },
+      'biblioteca-decretos':  { label:'Decretos',       color:'rgba(124,58,237,.14)',  text:'#7c3aed' },
+      'biblioteca-portarias': { label:'Portarias',      color:'rgba(16,185,129,.14)',  text:'#059669' },
+      'biblioteca-editais':   { label:'Editais & Lic.', color:'rgba(245,158,11,.14)',  text:'#d97706' },
+      'biblioteca-manuais':   { label:'Manuais & Guias',color:'rgba(99,102,241,.14)',  text:'#4f46e5' },
+      'biblioteca-modelos':   { label:'Modelos',        color:'rgba(236,72,153,.14)',  text:'#db2777' },
+      'biblioteca-outros':    { label:'Outros',         color:'rgba(100,116,139,.14)', text:'#475569' }
+    };
+    function catCfg(cat) { return CAT_CFG[cat] || { label: cat, color:'rgba(184,194,204,.16)', text:'var(--text-2)' }; }
+    function getFriendlyCategory(cat) { return catCfg(cat).label; }
+
+    // ── utilities ──
     function fmtBytes(n) {
-      const value = Number(n) || 0;
-      if (value < 1024) return `${value} B`;
-      if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-      return `${(value / (1024 * 1024)).toFixed(2)} MB`;
+      const v = Number(n) || 0;
+      if (v < 1024) return `${v} B`;
+      if (v < 1048576) return `${(v/1024).toFixed(1)} KB`;
+      return `${(v/1048576).toFixed(2)} MB`;
     }
-
     function setStatus(msg, ok) {
       docsStatus.textContent = msg;
       docsStatus.className = `docs-status ${ok ? 'ok' : 'err'}`;
     }
-
-    function clearStatus() {
-      docsStatus.textContent = '';
-      docsStatus.className = 'docs-status';
-    }
-
+    function clearStatus() { docsStatus.textContent=''; docsStatus.className='docs-status'; }
     function esc(v) {
-      return String(v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    function getFriendlyCategory(cat) {
-      const map = {
-        'biblioteca-leis': 'Leis',
-        'biblioteca-decretos': 'Decretos',
-        'biblioteca-portarias': 'Portarias',
-        'biblioteca-editais': 'Editais & Licitações',
-        'biblioteca-manuais': 'Manuais & Guias',
-        'biblioteca-modelos': 'Modelos',
-        'biblioteca-outros': 'Outros'
-      };
-      return map[cat] || cat;
+    // ── view toggle ──
+    function applyView(v) {
+      currentView = v;
+      localStorage.setItem('bib-view', v);
+      docsList.classList.toggle('grid-view', v === 'grid');
+      document.getElementById('btn-view-list').classList.toggle('active', v === 'list');
+      document.getElementById('btn-view-grid').classList.toggle('active', v === 'grid');
+    }
+    document.getElementById('btn-view-list').addEventListener('click', () => applyView('list'));
+    document.getElementById('btn-view-grid').addEventListener('click', () => applyView('grid'));
+
+    // ── stats bar ──
+    function renderStats(list) {
+      const counts = {};
+      let total = 0;
+      list.forEach(d => {
+        counts[d.categoria] = (counts[d.categoria]||0)+1;
+        total++;
+      });
+      const chips = [`<span class="docs-stat-chip ${!filtroCategoria.value?'active':''}" data-stat="">Todos (${total})</span>`];
+      Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([cat,n])=>{
+        const cfg = catCfg(cat);
+        const isActive = filtroCategoria.value === cat;
+        chips.push(`<span class="docs-stat-chip ${isActive?'active':''}" data-stat="${cat}" style="color:${cfg.text};background:${cfg.color};">${cfg.label} (${n})</span>`);
+      });
+      statsBar.innerHTML = chips.join('');
+      statsBar.querySelectorAll('.docs-stat-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          filtroCategoria.value = chip.dataset.stat;
+          carregarDocumentos().catch(err => setStatus(err.message, false));
+        });
+      });
     }
 
+    // ── thumbnail ──
+    async function carregarEGerarThumbnail(img, id, url) {
+      img.onerror = null;
+      img.style.display = 'none';
+      const parent = img.parentElement;
+      if (!parent) return;
+      const spinner = document.createElement('span');
+      spinner.style.cssText = 'font-size:12px;opacity:0.5;';
+      spinner.textContent = '⏳';
+      parent.appendChild(spinner);
+      try {
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: 1.0 });
+        const scale = Math.min(140/viewport.width, 200/viewport.height);
+        const sv = page.getViewport({ scale });
+        canvas.width = sv.width; canvas.height = sv.height;
+        await page.render({ canvasContext: ctx, viewport: sv }).promise;
+        const dataUrl = canvas.toDataURL('image/png');
+        img.src = dataUrl;
+        img.style.display = 'block';
+        if (spinner.parentNode) parent.removeChild(spinner);
+        fetch(`/api/documentos/${id}/thumbnail`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ image: dataUrl })
+        }).catch(()=>{});
+      } catch (err) {
+        if (spinner.parentNode) parent.removeChild(spinner);
+        parent.innerHTML = '<span style="font-size:16px;font-weight:bold;color:var(--red);">PDF</span>';
+      }
+    }
+
+    // ── PDF modal ──
+    const pdfModal = document.getElementById('pdf-modal');
+    const pdfModalTitle = document.getElementById('pdf-modal-title');
+    const pdfModalBody = document.getElementById('pdf-modal-body');
+    const pdfModalDl = document.getElementById('pdf-modal-dl');
+
+    function openPdfModal(id, name, ext) {
+      pdfModalTitle.textContent = name;
+      pdfModalDl.href = `/api/documentos/${id}/download`;
+      pdfModalBody.innerHTML = '';
+      if (ext === '.pdf') {
+        const iframe = document.createElement('iframe');
+        iframe.src = `/api/documentos/${id}/view`;
+        pdfModalBody.appendChild(iframe);
+      } else {
+        pdfModalBody.innerHTML = `<div class="pdf-placeholder"><span>📄</span><span>Pré-visualização não disponível para este formato.</span><a class="pdf-modal-dl" href="/api/documentos/${id}/download" style="margin-top:8px;">⬇ Baixar arquivo</a></div>`;
+      }
+      pdfModal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closePdfModal() {
+      pdfModal.classList.remove('open');
+      pdfModalBody.innerHTML = '';
+      document.body.style.overflow = '';
+    }
+    document.getElementById('pdf-modal-close').addEventListener('click', closePdfModal);
+    pdfModal.addEventListener('click', e => { if (e.target === pdfModal) closePdfModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePdfModal(); });
+
+    // ── render docs ──
     function renderDocs() {
-      const search = (filtroBusca.value || '').trim().toLowerCase();
-      const ref = (filtroReferencia.value || '').trim().toLowerCase();
-      const categoria = filtroCategoria.value;
-      
+      const search = (filtroBusca.value||'').trim().toLowerCase();
+      const ref    = (filtroReferencia.value||'').trim().toLowerCase();
+      const cat    = filtroCategoria.value;
+
       const list = docsCache.filter(doc => {
-        // Only display library items
-        if (!(doc.categoria || '').startsWith('biblioteca-')) return false;
-        
-        if (categoria && doc.categoria !== categoria) return false;
-        if (ref && !(doc.referencia || '').toLowerCase().includes(ref)) return false;
+        if (!(doc.categoria||'').startsWith('biblioteca-')) return false;
+        if (cat && doc.categoria !== cat) return false;
+        if (ref && !(doc.referencia||'').toLowerCase().includes(ref)) return false;
         if (search) {
-          const bucket = `${doc.nome_original || ''} ${doc.descricao || ''} ${doc.referencia || ''}`.toLowerCase();
-          if (!bucket.includes(search)) return false;
+          const bucket = `${doc.nome_original||''} ${doc.descricao||''} ${doc.referencia||''}`.toLowerCase();
+          if (!bucket.includes(search)) return true;
         }
         return true;
       });
 
-      docsList.innerHTML = list.map(doc => `
+      renderStats(docsCache.filter(d => (d.categoria||'').startsWith('biblioteca-')));
+      applyView(currentView);
+
+      docsList.innerHTML = list.map(doc => {
+        const ext = (doc.extensao||'').toLowerCase();
+        const cfg = catCfg(doc.categoria);
+        return `
         <div class="doc-item">
-          <div class="doc-cover" data-doc-id="${doc.id}" data-ext="${(doc.extensao || '').toLowerCase()}" data-url="/api/documentos/${doc.id}/view">
-            <span style="font-size:24px;opacity:0.6;">📄</span>
+          <div class="doc-cover" data-view-id="${doc.id}" data-view-name="${esc(doc.nome_original)}" data-view-ext="${ext}" title="Visualizar documento">
+            ${ext === '.pdf'
+              ? `<img src="/api/documentos/${doc.id}/thumbnail" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="carregarEGerarThumbnail(this, ${doc.id}, '/api/documentos/${doc.id}/view')" />`
+              : `<span style="font-size:24px;opacity:0.6;">📄</span>`
+            }
           </div>
           <div class="doc-main">
-            <div class="doc-name">${esc(doc.nome_original)}</div>
+            <div class="doc-name" data-view-id="${doc.id}" data-view-name="${esc(doc.nome_original)}" data-view-ext="${ext}">${esc(doc.nome_original)}</div>
             <div class="doc-meta">
-              <span class="doc-badge" style="background:rgba(16,185,129,0.1);color:#10b981;">${esc(getFriendlyCategory(doc.categoria))}</span>
-              <span class="doc-badge">${esc(doc.referencia || 'sem referência')}</span>
+              <span class="doc-badge" style="background:${cfg.color};color:${cfg.text};">${esc(getFriendlyCategory(doc.categoria))}</span>
+              <span class="doc-badge">${esc(doc.referencia||'sem referência')}</span>
               <span class="doc-badge">${fmtBytes(doc.tamanho)}</span>
-              <span class="doc-badge">${esc(doc.criado_em || '')}</span>
+              <span class="doc-badge">${esc(doc.criado_em||'')}</span>
             </div>
             ${doc.descricao ? `<div class="doc-desc">${esc(doc.descricao)}</div>` : ''}
           </div>
           <div class="doc-actions">
-            <a class="doc-link" href="/api/documentos/${doc.id}/download">Baixar</a>
-            <button class="doc-link" style="background:rgba(124,58,237,0.1);color:#7c3aed;" data-ia-rename-id="${doc.id}" type="button">🪄 Nomear com IA</button>
+            <button class="doc-link" data-view-id="${doc.id}" data-view-name="${esc(doc.nome_original)}" data-view-ext="${ext}" type="button">👁 Ver</button>
+            <a class="doc-link" href="/api/documentos/${doc.id}/download" style="background:rgba(16,185,129,.12);color:#059669;">⬇ Baixar</a>
+            <button class="doc-link" style="background:rgba(124,58,237,0.1);color:#7c3aed;" data-ia-rename-id="${doc.id}" type="button">🪄 IA</button>
             <button class="doc-danger" data-delete-id="${doc.id}" type="button">Excluir</button>
           </div>
-        </div>
-      `).join('');
-
-      // Render cover thumbnails for PDFs asynchronously
-      document.querySelectorAll('.doc-cover[data-ext=".pdf"]').forEach(async el => {
-        const url = el.dataset.url;
-        try {
-          const loadingTask = pdfjsLib.getDocument(url);
-          const pdf = await loadingTask.promise;
-          const page = await pdf.getPage(1);
-          
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          
-          const viewport = page.getViewport({ scale: 1.0 });
-          const scale = Math.min(70 / viewport.width, 95 / viewport.height);
-          const scaledViewport = page.getViewport({ scale: scale });
-          
-          canvas.width = scaledViewport.width;
-          canvas.height = scaledViewport.height;
-          
-          const renderContext = {
-            canvasContext: context,
-            viewport: scaledViewport
-          };
-          await page.render(renderContext).promise;
-          
-          el.innerHTML = '';
-          el.appendChild(canvas);
-        } catch (err) {
-          console.warn("Failed to render PDF thumbnail:", err);
-          el.innerHTML = '<span style="font-size:16px;font-weight:bold;color:var(--red);">PDF</span>';
-        }
-      });
+        </div>`;
+      }).join('');
 
       docsEmpty.style.display = list.length ? 'none' : '';
     }
 
+    // ── load docs ──
     async function carregarDocumentos() {
       const params = new URLSearchParams();
       if (filtroCategoria.value) params.set('categoria', filtroCategoria.value);
       if (filtroReferencia.value.trim()) params.set('referencia', filtroReferencia.value.trim());
-      
-      const res = await fetch('/api/documentos' + (params.toString() ? `?${params.toString()}` : ''));
+      if (filtroBusca.value.trim()) params.set('busca', filtroBusca.value.trim());
+      const res = await fetch('/api/documentos' + (params.toString() ? `?${params}` : ''));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Falha ao carregar biblioteca');
-      
-      // Support list structure directly or from items dictionary
       docsCache = Array.isArray(data) ? data : (data.items || []);
       renderDocs();
     }
 
+    // ── upload ──
     async function enviarDocumento(e) {
       e.preventDefault();
       clearStatus();
       const arquivo = document.getElementById('doc-arquivo').files[0];
-      if (!arquivo) {
-        setStatus('Selecione um arquivo.', false);
-        return;
-      }
+      if (!arquivo) { setStatus('Selecione um arquivo.', false); return; }
       const fd = new FormData();
       fd.append('arquivo', arquivo);
       fd.append('categoria', document.getElementById('doc-categoria').value);
@@ -280,10 +503,11 @@
       btn.disabled = true;
       btn.textContent = 'Salvando...';
       try {
-        const res = await fetch('/api/documentos', { method: 'POST', body: fd });
+        const res = await fetch('/api/documentos', { method:'POST', body:fd });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro ao salvar arquivo');
         docsForm.reset();
+        resetDropZone();
         setStatus('Documento arquivado com sucesso na biblioteca.', true);
         await carregarDocumentos();
       } catch (err) {
@@ -294,11 +518,12 @@
       }
     }
 
+    // ── delete ──
     async function excluirDocumento(id) {
       if (!confirm('Deseja excluir este documento da biblioteca?')) return;
       try {
-        const res = await fetch(`/api/documentos/${id}`, { method: 'DELETE' });
-        const data = await res.json().catch(() => ({}));
+        const res = await fetch(`/api/documentos/${id}`, { method:'DELETE' });
+        const data = await res.json().catch(()=>({}));
         if (!res.ok) throw new Error(data.error || 'Erro ao excluir documento');
         await carregarDocumentos();
       } catch (err) {
@@ -306,64 +531,84 @@
       }
     }
 
+    // ── AI rename ──
     async function sugerirNomeIa(id, btn) {
       const origText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'Pensando...';
-      clearStatus();
+      btn.disabled = true; btn.textContent = 'Pensando...'; clearStatus();
       try {
         const res = await fetch(`/api/documentos/${id}/sugerir-nome`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erro ao obter sugestão da IA');
-        
-        const confirmou = confirm(`Sugestão da IA para o arquivo:\n\n👉 "${data.sugestao}"\n\nMotivo:\n${data.justificativa}\n\nDeseja aplicar este novo nome?`);
+        const confirmou = confirm(`Sugestão da IA:\n\n👉 "${data.sugestao}"\n\nMotivo:\n${data.justificativa}\n\nDeseja aplicar este novo nome?`);
         if (confirmou) {
-          const updateRes = await fetch(`/api/documentos/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+          const upd = await fetch(`/api/documentos/${id}`, {
+            method:'PUT', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ nome_original: data.sugestao })
           });
-          const updateData = await updateRes.json();
-          if (!updateRes.ok) throw new Error(updateData.error || 'Erro ao renomear arquivo');
+          const ud = await upd.json();
+          if (!upd.ok) throw new Error(ud.error || 'Erro ao renomear arquivo');
           setStatus('Arquivo renomeado com sucesso pela IA!', true);
           await carregarDocumentos();
         }
       } catch (err) {
         setStatus(err.message || 'Erro ao sugerir/aplicar nome com IA.', false);
       } finally {
-        btn.disabled = false;
-        btn.textContent = origText;
+        btn.disabled = false; btn.textContent = origText;
       }
     }
 
+    // ── drag-and-drop zone ──
+    const dropZone = document.getElementById('drop-zone');
+    const dropZoneFile = document.getElementById('drop-zone-file');
+    const fileInput = document.getElementById('doc-arquivo');
+
+    function resetDropZone() {
+      dropZoneFile.textContent = '';
+      dropZoneFile.style.display = 'none';
+    }
+    function showFile(name) {
+      dropZoneFile.textContent = '✓ ' + name;
+      dropZoneFile.style.display = 'block';
+    }
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) showFile(fileInput.files[0].name); else resetDropZone();
+    });
+    ['dragenter','dragover'].forEach(evt => {
+      dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    });
+    ['dragleave','drop'].forEach(evt => {
+      dropZone.addEventListener(evt, e => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (evt === 'drop' && e.dataTransfer.files.length) {
+          const dt = new DataTransfer();
+          dt.items.add(e.dataTransfer.files[0]);
+          fileInput.files = dt.files;
+          showFile(e.dataTransfer.files[0].name);
+        }
+      });
+    });
+
+    // ── event delegation ──
     docsForm.addEventListener('submit', enviarDocumento);
-    document.getElementById('doc-limpar-btn').addEventListener('click', () => { docsForm.reset(); clearStatus(); });
+    document.getElementById('doc-limpar-btn').addEventListener('click', () => { docsForm.reset(); clearStatus(); resetDropZone(); });
     document.getElementById('docs-atualizar-btn').addEventListener('click', carregarDocumentos);
+
     docsList.addEventListener('click', e => {
       const btnDel = e.target.closest('[data-delete-id]');
-      if (btnDel) {
-        excluirDocumento(btnDel.dataset.deleteId);
-        return;
-      }
+      if (btnDel) { excluirDocumento(btnDel.dataset.deleteId); return; }
       const btnRename = e.target.closest('[data-ia-rename-id]');
-      if (btnRename) {
-        sugerirNomeIa(btnRename.dataset.iaRenameId, btnRename);
-        return;
-      }
+      if (btnRename) { sugerirNomeIa(btnRename.dataset.iaRenameId, btnRename); return; }
+      const btnView = e.target.closest('[data-view-id]');
+      if (btnView) { openPdfModal(btnView.dataset.viewId, btnView.dataset.viewName, btnView.dataset.viewExt); return; }
     });
 
     [filtroCategoria, filtroReferencia, filtroBusca].forEach(el => {
       el.addEventListener('input', () => {
         clearTimeout(docsTimer);
-        docsTimer = setTimeout(() => {
-          if (el === filtroCategoria || el === filtroReferencia) carregarDocumentos().catch(err => setStatus(err.message, false));
-          else renderDocs();
-        }, 120);
+        docsTimer = setTimeout(() => carregarDocumentos().catch(err => setStatus(err.message, false)), 120);
       });
-      el.addEventListener('change', () => {
-        if (el === filtroCategoria || el === filtroReferencia) carregarDocumentos().catch(err => setStatus(err.message, false));
-        else renderDocs();
-      });
+      el.addEventListener('change', () => carregarDocumentos().catch(err => setStatus(err.message, false)));
     });
 
     carregarDocumentos().catch(err => setStatus(err.message || 'Erro ao carregar acervo.', false));
@@ -371,14 +616,13 @@
   <script>
   (function() {
     async function askIaBiblioteca(action, question) {
-      const cache = typeof docsCache !== 'undefined' ? docsCache.filter(d => (d.categoria || '').startsWith('biblioteca-')) : [];
-      const porCategoria = cache.reduce((acc, d) => { acc[d.categoria] = (acc[d.categoria] || 0) + 1; return acc; }, {});
+      const cache = typeof docsCache !== 'undefined' ? docsCache.filter(d => (d.categoria||'').startsWith('biblioteca-')) : [];
+      const porCategoria = cache.reduce((acc,d) => { acc[d.categoria]=(acc[d.categoria]||0)+1; return acc; }, {});
       const ctx = {
         total: cache.length,
         por_categoria: porCategoria,
-        documentos_recentes: cache.slice(0, 15).map(d => ({
-          nome: d.nome_original, categoria: d.categoria,
-          referencia: d.referencia, descricao: d.descricao, criado_em: d.criado_em
+        documentos_recentes: cache.slice(0,15).map(d => ({
+          nome:d.nome_original, categoria:d.categoria, referencia:d.referencia, descricao:d.descricao, criado_em:d.criado_em
         }))
       };
       const prompts = {
@@ -392,9 +636,9 @@
         question && action !== 'chat' ? `Pergunta: ${question}` : ''
       ].filter(Boolean).join('\n');
       return await window.callIaFree([
-        { role: 'system', content: 'Você é o bibliotecário digital da Prefeitura de Inajá. Ajude a localizar e resumir leis, editais, manuais e portarias municipais de forma rápida e precisa.' },
-        { role: 'user', content: userPrompt }
-      ], { temperature: 0.2, max_tokens: 1200 });
+        { role:'system', content:'Você é o bibliotecário digital da Prefeitura de Inajá. Ajude a localizar e resumir leis, editais, manuais e portarias municipais de forma rápida e precisa.' },
+        { role:'user', content: userPrompt }
+      ], { temperature:0.2, max_tokens:1200 });
     }
     function initIaBiblioteca() {
       if (!window.IaChatWidget) { setTimeout(initIaBiblioteca, 300); return; }
@@ -406,16 +650,16 @@
         chatPlaceholder: 'Ex: Qual o número do edital de merenda?',
         emptyMessage: 'Nenhum item catalogado na biblioteca.',
         actions: [
-          { id: 'resumo',    label: 'Resumo do Acervo',         description: 'Diagnóstico rápido e distribuição de leis e decretos.' },
-          { id: 'organizar', label: 'Dicas de Catalogação',    description: 'Sugestões para nomeação de editais e manuais.' },
-          { id: 'buscar',    label: 'Buscar Leis e Portarias',  description: 'Procura itens relacionados à sua pesquisa.' },
-          { id: 'chat',      label: 'Chat Livre',               description: 'Perguntas gerais sobre o acervo.' }
+          { id:'resumo',    label:'Resumo do Acervo',        description:'Diagnóstico rápido e distribuição de leis e decretos.' },
+          { id:'organizar', label:'Dicas de Catalogação',   description:'Sugestões para nomeação de editais e manuais.' },
+          { id:'buscar',    label:'Buscar Leis e Portarias', description:'Procura itens relacionados à sua pesquisa.' },
+          { id:'chat',      label:'Chat Livre',              description:'Perguntas gerais sobre o acervo.' }
         ],
         shortcuts: [
-          { label: 'Diagnóstico do Acervo',  action: 'resumo' },
-          { label: 'Dicas de Catalogação',   action: 'organizar' }
+          { label:'Diagnóstico do Acervo', action:'resumo' },
+          { label:'Dicas de Catalogação',  action:'organizar' }
         ],
-        hasData: () => (typeof docsCache !== 'undefined' && docsCache.some(d => (d.categoria || '').startsWith('biblioteca-'))),
+        hasData: () => (typeof docsCache !== 'undefined' && docsCache.some(d => (d.categoria||'').startsWith('biblioteca-'))),
         onRun: ({ action, question }) => askIaBiblioteca(action, question)
       });
     }

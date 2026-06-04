@@ -2,6 +2,7 @@
 
 import re
 from flask import Blueprint, request, jsonify
+from routes._shared import require_login
 
 bp = Blueprint("fornecimento", __name__)
 
@@ -40,6 +41,7 @@ def parse_money(s):
 
 
 @bp.route("/api/fornecimento/dados", methods=["GET"])
+@require_login
 def get_fornecimento_dados():
     try:
         conn = get_db()
@@ -56,6 +58,7 @@ def get_fornecimento_dados():
 
 
 @bp.route("/api/fornecimento/dados", methods=["POST"])
+@require_login
 def add_fornecimento_dado():
     try:
         data = request.get_json() or {}
@@ -75,6 +78,7 @@ def add_fornecimento_dado():
 
 
 @bp.route("/api/fornecimento/dados", methods=["DELETE"])
+@require_login
 def del_fornecimento_dado():
     try:
         data = request.get_json() or {}
@@ -93,6 +97,7 @@ def del_fornecimento_dado():
 
 
 @bp.route("/api/fornecimento/solicitacoes", methods=["GET"])
+@require_login
 def list_solicitacoes():
     try:
         q = request.args.get("q", "").strip()
@@ -153,6 +158,7 @@ def list_solicitacoes():
 
 
 @bp.route("/api/fornecimento/solicitacoes", methods=["POST"])
+@require_login
 def create_solicitacao():
     try:
         data = request.get_json() or {}
@@ -234,6 +240,7 @@ def create_solicitacao():
 
 
 @bp.route("/api/fornecimento/solicitacoes/<int:id>", methods=["PUT"])
+@require_login
 def update_solicitacao(id):
     try:
         data = request.get_json() or {}
@@ -327,6 +334,7 @@ def update_solicitacao(id):
 
 
 @bp.route("/api/fornecimento/solicitacoes/<int:id>", methods=["DELETE"])
+@require_login
 def delete_solicitacao(id):
     try:
         conn = get_db()
@@ -346,6 +354,7 @@ def delete_solicitacao(id):
 
 
 @bp.route("/api/fornecimento/solicitacoes/<int:id>/duplicate", methods=["POST"])
+@require_login
 def duplicate_solicitacao(id):
     try:
         conn = get_db()

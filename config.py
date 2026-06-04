@@ -2,6 +2,20 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+# Load environment variables from .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # Manual fallback for environments without python-dotenv
+    env_path = Path(__file__).resolve().parent / ".env"
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if "=" in line and not line.strip().startswith("#"):
+                    k, v = line.split("=", 1)
+                    os.environ[k.strip()] = v.strip()
+
 
 BASE_DIR = Path(__file__).resolve().parent
 

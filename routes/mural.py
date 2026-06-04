@@ -474,7 +474,7 @@ def mural_comentarios_listar(recado_id):
     try:
         conn = get_db()
         rows = conn.execute(
-            "SELECT id, recado_id, autor, texto, criado_em FROM mural_comentarios WHERE recado_id=? ORDER BY criado_em ASC",
+            "SELECT id, recado_id, parent_id, autor, texto, criado_em FROM mural_comentarios WHERE recado_id=? ORDER BY criado_em ASC",
             (recado_id,)
         ).fetchall()
         return jsonify([dict(r) for r in rows])
@@ -492,14 +492,20 @@ def mural_comentario_criar(recado_id):
             return jsonify({"error": "Texto do comentario e obrigatorio"}), 400
 
         autor = (data.get("autor") or session.get("usuario_nome") or "Servidor").strip()
+        parent_id = data.get("parent_id")
+        if parent_id is not None:
+            try:
+                parent_id = int(parent_id)
+            except (ValueError, TypeError):
+                parent_id = None
 
         conn = get_db()
         if not conn.execute("SELECT id FROM mural_recados WHERE id=?", (recado_id,)).fetchone():
             return jsonify({"error": "Recado nao encontrado"}), 404
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO mural_comentarios (recado_id, autor, texto) VALUES (?, ?, ?)",
-            (recado_id, autor, texto)
+            "INSERT INTO mural_comentarios (recado_id, parent_id, autor, texto) VALUES (?, ?, ?, ?)",
+            (recado_id, parent_id, autor, texto)
         )
         conn.commit()
 

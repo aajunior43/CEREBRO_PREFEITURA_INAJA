@@ -1,6 +1,7 @@
 """Blueprint: Calendário de Pagamentos — persistência no SQLite"""
 
 from flask import Blueprint, g, request, jsonify
+from routes._shared import require_login
 
 bp = Blueprint("calendario", __name__)
 
@@ -13,6 +14,7 @@ def _db():
 # Retorna eventos, overrides e regras.
 # Query param opcional: ?mes=YYYY-MM  → filtra eventos do mês
 @bp.route("/api/calendario", methods=["GET"])
+@require_login
 def calendario_get():
     conn = _db()
     mes = request.args.get("mes", "")  # "YYYY-MM" ou vazio = tudo
@@ -51,6 +53,7 @@ def calendario_get():
 
 # ── POST /api/calendario/eventos ────────────────────────────────────────────
 @bp.route("/api/calendario/eventos", methods=["POST"])
+@require_login
 def calendario_evento_criar():
     conn = _db()
     data_body = request.get_json(silent=True) or {}
@@ -81,6 +84,7 @@ def calendario_evento_criar():
 
 # ── PUT /api/calendario/eventos/<id> ────────────────────────────────────────
 @bp.route("/api/calendario/eventos/<int:evento_id>", methods=["PUT"])
+@require_login
 def calendario_evento_atualizar(evento_id):
     conn = _db()
     row = conn.execute(
@@ -115,6 +119,7 @@ def calendario_evento_atualizar(evento_id):
 
 # ── DELETE /api/calendario/eventos/<id> ─────────────────────────────────────
 @bp.route("/api/calendario/eventos/<int:evento_id>", methods=["DELETE"])
+@require_login
 def calendario_evento_excluir(evento_id):
     conn = _db()
     row = conn.execute(
@@ -131,6 +136,7 @@ def calendario_evento_excluir(evento_id):
 # ── POST /api/calendario/override ───────────────────────────────────────────
 # Marca uma data como "override" (suprime eventos automáticos mesmo sem eventos customizados)
 @bp.route("/api/calendario/override", methods=["POST"])
+@require_login
 def calendario_override_criar():
     conn = _db()
     data_body = request.get_json(silent=True) or {}
@@ -148,6 +154,7 @@ def calendario_override_criar():
 # ── DELETE /api/calendario/override/<data> ──────────────────────────────────
 # Remove override e eventos customizados do dia → volta ao padrão automático
 @bp.route("/api/calendario/override/<string:data>", methods=["DELETE"])
+@require_login
 def calendario_override_excluir(data):
     conn = _db()
     conn.execute("DELETE FROM calendario_overrides WHERE data=?", (data,))
@@ -159,6 +166,7 @@ def calendario_override_excluir(data):
 # ── POST /api/calendario/regras ─────────────────────────────────────────────
 # Salva regras em bulk: { chave: valor, ... }
 @bp.route("/api/calendario/regras", methods=["POST"])
+@require_login
 def calendario_regras_salvar():
     conn = _db()
     data_body = request.get_json(silent=True) or {}

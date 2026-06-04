@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 import time as _time
-from routes._shared import registrar_auditoria
+from routes._shared import registrar_auditoria, require_login
 
 bp = Blueprint("empenhos", __name__)
 
@@ -14,6 +14,7 @@ def get_db():
 
 
 @bp.route("/api/empenhos/<int:ano>/<int:mes>", methods=["GET"])
+@require_login
 def get_empenhos(ano, mes):
     try:
         from services.empenhos_service import listar_empenhos_mes
@@ -24,6 +25,7 @@ def get_empenhos(ano, mes):
 
 
 @bp.route("/api/empenhos", methods=["POST"])
+@require_login
 def toggle_empenho():
     d = request.get_json(force=True) or {}
     credor_id = d.get("credor_id")
@@ -51,6 +53,7 @@ def toggle_empenho():
 
 
 @bp.route("/api/empenhos/lote", methods=["POST"])
+@require_login
 def empenho_lote():
     d = request.get_json(force=True) or {}
     itens = d.get("itens") or []
@@ -83,6 +86,7 @@ def empenho_lote():
 
 
 @bp.route("/api/credores/<int:cid>/historico", methods=["GET"])
+@require_login
 def get_historico(cid):
     try:
         from services.empenhos_service import listar_historico_credor

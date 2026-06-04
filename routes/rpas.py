@@ -1,7 +1,7 @@
 """Blueprint: RPAs"""
 
 from flask import Blueprint, request, jsonify
-from routes._shared import registrar_auditoria
+from routes._shared import registrar_auditoria, require_login
 
 bp = Blueprint("rpas", __name__)
 
@@ -16,6 +16,7 @@ def row_to_dict(row):
 
 
 @bp.route("/api/rpas", methods=["GET"])
+@require_login
 def get_rpas():
     try:
         limit = max(1, min(request.args.get("limit", 100, type=int), 1000))
@@ -39,6 +40,7 @@ def get_rpas():
 
 
 @bp.route("/api/rpas", methods=["POST"])
+@require_login
 def create_rpa():
     try:
         data = request.get_json() or {}
@@ -80,6 +82,7 @@ def create_rpa():
 
 
 @bp.route("/api/rpas/<int:rpa_id>", methods=["PUT"])
+@require_login
 def update_rpa(rpa_id):
     try:
         data = request.get_json() or {}
@@ -124,6 +127,7 @@ def update_rpa(rpa_id):
 
 
 @bp.route("/api/rpas/<int:rpa_id>", methods=["DELETE"])
+@require_login
 def delete_rpa(rpa_id):
     try:
         conn = get_db()

@@ -2,12 +2,13 @@
 
 from flask import Blueprint, request, jsonify
 from config import settings
-from routes._shared import get_db, _get_openrouter_config
+from routes._shared import get_db, _get_openrouter_config, require_login
 
 bp = Blueprint("extratos", __name__)
 
 
 @bp.route("/api/extratos/modelos-openrouter", methods=["GET", "POST"])
+@require_login
 def extratos_modelos_openrouter():
     from services.openrouter_service import AIServiceError, listar_modelos
 
