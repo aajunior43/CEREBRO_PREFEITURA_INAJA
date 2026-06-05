@@ -368,7 +368,7 @@
     
     <div class="dash-modules-grid">
       <!-- 1. Gestão de Credores Fixos -->
-      <div class="dash-module-card featured" data-glow data-glow-color="blue" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
+      <div class="dash-module-card featured" data-glow data-glow-color="blue" data-tooltip="Cadastre e gerencie fornecedores com pagamentos mensais recorrentes. Emita empenhos com um clique e acompanhe o histórico de cada credor." onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/credores_icon.png" alt="Credores Fixos"></div>
@@ -382,7 +382,7 @@
       </div>
 
       <!-- 2. Mural Interativo -->
-      <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/mural.html'">
+      <div class="dash-module-card" data-glow data-glow-color="orange" data-tooltip="Quadro compartilhado de avisos, recados e tarefas para toda a equipe. Organize demandas com status e prioridade." onclick="window.location.href='/pages/mural.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/mural_icon.png" alt="Mural Interativo"></div>
@@ -396,7 +396,7 @@
       </div>
 
       <!-- 3. Gerador de Descrição -->
-      <div class="dash-module-card" data-glow data-glow-color="purple" onclick="window.location.href='/pages/assistente-empenho.html'">
+      <div class="dash-module-card" data-glow data-glow-color="purple" data-tooltip="A IA redige automaticamente a descrição do empenho e confere a nota fiscal, reduzindo erros de digitação e agilizando o processo." onclick="window.location.href='/pages/assistente-empenho.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/descricao_icon.png" alt="Gerador de Descrição"></div>
@@ -410,7 +410,7 @@
       </div>
 
       <!-- 4. Dotação Orçamentária -->
-      <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-prefeitura.html'">
+      <div class="dash-module-card" data-glow data-glow-color="green" data-tooltip="Consulte saldos disponíveis, desdobramentos e execução das dotações orçamentárias do exercício atual. Importe dados via CSV do sistema contábil." onclick="window.location.href='/pages/despesa-prefeitura.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/dotacao_icon.png" alt="Dotação Orçamentária"></div>
@@ -423,7 +423,7 @@
       </div>
 
       <!-- 5. Comparativo Orçamentário -->
-      <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-relatorios.html'">
+      <div class="dash-module-card" data-glow data-glow-color="green" data-tooltip="Compare saldos, gastos e variações entre meses ou exercícios. Gera relatórios para apoio à tomada de decisão." onclick="window.location.href='/pages/despesa-relatorios.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/comparativo_icon.png" alt="Comparativo Orçamentário"></div>
@@ -436,7 +436,7 @@
       </div>
 
       <!-- 6. Solicitação de Compra / Serviço -->
-      <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/fornecimento.html'">
+      <div class="dash-module-card" data-glow data-glow-color="blue" data-tooltip="Gera requisições formais de compra de materiais ou contratação de serviços, seguindo os fluxos e normas de aquisição do município." onclick="window.location.href='/pages/fornecimento.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/compra_servico_icon.png" alt="Solicitação de Compra"></div>
@@ -449,7 +449,7 @@
       </div>
 
       <!-- 7. Centro de Documentos -->
-      <div class="dash-module-card" data-glow data-glow-color="red" onclick="window.location.href='/pages/documentos.html'">
+      <div class="dash-module-card" data-glow data-glow-color="red" data-tooltip="Armazene e organize notas fiscais, contratos, comprovantes e outros arquivos digitalizados. Suporte a PDF, imagens e documentos Word." onclick="window.location.href='/pages/documentos.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/documentos_icon.png" alt="Centro de Documentos"></div>
@@ -462,7 +462,7 @@
       </div>
 
       <!-- 8. Calendário -->
-      <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/calendario.html'">
+      <div class="dash-module-card" data-glow data-glow-color="orange" data-tooltip="Visualize compromissos, prazos de pagamento e vencimentos no calendário mensal. Integrado com credores e tarefas do sistema." onclick="window.location.href='/pages/calendario.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/calendario_icon.png" alt="Calendário"></div>
@@ -475,7 +475,7 @@
       </div>
 
       <!-- 9. Biblioteca -->
-      <div class="dash-module-card" data-glow data-glow-color="yellow" onclick="window.location.href='/pages/biblioteca.html'">
+      <div class="dash-module-card" data-glow data-glow-color="yellow" data-tooltip="Acesse leis, decretos, portarias e manuais do município de Inajá. Busca por palavra-chave com visualização integrada." onclick="window.location.href='/pages/biblioteca.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/biblioteca_icon.png" alt="Biblioteca"></div>
@@ -488,7 +488,7 @@
       </div>
 
       <!-- 10. Gerador de RPAs -->
-      <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/rpa.html'">
+      <div class="dash-module-card" data-glow data-glow-color="blue" data-tooltip="Emita Recibos de Pagamento Autônomo para prestadores de serviço sem CNPJ. Cálculo automático de impostos e geração em PDF." onclick="window.location.href='/pages/rpa.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/rpa_icon.png" alt="Gerador de RPAs"></div>
@@ -501,7 +501,7 @@
       </div>
 
       <!-- 11. Classificador de Despesas -->
-      <div class="dash-module-card" data-glow data-glow-color="purple" onclick="window.location.href='/pages/classificador-despesa.html'">
+      <div class="dash-module-card" data-glow data-glow-color="purple" data-tooltip="A IA classifica e desdobra despesas conforme os critérios do TCE-PR e MCASP, evitando glosas e irregularidades nas prestações de contas." onclick="window.location.href='/pages/classificador-despesa.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/classificador_icon.png" alt="Classificador de Despesas"></div>
@@ -515,7 +515,7 @@
       </div>
 
       <!-- 12. Relação de Empenhos -->
-      <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/visualizador.html'">
+      <div class="dash-module-card" data-glow data-glow-color="green" data-tooltip="Pesquise, filtre e visualize todos os empenhos emitidos. Consulta por credor, período, valor e status com exportação de relatórios." onclick="window.location.href='/pages/visualizador.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/empenhos_icon.png" alt="Relação de Empenhos"></div>
@@ -528,7 +528,7 @@
       </div>
 
       <!-- 13. Auditor NF -->
-      <div class="dash-module-card" data-glow data-glow-color="red" onclick="window.location.href='/pages/auditor.html'">
+      <div class="dash-module-card" data-glow data-glow-color="red" data-tooltip="Auditoria automática de Notas Fiscais: valida dados do emitente, valores, impostos e conformidade fiscal antes do pagamento." onclick="window.location.href='/pages/auditor.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/auditor_icon.png" alt="Auditor NF"></div>
@@ -541,7 +541,7 @@
       </div>
 
       <!-- 14. Assinatura Digital -->
-      <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/autentique-assinatura.html'">
+      <div class="dash-module-card" data-glow data-glow-color="blue" data-tooltip="Envie documentos para assinatura eletrônica via Autentique. Disparo por WhatsApp, acompanhamento de status e download do assinado." onclick="window.location.href='/pages/autentique-assinatura.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/assinatura_icon.png" alt="Assinatura Digital"></div>
@@ -554,7 +554,7 @@
       </div>
 
       <!-- 15. Consulta CNPJ -->
-      <div class="dash-module-card" data-glow data-glow-color="cyan" onclick="window.location.href='/pages/cnpj.html'">
+      <div class="dash-module-card" data-glow data-glow-color="cyan" data-tooltip="Consulte dados cadastrais completos de empresas na Receita Federal via ReceitaWS, incluindo sócios, endereço e situação cadastral." onclick="window.location.href='/pages/cnpj.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/cnpj_icon.png" alt="Consulta CNPJ"></div>
@@ -567,7 +567,7 @@
       </div>
 
       <!-- 16. Calculadora de Diárias -->
-      <div class="dash-module-card" data-glow data-glow-color="yellow" onclick="window.location.href='/pages/calculadora-diarias.html'">
+      <div class="dash-module-card" data-glow data-glow-color="yellow" data-tooltip="Calcula diárias devidas a servidores em viagem oficial conforme a legislação municipal. Aceita documentos e texto livre interpretados por IA." onclick="window.location.href='/pages/calculadora-diarias.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/diarias_icon.png" alt="Calculadora de Diárias"></div>
@@ -580,7 +580,7 @@
       </div>
 
       <!-- 17. Upload de Dados -->
-      <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/upload-dados.html'">
+      <div class="dash-module-card" data-glow data-glow-color="orange" data-tooltip="Importe relatórios CSV exportados do sistema contábil para alimentar o banco de dados de dotações e empenhos do exercício." onclick="window.location.href='/pages/upload-dados.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/upload_icon.png" alt="Upload de Dados"></div>
@@ -593,7 +593,7 @@
       </div>
 
       <!-- 18. Manual -->
-      <div class="dash-module-card" data-glow data-glow-color="grey" onclick="window.location.href='/pages/manual.html'">
+      <div class="dash-module-card" data-glow data-glow-color="grey" data-tooltip="Guia completo de instruções do sistema Cérebro Inajá: módulos, atalhos de teclado, dicas operacionais e referências rápidas." onclick="window.location.href='/pages/manual.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
           <div class="dash-module-icon"><img src="/static/img/modules/manual_icon.png" alt="Manual"></div>
@@ -1131,6 +1131,45 @@
       
     })();
     </script>
+  <script>
+  (function () {
+    var tip = document.createElement('div');
+    tip.className = 'dash-card-tooltip';
+    document.body.appendChild(tip);
+    var showTimer, hideTimer;
+
+    document.querySelectorAll('.dash-module-card[data-tooltip]').forEach(function (card) {
+      card.addEventListener('mouseenter', function (e) {
+        clearTimeout(hideTimer);
+        tip.textContent = card.dataset.tooltip;
+        clearTimeout(showTimer);
+        showTimer = setTimeout(function () {
+          tip.classList.add('visible');
+          positionTip(e);
+        }, 220);
+      });
+      card.addEventListener('mousemove', positionTip);
+      card.addEventListener('mouseleave', function () {
+        clearTimeout(showTimer);
+        hideTimer = setTimeout(function () { tip.classList.remove('visible'); }, 80);
+      });
+    });
+
+    function positionTip(e) {
+      var margin = 14;
+      var x = e.clientX + margin;
+      var y = e.clientY + margin;
+      tip.style.left = '0px';
+      tip.style.top = '0px';
+      var tw = tip.offsetWidth;
+      var th = tip.offsetHeight;
+      if (x + tw > window.innerWidth - margin) x = e.clientX - tw - margin;
+      if (y + th > window.innerHeight - margin) y = e.clientY - th - margin;
+      tip.style.left = x + 'px';
+      tip.style.top = y + 'px';
+    }
+  })();
+  </script>
   </section><!-- #dashboard-area -->
 
   <!-- ═══════════════════ CREDORSES AREA ═══════════════════ -->
