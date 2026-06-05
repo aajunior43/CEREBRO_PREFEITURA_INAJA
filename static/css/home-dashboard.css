@@ -89,11 +89,205 @@
   animation: fadeSlideUp 0.5s 0.08s ease both;
 }
 
-@media (max-width: 992px) {
-  .dash-hero-grid {
-    grid-template-columns: 1fr;
+/* ===== Hero Welcome Card ===== */
+.hero-welcome-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.7) 0%, rgba(10, 10, 15, 0.8) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.hero-welcome-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.15);
+}
+
+.hero-welcome-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 2;
+}
+
+.hero-welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  width: fit-content;
+  text-transform: uppercase;
+}
+
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #818cf8;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(129, 140, 248, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0);
   }
 }
+
+.hero-welcome-card h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.hero-welcome-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+.hero-quick-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 12px;
+}
+
+.quick-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.stat-lbl {
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hero-welcome-visual {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.emblem-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-emblem-logo {
+  width: 80px;
+  height: auto;
+  z-index: 3;
+  filter: drop-shadow(0 0 12px rgba(129, 140, 248, 0.4));
+  transition: transform 0.5s ease;
+}
+
+.hero-welcome-card:hover .hero-emblem-logo {
+  transform: scale(1.08) rotate(5deg);
+}
+
+/* Glowing rings in background of emblem */
+.glow-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  animation: rotateEmblem 20s linear infinite;
+}
+
+.ring-1 {
+  width: 140px;
+  height: 140px;
+  border-style: dashed;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+}
+
+.ring-2 {
+  width: 110px;
+  height: 110px;
+  border-color: rgba(192, 132, 252, 0.2);
+  animation-duration: 15s;
+  animation-direction: reverse;
+}
+
+.ring-3 {
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+  filter: blur(8px);
+}
+
+@keyframes rotateEmblem {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-welcome-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px;
+  }
+  
+  .hero-welcome-visual {
+    width: 100%;
+    height: 120px;
+    margin-top: 12px;
+  }
+}
+
 
 /* ===== Calendar Card ===== */
 /* ===== Calendar Card ===== */
@@ -693,6 +887,13 @@
   border: 1px solid var(--border);
 }
 
+.dash-module-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
 .dash-module-card:hover .dash-module-icon {
   transform: scale(1.08) rotate(-3deg);
 }
@@ -1045,6 +1246,19 @@
 }
 [data-glow-color="orange"] {
   --base: 30;
+  --spread: 200;
+}
+[data-glow-color="yellow"] {
+  --base: 50;
+  --spread: 200;
+}
+[data-glow-color="cyan"] {
+  --base: 180;
+  --spread: 200;
+}
+[data-glow-color="grey"] {
+  --base: 200;
+  --saturation: 0;
   --spread: 200;
 }
 

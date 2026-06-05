@@ -15,17 +15,17 @@
   <style>
   /* ===== Visualizador Scoped Styles ===== */
   .viz-app {
-    --viz-primary: #3b82f6;
-    --viz-primary-hover: #2563eb;
-    --viz-secondary: #9ca3af;
-    --viz-bg: #111827;
-    --viz-card: #1f2937;
-    --viz-text: #f3f4f6;
-    --viz-border: #374151;
-    --viz-input: #374151;
-    --viz-hover: #374151;
+    --viz-primary: var(--blue);
+    --viz-primary-hover: var(--blue-dark);
+    --viz-secondary: var(--text-3);
+    --viz-bg: var(--bg);
+    --viz-card: var(--surface);
+    --viz-text: var(--text);
+    --viz-border: var(--border);
+    --viz-input: var(--surface-2);
+    --viz-hover: var(--surface-2);
     --viz-sidebar-w: 300px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Lexend', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
     color: var(--viz-text);
     background-color: var(--viz-bg);
     display: flex;
@@ -37,14 +37,15 @@
   .viz-header {
     background-color: var(--viz-card);
     padding: 1rem 2rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--viz-border);
     z-index: 10;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
   .viz-header .logo-area { display: flex; align-items: center; gap: 1rem; }
-  .viz-header .logo-area h1 { font-size: 1.5rem; color: var(--viz-primary); line-height: 1.2; margin: 0; }
+  .viz-header .logo-area h1 { font-size: 1.5rem; color: var(--viz-primary); line-height: 1.2; margin: 0; font-family: 'Lexend', sans-serif; font-weight: 700; }
   .viz-header .logo-area p { font-size: 0.9rem; color: var(--viz-secondary); margin: 0; }
   .viz-header .brasao-placeholder img { height: 48px; width: auto; }
 
@@ -62,31 +63,39 @@
     gap: 1.5rem;
   }
   .viz-app .sidebar-header { display: flex; justify-content: space-between; align-items: center; }
-  .viz-app .sidebar-header h3 { margin: 0; }
+  .viz-app .sidebar-header h3 { margin: 0; font-family: 'Lexend', sans-serif; font-weight: 700; font-size: 1.1rem; }
   .viz-app .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
-  .viz-app .filter-group label { font-weight: 600; font-size: 0.9rem; color: var(--viz-text); }
+  .viz-app .filter-group label { font-weight: 600; font-size: 0.85rem; color: var(--text-2); font-family: 'Lexend', sans-serif; }
   .viz-app .filter-group input,
   .viz-app .filter-group select {
-    padding: 0.5rem;
+    padding: 0.6rem 0.8rem;
     border: 1px solid var(--viz-border);
-    border-radius: 4px;
+    border-radius: var(--radius-md, 8px);
     font-size: 0.9rem;
     background-color: var(--viz-input);
     color: var(--viz-text);
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  .viz-app .filter-group input:focus,
+  .viz-app .filter-group select:focus {
+    border-color: var(--viz-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
   }
   .viz-app .range-inputs { display: flex; gap: 0.5rem; align-items: center; }
   .viz-app .range-inputs input { width: 100%; }
-  .viz-app .range-inputs span { color: var(--viz-secondary); }
+  .viz-app .range-inputs span { color: var(--viz-secondary); font-size: 0.85rem; }
   .viz-app .hint { font-size: 0.8rem; color: var(--viz-secondary); }
 
   /* Custom Multiselect */
   .viz-app .custom-multiselect { position: relative; width: 100%; }
   .viz-app .select-box {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0.5rem; border: 1px solid var(--viz-border); border-radius: 4px;
+    padding: 0.6rem 0.8rem; border: 1px solid var(--viz-border); border-radius: var(--radius-md, 8px);
     cursor: pointer; background-color: var(--viz-input); color: var(--viz-text); font-size: 0.9rem;
+    transition: all 0.2s ease;
   }
-  .viz-app .select-box:hover { border-color: var(--viz-primary); }
+  .viz-app .select-box:hover { border-color: var(--viz-primary); background-color: var(--viz-hover); }
   .viz-app .select-box .selected-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90%; }
   .viz-app .dropdown-content {
     display: none; position: absolute; top: 100%; left: 0; width: 100%;
@@ -155,28 +164,72 @@
   .viz-app .pagination { padding: 1rem; border-top: 1px solid var(--viz-border); display: flex; justify-content: center; gap: 0.25rem; }
   .viz-app .page-btn {
     padding: 0.5rem 0.75rem; border: 1px solid var(--viz-border);
-    background: var(--viz-card); color: var(--viz-text); cursor: pointer; border-radius: 4px;
+    background: var(--viz-card); color: var(--viz-text); cursor: pointer; border-radius: var(--radius-md, 6px);
+    transition: all 0.2s ease;
   }
-  .viz-app .page-btn.active { background-color: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+  .viz-app .page-btn.active {
+    background: linear-gradient(135deg, var(--viz-primary), var(--viz-primary-hover));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.2);
+  }
+  .viz-app .page-btn:hover:not(.active):not(:disabled) {
+    background-color: var(--surface-2);
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
   .viz-app .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* Buttons */
   .viz-app .vbtn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-    padding: 0.5rem 1rem; border: none; border-radius: 4px; cursor: pointer;
-    font-weight: 500; font-family: inherit; transition: background-color 0.2s; font-size: 0.9rem;
+    padding: 0.5rem 1rem; border: 1px solid transparent; border-radius: var(--radius-md, 8px); cursor: pointer;
+    font-weight: 600; font-family: inherit; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.9rem;
   }
-  .viz-app .vbtn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
-  .viz-app .vbtn-xs { padding: 0.2rem 0.4rem; font-size: 0.7rem; }
-  .viz-app .vbtn-primary { background-color: var(--viz-primary); color: white; }
-  .viz-app .vbtn-primary:hover { background-color: var(--viz-primary-hover); }
-  .viz-app .vbtn-secondary { background-color: var(--viz-secondary); color: white; }
-  .viz-app .vbtn-secondary:hover { background-color: #6b7280; }
-  .viz-app .vbtn-outline { background-color: transparent; border: 1px solid var(--viz-border); color: var(--viz-text); }
-  .viz-app .vbtn-outline:hover { background-color: var(--viz-hover); }
+  .viz-app .vbtn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+  .viz-app .vbtn-xs { padding: 0.2rem 0.5rem; font-size: 0.72rem; }
+  .viz-app .vbtn-primary {
+    background: linear-gradient(135deg, var(--viz-primary), var(--viz-primary-hover));
+    color: white;
+  }
+  .viz-app .vbtn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+  }
+  .viz-app .vbtn-primary:active {
+    transform: translateY(1px);
+  }
+  .viz-app .vbtn-secondary {
+    background-color: var(--viz-secondary);
+    color: white;
+  }
+  .viz-app .vbtn-secondary:hover {
+    background-color: var(--border-hover);
+    transform: translateY(-1px);
+  }
+  .viz-app .vbtn-outline {
+    background-color: transparent;
+    border: 1px solid var(--viz-border);
+    color: var(--text-2);
+  }
+  .viz-app .vbtn-outline:hover {
+    background-color: var(--surface-2);
+    border-color: var(--border-hover);
+    color: var(--viz-text);
+    transform: translateY(-1px);
+  }
+  .viz-app .vbtn-outline:active {
+    transform: translateY(1px);
+  }
 
   .viz-app .date-shortcuts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
-  .viz-app .date-shortcut-btn.active { background-color: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+  .viz-app .date-shortcut-btn.active {
+    background: linear-gradient(135deg, var(--viz-primary), var(--viz-primary-hover));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
+    font-weight: 600;
+  }
   .viz-app .vw-100 { width: 100%; }
   .viz-app .vmt-2 { margin-top: 0.5rem; }
 
@@ -268,15 +321,29 @@
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
   }
   .viz-app .month-pill {
-    padding: 4px 2px; font-size: 0.72rem; font-weight: 600; text-align: center;
-    cursor: pointer; border: 1px solid var(--viz-border); border-radius: 4px;
-    background: transparent; color: var(--viz-secondary); transition: all 0.15s;
+    padding: 6px 2px; font-size: 0.72rem; font-weight: 600; text-align: center;
+    cursor: pointer; border: 1px solid var(--viz-border); border-radius: var(--radius-md, 6px);
+    background: transparent; color: var(--text-2); transition: all 0.2s ease;
   }
-  .viz-app .month-pill.active { background: var(--viz-primary); color: white; border-color: var(--viz-primary); }
-  .viz-app .month-pill:hover:not(.active) { background: var(--viz-hover); }
+  .viz-app .month-pill.active {
+    background: linear-gradient(135deg, var(--viz-primary), var(--viz-primary-hover));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
+  }
+  .viz-app .month-pill:hover:not(.active) {
+    background: var(--surface-2);
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
 
   /* Value range pills */
-  .viz-app .val-range-pill.active { background: var(--viz-primary); color: white; border-color: var(--viz-primary); }
+  .viz-app .val-range-pill.active {
+    background: linear-gradient(135deg, var(--viz-primary), var(--viz-primary-hover));
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 3px 8px rgba(59, 130, 246, 0.25);
+  }
 
   /* Footer */
   .viz-app .viz-footer {

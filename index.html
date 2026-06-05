@@ -325,26 +325,41 @@
     </div>
 
     <div class="dash-hero-grid">
-      <!-- Calendário -->
-      <div class="cal-card">
-        <div class="cal-head">
-          <div class="cal-title">Calendário do Mês</div>
-          <div class="cal-legend">
-            <span><span class="dot" style="background:var(--green)"></span> Empenhos</span>
-            <span><span class="dot" style="background:var(--orange)"></span> Tarefas</span>
+      <!-- Welcome Hero Card -->
+      <div class="hero-welcome-card" data-glow data-glow-color="purple">
+        <div data-glow></div>
+        <div class="hero-welcome-content">
+          <div class="hero-welcome-badge">
+            <span class="pulse-dot"></span>
+            Cérebro Operacional • Ativo
+          </div>
+          <h2>Prefeitura Municipal de Inajá</h2>
+          <p>Plataforma inteligente de monitoramento financeiro, dotações orçamentárias, controle de empenhos fixos e automação de rotinas administrativas.</p>
+          
+          <div class="hero-quick-stats">
+            <div class="quick-stat-item">
+              <span class="stat-num" id="hero-stat-credores">—</span>
+              <span class="stat-lbl">Credores Fixos</span>
+            </div>
+            <div class="quick-stat-item">
+              <span class="stat-num" id="hero-stat-documentos">—</span>
+              <span class="stat-lbl">Documentos</span>
+            </div>
+            <div class="quick-stat-item">
+              <span class="stat-num" id="hero-stat-tasks">—</span>
+              <span class="stat-lbl">Tarefas Ativas</span>
+            </div>
           </div>
         </div>
-        <div class="cal-grid" id="dash-cal-grid"></div>
-        <div class="day-detail" id="dash-day-detail">
-          <div class="head">
-            <span class="h-num" id="dash-dd-num">—</span>
-            <span class="h-title" id="dash-dd-title">Selecione um dia</span>
+        <div class="hero-welcome-visual">
+          <div class="emblem-wrapper">
+            <img src="/static/img/brasao.png" alt="Brasão de Inajá" class="hero-emblem-logo">
+            <div class="glow-ring ring-1"></div>
+            <div class="glow-ring ring-2"></div>
+            <div class="glow-ring ring-3"></div>
           </div>
-          <ul id="dash-dd-list"></ul>
         </div>
       </div>
-
-
     </div>
 
     <div class="dash-section-head">
@@ -356,7 +371,7 @@
       <div class="dash-module-card featured" data-glow data-glow-color="blue" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/credores_icon.png" alt="Credores Fixos"></div>
           <span class="dash-pill">Principal</span>
         </div>
         <h3>Gestão de Credores Fixos</h3>
@@ -370,7 +385,7 @@
       <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/mural.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><span style="font-size:24px;">📌</span></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/mural_icon.png" alt="Mural Interativo"></div>
           <span class="dash-pill">Mural</span>
         </div>
         <h3>Mural Interativo</h3>
@@ -384,7 +399,8 @@
       <div class="dash-module-card" data-glow data-glow-color="purple" onclick="window.location.href='/pages/assistente-empenho.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.813 15.904L9 18.75l2.846-.813a1.125 1.125 0 00.41-.192l6.83-6.83a2.812 2.812 0 10-3.98-3.98l-6.83 6.83a1.125 1.125 0 00-.192.41z"/></svg></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/descricao_icon.png" alt="Gerador de Descrição"></div>
+          <span class="dash-pill">IA</span>
         </div>
         <h3>Gerador de Descrição</h3>
         <p>Gera texto e apoia a conferência do empenho automaticamente.</p>
@@ -397,7 +413,7 @@
       <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-prefeitura.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 0 02 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/dotacao_icon.png" alt="Dotação Orçamentária"></div>
         </div>
         <h3>Dotação Orçamentária</h3>
         <p>Saldos, desdobramentos e execução orçamentária municipal.</p>
@@ -410,7 +426,7 @@
       <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/despesa-relatorios.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/comparativo_icon.png" alt="Comparativo Orçamentário"></div>
         </div>
         <h3>Comparativo Orçamentário</h3>
         <p>Análise comparativa de saldos e variações entre períodos.</p>
@@ -423,7 +439,7 @@
       <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/fornecimento.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/compra_servico_icon.png" alt="Solicitação de Compra"></div>
         </div>
         <h3>Solicitação de Compra / Serviço</h3>
         <p>Geração de pedidos e fluxos de aquisições do município.</p>
@@ -436,7 +452,7 @@
       <div class="dash-module-card" data-glow data-glow-color="red" onclick="window.location.href='/pages/documentos.html'">
         <div data-glow></div>
         <div class="dash-module-card-top">
-          <div class="dash-module-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div class="dash-module-icon"><img src="/static/img/modules/documentos_icon.png" alt="Centro de Documentos"></div>
         </div>
         <h3>Centro de Documentos</h3>
         <p>Notas fiscais, contratos e comprovantes arquivados.</p>
@@ -445,6 +461,149 @@
         </div>
       </div>
 
+      <!-- 8. Calendário -->
+      <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/calendario.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/calendario_icon.png" alt="Calendário"></div>
+        </div>
+        <h3>Calendário de Vencimentos</h3>
+        <p>Histórico mensal de compromissos e prazos da prefeitura.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Agenda Mensal</span>
+        </div>
+      </div>
+
+      <!-- 9. Biblioteca -->
+      <div class="dash-module-card" data-glow data-glow-color="yellow" onclick="window.location.href='/pages/biblioteca.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/biblioteca_icon.png" alt="Biblioteca"></div>
+        </div>
+        <h3>Biblioteca</h3>
+        <p>Acesso a leis, decretos, portarias e manuais municipais.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Leis & Decretos</span>
+        </div>
+      </div>
+
+      <!-- 10. Gerador de RPAs -->
+      <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/rpa.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/rpa_icon.png" alt="Gerador de RPAs"></div>
+        </div>
+        <h3>Gerador de RPAs</h3>
+        <p>Recibo de Pagamento Autônomo para prestadores sem CNPJ.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Autônomos</span>
+        </div>
+      </div>
+
+      <!-- 11. Classificador de Despesas -->
+      <div class="dash-module-card" data-glow data-glow-color="purple" onclick="window.location.href='/pages/classificador-despesa.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/classificador_icon.png" alt="Classificador de Despesas"></div>
+          <span class="dash-pill">IA</span>
+        </div>
+        <h3>Classificador de Despesas</h3>
+        <p>Enquadramento e desdobramento correto de despesas via TCE-PR.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Inteligência Artificial</span>
+        </div>
+      </div>
+
+      <!-- 12. Relação de Empenhos -->
+      <div class="dash-module-card" data-glow data-glow-color="green" onclick="window.location.href='/pages/visualizador.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/empenhos_icon.png" alt="Relação de Empenhos"></div>
+        </div>
+        <h3>Relação de Empenhos</h3>
+        <p>Consulta rápida, busca e filtros de empenhos emitidos.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Visualizador</span>
+        </div>
+      </div>
+
+      <!-- 13. Auditor NF -->
+      <div class="dash-module-card" data-glow data-glow-color="red" onclick="window.location.href='/pages/auditor.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/auditor_icon.png" alt="Auditor NF"></div>
+        </div>
+        <h3>Auditor NF</h3>
+        <p>Auditoria automática de Notas Fiscais e validações.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Auditoria e Notas</span>
+        </div>
+      </div>
+
+      <!-- 14. Assinatura Digital -->
+      <div class="dash-module-card" data-glow data-glow-color="blue" onclick="window.location.href='/pages/autentique-assinatura.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/assinatura_icon.png" alt="Assinatura Digital"></div>
+        </div>
+        <h3>Assinatura Digital</h3>
+        <p>Envio de documentos para assinatura via Autentique / WhatsApp.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Autentique</span>
+        </div>
+      </div>
+
+      <!-- 15. Consulta CNPJ -->
+      <div class="dash-module-card" data-glow data-glow-color="cyan" onclick="window.location.href='/pages/cnpj.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/cnpj_icon.png" alt="Consulta CNPJ"></div>
+        </div>
+        <h3>Consulta CNPJ</h3>
+        <p>Consulta cadastral de empresas via ReceitaWS e open.cnpja.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Receita Federal</span>
+        </div>
+      </div>
+
+      <!-- 16. Calculadora de Diárias -->
+      <div class="dash-module-card" data-glow data-glow-color="yellow" onclick="window.location.href='/pages/calculadora-diarias.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/diarias_icon.png" alt="Calculadora de Diárias"></div>
+        </div>
+        <h3>Calculadora de Diárias</h3>
+        <p>Cálculo e geração automática de diárias para viagens oficiais.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Cálculo de Viagem</span>
+        </div>
+      </div>
+
+      <!-- 17. Upload de Dados -->
+      <div class="dash-module-card" data-glow data-glow-color="orange" onclick="window.location.href='/pages/upload-dados.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/upload_icon.png" alt="Upload de Dados"></div>
+        </div>
+        <h3>Upload de Dados</h3>
+        <p>Alimentar o banco com relatórios CSV do sistema orçamentário.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Importar CSV</span>
+        </div>
+      </div>
+
+      <!-- 18. Manual -->
+      <div class="dash-module-card" data-glow data-glow-color="grey" onclick="window.location.href='/pages/manual.html'">
+        <div data-glow></div>
+        <div class="dash-module-card-top">
+          <div class="dash-module-icon"><img src="/static/img/modules/manual_icon.png" alt="Manual"></div>
+        </div>
+        <h3>Manual</h3>
+        <p>Guia completo e manual de instruções de uso do Cérebro Inajá.</p>
+        <div class="dash-module-card-foot">
+          <span class="dash-module-stat">Documentação</span>
+        </div>
+      </div>
 
     </div>
 
@@ -502,16 +661,22 @@
         const openTasks = stateTasks.filter(t => t.status !== 'done');
         const tasksCountEl = document.getElementById('dash-stat-tarefas');
         if (tasksCountEl) tasksCountEl.textContent = `${openTasks.length} em aberto`;
+        const tasksHeroCountEl = document.getElementById('hero-stat-tasks');
+        if (tasksHeroCountEl) tasksHeroCountEl.textContent = openTasks.length;
         
         // 2. Credores count
         const activeCredores = stateCredores.filter(c => c.ativo === 1);
         const credoresCountEl = document.getElementById('dash-stat-credores');
         if (credoresCountEl) credoresCountEl.textContent = `${activeCredores.length} ativos`;
+        const credoresHeroCountEl = document.getElementById('hero-stat-credores');
+        if (credoresHeroCountEl) credoresHeroCountEl.textContent = activeCredores.length;
         
         // 3. Documentos count
         fetch('/api/documentos?limit=1').then(r => r.json()).then(d => {
           const docStat = document.getElementById('dash-stat-documentos');
           if (docStat) docStat.textContent = `${d.total || 0} arquivos`;
+          const docHeroStat = document.getElementById('hero-stat-documentos');
+          if (docHeroStat) docHeroStat.textContent = d.total || 0;
         }).catch(() => {});
         
         // 4. Update Greeting dynamic subtitle
