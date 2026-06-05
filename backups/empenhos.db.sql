@@ -1,4 +1,4 @@
--- Backup: 2026-06-04T20:30:04.345525
+-- Backup: 2026-06-04T21:00:04.508595
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -31,6 +31,7 @@ INSERT INTO "calendario_overrides" VALUES('2026-06-29','2026-06-03 09:52:32');
 INSERT INTO "calendario_overrides" VALUES('2026-06-19','2026-06-03 09:53:19');
 CREATE TABLE calendario_regras (chave TEXT PRIMARY KEY, valor TEXT NOT NULL);
 CREATE TABLE classificador_despesa_historico (id INTEGER PRIMARY KEY AUTOINCREMENT, item TEXT NOT NULL, codigo_completo TEXT NOT NULL DEFAULT '', grupo TEXT DEFAULT '', modalidade TEXT DEFAULT '', elemento TEXT DEFAULT '', subelemento TEXT DEFAULT '', justificativa TEXT DEFAULT '', ponto_atencao TEXT DEFAULT '', confianca REAL DEFAULT 0.0, resultado_json TEXT NOT NULL DEFAULT '{}', model TEXT DEFAULT '', cached INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now', 'localtime')));
+INSERT INTO "classificador_despesa_historico" VALUES(1,'pneus para van da saude','4.4.90.52','Investimento','Aplicacao Direta','52','4.4.90.52 - Equipamentos e Material Permanente','Veiculos sao bens permanentes com vida util superior a 2 anos, nao incorporados a imoveis, conforme Portaria STN n 448/2002 e MCASP. Classificacao correta: GND 4 (Investimento), Elemento 52, Subelemento 4.4.90.52 - Equipamentos e Material Permanente.','',0.95,'{"item_analisado": "pneus para van da saude", "analise": "Trata-se de item de reposição para veículo oficial vinculado à Secretaria de Saúde. Os pneus são adquiridos de pessoa jurídica (revendedora ou distribuidora) e possuem natureza de manutenção corrente, destinada a restabelecer as condições de trafegabilidade, segurança e conformidade técnica do veículo, sem ampliar sua capacidade operacional ou vida útil. Conforme o MCASP e as orientações normativas do TCE-PR, peças de reposição para veículos e equipamentos utilizadas na manutenção corrente são classificadas como Material de Consumo. A classificação como Equipamento e Material Permanente (4.4.90.52) é tecnicamente inadequada, pois pneus não configuram bem durável de investimento, sendo itens consumíveis no ciclo operacional e de desgaste natural do veículo.", "codigo_completo": "4.4.90.52", "grupo": "Investimento", "modalidade": "Aplicacao Direta", "elemento": "52", "subelemento_codigo": "4.4.90.52", "subelemento_nome": "Equipamentos e Material Permanente", "justificativa": "Veiculos sao bens permanentes com vida util superior a 2 anos, nao incorporados a imoveis, conforme Portaria STN n 448/2002 e MCASP. Classificacao correta: GND 4 (Investimento), Elemento 52, Subelemento 4.4.90.52 - Equipamentos e Material Permanente.", "ponto_atencao": "", "confianca": 0.95, "alternativas": [], "_auto_corrected": true}','opencode-go/qwen3.6-plus',0,'2026-06-04 20:41:41');
 CREATE TABLE configuracoes (chave TEXT PRIMARY KEY, valor TEXT NOT NULL DEFAULT '', atualizado_em TEXT DEFAULT (datetime('now', 'localtime')));
 INSERT INTO "configuracoes" VALUES('api_autentique_key','356865d1aa95cd57f4839756be5fea65a98aac48e1af3bd95e82fe98e1c532fd','2026-06-01 09:49:52');
 INSERT INTO "configuracoes" VALUES('api_openrouter_modelo','opencode-go/deepseek-v4-flash','2026-06-01 11:55:39');
@@ -7291,4 +7292,5 @@ INSERT INTO "sqlite_sequence" VALUES('autentique_contatos',3);
 INSERT INTO "sqlite_sequence" VALUES('empenho_assistente_historico',4);
 INSERT INTO "sqlite_sequence" VALUES('usuarios',3);
 INSERT INTO "sqlite_sequence" VALUES('calendario_eventos',6);
+INSERT INTO "sqlite_sequence" VALUES('classificador_despesa_historico',1);
 COMMIT;
