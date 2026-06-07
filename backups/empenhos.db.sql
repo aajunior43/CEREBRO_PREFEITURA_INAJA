@@ -1,4 +1,4 @@
--- Backup: 2026-06-07T11:00:06.772229
+-- Backup: 2026-06-07T11:30:04.202324
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
