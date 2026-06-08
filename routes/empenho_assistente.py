@@ -187,6 +187,7 @@ def empenho_assistente():
 
 
 @bp.route("/api/empenho-assistente/historico", methods=["GET"])
+@require_login
 def empenho_assistente_historico():
     try:
         conn = get_db()

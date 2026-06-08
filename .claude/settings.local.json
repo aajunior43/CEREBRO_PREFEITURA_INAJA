@@ -4,7 +4,8 @@
       "Bash(grep:*)",
       "Bash(python -c \"import py_compile; py_compile.compile\\('routes/documentos.py'\\); print\\('OK'\\)\")",
       "Bash(curl *)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(python3 -)"
     ]
   }
 }

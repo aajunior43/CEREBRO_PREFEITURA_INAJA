@@ -479,6 +479,40 @@ def test_fornecimento_solicitacoes_api():
                 pass
 
 
+def test_empenho_assistente_historico_guard():
+    """Testa se o endpoint de histórico de empenho-assistente exige login."""
+    if os.path.exists(TEST_DB_PATH):
+        try:
+            os.remove(TEST_DB_PATH)
+        except Exception:
+            pass
+
+    from server import create_app
+    app, _, init_db, migrate_db = create_app()
+    try:
+        with app.app_context():
+            init_db()
+            migrate_db()
+
+        client = app.test_client()
+        # Sem login, deve retornar 403 / 401
+        assert client.get("/api/empenho-assistente/historico").status_code in (401, 403)
+
+        # Com login na sessão
+        with client.session_transaction() as sess:
+            sess["usuario_id"] = 1
+            sess["usuario_nome"] = "Administrador"
+            sess["usuario_nivel"] = "adm"
+
+        assert client.get("/api/empenho-assistente/historico").status_code == 200
+    finally:
+        if os.path.exists(TEST_DB_PATH):
+            try:
+                os.remove(TEST_DB_PATH)
+            except Exception:
+                pass
+
+
 def run_all_tests():
     """Executa todos os testes (uso direto: python tests/test_app_structure.py)."""
     _safe_print("")
@@ -495,6 +529,7 @@ def run_all_tests():
         ("Mural API",    test_mural_api_guards),
         ("Protocolos API", test_protocolos_api),
         ("Fornecimento API", test_fornecimento_solicitacoes_api),
+        ("Empenho Assistente Histórico", test_empenho_assistente_historico_guard),
     ]
 
     results = []
@@ -543,6 +578,7 @@ def load_tests(loader, tests, pattern):
         test_mural_api_guards,
         test_protocolos_api,
         test_fornecimento_solicitacoes_api,
+        test_empenho_assistente_historico_guard,
     ):
         suite.addTest(unittest.FunctionTestCase(fn))
     return suite

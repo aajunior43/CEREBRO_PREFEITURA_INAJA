@@ -48,7 +48,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   const painelDiff = $('painel_diff');
   const historicoLista = $('historico_lista');
 
-  let currentFile = null;
+  let currentFiles = [];
   let currentHistory = [];
 
   function setBusy(isBusy) {
@@ -80,18 +80,42 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     statusBox.textContent = '';
   }
 
-  function setFile(file) {
-    currentFile = file || null;
-    if (!currentFile) {
+  function addFiles(filesList) {
+    for (let i = 0; i < filesList.length; i++) {
+      const file = filesList[i];
+      if (!currentFiles.some(f => f.name === file.name && f.size === file.size)) {
+        currentFiles.push(file);
+      }
+    }
+    updateFilesUI();
+  }
+
+  function removeFile(index) {
+    currentFiles.splice(index, 1);
+    updateFilesUI();
+  }
+
+  function clearFiles() {
+    currentFiles = [];
+    fileInput.value = '';
+    updateFilesUI();
+  }
+
+  function updateFilesUI() {
+    if (!currentFiles.length) {
       fileInput.value = '';
       fileRow.style.display = 'none';
-      uploadTitle.textContent = 'Clique ou arraste um arquivo';
+      uploadTitle.textContent = 'Clique ou arraste arquivos';
       return;
     }
-    fileName.textContent = currentFile.name;
-    fileMeta.textContent = `${currentFile.type || 'arquivo'} • ${formatSize(currentFile.size)}`;
+    
+    const names = currentFiles.map(f => f.name).join(', ');
+    const totalSize = currentFiles.reduce((acc, f) => acc + f.size, 0);
+    
+    fileName.textContent = currentFiles.length === 1 ? currentFiles[0].name : `${currentFiles.length} arquivos selecionados`;
+    fileMeta.textContent = `${formatSize(totalSize)} total • ${names}`;
     fileRow.style.display = 'flex';
-    uploadTitle.textContent = 'Arquivo selecionado';
+    uploadTitle.textContent = 'Arquivos carregados';
   }
 
   function formatSize(size) {
@@ -102,6 +126,8 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   }
 
   function payloadFromForm() {
+    const fileNames = currentFiles.map(f => f.name).join(', ');
+    const fileTypes = currentFiles.map(f => f.type).join(', ');
     return {
       secretaria: clean(fields.secretaria.value),
       fornecedor: clean(fields.fornecedor.value),
@@ -117,8 +143,8 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       observacoes: clean(fields.observacoes.value),
       texto_base: clean(fields.texto_base.value),
       descricao_atual: clean(fields.descricao_resultado.value),
-      arquivo_nome: currentFile?.name || '',
-      arquivo_tipo: currentFile?.type || '',
+      arquivo_nome: fileNames,
+      arquivo_tipo: fileTypes,
     };
   }
 
@@ -295,22 +321,30 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     throw new Error('Tipo de arquivo nao suportado. Envie PDF ou imagem.');
   }
 
-  async function readCurrentFile() {
-    if (!currentFile) throw new Error('Selecione um arquivo antes de usar a leitura.');
+  async function readCurrentFiles() {
+    if (!currentFiles.length) throw new Error('Selecione arquivos antes de usar a leitura.');
     setBusy(true);
     try {
-      const extracted = (await extractTextFromFile(currentFile)).trim();
-      if (!extracted) throw new Error('Nao foi possivel extrair texto do arquivo enviado.');
-      fields.texto_base.value = extracted;
-      showStatus('Conteudo do arquivo extraido com sucesso.');
+      let consolidatedText = '';
+      for (let i = 0; i < currentFiles.length; i++) {
+        const file = currentFiles[i];
+        showStatus(`Processando arquivo ${i + 1} de ${currentFiles.length}: ${file.name}...`);
+        const extracted = (await extractTextFromFile(file)).trim();
+        if (extracted) {
+          consolidatedText += `=== CONTEUDO DO ARQUIVO: ${file.name.toUpperCase()} ===\n${extracted}\n\n`;
+        }
+      }
+      if (!consolidatedText.trim()) throw new Error('Nao foi possivel extrair texto de nenhum dos arquivos enviados.');
+      fields.texto_base.value = consolidatedText.trim();
+      showStatus('Todos os arquivos foram processados e extraidos com sucesso.');
     } finally {
       setBusy(false);
     }
   }
 
   async function ensureTextBase() {
-    if (clean(fields.texto_base.value) || !currentFile) return;
-    await readCurrentFile();
+    if (clean(fields.texto_base.value) || !currentFiles.length) return;
+    await readCurrentFiles();
   }
 
   async function callAssistant(action) {
@@ -332,7 +366,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   }
 
   fileInput.addEventListener('change', event => {
-    if (event.target.files?.[0]) setFile(event.target.files[0]);
+    if (event.target.files?.length) addFiles(event.target.files);
   });
   dropzone.addEventListener('dragover', event => {
     event.preventDefault();
@@ -342,12 +376,12 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   dropzone.addEventListener('drop', event => {
     event.preventDefault();
     dropzone.classList.remove('drag-over');
-    if (event.dataTransfer.files?.[0]) setFile(event.dataTransfer.files[0]);
+    if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
   });
 
-  $('btn-clear-file').addEventListener('click', () => setFile(null));
+  $('btn-clear-file').addEventListener('click', () => clearFiles());
   $('btn-read-file').addEventListener('click', async () => {
-    try { await readCurrentFile(); } catch (err) { showError(err instanceof Error ? err.message : 'Erro ao ler arquivo.'); }
+    try { await readCurrentFiles(); } catch (err) { showError(err instanceof Error ? err.message : 'Erro ao ler arquivos.'); }
   });
   $('btn-extract').addEventListener('click', async () => {
     try {
@@ -370,9 +404,9 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     }
   });
   $('btn-generate').addEventListener('click', async () => {
-    try { await ensureTextBase(); } catch (err) { showError(err instanceof Error ? err.message : 'Erro ao ler arquivo.'); return; }
+    try { await ensureTextBase(); } catch (err) { showError(err instanceof Error ? err.message : 'Erro ao ler arquivos.'); return; }
     if (!clean(fields.texto_base.value)) {
-      showError('Cole um texto ou envie um arquivo antes de gerar a descricao.');
+      showError('Cole um texto ou envie arquivos antes de gerar a descricao.');
       return;
     }
     try {
@@ -418,7 +452,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   });
   $('btn-clear').addEventListener('click', () => {
     Object.values(fields).forEach(el => { el.value = ''; });
-    setFile(null);
+    clearFiles();
     painelCampos.innerHTML = '<div class="ea-mini-item"><strong>Nenhuma extracao ainda.</strong></div>';
     painelChecklist.innerHTML = '<div class="ea-mini-item"><strong>Checklist ainda nao gerado.</strong></div>';
     painelDiff.innerHTML = '<div class="ea-mini-item"><strong>Use a revisao para gerar o diff.</strong></div>';
