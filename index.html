@@ -362,10 +362,154 @@
       </div>
     </div>
 
+    <!-- ── KPI Strip ── -->
+    <div class="dash-kpi-strip">
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-icon" style="background:rgba(245,158,11,0.12);color:var(--orange)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <div class="dash-kpi-val" id="kpi-empenhos-pendentes">—</div>
+          <div class="dash-kpi-lbl">Empenhos Pendentes</div>
+        </div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-icon" style="background:rgba(37,99,235,0.1);color:var(--blue)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </div>
+        <div>
+          <div class="dash-kpi-val" id="kpi-tarefas">—</div>
+          <div class="dash-kpi-lbl">Tarefas em Aberto</div>
+        </div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-icon" style="background:rgba(16,185,129,0.1);color:var(--green)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="dash-kpi-val" id="kpi-documentos">—</div>
+          <div class="dash-kpi-lbl">Documentos</div>
+        </div>
+      </div>
+      <div class="dash-kpi-card">
+        <div class="dash-kpi-icon" style="background:rgba(139,92,246,0.1);color:#8b5cf6">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div>
+          <div class="dash-kpi-val" id="kpi-credores">—</div>
+          <div class="dash-kpi-lbl">Credores Ativos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Ações Rápidas ── -->
+    <div class="dash-section-head">
+      <div class="dash-section-title">Ações Rápidas</div>
+    </div>
+    <div class="dash-qa-row">
+      <button class="dash-qa-btn" onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Novo Empenho
+        <kbd>N E</kbd>
+      </button>
+      <button class="dash-qa-btn" onclick="window.location.href='/pages/mural.html'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+        Nova Tarefa
+      </button>
+      <button class="dash-qa-btn" onclick="window.location.href='/pages/documentos.html'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+        </svg>
+        Upload Documento
+        <kbd>I N</kbd>
+      </button>
+      <button class="dash-qa-btn" onclick="window.location.href='/pages/cnpj.html'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Consultar CNPJ
+      </button>
+      <button class="dash-qa-btn" onclick="window.location.href='/pages/calculadora-diarias.html'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/>
+          <line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/>
+        </svg>
+        Calcular Diárias
+      </button>
+    </div>
+
+    <!-- ── Visão Mensal & Agenda ── -->
+    <div class="dash-section-head">
+      <div class="dash-section-title">Visão Mensal &amp; Agenda</div>
+    </div>
+    <div class="dash-grid-cal-today">
+      <div class="cal-card">
+        <div class="cal-head">
+          <div>
+            <div class="cal-title">Calendário de Compromissos</div>
+            <div class="cal-legend">
+              <span><em style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:4px;font-style:normal"></em>Empenhado</span>
+              <span><em style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:4px;font-style:normal"></em>Pendente</span>
+              <span><em style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-right:4px;font-style:normal"></em>Crítico</span>
+            </div>
+          </div>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" id="dash-cal-prev" title="Mês anterior">&#8249;</button>
+            <span class="cal-nav-label"><span id="dash-cal-month-label">...</span> <span id="dash-cal-year-label">...</span></span>
+            <button class="cal-nav-btn" id="dash-cal-next" title="Próximo mês">&#8250;</button>
+          </div>
+        </div>
+        <div class="cal-grid" id="dash-cal-grid"></div>
+        <div class="day-detail" id="dash-day-detail">
+          <div class="head">
+            <span class="h-num" id="dash-dd-num"></span>
+            <span class="h-title" id="dash-dd-title"></span>
+          </div>
+          <ul id="dash-dd-list"></ul>
+        </div>
+      </div>
+
+      <div class="today-panel">
+        <div class="today-head">
+          <div class="today-eyebrow">Agenda do Dia</div>
+          <div class="today-date" id="dash-today-date">—</div>
+          <div class="today-day" id="dash-today-day">—</div>
+        </div>
+        <div class="today-list" id="dash-today-list"></div>
+        <div class="today-footer">
+          <a href="/pages/mural.html">Ver todas as tarefas ›</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Atividade Recente ── -->
+    <div class="dash-panel">
+      <div class="dash-panel-head">
+        <span class="dash-panel-title">Atividade Recente</span>
+        <a class="dash-panel-link" href="/pages/visualizador.html">Ver todos ›</a>
+      </div>
+      <div class="dash-activity-list" id="dash-activity-list"></div>
+    </div>
+
     <div class="dash-section-head">
       <div class="dash-section-title">Módulos do Sistema</div>
     </div>
-    
+
     <div class="dash-modules-grid">
       <!-- 1. Gestão de Credores Fixos -->
       <div class="dash-module-card featured" data-glow data-glow-color="blue" data-tooltip="Cadastre e gerencie fornecedores com pagamentos mensais recorrentes. Emita empenhos com um clique e acompanhe o histórico de cada credor." onclick="document.querySelector('.nav-tab[data-tab=\'credores-fixos\']')?.click();">
@@ -663,27 +807,35 @@
         if (tasksCountEl) tasksCountEl.textContent = `${openTasks.length} em aberto`;
         const tasksHeroCountEl = document.getElementById('hero-stat-tasks');
         if (tasksHeroCountEl) tasksHeroCountEl.textContent = openTasks.length;
-        
+        const _kpiTarefas = document.getElementById('kpi-tarefas');
+        if (_kpiTarefas) _kpiTarefas.textContent = openTasks.length;
+
         // 2. Credores count
         const activeCredores = stateCredores.filter(c => c.ativo === 1);
         const credoresCountEl = document.getElementById('dash-stat-credores');
         if (credoresCountEl) credoresCountEl.textContent = `${activeCredores.length} ativos`;
         const credoresHeroCountEl = document.getElementById('hero-stat-credores');
         if (credoresHeroCountEl) credoresHeroCountEl.textContent = activeCredores.length;
-        
+        const _kpiCredores = document.getElementById('kpi-credores');
+        if (_kpiCredores) _kpiCredores.textContent = activeCredores.length;
+
         // 3. Documentos count
         fetch('/api/documentos?limit=1').then(r => r.json()).then(d => {
           const docStat = document.getElementById('dash-stat-documentos');
           if (docStat) docStat.textContent = `${d.total || 0} arquivos`;
           const docHeroStat = document.getElementById('hero-stat-documentos');
           if (docHeroStat) docHeroStat.textContent = d.total || 0;
+          const _kpiDoc = document.getElementById('kpi-documentos');
+          if (_kpiDoc) _kpiDoc.textContent = d.total || 0;
         }).catch(() => {});
-        
+
         // 4. Update Greeting dynamic subtitle
         // Count commitments due this month
         const empenhadosMap = {};
         stateEmpenhos.forEach(e => { empenhadosMap[e.credor_id] = true; });
         const pendingCommitments = activeCredores.filter(c => !empenhadosMap[c.id]);
+        const _kpiEmp = document.getElementById('kpi-empenhos-pendentes');
+        if (_kpiEmp) _kpiEmp.textContent = pendingCommitments.length;
         
         const greetingSubtitle = document.getElementById('dash-greeting-subtitle');
         if (greetingSubtitle) {
@@ -710,7 +862,11 @@
         const grid = document.getElementById('dash-cal-grid');
         if (!grid) return;
         grid.innerHTML = "";
-        
+        const _mLbl = document.getElementById('dash-cal-month-label');
+        const _yLbl = document.getElementById('dash-cal-year-label');
+        if (_mLbl) _mLbl.textContent = MONTH_NAMES[currentMonthIndex];
+        if (_yLbl) _yLbl.textContent = currentYearVal;
+
         // Add Days of Week headers
         DOW_NAMES.forEach((d, idx) => {
           const el = document.createElement("div");
@@ -1127,8 +1283,19 @@
           currentYearVal = parseInt(yearText) || currentYearVal;
         }
         loadDashboardData();
+
+        document.getElementById('dash-cal-prev')?.addEventListener('click', function() {
+          currentMonthIndex--;
+          if (currentMonthIndex < 0) { currentMonthIndex = 11; currentYearVal--; }
+          loadDashboardData();
+        });
+        document.getElementById('dash-cal-next')?.addEventListener('click', function() {
+          currentMonthIndex++;
+          if (currentMonthIndex > 11) { currentMonthIndex = 0; currentYearVal++; }
+          loadDashboardData();
+        });
       }, 500);
-      
+
     })();
     </script>
   <script>
@@ -1179,14 +1346,14 @@
     <div class="stat-card stat-card-modern stat-total">
       <div class="stat-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       </div>
       <div class="stat-info">
-        <span class="stat-label">Total</span>
+        <span class="stat-label">Total Credores</span>
         <span class="stat-value" id="stat-total">0</span>
       </div>
     </div>
@@ -1214,10 +1381,40 @@
         <span class="stat-value" id="stat-pending">0</span>
       </div>
     </div>
+    <div class="stat-card stat-card-modern stat-valor">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">Valor Empenhado</span>
+        <span class="stat-value" id="stat-valor">R$ 0,00</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card-modern stat-restante">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+          <line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+      </div>
+      <div class="stat-info">
+        <span class="stat-label">A Empenhar</span>
+        <span class="stat-value" id="stat-restante">R$ 0,00</span>
+      </div>
+    </div>
   </div>
 
   <!-- DEPT STATS -->
   <div class="dept-stats-row" id="dept-stats-row"></div>
+
+  <!-- META INFO BAR -->
+  <div class="credores-meta">
+    <span id="credores-counter"></span>
+    <span id="credores-summary"></span>
+  </div>
 
   <!-- PROGRESS BAR -->
   <div class="progress-section">
@@ -1306,6 +1503,12 @@
       </div>
     </div>
     <div class="filters-actions">
+      <button class="btn btn-primary btn-ripple" id="btn-empenhar-todos" title="Empenhar todos os credores pendentes do mês atual" style="gap:7px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Empenhar Todos
+      </button>
       <button class="btn btn-ghost btn-ripple" id="btn-clear-filters">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="1 4 1 10 7 10"/>
