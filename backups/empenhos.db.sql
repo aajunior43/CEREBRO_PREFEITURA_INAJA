@@ -1,4 +1,4 @@
--- Backup: 2026-06-09T16:00:06.050743
+-- Backup: 2026-06-09T16:30:07.057586
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -7198,6 +7198,7 @@ INSERT INTO "mural_recados" VALUES(25,'Pagar Fatura dos Munícipes','.','Aleksan
 INSERT INTO "mural_recados" VALUES(26,'Empenhar reforma barracão','fazer suplementação de contrapartida','Aleksandro','Todos','alta','tarefa','concluido','orange','Aleksandro','08/06/2026 21:19','2026-06-02 15:21:13','2026-06-08 21:19:32',0.0,NULL,'');
 INSERT INTO "mural_recados" VALUES(27,'ENVIAR AS AR DAS INTIMAÇÕES EM PARANACITY','.','Aleksandro','Todos','media','tarefa','em_andamento','yellow','','','2026-06-03 16:20:09','2026-06-09 11:17:13',0.0,NULL,'');
 INSERT INTO "mural_recados" VALUES(28,'Empenhar Hidronoroeste','112 rec 000','Aleksandro','Luana','urgente','tarefa','concluido','pink','Aleksandro','08/06/2026 21:56','2026-06-03 16:44:15','2026-06-08 21:56:31',0.0,NULL,'');
+INSERT INTO "mural_recados" VALUES(29,'CRIAR USUARIO DO PATRIMONIO','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-06-09 16:15:52','2026-06-09 16:15:52',0.0,NULL,NULL);
 CREATE TABLE prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
 CREATE TABLE protocolo_anexo_contents (anexo_id INTEGER PRIMARY KEY REFERENCES protocolo_anexos(id) ON DELETE CASCADE, content BLOB NOT NULL);
 CREATE TABLE protocolo_anexos (id INTEGER PRIMARY KEY AUTOINCREMENT, protocolo_id INTEGER NOT NULL REFERENCES protocolos(id) ON DELETE CASCADE, file_name TEXT NOT NULL, mime_type TEXT DEFAULT 'application/octet-stream', file_size INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
@@ -7342,7 +7343,7 @@ INSERT INTO "sqlite_sequence" VALUES('kanban_attachments',0);
 INSERT INTO "sqlite_sequence" VALUES('protocolo_anexos',0);
 INSERT INTO "sqlite_sequence" VALUES('csv_importacoes',2);
 INSERT INTO "sqlite_sequence" VALUES('csv_linhas',2927);
-INSERT INTO "sqlite_sequence" VALUES('mural_recados',28);
+INSERT INTO "sqlite_sequence" VALUES('mural_recados',29);
 INSERT INTO "sqlite_sequence" VALUES('mural_anexos',8);
 INSERT INTO "sqlite_sequence" VALUES('audit_trail',8);
 INSERT INTO "sqlite_sequence" VALUES('autentique_contatos',3);
