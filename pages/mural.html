@@ -1140,6 +1140,288 @@
       }
     }
 
+    /* ══════════════════════════════════════════
+       MODAL ESTILO GIBI / COMIC BOOK
+    ══════════════════════════════════════════ */
+    @keyframes comic-pop {
+      0%   { transform: scale(0.7) rotate(-3deg); opacity: 0; }
+      70%  { transform: scale(1.04) rotate(0.5deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    @keyframes comic-burst-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    @keyframes comic-lines {
+      0%   { opacity: 0.5; }
+      50%  { opacity: 0.8; }
+      100% { opacity: 0.5; }
+    }
+
+    .comic-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.72);
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .comic-backdrop.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .comic-panel {
+      width: min(580px, 95vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      background: #fffef0;
+      border: 4px solid #111;
+      border-radius: 6px;
+      box-shadow: 8px 8px 0 #111;
+      position: relative;
+      animation: comic-pop .35s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    /* Halftone dots background */
+    .comic-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(0,0,0,.07) 1.2px, transparent 1.2px);
+      background-size: 9px 9px;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 2px;
+    }
+
+    /* Speed lines top-right decoration */
+    .comic-panel::after {
+      content: '';
+      position: absolute;
+      top: -2px; right: -2px;
+      width: 100px; height: 100px;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0deg 10deg, rgba(0,0,0,.06) 10deg 11deg,
+        transparent 11deg 25deg, rgba(0,0,0,.06) 25deg 26deg,
+        transparent 26deg 40deg, rgba(0,0,0,.06) 40deg 41deg,
+        transparent 41deg 55deg, rgba(0,0,0,.06) 55deg 56deg,
+        transparent 56deg 90deg
+      );
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 0 4px 0 0;
+    }
+
+    /* Header / caption box */
+    .comic-header {
+      position: relative;
+      z-index: 1;
+      background: #fbbf24;
+      border-bottom: 4px solid #111;
+      padding: 14px 18px 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .comic-title-box {
+      flex: 1;
+    }
+    .comic-caption {
+      font-size: 9px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #111;
+      background: #111;
+      color: #fbbf24;
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 2px;
+      margin-bottom: 5px;
+    }
+    .comic-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #111;
+      text-transform: uppercase;
+      line-height: 1.15;
+      letter-spacing: .02em;
+      font-style: italic;
+    }
+    .comic-close {
+      background: #111;
+      color: #fbbf24;
+      border: none;
+      font-size: 20px;
+      font-weight: 900;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+      transition: transform .15s;
+    }
+    .comic-close:hover { transform: rotate(90deg) scale(1.1); }
+
+    /* Priority burst / explosion */
+    .comic-burst {
+      position: absolute;
+      top: -18px; right: 60px;
+      width: 64px; height: 64px;
+      z-index: 2;
+    }
+    .comic-burst-star {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .comic-burst-star svg {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+    }
+    .comic-burst-label {
+      position: relative;
+      z-index: 1;
+      font-size: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 1.2;
+      color: #111;
+    }
+
+    /* Body */
+    .comic-body {
+      position: relative;
+      z-index: 1;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Speech bubble */
+    .comic-bubble {
+      background: #fff;
+      border: 3px solid #111;
+      border-radius: 16px;
+      padding: 14px 16px;
+      position: relative;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      line-height: 1.55;
+      box-shadow: 3px 3px 0 #111;
+    }
+    .comic-bubble::before {
+      content: '';
+      position: absolute;
+      left: 24px; bottom: -14px;
+      width: 0; height: 0;
+      border-left: 10px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 14px solid #111;
+    }
+    .comic-bubble::after {
+      content: '';
+      position: absolute;
+      left: 26px; bottom: -9px;
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 11px solid #fff;
+    }
+
+    /* Info panel grid */
+    .comic-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .comic-info-cell {
+      background: #fff;
+      border: 2.5px solid #111;
+      border-radius: 6px;
+      padding: 8px 10px;
+      box-shadow: 2px 2px 0 #111;
+    }
+    .comic-info-label {
+      font-size: 8.5px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #555;
+      margin-bottom: 3px;
+    }
+    .comic-info-val {
+      font-size: 12px;
+      font-weight: 800;
+      color: #111;
+    }
+    .comic-info-cell.full { grid-column: 1 / -1; }
+
+    /* Status badge comic style */
+    .comic-status {
+      display: inline-block;
+      border: 2.5px solid #111;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      box-shadow: 2px 2px 0 #111;
+    }
+    .comic-status.a_fazer      { background: #fef3c7; color: #92400e; }
+    .comic-status.em_andamento { background: #dbeafe; color: #1e40af; }
+    .comic-status.concluido    { background: #d1fae5; color: #065f46; }
+
+    /* Action bar */
+    .comic-actions {
+      position: relative;
+      z-index: 1;
+      border-top: 3px solid #111;
+      background: #f3f4f6;
+      padding: 12px 18px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .comic-btn {
+      border: 2.5px solid #111;
+      border-radius: 4px;
+      padding: 7px 18px;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 #111;
+      transition: transform .1s, box-shadow .1s;
+    }
+    .comic-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 #111;
+    }
+    .comic-btn-edit   { background: #fbbf24; color: #111; }
+    .comic-btn-close  { background: #fff; color: #111; }
+    .comic-btn-status { background: #111; color: #fbbf24; }
+  }
+
 </style>
 </head>
 <body>
@@ -2588,6 +2870,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
+      // Clique no card abre o modal gibi (ignora botões e drag)
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button') || e.target.closest('a')) return;
+        if (window.abrirComicModal) window.abrirComicModal(item);
+      });
+
       // Make card draggable for Kanban column drag & drop
       card.draggable = true;
       
@@ -3327,6 +3615,181 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Polling leve a cada 60s apenas como fallback de segurança (SSE cuida do tempo real)
     setInterval(carregarMural, 60000);
+  </script>
+
+  <!-- ══ MODAL GIBI ══ -->
+  <div class="comic-backdrop" id="comic-backdrop">
+    <div class="comic-panel" id="comic-panel">
+      <div class="comic-header">
+        <div class="comic-title-box">
+          <div class="comic-caption" id="comic-caption">Tarefa</div>
+          <div class="comic-title" id="comic-title">—</div>
+        </div>
+        <!-- Priority burst -->
+        <div class="comic-burst" id="comic-burst">
+          <div class="comic-burst-star">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" id="comic-burst-svg">
+              <polygon points="32,2 38,22 58,22 42,34 48,54 32,42 16,54 22,34 6,22 26,22" fill="#ef4444" stroke="#111" stroke-width="2.5"/>
+            </svg>
+            <div class="comic-burst-label" id="comic-burst-label">URGENTE</div>
+          </div>
+        </div>
+        <button class="comic-close" id="comic-close">&times;</button>
+      </div>
+
+      <div class="comic-body">
+        <!-- Balão de conteúdo -->
+        <div class="comic-bubble" id="comic-conteudo">—</div>
+
+        <!-- Grid de info -->
+        <div class="comic-info-grid">
+          <div class="comic-info-cell">
+            <div class="comic-info-label">👤 Designado para</div>
+            <div class="comic-info-val" id="comic-dest">—</div>
+          </div>
+          <div class="comic-info-cell">
+            <div class="comic-info-label">✍ Criado por</div>
+            <div class="comic-info-val" id="comic-autor">—</div>
+          </div>
+          <div class="comic-info-cell">
+            <div class="comic-info-label">🚦 Status</div>
+            <div class="comic-info-val" id="comic-status-wrap">—</div>
+          </div>
+          <div class="comic-info-cell">
+            <div class="comic-info-label">📅 Prazo</div>
+            <div class="comic-info-val" id="comic-prazo">—</div>
+          </div>
+          <div class="comic-info-cell">
+            <div class="comic-info-label">🏷️ Categoria</div>
+            <div class="comic-info-val" id="comic-cat">—</div>
+          </div>
+          <div class="comic-info-cell">
+            <div class="comic-info-label">💰 Valor</div>
+            <div class="comic-info-val" id="comic-valor">—</div>
+          </div>
+          <div class="comic-info-cell full" id="comic-credor-cell" style="display:none;">
+            <div class="comic-info-label">🏛️ Credor / Fornecedor</div>
+            <div class="comic-info-val" id="comic-credor">—</div>
+          </div>
+          <div class="comic-info-cell full" id="comic-conclusao-cell" style="display:none;">
+            <div class="comic-info-label">✅ Concluído por</div>
+            <div class="comic-info-val" id="comic-conclusao">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comic-actions">
+        <button class="comic-btn comic-btn-close" id="comic-btn-fechar">Fechar</button>
+        <button class="comic-btn comic-btn-status" id="comic-btn-avancar" style="display:none;">⚡ Avançar</button>
+        <button class="comic-btn comic-btn-edit" id="comic-btn-editar">✏️ Editar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Modal Gibi ──
+    const comicBackdrop = document.getElementById('comic-backdrop');
+    let comicCurrentId = null;
+
+    const PRIO_COLORS = {
+      urgente: { fill: '#ef4444', label: 'URGENTE!' },
+      alta:    { fill: '#f97316', label: 'ALTA' },
+      media:   { fill: '#fbbf24', label: 'MÉDIA' },
+      baixa:   { fill: '#60a5fa', label: 'BAIXA' },
+    };
+    const STATUS_LABELS_COMIC = { a_fazer: 'A Fazer', em_andamento: 'Em Progresso', concluido: 'Concluído' };
+    const CAT_LABELS = { tarefa: '📋 Tarefa', aviso: '📢 Aviso', lembrete: '💡 Lembrete', conquista: '🏆 Conquista' };
+
+    function abrirComicModal(item) {
+      comicCurrentId = item.id;
+
+      // Caption (categoria)
+      document.getElementById('comic-caption').textContent = CAT_LABELS[item.categoria] || item.categoria || 'Tarefa';
+
+      // Título
+      document.getElementById('comic-title').textContent = (item.titulo || '').toUpperCase();
+
+      // Conteúdo
+      document.getElementById('comic-conteudo').textContent = item.conteudo || '—';
+
+      // Burst de prioridade
+      const p = PRIO_COLORS[item.prioridade] || PRIO_COLORS.media;
+      document.getElementById('comic-burst-svg').querySelector('polygon').setAttribute('fill', p.fill);
+      document.getElementById('comic-burst-label').textContent = p.label;
+
+      // Info cells
+      document.getElementById('comic-dest').textContent = item.destinatario || 'Todos';
+      document.getElementById('comic-autor').textContent = item.autor || '—';
+
+      const statusEl = document.getElementById('comic-status-wrap');
+      statusEl.innerHTML = `<span class="comic-status ${item.status}">${STATUS_LABELS_COMIC[item.status] || item.status}</span>`;
+
+      const prazoEl = document.getElementById('comic-prazo');
+      if (item.vencimento) {
+        const d = new Date(item.vencimento + 'T00:00:00');
+        prazoEl.textContent = d.toLocaleDateString('pt-BR');
+      } else {
+        prazoEl.textContent = 'Sem prazo';
+      }
+
+      document.getElementById('comic-cat').textContent = CAT_LABELS[item.categoria] || item.categoria || '—';
+
+      const valorEl = document.getElementById('comic-valor');
+      valorEl.textContent = (item.valor && parseFloat(item.valor) > 0)
+        ? Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        : '—';
+
+      const credorCell = document.getElementById('comic-credor-cell');
+      if (item.credor_nome) {
+        credorCell.style.display = '';
+        document.getElementById('comic-credor').textContent = item.credor_nome;
+      } else {
+        credorCell.style.display = 'none';
+      }
+
+      const conclusaoCell = document.getElementById('comic-conclusao-cell');
+      if (item.status === 'concluido' && item.concluido_por) {
+        conclusaoCell.style.display = '';
+        document.getElementById('comic-conclusao').textContent =
+          `${item.concluido_por}${item.concluido_em ? ' em ' + item.concluido_em.split(' ')[0] : ''}`;
+      } else {
+        conclusaoCell.style.display = 'none';
+      }
+
+      // Botão avançar status
+      const btnAvancar = document.getElementById('comic-btn-avancar');
+      if (item.status === 'a_fazer') {
+        btnAvancar.style.display = '';
+        btnAvancar.textContent = '⚡ Iniciar';
+        btnAvancar.onclick = () => { fecharComicModal(); alterarStatusRecado(item.id, 'em_andamento'); };
+      } else if (item.status === 'em_andamento') {
+        btnAvancar.style.display = '';
+        btnAvancar.textContent = '✓ Concluir';
+        btnAvancar.onclick = () => { fecharComicModal(); alterarStatusRecado(item.id, 'concluido'); };
+      } else {
+        btnAvancar.style.display = 'none';
+      }
+
+      comicBackdrop.classList.add('active');
+    }
+
+    function fecharComicModal() {
+      comicBackdrop.classList.remove('active');
+      comicCurrentId = null;
+    }
+
+    document.getElementById('comic-close').addEventListener('click', fecharComicModal);
+    document.getElementById('comic-btn-fechar').addEventListener('click', fecharComicModal);
+    document.getElementById('comic-btn-editar').addEventListener('click', () => {
+      const id = comicCurrentId;
+      fecharComicModal();
+      if (id !== null) editarRecado(id);
+    });
+    comicBackdrop.addEventListener('click', (e) => { if (e.target === comicBackdrop) fecharComicModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharComicModal(); });
+
+    // Expõe para uso no criarCardElement
+    window.abrirComicModal = abrirComicModal;
   </script>
 </body>
 </html>
