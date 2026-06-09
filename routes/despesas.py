@@ -489,3 +489,19 @@ def empenhos_csv_excluir(imp_id):
         conn.execute("DELETE FROM empenhos_importacoes WHERE id=?", (imp_id,))
     conn.commit()
     return jsonify({"ok": True})
+
+
+@bp.route("/api/despesas/dados", methods=["GET"])
+@require_login
+def despesas_dados_csv():
+    import os
+    from flask import send_file, current_app
+    csv_path = os.path.join(current_app.config.get("BASE_DIR", "."), "dados_seguros", "Relação de Despesas.csv")
+    if not os.path.exists(csv_path):
+        # Fallback para caminho absoluto caso BASE_DIR não esteja setado como esperado
+        from config import settings
+        csv_path = os.path.join(str(settings.base_dir), "dados_seguros", "Relação de Despesas.csv")
+    if not os.path.exists(csv_path):
+        return jsonify({"error": "Planilha não encontrada"}), 404
+    return send_file(csv_path, mimetype="text/csv", as_attachment=True, download_name="Relação de Despesas.csv")
+

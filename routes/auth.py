@@ -3,6 +3,7 @@
 import hashlib
 import os
 from flask import Blueprint, request, jsonify, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from routes._shared import get_db
 from routes.helpers import rate_limited
 
@@ -10,7 +11,15 @@ bp = Blueprint("auth", __name__)
 
 
 def _hash(s: str) -> str:
-    return hashlib.sha256(s.encode()).hexdigest()
+    return generate_password_hash(s)
+
+
+def _verify_password(senha_hash: str, senha_plana: str) -> bool:
+    if len(senha_hash) == 64 and all(c in "0123456789abcdefABCDEF" for c in senha_hash):
+        # Fallback para hash SHA-256 plana legado
+        return hashlib.sha256(senha_plana.encode()).hexdigest() == senha_hash
+    return check_password_hash(senha_hash, senha_plana)
+
 
 
 def init_usuarios_table(app):
@@ -158,9 +167,20 @@ def login():
         "SELECT * FROM usuarios WHERE login=? AND ativo=1", (login_input,)
     ).fetchone()
 
-    if not row or row["senha_hash"] != _hash(senha):
+    if not row or not _verify_password(row["senha_hash"], senha):
         current_app.logger.warning("Falha na tentativa de login para o usuário '%s' a partir do IP %s", login_input, ip)
         return jsonify({"ok": False, "error": "Login ou senha invalidos"}), 401
+
+    # Auto-upgrade do hash da senha se for o formato SHA-256 legado
+    if len(row["senha_hash"]) == 64 and all(c in "0123456789abcdefABCDEF" for c in row["senha_hash"]):
+        try:
+            novo_hash = _hash(senha)
+            conn.execute("UPDATE usuarios SET senha_hash=? WHERE id=?", (novo_hash, row["id"]))
+            conn.commit()
+            current_app.logger.info("Hash de senha do usuário '%s' atualizado para Werkzeug", login_input)
+        except Exception as e:
+            current_app.logger.error("Erro ao atualizar hash legado: %s", str(e))
+
 
     session["usuario_id"] = row["id"]
     session["usuario_login"] = row["login"]

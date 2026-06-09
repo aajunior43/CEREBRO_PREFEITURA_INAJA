@@ -53,7 +53,6 @@ def test_imports():
         ("despesas",           "routes.despesas"),
         ("classificador",      "routes.classificador"),
         ("empenho_assistente", "routes.empenho_assistente"),
-        ("latex_pdf",          "routes.latex_pdf"),
     ]
 
     for name, module in blueprints:
@@ -127,7 +126,7 @@ def test_app_factory():
         "auth", "config", "credores", "empenhos", "rpas",
         "mural", "kanban", "documentos", "autentique", "prazos", "protocolos",
         "extratos", "ia", "cnpj", "pdf", "despesas",
-        "classificador", "empenho_assistente", "latex_pdf",
+        "classificador", "empenho_assistente",
     ]
 
     registered = list(app.blueprints.keys())

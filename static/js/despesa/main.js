@@ -194,7 +194,7 @@
 
   async function autoLoadCSV() {
     const candidates = [
-      "/static/dados/Relação de Despesas.csv",
+      "/api/despesas/dados",
       "/static/dados/dados.csv",
       "/static/dados/data.csv"
     ];

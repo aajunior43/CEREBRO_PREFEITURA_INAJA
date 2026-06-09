@@ -26,4 +26,3 @@ from routes.auth import bp as bp_auth, init_auth_hash
 from routes.extratos import bp as bp_extratos
 from routes.empenho_assistente import bp as bp_empenho_assistente
 from routes.classificador import bp as bp_classificador
-from routes.latex_pdf import bp as bp_latex_pdf
