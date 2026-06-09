@@ -664,6 +664,59 @@
       border-radius: inherit;
     }
 
+    /* ── Destaque "Todos" — prata/branco pulsante ── */
+    @keyframes glitter-todos-glow {
+      0%   { box-shadow: 0 0 8px 3px #e2e8f0, 0 0 20px 7px rgba(226,232,240,.6), 0 0 38px 12px rgba(148,163,184,.2); }
+      50%  { box-shadow: 0 0 12px 5px #94a3b8, 0 0 28px 10px rgba(148,163,184,.7), 0 0 50px 16px rgba(148,163,184,.25); }
+      100% { box-shadow: 0 0 8px 3px #e2e8f0, 0 0 20px 7px rgba(226,232,240,.6), 0 0 38px 12px rgba(148,163,184,.2); }
+    }
+    @keyframes glitter-todos-border {
+      0%, 100% { border-color: rgba(226,232,240,.9); border-width: 2px; }
+      50%       { border-color: rgba(148,163,184,.9); border-width: 2.5px; }
+    }
+    @keyframes glitter-todos-bg {
+      0%   { background-position: 0% 0%; }
+      50%  { background-position: 100% 100%; }
+      100% { background-position: 0% 0%; }
+    }
+    .mural-card-destaque-todos {
+      animation:
+        glitter-todos-glow   2.4s ease-in-out infinite,
+        glitter-todos-border 2.4s ease-in-out infinite,
+        glitter-scale-pulse  2.4s ease-in-out infinite !important;
+      position: relative;
+      z-index: 2;
+      overflow: visible !important;
+    }
+    .mural-card-destaque-todos::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: calc(var(--radius, 14px) + 3px);
+      background: linear-gradient(135deg,
+        #e2e8f0, #94a3b8, #cbd5e1, #f1f5f9, #94a3b8, #e2e8f0);
+      background-size: 300% 300%;
+      animation: glitter-todos-bg 3s linear infinite;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+    .mural-card-destaque-todos::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: -120%;
+      width: 60%;
+      background: linear-gradient(105deg,
+        transparent 30%,
+        rgba(255,255,255,.45) 50%,
+        transparent 70%);
+      animation: glitter-shine-sweep 3s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 3;
+      border-radius: inherit;
+    }
+
     /* Botão do toggle de destaque */
     .mural-btn-destaque {
       gap: 6px;
@@ -2250,11 +2303,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const id = parseInt(card.dataset.id, 10);
         const item = cacheRecados.find(r => r.id === id);
         const dest = (item && item.destinatario || '').toLowerCase();
-        const isOwn = item && currentUser && (dest === currentUser || dest === 'todos');
-        if (destaqueAtivo && isOwn) {
-          card.classList.add('mural-card-destaque');
-        } else {
-          card.classList.remove('mural-card-destaque');
+        card.classList.remove('mural-card-destaque', 'mural-card-destaque-todos');
+        if (destaqueAtivo && currentUser) {
+          if (dest === currentUser) card.classList.add('mural-card-destaque');
+          else if (dest === 'todos') card.classList.add('mural-card-destaque-todos');
         }
       });
     }
@@ -2458,11 +2510,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const ageChip = cardAgeChip(item.criado_em, item.status);
 
-      // Destaque brilhante para tarefas designadas ao próprio usuário (quando ativado pelo admin)
+      // Destaque brilhante por destinatário (ativado pelo admin)
       const currentUserName = (sessionStorage.getItem('user_nome') || '').trim().toLowerCase();
       const destLower = (item.destinatario || '').toLowerCase();
-      if (destaqueAtivo && currentUserName && (destLower === currentUserName || destLower === 'todos')) {
-        card.classList.add('mural-card-destaque');
+      if (destaqueAtivo && currentUserName) {
+        if (destLower === currentUserName) card.classList.add('mural-card-destaque');
+        else if (destLower === 'todos') card.classList.add('mural-card-destaque-todos');
       }
 
       card.innerHTML = `
