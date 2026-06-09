@@ -570,133 +570,255 @@ function renderPagination() {
 // ── Template CSS compartilhado (print) ───────────────────────
 function _printCSS() {
   return `
-    @page { margin: 12mm 15mm; size: A4 portrait; }
+    @page { margin: 14mm 16mm 14mm 16mm; size: A4 portrait; }
     @media print {
-      * { margin:0 !important; padding:0 !important; box-sizing:border-box !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          color: #000 !important;
-          background-color: transparent !important;
-          visibility: visible !important;
-          opacity: 1 !important; }
-      body { background: #fff !important; color: #000 !important; }
-      table.doc-table th { background: #f0f0f0 !important; }
-      .valor-box { background: #fdfdfd !important; }
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      body { background: #fff !important; }
+      .doc-accent-bar { background: #14376b !important; }
+      .doc-header-inner { background: #f7f9fc !important; }
+      .doc-table thead tr { background: #14376b !important; }
+      .doc-table tbody tr:nth-child(even) { background: #f7f9fc !important; }
+      .valor-box { background: #f7f9fc !important; }
+      .valor-box.done  { background: #edfaf3 !important; border-color: #2d9e6b !important; }
+      .valor-box.pend  { background: #fff8f0 !important; border-color: #c97c30 !important; }
+      .status-badge.done { background: #2d9e6b !important; }
+      .status-badge.pend { background: #c97c30 !important; }
     }
     * { margin:0; padding:0; box-sizing:border-box;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important; }
     body {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 11pt;
-      color: #000;
+      font-size: 10.5pt;
+      color: #1a1a1a;
       background: #fff;
+      line-height: 1.4;
     }
 
-    /* ── Faixa superior Oficial ── */
+    /* ── Barra de acento ── */
+    .doc-accent-bar {
+      height: 5px;
+      background: #14376b;
+      border-radius: 2px 2px 0 0;
+      margin-bottom: 0;
+    }
+
+    /* ── Cabeçalho Oficial ── */
     .doc-header {
+      border: 1px solid #c8d4e3;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      margin-bottom: 22px;
+      overflow: hidden;
+    }
+    .doc-header-inner {
       display: flex;
       align-items: center;
-      border: 2px solid #000;
-      padding: 10px;
-      margin-bottom: 20px;
-      border-radius: 4px;
+      gap: 16px;
+      padding: 12px 16px;
+      background: #f7f9fc;
+      border-bottom: 1px solid #c8d4e3;
     }
-    .doc-header-brasao { width: 70px; height: auto; object-fit: contain; margin-right: 15px; }
+    .doc-header-brasao {
+      width: 64px;
+      height: auto;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
     .doc-header-text { flex: 1; text-align: center; }
-    .doc-header-text h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-    .doc-header-text h2 { font-size: 11pt; font-weight: normal; margin-bottom: 4px; }
-    .doc-header-text h3 { font-size: 12pt; font-weight: bold; text-transform: uppercase; border-top: 1px solid #000; margin-top: 4px; padding-top: 4px; }
-    
-    .doc-header-right {
-       text-align: right; 
-       font-size: 9pt; 
-       padding-left: 15px; 
-       border-left: 1px solid #ccc;
+    .doc-header-text .inst-estado {
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #5a6a7e;
+      margin-bottom: 2px;
     }
-    .doc-ref { font-weight: bold; font-size: 11pt; margin-top: 4px; }
+    .doc-header-text .inst-nome {
+      font-size: 13pt;
+      font-weight: 700;
+      color: #14376b;
+      margin-bottom: 2px;
+    }
+    .doc-header-text .inst-cnpj {
+      font-size: 7.5pt;
+      color: #7a8a9e;
+    }
+    .doc-header-right {
+      text-align: right;
+      flex-shrink: 0;
+      min-width: 90px;
+    }
+    .doc-header-right .ref-label {
+      font-size: 7.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #7a8a9e;
+    }
+    .doc-header-right .ref-value {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #14376b;
+      white-space: nowrap;
+    }
+
+    /* ── Faixa do título do documento ── */
+    .doc-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 16px;
+      background: #14376b;
+    }
+    .doc-title-bar .doc-title {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .status-badge {
+      font-size: 8pt;
+      font-weight: 700;
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .status-badge.done { background: #2d9e6b; }
+    .status-badge.pend { background: #c97c30; }
 
     /* ── Corpo ── */
-    .doc-body { margin-bottom: 25px; position: relative; }
+    .doc-body { margin-bottom: 22px; position: relative; }
 
-    /* ── Marca D'Agua ── */
+    /* ── Marca D'Água ── */
     .watermark-done {
       position: absolute;
-      top: 30%; left: 50%;
-      transform: translate(-50%, -50%) rotate(-30deg);
-      font-size: 80pt;
-      font-weight: bold;
-      color: rgba(58, 170, 110, 0.15);
-      border: 8px solid rgba(58, 170, 110, 0.15);
-      padding: 10px 40px;
-      border-radius: 20px;
+      top: 38%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-28deg);
+      font-size: 72pt;
+      font-weight: 900;
+      color: rgba(45, 158, 107, 0.10);
+      border: 7px solid rgba(45, 158, 107, 0.10);
+      padding: 8px 36px;
+      border-radius: 16px;
+      letter-spacing: 6px;
       user-select: none;
       pointer-events: none;
       z-index: 0;
+      white-space: nowrap;
     }
 
     /* ── Tabela de Dados ── */
-    table.doc-table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-bottom: 15px; 
+    table.doc-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
       position: relative;
       z-index: 1;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #c8d4e3;
     }
-    table.doc-table th, table.doc-table td { 
-      border: 1px solid #000; 
-      padding: 8px; 
-      vertical-align: middle; 
+    table.doc-table thead tr {
+      background: #14376b;
     }
-    table.doc-table th { 
-      background: #f0f0f0; 
-      text-transform: uppercase; 
-      font-size: 9pt; 
-      width: 30%; 
+    table.doc-table thead th {
+      color: #fff;
+      font-size: 8.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 9px 12px;
       text-align: left;
+      font-weight: 700;
+      border: none;
     }
-    table.doc-table td { font-size: 10pt; font-weight: 500; }
+    table.doc-table thead th:first-child { width: 32%; }
+    table.doc-table tbody tr { border-bottom: 1px solid #dde6f0; }
+    table.doc-table tbody tr:last-child { border-bottom: none; }
+    table.doc-table tbody tr:nth-child(even) { background: #f7f9fc; }
+    table.doc-table tbody td {
+      padding: 9px 12px;
+      font-size: 10pt;
+      vertical-align: middle;
+      border: none;
+    }
+    table.doc-table tbody td.td-label {
+      font-size: 8.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #4a5a6e;
+      white-space: nowrap;
+      border-right: 1px solid #dde6f0;
+    }
+    table.doc-table tbody td.td-value {
+      color: #1a1a1a;
+      font-weight: 500;
+    }
 
     /* ── Caixa de valor ── */
     .valor-box {
-      border: 2px solid #000;
-      background: #fdfdfd;
-      padding: 12px;
+      border: 1.5px solid #c8d4e3;
+      background: #f7f9fc;
+      padding: 14px 20px;
       text-align: center;
-      margin-bottom: 30px;
-      border-radius: 4px;
+      margin-bottom: 26px;
+      border-radius: 6px;
+      position: relative;
+      z-index: 1;
     }
-    .vb-label { font-size: 11pt; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
-    .vb-value { font-size: 18pt; font-weight: bold; }
+    .valor-box.done { background: #edfaf3; border-color: #2d9e6b; }
+    .valor-box.pend { background: #fff8f0; border-color: #c97c30; }
+    .vb-label {
+      font-size: 8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #5a6a7e;
+      margin-bottom: 6px;
+    }
+    .vb-value {
+      font-size: 22pt;
+      font-weight: 800;
+      color: #14376b;
+      letter-spacing: -0.5px;
+    }
+    .valor-box.done .vb-value { color: #1e7a50; }
+    .valor-box.pend .vb-value { color: #a05c10; }
 
     /* ── Data e Assinaturas ── */
     .sign-date {
-      text-align: right; margin-bottom: 40px; font-size: 11pt;
+      text-align: right;
+      margin-bottom: 36px;
+      font-size: 10.5pt;
+      color: #2a2a2a;
     }
-
     .sign-section {
       display: flex;
-      justify-content: space-around;
-      margin-top: 50px;
+      justify-content: space-between;
+      gap: 30px;
+      margin-top: 10px;
     }
-    .sign-block { text-align: center; width: 40%; }
+    .sign-block { text-align: center; flex: 1; }
     .sign-line-top {
-      border-bottom: 1px solid #000;
+      border-bottom: 1px solid #1a1a1a;
       margin-bottom: 8px;
-      height: 40px; /* Space for signature */
+      height: 44px;
     }
-    .sign-label { font-size: 10pt; font-weight: bold; text-transform: uppercase; }
-    .sign-sub { font-size: 9pt; margin-top: 2px; }
+    .sign-label { font-size: 9.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .sign-sub { font-size: 8.5pt; color: #5a6a7e; margin-top: 3px; }
 
-    /* ── Rodapé de Autenticidade ── */
+    /* ── Rodapé ── */
     .doc-footer {
       text-align: center;
-      font-size: 8pt;
-      color: #555;
-      margin-top: 30px;
-      border-top: 1px solid #ccc;
-      padding-top: 5px;
+      font-size: 7.5pt;
+      color: #7a8a9e;
+      margin-top: 28px;
+      border-top: 1px solid #dde6f0;
+      padding-top: 7px;
     }
+    .doc-footer strong { color: #4a5a6e; }
   `;
 }
 
@@ -705,8 +827,13 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
   const isVar = (c.tipo_valor || '').toUpperCase().includes('VAR');
   const valorStr = (isVar && !c.valor) ? 'Valor variável' : formatBRL(c.valor || 0);
   const pb = isLast ? '' : 'page-break-after:always;';
-  
+
   const watermark = done ? '<div class="watermark-done">EMPENHADO</div>' : '';
+  const statusClass = done ? 'done' : 'pend';
+  const statusLabel = done ? 'Empenhado' : 'Pendente';
+
+  const brasaoSrc = typeof BRASAO_B64 !== 'undefined' && BRASAO_B64
+    ? BRASAO_B64 : '/static/img/brasao.png';
 
   const campos = [
     ['Departamento Solicitante', c.departamento],
@@ -718,45 +845,67 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
   ].filter(([, v]) => v && String(v).trim());
 
   const tableRows = campos.map(([l, v]) =>
-    `<tr><th>${l}</th><td>${v}</td></tr>`
+    `<tr><td class="td-label">${l}</td><td class="td-value">${v}</td></tr>`
   ).join('');
+
+  const now = new Date();
+  const geradoEm = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   return `
     <div style="${pb} position: relative;">
+      <div class="doc-accent-bar"></div>
       <div class="doc-header">
-        <img class="doc-header-brasao" src="${typeof BRASAO_B64 !== 'undefined' && BRASAO_B64 ? BRASAO_B64 : '/static/img/brasao.png'}" alt="Brasão" />
-        <div class="doc-header-text">
-          <h1>Estado do Paraná</h1>
-          <h2>Prefeitura Municipal de Inajá</h2>
-          <h3>Solicitação de Empenho</h3>
+        <div class="doc-header-inner">
+          <img class="doc-header-brasao" src="${brasaoSrc}" alt="Brasão" />
+          <div class="doc-header-text">
+            <div class="inst-estado">Estado de Pernambuco</div>
+            <div class="inst-nome">Prefeitura Municipal de Inajá</div>
+            <div class="inst-cnpj">Inajá – PE</div>
+          </div>
+          <div class="doc-header-right">
+            <div class="ref-label">Referência</div>
+            <div class="ref-value">${mesNome} / ${ano}</div>
+          </div>
         </div>
-        <div class="doc-header-right">
-          <div>Referência</div>
-          <div class="doc-ref">${mesNome} / ${ano}</div>
+        <div class="doc-title-bar">
+          <span class="doc-title">Solicitação de Empenho</span>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
         </div>
       </div>
 
       <div class="doc-body">
         ${watermark}
-        <table class="doc-table">${tableRows}</table>
+        <table class="doc-table">
+          <thead><tr><th>Campo</th><th>Informação</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
 
-        <div class="valor-box">
+        <div class="valor-box ${statusClass}">
           <div class="vb-label">Valor do Empenho</div>
           <div class="vb-value">${valorStr}</div>
         </div>
 
         <div class="sign-date">
-          Inajá / PR, _____ de ___________________ de ${ano}.
+          Inajá / PE, _____ de ___________________ de ${ano}.
         </div>
 
         <div class="sign-section">
-          <div class="sign-block" style="width: 50%;">
-             <div class="sign-line-top"></div>
-             <div class="sign-label">Ordenador de Despesa</div>
-             <div class="sign-sub">Prefeitura Municipal de Inajá</div>
+          <div class="sign-block">
+            <div class="sign-line-top"></div>
+            <div class="sign-label">Credor / Fornecedor</div>
+            <div class="sign-sub">${c.nome || ''}</div>
+          </div>
+          <div class="sign-block">
+            <div class="sign-line-top"></div>
+            <div class="sign-label">Ordenador de Despesa</div>
+            <div class="sign-sub">Prefeitura Municipal de Inajá</div>
           </div>
         </div>
-        
+      </div>
+
+      <div class="doc-footer">
+        Documento gerado em <strong>${geradoEm}</strong> pelo Sistema de Gestão Municipal — Prefeitura de Inajá/PE.
+        Este documento é válido somente com assinatura do ordenador de despesa.
       </div>
     </div>`;
 }
