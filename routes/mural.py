@@ -125,7 +125,8 @@ def mural_listar():
 
         where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
         rows = conn.execute(
-            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor "
+            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor, "
+            "(SELECT COUNT(*) FROM mural_comentarios mc WHERE mc.recado_id = m.id) AS comment_count "
             "FROM mural_recados m LEFT JOIN credores c ON m.credor_id=c.id " +
             where +
             " ORDER BY prioridade='urgente' DESC, prioridade='alta' DESC, prioridade='media' DESC, prioridade='baixa' DESC, m.criado_em DESC LIMIT ? OFFSET ?",
@@ -151,6 +152,7 @@ def mural_listar():
         else:
             for r in recados:
                 r["attachments"] = []
+                r["comment_count"] = 0
 
         return jsonify(recados)
     except Exception as e:
@@ -176,6 +178,7 @@ def mural_criar():
 
         credor_id = _parse_credor_id(data.get("credor_id"))
         valor = _parse_valor(data.get("valor"))
+        vencimento = (data.get("vencimento") or "").strip()[:10]
 
         conn = get_db()
 
@@ -189,14 +192,15 @@ def mural_criar():
 
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO mural_recados (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, status, valor, credor_id) VALUES (?, ?, ?, ?, ?, ?, ?, 'a_fazer', ?, ?)",
-            (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, valor, credor_id)
+            "INSERT INTO mural_recados (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, status, valor, credor_id, vencimento) VALUES (?, ?, ?, ?, ?, ?, ?, 'a_fazer', ?, ?, ?)",
+            (titulo, conteudo, autor, destinatario, prioridade, categoria, cor, valor, credor_id, vencimento or None)
         )
         conn.commit()
 
         # Re-read with LEFT JOIN to include credor info in response/SSE
         row = conn.execute(
-            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor "
+            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor, "
+            "(SELECT COUNT(*) FROM mural_comentarios mc WHERE mc.recado_id = m.id) AS comment_count "
             "FROM mural_recados m LEFT JOIN credores c ON m.credor_id=c.id WHERE m.id=?",
             (cur.lastrowid,)
         ).fetchone()
@@ -224,7 +228,7 @@ def mural_atualizar(recado_id):
             return jsonify({"error": "Sem permissao para editar este recado. Apenas o autor ou o administrador pode editar."}), 403
 
         fields = {}
-        for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status", "valor", "credor_id"):
+        for k in ("titulo", "conteudo", "autor", "destinatario", "prioridade", "categoria", "cor", "status", "valor", "credor_id", "vencimento"):
             if k in data:
                 if k == "valor":
                     fields[k] = _parse_valor(data[k])
@@ -276,7 +280,8 @@ def mural_atualizar(recado_id):
         conn.commit()
 
         updated = conn.execute(
-            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor "
+            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor, "
+            "(SELECT COUNT(*) FROM mural_comentarios mc WHERE mc.recado_id = m.id) AS comment_count "
             "FROM mural_recados m LEFT JOIN credores c ON m.credor_id=c.id WHERE m.id=?",
             (recado_id,)
         ).fetchone()

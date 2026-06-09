@@ -188,11 +188,29 @@ def _terminal_section(title: str):
 def create_app() -> Flask:
     app = Flask(__name__, static_folder=BASE_DIR)
 
-    
     # ── Session ─────────────────────────────────
-    _base = settings.admin_password or "inaja-prefeitura-secret-key-2024"
-    import hashlib as _hl
-    app.secret_key = _hl.sha256(f"inaja::sessao::{_base}".encode()).hexdigest()
+    if settings.admin_password:
+        _base = settings.admin_password
+        import hashlib as _hl
+        app.secret_key = _hl.sha256(f"inaja::sessao::{_base}".encode()).hexdigest()
+    else:
+        # Fallback dinâmico seguro persistido localmente para evitar chaves previsíveis
+        secret_file = settings.base_dir / ".session_secret"
+        if secret_file.exists():
+            try:
+                app.secret_key = secret_file.read_text(encoding="utf-8").strip()
+            except Exception:
+                import secrets
+                app.secret_key = secrets.token_hex(32)
+        else:
+            import secrets
+            generated_key = secrets.token_hex(32)
+            try:
+                secret_file.write_text(generated_key, encoding="utf-8")
+            except Exception:
+                pass
+            app.secret_key = generated_key
+
     app.config["SESSION_COOKIE_NAME"] = "inaja_sid"
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -474,6 +492,7 @@ def create_app() -> Flask:
             "ALTER TABLE kanban_tasks ADD COLUMN valor REAL DEFAULT 0",
             "ALTER TABLE mural_recados ADD COLUMN valor REAL DEFAULT 0.0",
             "ALTER TABLE mural_recados ADD COLUMN credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL",
+            "ALTER TABLE mural_recados ADD COLUMN vencimento TEXT DEFAULT ''",
         ]:
             try:
                 cur.execute(alter)
@@ -1333,7 +1352,6 @@ def create_app() -> Flask:
         bp_extratos,
         bp_empenho_assistente,
         bp_classificador,
-        bp_latex_pdf,
     )
 
     _log_startup("Registrando blueprints no aplicativo Flask...")
@@ -1358,8 +1376,7 @@ def create_app() -> Flask:
     app.register_blueprint(bp_extratos)
     app.register_blueprint(bp_empenho_assistente)
     app.register_blueprint(bp_classificador)
-    app.register_blueprint(bp_latex_pdf)
-    _log_startup("Todos os 22 blueprints registrados com sucesso.")
+    _log_startup("Todos os 21 blueprints registrados com sucesso.")
 
     # Init auth hash (compat) + multi-user auth
     _log_startup("Inicializando hashes e sistema de autenticação multiusuário...")
