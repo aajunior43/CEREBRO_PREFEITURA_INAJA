@@ -2249,7 +2249,8 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.mural-card').forEach(card => {
         const id = parseInt(card.dataset.id, 10);
         const item = cacheRecados.find(r => r.id === id);
-        const isOwn = item && currentUser && (item.autor || '').toLowerCase() === currentUser;
+        const dest = (item && item.destinatario || '').toLowerCase();
+        const isOwn = item && currentUser && (dest === currentUser || dest === 'todos');
         if (destaqueAtivo && isOwn) {
           card.classList.add('mural-card-destaque');
         } else {
@@ -2457,9 +2458,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const ageChip = cardAgeChip(item.criado_em, item.status);
 
-      // Destaque brilhante para tarefas do próprio usuário (quando ativado pelo admin)
+      // Destaque brilhante para tarefas designadas ao próprio usuário (quando ativado pelo admin)
       const currentUserName = (sessionStorage.getItem('user_nome') || '').trim().toLowerCase();
-      if (destaqueAtivo && currentUserName && (item.autor || '').toLowerCase() === currentUserName) {
+      const destLower = (item.destinatario || '').toLowerCase();
+      if (destaqueAtivo && currentUserName && (destLower === currentUserName || destLower === 'todos')) {
         card.classList.add('mural-card-destaque');
       }
 
