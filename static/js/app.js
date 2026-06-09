@@ -1589,32 +1589,17 @@ async function init() {
 }
 
 // ── Theme Toggle ───────────────────────────────────────────────
+const VALID_THEMES = ['dark', 'cosmos', 'diamante'];
+
 function initTheme() {
   const saved = localStorage.getItem('theme');
-  if (saved === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  } else if (saved === 'vintage') {
-    document.documentElement.setAttribute('data-theme', 'vintage');
-  } else if (saved === 'cosmos') {
-    document.documentElement.setAttribute('data-theme', 'cosmos');
-  } else if (saved === 'esmeralda') {
-    document.documentElement.setAttribute('data-theme', 'esmeralda');
-  } else if (saved === 'diamante') {
-    document.documentElement.setAttribute('data-theme', 'diamante');
-  } else if (saved === 'safira') {
-    document.documentElement.setAttribute('data-theme', 'safira');
-  } else if (saved === 'vulcano') {
-    document.documentElement.setAttribute('data-theme', 'vulcano');
-  } else if (saved === 'crepusculo') {
-    document.documentElement.setAttribute('data-theme', 'crepusculo');
-  } else if (saved === 'nordico') {
-    document.documentElement.setAttribute('data-theme', 'nordico');
-  } else if (saved === 'cacau') {
-    document.documentElement.setAttribute('data-theme', 'cacau');
-  } else if (saved === 'ametista') {
-    document.documentElement.setAttribute('data-theme', 'ametista');
+  if (VALID_THEMES.includes(saved)) {
+    document.documentElement.setAttribute('data-theme', saved);
   } else {
     document.documentElement.removeAttribute('data-theme');
+    if (saved && !VALID_THEMES.includes(saved)) {
+      localStorage.setItem('theme', 'light');
+    }
   }
 }
 
@@ -1622,18 +1607,8 @@ function syncThemeLabel() {
   const label = document.querySelector('.theme-label');
   if (!label) return;
   const current = document.documentElement.getAttribute('data-theme') || 'light';
-  if (current === 'light') label.textContent = 'Tema Escuro';
-  else if (current === 'dark') label.textContent = 'Tema Vintage';
-  else if (current === 'vintage') label.textContent = 'Tema Cosmos';
-  else if (current === 'cosmos') label.textContent = 'Tema Esmeralda';
-  else if (current === 'esmeralda') label.textContent = 'Tema Diamante';
-  else if (current === 'diamante') label.textContent = 'Tema Safira';
-  else if (current === 'safira') label.textContent = 'Tema Vulcano';
-  else if (current === 'vulcano') label.textContent = 'Tema Crepúsculo';
-  else if (current === 'crepusculo') label.textContent = 'Tema Nórdico';
-  else if (current === 'nordico') label.textContent = 'Tema Cacau';
-  else if (current === 'cacau') label.textContent = 'Tema Ametista';
-  else if (current === 'ametista') label.textContent = 'Tema Claro';
+  const nextMap = { light: 'Escuro', dark: 'Cosmos', cosmos: 'Diamante', diamante: 'Claro' };
+  label.textContent = 'Tema ' + (nextMap[current] || 'Escuro');
 }
 
 function initCosmosEffects() {
@@ -1717,43 +1692,14 @@ function initCosmosEffects() {
 function toggleTheme() {
   const html = document.documentElement;
   const current = html.getAttribute('data-theme') || 'light';
-  if (current === 'light') {
-    html.setAttribute('data-theme', 'dark');
-    localStorage.setItem('theme', 'dark');
-  } else if (current === 'dark') {
-    html.setAttribute('data-theme', 'vintage');
-    localStorage.setItem('theme', 'vintage');
-  } else if (current === 'vintage') {
-    html.setAttribute('data-theme', 'cosmos');
-    localStorage.setItem('theme', 'cosmos');
-  } else if (current === 'cosmos') {
-    html.setAttribute('data-theme', 'esmeralda');
-    localStorage.setItem('theme', 'esmeralda');
-  } else if (current === 'esmeralda') {
-    html.setAttribute('data-theme', 'diamante');
-    localStorage.setItem('theme', 'diamante');
-  } else if (current === 'diamante') {
-    html.setAttribute('data-theme', 'safira');
-    localStorage.setItem('theme', 'safira');
-  } else if (current === 'safira') {
-    html.setAttribute('data-theme', 'vulcano');
-    localStorage.setItem('theme', 'vulcano');
-  } else if (current === 'vulcano') {
-    html.setAttribute('data-theme', 'crepusculo');
-    localStorage.setItem('theme', 'crepusculo');
-  } else if (current === 'crepusculo') {
-    html.setAttribute('data-theme', 'nordico');
-    localStorage.setItem('theme', 'nordico');
-  } else if (current === 'nordico') {
-    html.setAttribute('data-theme', 'cacau');
-    localStorage.setItem('theme', 'cacau');
-  } else if (current === 'cacau') {
-    html.setAttribute('data-theme', 'ametista');
-    localStorage.setItem('theme', 'ametista');
-  } else {
+  const cycle = { light: 'dark', dark: 'cosmos', cosmos: 'diamante', diamante: 'light' };
+  const next = cycle[current] || 'dark';
+  if (next === 'light') {
     html.removeAttribute('data-theme');
-    localStorage.setItem('theme', 'light');
+  } else {
+    html.setAttribute('data-theme', next);
   }
+  localStorage.setItem('theme', next);
 }
 
 function initAppDOM() {
@@ -1768,18 +1714,8 @@ function initAppDOM() {
   syncThemeLabel();
   const syncExtraThemeLabels = () => {
     const current = document.documentElement.getAttribute('data-theme') || 'light';
-    let text = 'Tema Escuro';
-    if (current === 'dark') text = 'Tema Vintage';
-    if (current === 'vintage') text = 'Tema Cosmos';
-    if (current === 'cosmos') text = 'Tema Esmeralda';
-    if (current === 'esmeralda') text = 'Tema Diamante';
-    if (current === 'diamante') text = 'Tema Safira';
-    if (current === 'safira') text = 'Tema Vulcano';
-    if (current === 'vulcano') text = 'Tema Crepúsculo';
-    if (current === 'crepusculo') text = 'Tema Nórdico';
-    if (current === 'nordico') text = 'Tema Cacau';
-    if (current === 'cacau') text = 'Tema Ametista';
-    if (current === 'ametista') text = 'Tema Claro';
+    const nextMap = { light: 'Escuro', dark: 'Cosmos', cosmos: 'Diamante', diamante: 'Claro' };
+    const text = 'Tema ' + (nextMap[current] || 'Escuro');
     
     const sidebarLabel = document.querySelector('.theme-label-sidebar');
     if (sidebarLabel) sidebarLabel.textContent = text;
@@ -2104,6 +2040,11 @@ function initAppDOM() {
     window.location.href = '/login.html';
   });
   document.getElementById('header-logout-btn')?.addEventListener('click', async () => {
+    await fetch('/api/auth/sair', { method: 'POST' }).catch(() => {});
+    sessionStorage.clear();
+    window.location.href = '/login.html';
+  });
+  document.getElementById('mobile-logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/sair', { method: 'POST' }).catch(() => {});
     sessionStorage.clear();
     window.location.href = '/login.html';

@@ -21,91 +21,36 @@
   /* ── Tema ────────────────────────────────────────────────── */
   const isDespesaPage = path.includes('/pages/despesa');
 
+  const VALID_THEMES = ['dark', 'cosmos', 'diamante'];
+
   function initTheme() {
-    // Despesa pages are always dark (their own CSS vars require dark background)
     const saved = isDespesaPage ? 'dark' : localStorage.getItem('theme');
-    if (saved === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else if (saved === 'vintage') {
-      document.documentElement.setAttribute('data-theme', 'vintage');
-    } else if (saved === 'cosmos') {
-      document.documentElement.setAttribute('data-theme', 'cosmos');
-    } else if (saved === 'esmeralda') {
-      document.documentElement.setAttribute('data-theme', 'esmeralda');
-    } else if (saved === 'diamante') {
-      document.documentElement.setAttribute('data-theme', 'diamante');
-    } else if (saved === 'safira') {
-      document.documentElement.setAttribute('data-theme', 'safira');
-    } else if (saved === 'vulcano') {
-      document.documentElement.setAttribute('data-theme', 'vulcano');
-    } else if (saved === 'crepusculo') {
-      document.documentElement.setAttribute('data-theme', 'crepusculo');
-    } else if (saved === 'nordico') {
-      document.documentElement.setAttribute('data-theme', 'nordico');
-    } else if (saved === 'cacau') {
-      document.documentElement.setAttribute('data-theme', 'cacau');
-    } else if (saved === 'ametista') {
-      document.documentElement.setAttribute('data-theme', 'ametista');
+    if (VALID_THEMES.includes(saved)) {
+      document.documentElement.setAttribute('data-theme', saved);
     } else {
       document.documentElement.removeAttribute('data-theme');
+      if (saved && !VALID_THEMES.includes(saved)) {
+        localStorage.setItem('theme', 'light');
+      }
     }
   }
   function toggleTheme() {
-    if (isDespesaPage) return; // theme locked on despesa pages
+    if (isDespesaPage) return;
     const current = document.documentElement.getAttribute('data-theme') || 'light';
-    if (current === 'light') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
-    } else if (current === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'vintage');
-      localStorage.setItem('theme', 'vintage');
-    } else if (current === 'vintage') {
-      document.documentElement.setAttribute('data-theme', 'cosmos');
-      localStorage.setItem('theme', 'cosmos');
-    } else if (current === 'cosmos') {
-      document.documentElement.setAttribute('data-theme', 'esmeralda');
-      localStorage.setItem('theme', 'esmeralda');
-    } else if (current === 'esmeralda') {
-      document.documentElement.setAttribute('data-theme', 'diamante');
-      localStorage.setItem('theme', 'diamante');
-    } else if (current === 'diamante') {
-      document.documentElement.setAttribute('data-theme', 'safira');
-      localStorage.setItem('theme', 'safira');
-    } else if (current === 'safira') {
-      document.documentElement.setAttribute('data-theme', 'vulcano');
-      localStorage.setItem('theme', 'vulcano');
-    } else if (current === 'vulcano') {
-      document.documentElement.setAttribute('data-theme', 'crepusculo');
-      localStorage.setItem('theme', 'crepusculo');
-    } else if (current === 'crepusculo') {
-      document.documentElement.setAttribute('data-theme', 'nordico');
-      localStorage.setItem('theme', 'nordico');
-    } else if (current === 'nordico') {
-      document.documentElement.setAttribute('data-theme', 'cacau');
-      localStorage.setItem('theme', 'cacau');
-    } else if (current === 'cacau') {
-      document.documentElement.setAttribute('data-theme', 'ametista');
-      localStorage.setItem('theme', 'ametista');
-    } else {
+    const cycle = { light: 'dark', dark: 'cosmos', cosmos: 'diamante', diamante: 'light' };
+    const next = cycle[current] || 'dark';
+    if (next === 'light') {
       document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', next);
     }
+    localStorage.setItem('theme', next);
     syncThemeBtn();
   }
   function syncThemeBtn() {
     const current = document.documentElement.getAttribute('data-theme') || 'light';
-    let text = 'Tema Escuro';
-    if (current === 'dark') text = 'Tema Vintage';
-    if (current === 'vintage') text = 'Tema Cosmos';
-    if (current === 'cosmos') text = 'Tema Esmeralda';
-    if (current === 'esmeralda') text = 'Tema Diamante';
-    if (current === 'diamante') text = 'Tema Safira';
-    if (current === 'safira') text = 'Tema Vulcano';
-    if (current === 'vulcano') text = 'Tema Crepúsculo';
-    if (current === 'crepusculo') text = 'Tema Nórdico';
-    if (current === 'nordico') text = 'Tema Cacau';
-    if (current === 'cacau') text = 'Tema Ametista';
-    if (current === 'ametista') text = 'Tema Claro';
+    const nextMap = { light: 'Escuro', dark: 'Cosmos', cosmos: 'Diamante', diamante: 'Claro' };
+    const text = 'Tema ' + (nextMap[current] || 'Escuro');
     document.querySelectorAll('.shd-theme-label').forEach(el => {
       el.textContent = text;
     });
@@ -198,7 +143,6 @@
       { href: '/pages/biblioteca.html',      name: 'Biblioteca',             desc: 'Leis, decretos e manuais' },
       { href: '/pages/mural.html',           name: 'Mural Interativo',       desc: 'Avisos e tarefas compartilhadas' },
       { href: '/pages/rpa.html',             name: 'Gerador de RPAs',        desc: 'Recibo de Pagamento Autônomo' },
-      { href: '/pages/latex-pdf.html',       name: 'Gerador PDF LaTeX',      desc: 'Criar documentos com IA' },
       { href: '/pages/assistente-empenho.html', name: 'Gerador de Descrição para Empenhos', desc: 'Gerar descrição de empenho com IA' },
       { href: '/pages/classificador-despesa.html', name: 'Classificador de Despesas', desc: 'Identificar desdobramento correto da despesa (TCE-PR)' },
       { href: '/pages/visualizador.html',    name: 'Relação de Empenhos Emitidos',  desc: 'Visualizar e filtrar empenhos' },
@@ -298,16 +242,8 @@
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
               <button type="button" class="theme-select-btn" data-theme-val="light">☀️ Claro</button>
               <button type="button" class="theme-select-btn" data-theme-val="dark">🌙 Escuro</button>
-              <button type="button" class="theme-select-btn" data-theme-val="vintage">🍂 Vintage</button>
               <button type="button" class="theme-select-btn" data-theme-val="cosmos">🌌 Cosmos</button>
-              <button type="button" class="theme-select-btn" data-theme-val="esmeralda">💚 Esmeralda</button>
               <button type="button" class="theme-select-btn" data-theme-val="diamante">💎 Diamante</button>
-              <button type="button" class="theme-select-btn" data-theme-val="safira">💙 Safira</button>
-              <button type="button" class="theme-select-btn" data-theme-val="vulcano">🌋 Vulcano</button>
-              <button type="button" class="theme-select-btn" data-theme-val="crepusculo">🌅 Crepúsculo</button>
-              <button type="button" class="theme-select-btn" data-theme-val="nordico">❄️ Nórdico</button>
-              <button type="button" class="theme-select-btn" data-theme-val="cacau">☕ Cacau</button>
-              <button type="button" class="theme-select-btn" data-theme-val="ametista">🔮 Ametista</button>
             </div>
           </div>
         </div>
@@ -339,16 +275,8 @@
     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
       <button type="button" class="theme-select-btn" data-theme-val="light">☀️ Claro</button>
       <button type="button" class="theme-select-btn" data-theme-val="dark">🌙 Escuro</button>
-      <button type="button" class="theme-select-btn" data-theme-val="vintage">🍂 Vintage</button>
       <button type="button" class="theme-select-btn" data-theme-val="cosmos">🌌 Cosmos</button>
-      <button type="button" class="theme-select-btn" data-theme-val="esmeralda">💚 Esmeralda</button>
       <button type="button" class="theme-select-btn" data-theme-val="diamante">💎 Diamante</button>
-      <button type="button" class="theme-select-btn" data-theme-val="safira">💙 Safira</button>
-      <button type="button" class="theme-select-btn" data-theme-val="vulcano">🌋 Vulcano</button>
-      <button type="button" class="theme-select-btn" data-theme-val="crepusculo">🌅 Crepúsculo</button>
-      <button type="button" class="theme-select-btn" data-theme-val="nordico">❄️ Nórdico</button>
-      <button type="button" class="theme-select-btn" data-theme-val="cacau">☕ Cacau</button>
-      <button type="button" class="theme-select-btn" data-theme-val="ametista">🔮 Ametista</button>
     </div>
   </div>
 </div>

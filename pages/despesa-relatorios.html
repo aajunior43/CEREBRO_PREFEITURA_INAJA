@@ -118,6 +118,12 @@
       display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;
     }
     @media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 540px) {
+      .detail-box-row { grid-template-columns: 1fr 70px 70px; font-size: 10px; padding: 6px 10px; }
+      .detail-box-row .dd { display: none; }
+      .detail-box-header .dd { display: none; }
+      .rel-wrap { padding: 16px 14px 60px; }
+    }
     .detail-box {
       background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
       overflow: hidden;

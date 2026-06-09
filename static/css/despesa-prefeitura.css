@@ -1452,6 +1452,20 @@ h3 {
   .card p {
     font-size: 1.15rem;
   }
+
+  .hero h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .upload {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .layout {
+    padding: 0 4vw 2rem;
+  }
 }
 
 .main-column {

@@ -1468,3 +1468,84 @@
   transform: translateY(0);
 }
 
+/* ============================================================
+   MOBILE — Dashboard responsive fixes
+   ============================================================ */
+
+@media (max-width: 600px) {
+  .dashboard-area {
+    gap: 18px;
+    padding: 0 10px 80px;
+  }
+
+  .dashboard-head-wrap {
+    margin-top: 10px;
+    gap: 14px;
+  }
+
+  .dashboard-greeting-title {
+    font-size: 24px;
+    letter-spacing: -0.5px;
+  }
+
+  .dashboard-greeting-subtitle {
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  .hero-welcome-card {
+    padding: 20px;
+  }
+
+  .hero-welcome-card h2 {
+    font-size: 18px;
+  }
+
+  .hero-welcome-card p {
+    font-size: 13px;
+  }
+
+  .hero-quick-stats {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stat-num {
+    font-size: 18px;
+  }
+
+  .stat-lbl {
+    font-size: 10px;
+  }
+
+  .dash-qa-row {
+    gap: 8px;
+  }
+
+  .dash-qa-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .dash-qa-btn kbd {
+    display: none;
+  }
+
+  .dash-kpi-val {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .dashboard-greeting-title {
+    font-size: 20px;
+  }
+
+  .hero-welcome-card h2 {
+    font-size: 16px;
+  }
+
+  .hero-welcome-visual {
+    display: none;
+  }
+}
