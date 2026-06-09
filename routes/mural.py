@@ -471,6 +471,41 @@ def mural_events():
     return resp
 
 
+# -- Destaque (Admin Feature) --
+
+@bp.route("/api/mural/destaque", methods=["GET"])
+@_require_auth
+def mural_destaque_get():
+    try:
+        conn = get_db()
+        row = conn.execute("SELECT valor FROM mural_config WHERE chave='destaque_ativo'").fetchone()
+        ativo = bool(row and row["valor"] == "1")
+        return jsonify({"ativo": ativo})
+    except Exception as e:
+        return jsonify({"ativo": False, "error": str(e)}), 200
+
+
+@bp.route("/api/mural/destaque", methods=["POST"])
+@_require_auth
+def mural_destaque_set():
+    if session.get("usuario_nivel") not in ("admin", "adm"):
+        return jsonify({"error": "Acesso negado"}), 403
+    try:
+        data = request.get_json(force=True) or {}
+        ativo = bool(data.get("ativo", False))
+        conn = get_db()
+        conn.execute(
+            "INSERT INTO mural_config (chave, valor) VALUES ('destaque_ativo', ?) "
+            "ON CONFLICT(chave) DO UPDATE SET valor=excluded.valor",
+            ("1" if ativo else "0",)
+        )
+        conn.commit()
+        broadcast_mural_event("destaque", {"ativo": ativo})
+        return jsonify({"ok": True, "ativo": ativo})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # -- Mural Comments --
 
 @bp.route("/api/mural/<int:recado_id>/comments", methods=["GET"])

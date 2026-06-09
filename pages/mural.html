@@ -594,6 +594,64 @@
       100% { opacity: 1;   transform: scale(1);    letter-spacing: 0.2px; }
     }
 
+    /* ── Glitter / Destaque (ativado pelo admin) ── */
+    @keyframes glitter-glow {
+      0%   { box-shadow: 0 0 6px 2px rgba(255,215,0,.5), 0 0 14px 4px rgba(255,130,200,.25), var(--shadow-sm); }
+      25%  { box-shadow: 0 0 10px 4px rgba(120,220,255,.55), 0 0 20px 6px rgba(120,220,255,.2), var(--shadow-sm); }
+      50%  { box-shadow: 0 0 8px 3px rgba(180,120,255,.55), 0 0 18px 5px rgba(255,215,0,.2), var(--shadow-sm); }
+      75%  { box-shadow: 0 0 10px 4px rgba(255,130,200,.55), 0 0 20px 6px rgba(180,120,255,.2), var(--shadow-sm); }
+      100% { box-shadow: 0 0 6px 2px rgba(255,215,0,.5), 0 0 14px 4px rgba(255,130,200,.25), var(--shadow-sm); }
+    }
+    @keyframes glitter-sparkle-bg {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes glitter-border-flash {
+      0%, 100% { border-color: rgba(255,215,0,.7); }
+      33%       { border-color: rgba(120,220,255,.7); }
+      66%       { border-color: rgba(255,130,200,.7); }
+    }
+    .mural-card-destaque {
+      animation: glitter-glow 2.5s ease-in-out infinite, glitter-border-flash 2.5s ease-in-out infinite !important;
+      border-width: 1.5px !important;
+      position: relative;
+      z-index: 1;
+      overflow: visible !important;
+    }
+    .mural-card-destaque::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      background: linear-gradient(135deg,
+        rgba(255,215,0,.08),
+        rgba(120,220,255,.08),
+        rgba(255,130,200,.08),
+        rgba(180,120,255,.08),
+        rgba(255,215,0,.08));
+      background-size: 400% 400%;
+      animation: glitter-sparkle-bg 3s ease infinite;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* Botão do toggle de destaque */
+    .mural-btn-destaque {
+      gap: 6px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      color: var(--text-3);
+      transition: all .2s;
+    }
+    .mural-btn-destaque.destaque-on {
+      background: linear-gradient(135deg, rgba(255,215,0,.15), rgba(255,130,200,.15));
+      border-color: rgba(255,215,0,.6);
+      color: #d97706;
+      animation: glitter-glow 2.5s ease-in-out infinite;
+    }
+    .mural-btn-destaque.destaque-on svg { color: #fbbf24; }
+
     /* ── Desativa TODAS as animações de urgência na coluna Concluído ── */
     #col-concluido .card-color-pink {
       animation: none !important;
@@ -1032,6 +1090,12 @@
 
         <button class="mural-btn mural-btn-ghost" id="btn-stats" title="Estatísticas do mural">📊 Estatísticas</button>
         <button class="mural-btn mural-btn-ghost" id="btn-atualizar" title="Atualizar mural">↺ Atualizar</button>
+
+        <!-- DESTAQUE ADMIN (visível apenas para adm) -->
+        <button id="btn-destaque-toggle" class="mural-btn mural-btn-destaque" title="Ativar/desativar destaque brilhante para tarefas próprias" style="display:none;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>
+          <span id="btn-destaque-label">Destaque OFF</span>
+        </button>
       </div>
 
       <!-- Column Layout -->
@@ -1255,6 +1319,7 @@
 
     let cacheRecados = [];
     let muralLoaded = false;
+    let destaqueAtivo = false;
     // Tracks in-flight Kanban moves: id -> novoStatus
     // Prevents carregarMural() from reverting optimistic updates while PUT is still in-flight
     const _pendingMoves = new Map();
@@ -2103,6 +2168,36 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
+    function applyDestaqueToAllCards() {
+      const currentUser = (sessionStorage.getItem('user_nome') || '').trim();
+      document.querySelectorAll('.mural-card').forEach(card => {
+        const id = parseInt(card.dataset.id, 10);
+        const item = cacheRecados.find(r => r.id === id);
+        const isOwn = item && currentUser && item.autor === currentUser;
+        if (destaqueAtivo && isOwn) {
+          card.classList.add('mural-card-destaque');
+        } else {
+          card.classList.remove('mural-card-destaque');
+        }
+      });
+    }
+
+    function setDestaqueUI(ativo) {
+      destaqueAtivo = ativo;
+      const btn = document.getElementById('btn-destaque-toggle');
+      const label = document.getElementById('btn-destaque-label');
+      if (btn) {
+        if (ativo) {
+          btn.classList.add('destaque-on');
+          label.textContent = 'Destaque ON';
+        } else {
+          btn.classList.remove('destaque-on');
+          label.textContent = 'Destaque OFF';
+        }
+      }
+      applyDestaqueToAllCards();
+    }
+
     function isStagnant(criadoEmStr) {
       if (!criadoEmStr) return false;
       try {
@@ -2285,6 +2380,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       const ageChip = cardAgeChip(item.criado_em, item.status);
+
+      // Destaque brilhante para tarefas do próprio usuário (quando ativado pelo admin)
+      const currentUserName = (sessionStorage.getItem('user_nome') || '').trim();
+      if (destaqueAtivo && currentUserName && item.autor === currentUserName) {
+        card.classList.add('mural-card-destaque');
+      }
 
       card.innerHTML = `
         <div class="mural-card-header" style="display:flex; gap:10px; align-items:flex-start;">
@@ -2696,6 +2797,39 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
+    // Destaque admin: carregar estado e configurar botão
+    (async function initDestaque() {
+      try {
+        const nivel = sessionStorage.getItem('user_nivel') || '';
+        const isAdmin = nivel === 'admin' || nivel === 'adm';
+        const res = await fetch('/api/mural/destaque');
+        const data = await res.json();
+        setDestaqueUI(data.ativo);
+
+        const btn = document.getElementById('btn-destaque-toggle');
+        if (btn) {
+          if (isAdmin) btn.style.display = 'inline-flex';
+          btn.addEventListener('click', async function() {
+            const novoEstado = !destaqueAtivo;
+            btn.disabled = true;
+            try {
+              await fetch('/api/mural/destaque', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ativo: novoEstado })
+              });
+            } catch (e) {
+              setDestaqueUI(novoEstado); // aplica localmente mesmo se SSE não chegar
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Destaque init error:', e);
+      }
+    })();
+
     // Toolbar
     document.getElementById('btn-atualizar').addEventListener('click', carregarMural);
 
@@ -2956,6 +3090,12 @@ document.addEventListener('DOMContentLoaded', function() {
       source.addEventListener('delete', onConnect);
       source.addEventListener('comment', onConnect);
       source.addEventListener('heartbeat', onConnect);
+      source.addEventListener('destaque', onConnect);
+
+      source.addEventListener('destaque', function(e) {
+        const data = JSON.parse(e.data);
+        setDestaqueUI(data.ativo);
+      });
 
       source.addEventListener('create', function(e) {
         const item = JSON.parse(e.data);

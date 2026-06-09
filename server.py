@@ -350,6 +350,7 @@ def create_app() -> Flask:
             "CREATE TABLE IF NOT EXISTS calendario_eventos (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, tipo TEXT NOT NULL CHECK (tipo IN ('PAYMENT','COMMITMENT','HOLIDAY','NOTE')), texto TEXT NOT NULL, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS calendario_overrides (data TEXT PRIMARY KEY, criado_em TEXT DEFAULT (datetime('now','localtime')))",
             "CREATE TABLE IF NOT EXISTS calendario_regras (chave TEXT PRIMARY KEY, valor TEXT NOT NULL)",
+            "CREATE TABLE IF NOT EXISTS mural_config (chave TEXT PRIMARY KEY, valor TEXT NOT NULL DEFAULT '')",
 
             "CREATE TABLE IF NOT EXISTS audit_trail (id INTEGER PRIMARY KEY AUTOINCREMENT, tabela TEXT NOT NULL, registro_id TEXT DEFAULT '', operacao TEXT NOT NULL, dados_anteriores TEXT DEFAULT '{}', dados_novos TEXT DEFAULT '{}', ip TEXT DEFAULT '', timestamp TEXT DEFAULT (datetime('now', 'localtime')))",
         ]:
