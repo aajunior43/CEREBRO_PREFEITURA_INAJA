@@ -1338,6 +1338,19 @@
 
   <!-- ═══════════════════ CREDORSES AREA ═══════════════════ -->
   <section id="credores-area" class="credores-area" style="display:none;">
+  <!-- SECTION HEADER -->
+  <div class="credores-section-header">
+    <div class="credores-section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <span>Credores Fixos</span>
+    </div>
+    <span class="credores-section-badge" id="credores-section-count">0 credores</span>
+  </div>
   <!-- STATS BAR -->
   <div class="stats-bar stats-bar-modern">
     <div class="stat-card stat-card-modern stat-total">
@@ -1561,11 +1574,17 @@
       <!-- Linhas inseridas pelo JS -->
     </div>
     <div class="empty-state" id="empty-state" style="display:none;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M8 12h8M12 8v8" />
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" width="64" height="64">
+        <rect x="8" y="14" width="48" height="36" rx="4"/>
+        <path d="M20 14v-4a4 4 0 0 1 4-4h16a4 4 0 0 1 4 4v4"/>
+        <line x1="24" y1="30" x2="40" y2="30"/>
+        <line x1="24" y1="38" x2="34" y2="38"/>
+        <circle cx="49" cy="49" r="11" fill="var(--surface)" stroke="currentColor"/>
+        <line x1="46" y1="49" x2="52" y2="49"/>
+        <line x1="49" y1="46" x2="49" y2="52"/>
       </svg>
-      <p>Nenhum credor encontrado.</p>
+      <p>Nenhum credor encontrado</p>
+      <span>Ajuste os filtros ou adicione um novo credor</span>
     </div>
     <div class="pagination-bar" id="credores-pagination" style="display:none;align-items:center;justify-content:center;gap:12px;margin:18px 0 4px;padding:10px 0;">
       <button type="button" class="btn btn-ghost btn-ripple" id="btn-page-prev">Anterior</button>

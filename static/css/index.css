@@ -1388,6 +1388,43 @@ body {
 }
 
 /* ============================================================
+   CREDORES SECTION HEADER
+   ============================================================ */
+.credores-section-header {
+  max-width: 1200px;
+  margin: 24px auto 0;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.credores-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.credores-section-title svg {
+  color: var(--blue);
+  flex-shrink: 0;
+}
+
+.credores-section-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+}
+
+/* ============================================================
    STATS BAR
    ============================================================ */
 .stats-bar {
@@ -1408,14 +1445,21 @@ body {
   gap: 14px;
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  border-left: 3px solid transparent;
-  transition: box-shadow 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  border-left: 4px solid transparent;
+  transition: box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stat-card:hover {
   box-shadow: var(--shadow);
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
+
+.stat-total   { border-left-color: var(--blue); }
+.stat-done    { border-left-color: var(--green); }
+.stat-pending { border-left-color: var(--orange); }
+.stat-valor   { border-left-color: var(--purple); }
+.stat-restante { border-left-color: var(--red); }
 
 .stat-icon {
   width: 40px;
@@ -1483,19 +1527,26 @@ body {
 
 .progress-bar-wrap {
   flex: 1;
-  height: 8px;
+  height: 10px;
   background: var(--surface-2);
   border-radius: var(--radius-full);
   border: 1px solid var(--border);
   overflow: hidden;
 }
 
+@keyframes progress-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--blue), var(--green));
+  background: linear-gradient(90deg, var(--blue) 0%, var(--green) 50%, var(--blue) 100%);
+  background-size: 200% auto;
   border-radius: var(--radius-full);
   transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-  box-shadow: 0 0 10px rgba(79, 128, 200, 0.35);
+  box-shadow: 0 0 8px rgba(29, 111, 232, 0.30);
+  animation: progress-shimmer 3s linear infinite;
 }
 
 .progress-label {
@@ -1570,7 +1621,7 @@ body {
 }
 
 .search-box:focus-within {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm), 0 0 0 3px rgba(29, 111, 232, 0.12);
   border-color: var(--blue);
 }
 
@@ -1766,9 +1817,18 @@ body {
   text-transform: uppercase; letter-spacing: 0.5px;
   padding: 8px 4px; display: flex; align-items: center; gap: 4px;
   transition: color 0.15s; white-space: nowrap;
+  position: relative;
 }
 .sort-btn:hover { color: var(--text); }
 .sort-btn.active { color: var(--blue); }
+.sort-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 4px; right: 4px;
+  height: 2px;
+  background: var(--blue);
+  border-radius: 2px;
+}
 .sort-arrow { font-size: 12px; }
 
 .empenhos-list {
@@ -1784,25 +1844,32 @@ body {
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  border-left: 4px solid rgba(217, 124, 58, 0.45);
+  transition: box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 0.2s;
   overflow: visible;
   contain: layout style;
 }
 
 .empenho-card:hover {
   box-shadow: var(--shadow);
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: var(--border-hover);
+  border-left-color: var(--blue);
 }
 
 .empenho-card.done {
-  border-color: rgba(58, 170, 110, 0.3);
-  background: linear-gradient(135deg, var(--surface) 85%, rgba(58, 170, 110, 0.04));
-  border-left: 3px solid rgba(58, 170, 110, 0.5);
+  border-left: 4px solid var(--green);
+  background: linear-gradient(to right, rgba(26, 122, 73, 0.04) 0%, var(--surface) 40%);
+}
+
+.empenho-card.done:hover {
+  border-left-color: var(--green-dark);
 }
 
 .empenho-card:not(.done) {
-  border-left: 3px solid rgba(217, 124, 58, 0.4);
+  border-left: 4px solid var(--orange);
 }
 
 /* Linha principal */
@@ -1964,54 +2031,57 @@ body {
 
 /* Botão empenhar */
 .btn-empenhar {
-  padding: 5px 9px;
-  border-radius: var(--radius-md);
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
   border: none;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: box-shadow 0.2s, transform 0.1s;
+  transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.2px;
 }
 
 .btn-empenhar:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .btn-empenhar.pending {
-  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
   color: white;
-  box-shadow: 3px 3px 8px rgba(79, 128, 200, 0.4), -2px -2px 5px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 3px 12px rgba(29, 111, 232, 0.35);
 }
 
 .btn-empenhar.pending:hover {
-  box-shadow: 5px 5px 12px rgba(79, 128, 200, 0.5), -3px -3px 7px rgba(255, 255, 255, 0.7);
+  box-shadow: 0 5px 18px rgba(29, 111, 232, 0.48);
+  transform: translateY(-1px);
 }
 
 .btn-empenhar.pending:active {
-  box-shadow: var(--neo-in-sm);
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 2px 6px rgba(29, 111, 232, 0.25);
 }
 
 .btn-empenhar.done-btn {
-  background: var(--surface);
+  background: var(--green-bg);
   color: var(--green-dark);
-  border: 1px solid rgba(58,170,110,0.3);
+  border: 1.5px solid rgba(26, 122, 73, 0.28);
   box-shadow: none;
 }
 
 .btn-empenhar.done-btn:hover {
   color: var(--red);
-  border-color: rgba(199,74,74,0.3);
+  border-color: rgba(185, 28, 28, 0.28);
   background: var(--red-bg);
 }
 
 .btn-empenhar.done-btn:active {
-  box-shadow: none;
+  transform: scale(0.96);
 }
 
 /* Botões de ação pequenos */
@@ -2087,67 +2157,83 @@ body {
 /* Painel de detalhes */
 .card-details {
   display: none;
-  padding: 0 18px 16px;
-  border-top: 1px solid rgba(184, 194, 204, 0.4);
-  background: linear-gradient(180deg, rgba(184, 194, 204, 0.05) 0%, transparent 100%);
+  padding: 0 20px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius) var(--radius);
 }
 
 .empenho-card.expanded .card-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px 32px;
-  padding-top: 14px;
+  gap: 10px 32px;
+  padding-top: 16px;
 }
 
 .detail-row {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: baseline;
   font-size: 12px;
 }
 
 .detail-label {
   color: var(--text-3);
-  min-width: 80px;
-  font-weight: 600;
+  min-width: 84px;
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .detail-value {
   color: var(--text-2);
+  font-size: 13px;
   word-break: break-all;
 }
 
-.historico-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.historico-pills { display: flex; flex-wrap: wrap; gap: 5px; }
 .hist-pill {
-  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-md);
+  font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-full);
   letter-spacing: 0.2px;
 }
-.hist-emp { background: var(--green-bg); color: var(--green-dark); border: 1px solid var(--green); }
-.hist-pend { background: var(--red-bg); color: var(--red); border: 1px solid rgba(199,74,74,0.3); }
+.hist-emp { background: var(--green-bg); color: var(--green-dark); border: 1px solid rgba(26,122,73,0.3); }
+.hist-pend { background: var(--red-bg); color: var(--red); border: 1px solid rgba(185,28,28,0.25); }
 
 /* ============================================================
    EMPTY STATE
    ============================================================ */
 .empty-state {
   text-align: center;
-  padding: 70px 20px;
+  padding: 60px 20px 70px;
   color: var(--text-3);
   background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
 }
 
 .empty-state svg {
-  width: 50px;
-  height: 50px;
-  margin: 0 auto 14px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
   display: block;
-  color: var(--shadow-dark);
+  color: var(--text-3);
+  opacity: 0.5;
 }
 
 .empty-state p {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+
+.empty-state span {
+  font-size: 12px;
+  color: var(--text-3);
 }
 
 /* ============================================================
@@ -5225,8 +5311,8 @@ body.home-page.home-active .adm-panel {
 }
 
 .stat-restante .stat-icon {
-  background: linear-gradient(135deg, var(--blue-light), var(--surface));
-  color: var(--blue-dark);
+  background: linear-gradient(135deg, var(--red-bg), var(--surface));
+  color: var(--red);
 }
 
 .stat-card-modern .stat-info {

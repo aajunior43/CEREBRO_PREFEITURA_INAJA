@@ -494,6 +494,11 @@ function renderStats() {
   _setStat('stat-restante', valorPend, true);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-label').textContent = `${pct}% concluído`;
+  const sectionBadge = document.getElementById('credores-section-count');
+  if (sectionBadge) {
+    const totalBase = state.summary?.total ?? state.totalCredores ?? total;
+    sectionBadge.textContent = `${totalBase} credor${totalBase !== 1 ? 'es' : ''}`;
+  }
   const counterEl = document.getElementById('credores-counter');
   if (counterEl) {
     const totalBase = state.summary?.total ?? state.totalCredores ?? total;
