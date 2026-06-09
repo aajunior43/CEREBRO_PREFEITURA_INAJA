@@ -1141,212 +1141,291 @@
     }
 
     /* ══════════════════════════════════════════
-       MODAL ESTILO GIBI / COMIC BOOK
+       MODAL ESTILO GIBI / COMIC BOOK  v2
     ══════════════════════════════════════════ */
+    @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
     @keyframes comic-pop {
-      0%   { transform: scale(0.7) rotate(-3deg); opacity: 0; }
-      70%  { transform: scale(1.04) rotate(0.5deg); opacity: 1; }
-      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      0%   { transform: scale(0.6) rotate(-5deg); opacity: 0; }
+      60%  { transform: scale(1.06) rotate(1deg);  opacity: 1; }
+      80%  { transform: scale(0.97) rotate(-0.5deg); }
+      100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
     }
-    @keyframes comic-burst-spin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
+    @keyframes comic-backdrop-in {
+      from { background: rgba(0,0,0,0); }
+      to   { background: repeating-linear-gradient(
+               45deg,
+               rgba(0,0,0,.78) 0px, rgba(0,0,0,.78) 3px,
+               rgba(0,0,0,.68) 3px, rgba(0,0,0,.68) 6px); }
     }
-    @keyframes comic-lines {
-      0%   { opacity: 0.5; }
-      50%  { opacity: 0.8; }
-      100% { opacity: 0.5; }
+    @keyframes comic-burst-pulse {
+      0%,100% { transform: scale(1) rotate(-5deg); }
+      50%      { transform: scale(1.12) rotate(5deg); }
+    }
+    @keyframes comic-onomatopoeia {
+      0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+      60%  { transform: scale(1.15) rotate(5deg);  opacity: 1; }
+      100% { transform: scale(1)    rotate(0deg);  opacity: 1; }
+    }
+    @keyframes comic-shine {
+      0%   { left: -100%; }
+      50%  { left: 130%; }
+      100% { left: 130%; }
     }
 
     .comic-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.72);
       z-index: 1200;
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity .2s;
+      transition: opacity .25s;
+      background: rgba(0,0,0,.78);
     }
     .comic-backdrop.active {
       opacity: 1;
       pointer-events: auto;
+      animation: comic-backdrop-in .3s forwards;
     }
 
+    /* ── Painel principal ── */
     .comic-panel {
-      width: min(580px, 95vw);
-      max-height: 90vh;
+      width: min(620px, 96vw);
+      max-height: 92vh;
       overflow-y: auto;
       scrollbar-width: thin;
       background: #fffef0;
-      border: 4px solid #111;
-      border-radius: 6px;
-      box-shadow: 8px 8px 0 #111;
+      border: 5px solid #111;
+      border-radius: 4px;
+      box-shadow: 10px 10px 0 #111, 14px 14px 0 rgba(0,0,0,.15);
       position: relative;
-      animation: comic-pop .35s cubic-bezier(.34,1.56,.64,1) both;
+      animation: comic-pop .42s cubic-bezier(.34,1.56,.64,1) both;
+      overflow: hidden;
     }
 
-    /* Halftone dots background */
+    /* Halftone dots em toda a página */
     .comic-panel::before {
       content: '';
       position: absolute;
       inset: 0;
-      background-image: radial-gradient(circle, rgba(0,0,0,.07) 1.2px, transparent 1.2px);
-      background-size: 9px 9px;
+      background-image: radial-gradient(circle, rgba(0,0,0,.09) 1.5px, transparent 1.5px);
+      background-size: 10px 10px;
       pointer-events: none;
       z-index: 0;
-      border-radius: 2px;
     }
 
-    /* Speed lines top-right decoration */
-    .comic-panel::after {
-      content: '';
-      position: absolute;
-      top: -2px; right: -2px;
-      width: 100px; height: 100px;
-      background: conic-gradient(
-        from 0deg,
-        transparent 0deg 10deg, rgba(0,0,0,.06) 10deg 11deg,
-        transparent 11deg 25deg, rgba(0,0,0,.06) 25deg 26deg,
-        transparent 26deg 40deg, rgba(0,0,0,.06) 40deg 41deg,
-        transparent 41deg 55deg, rgba(0,0,0,.06) 55deg 56deg,
-        transparent 56deg 90deg
-      );
-      pointer-events: none;
-      z-index: 0;
-      border-radius: 0 4px 0 0;
-    }
-
-    /* Header / caption box */
+    /* ── Header com cor dinâmica ── */
     .comic-header {
       position: relative;
-      z-index: 1;
-      background: #fbbf24;
-      border-bottom: 4px solid #111;
-      padding: 14px 18px 12px;
+      z-index: 2;
+      padding: 0;
+      border-bottom: 5px solid #111;
+      overflow: hidden;
+    }
+    /* Faixa diagonal de textura no header */
+    .comic-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 6px,
+        rgba(0,0,0,.06) 6px,
+        rgba(0,0,0,.06) 7px
+      );
+      pointer-events: none;
+    }
+    .comic-header-inner {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
+      padding: 16px 20px 14px;
     }
-    .comic-title-box {
-      flex: 1;
+    /* Brilho passando pelo header */
+    .comic-header-inner::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      left: -100%;
+      width: 50%;
+      background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+      animation: comic-shine 3s ease-in-out infinite 0.5s;
+      pointer-events: none;
+    }
+
+    .comic-title-box { flex: 1; min-width: 0; }
+    .comic-edition {
+      font-size: 8px;
+      font-weight: 900;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,.5);
+      margin-bottom: 2px;
     }
     .comic-caption {
+      display: inline-block;
+      background: #111;
+      color: #fbbf24;
       font-size: 9px;
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: .12em;
-      color: #111;
-      background: #111;
-      color: #fbbf24;
-      display: inline-block;
-      padding: 1px 6px;
+      letter-spacing: .14em;
+      padding: 2px 8px;
       border-radius: 2px;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
     .comic-title {
-      font-size: 20px;
-      font-weight: 900;
+      font-family: 'Bangers', 'Impact', 'Arial Black', sans-serif;
+      font-size: 28px;
+      font-weight: 400;
       color: #111;
       text-transform: uppercase;
-      line-height: 1.15;
-      letter-spacing: .02em;
-      font-style: italic;
+      line-height: 1.1;
+      letter-spacing: .04em;
+      text-shadow: 2px 2px 0 rgba(0,0,0,.15);
+      word-break: break-word;
     }
+
+    /* Número do "card" estilo quadrinho */
+    .comic-number {
+      position: absolute;
+      bottom: 6px; right: 10px;
+      font-family: 'Bangers', 'Impact', sans-serif;
+      font-size: 11px;
+      letter-spacing: .05em;
+      color: rgba(0,0,0,.35);
+    }
+
     .comic-close {
       background: #111;
-      color: #fbbf24;
+      color: #fff;
       border: none;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 900;
-      width: 32px; height: 32px;
+      width: 34px; height: 34px;
       border-radius: 50%;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      line-height: 1;
-      transition: transform .15s;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.3);
+      transition: transform .15s, background .15s;
     }
-    .comic-close:hover { transform: rotate(90deg) scale(1.1); }
+    .comic-close:hover { transform: rotate(90deg) scale(1.15); background: #ef4444; }
 
-    /* Priority burst / explosion */
+    /* ── Burst de prioridade ── */
     .comic-burst {
       position: absolute;
-      top: -18px; right: 60px;
-      width: 64px; height: 64px;
-      z-index: 2;
+      top: -12px; right: 56px;
+      width: 76px; height: 76px;
+      z-index: 10;
+      animation: comic-burst-pulse 2s ease-in-out infinite;
+      filter: drop-shadow(3px 3px 0 rgba(0,0,0,.4));
     }
-    .comic-burst-star {
+    .comic-burst svg { width: 100%; height: 100%; }
+    .comic-burst-label {
       position: absolute;
       inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-    .comic-burst-star svg {
-      position: absolute;
-      inset: 0;
-      width: 100%; height: 100%;
-    }
-    .comic-burst-label {
-      position: relative;
-      z-index: 1;
-      font-size: 8px;
-      font-weight: 900;
-      text-transform: uppercase;
+      font-family: 'Bangers', 'Impact', sans-serif;
+      font-size: 11px;
+      letter-spacing: .04em;
       text-align: center;
+      color: #fff;
+      text-shadow: 1px 1px 0 rgba(0,0,0,.5);
       line-height: 1.2;
-      color: #111;
+      padding: 10px;
     }
 
-    /* Body */
+    /* ── Onomatopeia decorativa ── */
+    .comic-onomatopoeia {
+      position: absolute;
+      top: -16px; left: -10px;
+      font-family: 'Bangers', 'Impact', sans-serif;
+      font-size: 52px;
+      font-weight: 400;
+      letter-spacing: .02em;
+      color: transparent;
+      -webkit-text-stroke: 3px rgba(0,0,0,.1);
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+      transform: rotate(-8deg);
+      line-height: 1;
+    }
+
+    /* ── Body ── */
     .comic-body {
       position: relative;
       z-index: 1;
-      padding: 16px 18px;
+      padding: 18px 20px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
-    /* Speech bubble */
+    /* Balão de fala */
     .comic-bubble {
       background: #fff;
-      border: 3px solid #111;
-      border-radius: 16px;
-      padding: 14px 16px;
+      border: 3.5px solid #111;
+      border-radius: 20px;
+      padding: 14px 18px;
       position: relative;
       font-size: 13px;
       font-weight: 600;
       color: #111;
-      line-height: 1.55;
-      box-shadow: 3px 3px 0 #111;
+      line-height: 1.6;
+      box-shadow: 4px 4px 0 #111;
     }
+    .comic-bubble-tag {
+      position: absolute;
+      top: -10px; left: 16px;
+      background: #fbbf24;
+      border: 2.5px solid #111;
+      border-radius: 3px;
+      font-size: 8px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #111;
+      padding: 1px 6px;
+    }
+    /* Cauda do balão */
     .comic-bubble::before {
       content: '';
       position: absolute;
-      left: 24px; bottom: -14px;
+      left: 28px; bottom: -16px;
       width: 0; height: 0;
-      border-left: 10px solid transparent;
+      border-left: 12px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 14px solid #111;
+      border-top: 16px solid #111;
     }
     .comic-bubble::after {
       content: '';
       position: absolute;
-      left: 26px; bottom: -9px;
+      left: 31px; bottom: -10px;
       width: 0; height: 0;
-      border-left: 8px solid transparent;
+      border-left: 9px solid transparent;
       border-right: 4px solid transparent;
-      border-top: 11px solid #fff;
+      border-top: 12px solid #fff;
     }
 
-    /* Info panel grid */
+    /* Divisor estilo corte de painel */
+    .comic-divider {
+      border: none;
+      border-top: 3px solid #111;
+      margin: 2px 0 4px;
+    }
+
+    /* Grid de info */
     .comic-info-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1355,34 +1434,49 @@
     }
     .comic-info-cell {
       background: #fff;
-      border: 2.5px solid #111;
-      border-radius: 6px;
-      padding: 8px 10px;
-      box-shadow: 2px 2px 0 #111;
+      border: 3px solid #111;
+      border-radius: 4px;
+      padding: 9px 12px;
+      box-shadow: 3px 3px 0 #111;
+      position: relative;
+      overflow: hidden;
+    }
+    /* Dobrinha de papel no canto */
+    .comic-info-cell::after {
+      content: '';
+      position: absolute;
+      bottom: 0; right: 0;
+      width: 10px; height: 10px;
+      background: linear-gradient(135deg, #f3f4f6 50%, #ddd 50%);
+      border-top: 1px solid #ccc;
+      border-left: 1px solid #ccc;
     }
     .comic-info-label {
-      font-size: 8.5px;
+      font-size: 8px;
       font-weight: 900;
       text-transform: uppercase;
-      letter-spacing: .1em;
-      color: #555;
-      margin-bottom: 3px;
+      letter-spacing: .12em;
+      color: #777;
+      margin-bottom: 4px;
     }
     .comic-info-val {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 800;
       color: #111;
+      font-family: 'Bangers', 'Impact', sans-serif;
+      letter-spacing: .04em;
     }
     .comic-info-cell.full { grid-column: 1 / -1; }
 
-    /* Status badge comic style */
+    /* Status badge */
     .comic-status {
       display: inline-block;
       border: 2.5px solid #111;
-      border-radius: 4px;
-      padding: 2px 8px;
-      font-size: 11px;
-      font-weight: 900;
+      border-radius: 3px;
+      padding: 3px 10px;
+      font-family: 'Bangers', 'Impact', sans-serif;
+      font-size: 14px;
+      letter-spacing: .06em;
       text-transform: uppercase;
       box-shadow: 2px 2px 0 #111;
     }
@@ -1390,36 +1484,60 @@
     .comic-status.em_andamento { background: #dbeafe; color: #1e40af; }
     .comic-status.concluido    { background: #d1fae5; color: #065f46; }
 
-    /* Action bar */
+    /* ── Action bar ── */
     .comic-actions {
       position: relative;
-      z-index: 1;
-      border-top: 3px solid #111;
-      background: #f3f4f6;
-      padding: 12px 18px;
+      z-index: 2;
+      border-top: 4px solid #111;
+      background: #f9fafb;
+      background-image: repeating-linear-gradient(
+        90deg, transparent, transparent 8px,
+        rgba(0,0,0,.04) 8px, rgba(0,0,0,.04) 9px
+      );
+      padding: 14px 20px;
       display: flex;
       gap: 10px;
       justify-content: flex-end;
+      align-items: center;
+    }
+    .comic-actions-hint {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: #aaa;
+      margin-right: auto;
     }
     .comic-btn {
-      border: 2.5px solid #111;
-      border-radius: 4px;
-      padding: 7px 18px;
-      font-size: 12px;
-      font-weight: 900;
+      border: 3px solid #111;
+      border-radius: 3px;
+      padding: 8px 20px;
+      font-family: 'Bangers', 'Impact', sans-serif;
+      font-size: 15px;
+      letter-spacing: .08em;
       text-transform: uppercase;
-      letter-spacing: .06em;
       cursor: pointer;
-      box-shadow: 3px 3px 0 #111;
+      box-shadow: 4px 4px 0 #111;
       transition: transform .1s, box-shadow .1s;
+      position: relative;
+      overflow: hidden;
     }
+    .comic-btn::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; bottom: 0;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+      transition: left .3s;
+    }
+    .comic-btn:hover::after { left: 150%; }
     .comic-btn:active {
-      transform: translate(2px, 2px);
+      transform: translate(3px, 3px);
       box-shadow: 1px 1px 0 #111;
     }
     .comic-btn-edit   { background: #fbbf24; color: #111; }
-    .comic-btn-close  { background: #fff; color: #111; }
-    .comic-btn-status { background: #111; color: #fbbf24; }
+    .comic-btn-close  { background: #fff;    color: #111; }
+    .comic-btn-status { background: #111;    color: #fbbf24; }
   }
 
 </style>
@@ -2586,7 +2704,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const item = cacheRecados.find(r => r.id === id);
         const dest = (item && item.destinatario || '').toLowerCase();
         card.classList.remove('mural-card-destaque', 'mural-card-destaque-todos');
-        if (destaqueAtivo && currentUser) {
+        if (destaqueAtivo && currentUser && item && item.status !== 'concluido') {
           if (dest === currentUser) card.classList.add('mural-card-destaque');
           else if (dest === 'todos') card.classList.add('mural-card-destaque-todos');
         }
@@ -2795,7 +2913,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Destaque brilhante por destinatário (ativado pelo admin)
       const currentUserName = (sessionStorage.getItem('user_nome') || '').trim().toLowerCase();
       const destLower = (item.destinatario || '').toLowerCase();
-      if (destaqueAtivo && currentUserName) {
+      if (destaqueAtivo && currentUserName && item.status !== 'concluido') {
         if (destLower === currentUserName) card.classList.add('mural-card-destaque');
         else if (destLower === 'todos') card.classList.add('mural-card-destaque-todos');
       }
@@ -3617,31 +3735,45 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(carregarMural, 60000);
   </script>
 
-  <!-- ══ MODAL GIBI ══ -->
+  <!-- ══ MODAL GIBI v2 ══ -->
   <div class="comic-backdrop" id="comic-backdrop">
     <div class="comic-panel" id="comic-panel">
-      <div class="comic-header">
-        <div class="comic-title-box">
-          <div class="comic-caption" id="comic-caption">Tarefa</div>
-          <div class="comic-title" id="comic-title">—</div>
-        </div>
-        <!-- Priority burst -->
-        <div class="comic-burst" id="comic-burst">
-          <div class="comic-burst-star">
-            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" id="comic-burst-svg">
-              <polygon points="32,2 38,22 58,22 42,34 48,54 32,42 16,54 22,34 6,22 26,22" fill="#ef4444" stroke="#111" stroke-width="2.5"/>
-            </svg>
-            <div class="comic-burst-label" id="comic-burst-label">URGENTE</div>
+
+      <!-- Header colorido por prioridade -->
+      <div class="comic-header" id="comic-header">
+        <div class="comic-header-inner">
+          <div class="comic-title-box">
+            <div class="comic-edition">CÉREBRO MUNICIPAL · QUADRO DE TAREFAS</div>
+            <div class="comic-caption" id="comic-caption">Tarefa</div>
+            <div class="comic-title" id="comic-title">—</div>
           </div>
+          <button class="comic-close" id="comic-close">&times;</button>
         </div>
-        <button class="comic-close" id="comic-close">&times;</button>
+        <!-- Número de ID estilo edição de gibi -->
+        <div class="comic-number" id="comic-number">#000</div>
+        <!-- Burst prioridade -->
+        <div class="comic-burst" id="comic-burst">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <polygon id="comic-burst-poly"
+              points="40,3 47,27 72,20 58,40 72,60 47,53 40,77 33,53 8,60 22,40 8,20 33,27"
+              fill="#ef4444" stroke="#111" stroke-width="3"/>
+          </svg>
+          <div class="comic-burst-label" id="comic-burst-label">URGENTE!</div>
+        </div>
+        <!-- Onomatopeia decorativa -->
+        <div class="comic-onomatopoeia" id="comic-onomat">POW!</div>
       </div>
 
       <div class="comic-body">
-        <!-- Balão de conteúdo -->
-        <div class="comic-bubble" id="comic-conteudo">—</div>
+        <!-- Balão de fala com tag -->
+        <div class="comic-bubble" id="comic-bubble-wrap">
+          <div class="comic-bubble-tag" id="comic-bubble-tag">Descrição</div>
+          <span id="comic-conteudo">—</span>
+        </div>
 
-        <!-- Grid de info -->
+        <hr class="comic-divider">
+
+        <!-- Grid de informações -->
         <div class="comic-info-grid">
           <div class="comic-info-cell">
             <div class="comic-info-label">👤 Designado para</div>
@@ -3678,7 +3810,9 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
       </div>
 
+      <!-- Footer de ação -->
       <div class="comic-actions">
+        <span class="comic-actions-hint">Clique fora ou ESC para fechar</span>
         <button class="comic-btn comic-btn-close" id="comic-btn-fechar">Fechar</button>
         <button class="comic-btn comic-btn-status" id="comic-btn-avancar" style="display:none;">⚡ Avançar</button>
         <button class="comic-btn comic-btn-edit" id="comic-btn-editar">✏️ Editar</button>
@@ -3687,87 +3821,91 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 
   <script>
-    // ── Modal Gibi ──
+    // ── Modal Gibi v2 ──
     const comicBackdrop = document.getElementById('comic-backdrop');
     let comicCurrentId = null;
 
-    const PRIO_COLORS = {
-      urgente: { fill: '#ef4444', label: 'URGENTE!' },
-      alta:    { fill: '#f97316', label: 'ALTA' },
-      media:   { fill: '#fbbf24', label: 'MÉDIA' },
-      baixa:   { fill: '#60a5fa', label: 'BAIXA' },
+    const PRIO_CONFIG = {
+      urgente: { fill: '#ef4444', header: '#fee2e2', label: 'URGENTE!', onomat: 'POW!' },
+      alta:    { fill: '#f97316', header: '#ffedd5', label: '!! ALTA',  onomat: 'ZAP!' },
+      media:   { fill: '#fbbf24', header: '#fef9c3', label: 'MÉDIA',    onomat: 'HMM!' },
+      baixa:   { fill: '#60a5fa', header: '#dbeafe', label: 'BAIXA',    onomat: 'OK!' },
     };
-    const STATUS_LABELS_COMIC = { a_fazer: 'A Fazer', em_andamento: 'Em Progresso', concluido: 'Concluído' };
-    const CAT_LABELS = { tarefa: '📋 Tarefa', aviso: '📢 Aviso', lembrete: '💡 Lembrete', conquista: '🏆 Conquista' };
+    const STATUS_LABELS_C = { a_fazer: 'A Fazer', em_andamento: 'Em Progresso', concluido: 'Concluído ✓' };
+    const CAT_LABELS_C = { tarefa: '📋 Tarefa', aviso: '📢 Aviso', lembrete: '💡 Lembrete', conquista: '🏆 Conquista' };
 
     function abrirComicModal(item) {
       comicCurrentId = item.id;
 
-      // Caption (categoria)
-      document.getElementById('comic-caption').textContent = CAT_LABELS[item.categoria] || item.categoria || 'Tarefa';
+      const p = PRIO_CONFIG[item.prioridade] || PRIO_CONFIG.media;
 
-      // Título
+      // Header color
+      document.getElementById('comic-header').style.background = p.header;
+
+      // ID
+      document.getElementById('comic-number').textContent = `#${String(item.id).padStart(3,'0')}`;
+
+      // Caption + título
+      document.getElementById('comic-caption').textContent = CAT_LABELS_C[item.categoria] || item.categoria || 'Tarefa';
       document.getElementById('comic-title').textContent = (item.titulo || '').toUpperCase();
+
+      // Burst
+      document.getElementById('comic-burst-poly').setAttribute('fill', p.fill);
+      document.getElementById('comic-burst-label').textContent = p.label;
+
+      // Onomatopeia
+      document.getElementById('comic-onomat').textContent = p.onomat;
+
+      // Bubble tag = categoria
+      document.getElementById('comic-bubble-tag').textContent = CAT_LABELS_C[item.categoria] || 'Detalhes';
 
       // Conteúdo
       document.getElementById('comic-conteudo').textContent = item.conteudo || '—';
 
-      // Burst de prioridade
-      const p = PRIO_COLORS[item.prioridade] || PRIO_COLORS.media;
-      document.getElementById('comic-burst-svg').querySelector('polygon').setAttribute('fill', p.fill);
-      document.getElementById('comic-burst-label').textContent = p.label;
-
       // Info cells
-      document.getElementById('comic-dest').textContent = item.destinatario || 'Todos';
+      document.getElementById('comic-dest').textContent  = item.destinatario || 'Todos';
       document.getElementById('comic-autor').textContent = item.autor || '—';
 
-      const statusEl = document.getElementById('comic-status-wrap');
-      statusEl.innerHTML = `<span class="comic-status ${item.status}">${STATUS_LABELS_COMIC[item.status] || item.status}</span>`;
+      document.getElementById('comic-status-wrap').innerHTML =
+        `<span class="comic-status ${item.status}">${STATUS_LABELS_C[item.status] || item.status}</span>`;
 
-      const prazoEl = document.getElementById('comic-prazo');
-      if (item.vencimento) {
-        const d = new Date(item.vencimento + 'T00:00:00');
-        prazoEl.textContent = d.toLocaleDateString('pt-BR');
-      } else {
-        prazoEl.textContent = 'Sem prazo';
-      }
+      document.getElementById('comic-prazo').textContent = item.vencimento
+        ? new Date(item.vencimento + 'T00:00:00').toLocaleDateString('pt-BR')
+        : 'Sem prazo';
 
-      document.getElementById('comic-cat').textContent = CAT_LABELS[item.categoria] || item.categoria || '—';
+      document.getElementById('comic-cat').textContent = CAT_LABELS_C[item.categoria] || '—';
 
-      const valorEl = document.getElementById('comic-valor');
-      valorEl.textContent = (item.valor && parseFloat(item.valor) > 0)
+      document.getElementById('comic-valor').textContent = (item.valor && parseFloat(item.valor) > 0)
         ? Number(item.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
         : '—';
 
+      // Credor
       const credorCell = document.getElementById('comic-credor-cell');
-      if (item.credor_nome) {
-        credorCell.style.display = '';
-        document.getElementById('comic-credor').textContent = item.credor_nome;
-      } else {
-        credorCell.style.display = 'none';
-      }
+      credorCell.style.display = item.credor_nome ? '' : 'none';
+      if (item.credor_nome) document.getElementById('comic-credor').textContent = item.credor_nome;
 
+      // Conclusão
       const conclusaoCell = document.getElementById('comic-conclusao-cell');
       if (item.status === 'concluido' && item.concluido_por) {
         conclusaoCell.style.display = '';
         document.getElementById('comic-conclusao').textContent =
-          `${item.concluido_por}${item.concluido_em ? ' em ' + item.concluido_em.split(' ')[0] : ''}`;
+          `${item.concluido_por}${item.concluido_em ? ' · ' + item.concluido_em.split(' ')[0] : ''}`;
       } else {
         conclusaoCell.style.display = 'none';
       }
 
-      // Botão avançar status
-      const btnAvancar = document.getElementById('comic-btn-avancar');
+      // Botão avançar
+      const btnAv = document.getElementById('comic-btn-avancar');
       if (item.status === 'a_fazer') {
-        btnAvancar.style.display = '';
-        btnAvancar.textContent = '⚡ Iniciar';
-        btnAvancar.onclick = () => { fecharComicModal(); alterarStatusRecado(item.id, 'em_andamento'); };
+        btnAv.style.display = '';
+        btnAv.textContent = '⚡ Iniciar';
+        btnAv.onclick = () => { fecharComicModal(); alterarStatusRecado(item.id, 'em_andamento'); };
       } else if (item.status === 'em_andamento') {
-        btnAvancar.style.display = '';
-        btnAvancar.textContent = '✓ Concluir';
-        btnAvancar.onclick = () => { fecharComicModal(); alterarStatusRecado(item.id, 'concluido'); };
+        btnAv.style.display = '';
+        btnAv.textContent = '✓ Concluir';
+        btnAv.onclick = () => { fecharComicModal(); alterarStatusRecado(item.id, 'concluido'); };
       } else {
-        btnAvancar.style.display = 'none';
+        btnAv.style.display = 'none';
       }
 
       comicBackdrop.classList.add('active');
@@ -3785,10 +3923,8 @@ document.addEventListener('DOMContentLoaded', function() {
       fecharComicModal();
       if (id !== null) editarRecado(id);
     });
-    comicBackdrop.addEventListener('click', (e) => { if (e.target === comicBackdrop) fecharComicModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fecharComicModal(); });
-
-    // Expõe para uso no criarCardElement
+    comicBackdrop.addEventListener('click', e => { if (e.target === comicBackdrop) fecharComicModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharComicModal(); });
     window.abrirComicModal = abrirComicModal;
   </script>
 </body>
