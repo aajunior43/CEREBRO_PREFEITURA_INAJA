@@ -7,6 +7,7 @@
   <title>Controle de Empenhos Mensais – Prefeitura de Inajá</title>
   <link rel="icon" type="image/png" href="/static/img/brasao.png" />
   <link rel="stylesheet" href="/static/css/index.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
   <script>
     (function checkAuth() {
@@ -1539,6 +1540,14 @@
           <rect x="6" y="14" width="12" height="8" />
         </svg>
         Imprimir
+      </button>
+      <button class="btn btn-ghost btn-ripple" id="btn-download-pdf-lote" title="Baixar PDF de todos em lote">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Baixar PDF
       </button>
       <button class="btn btn-ghost btn-ripple" id="btn-export-csv" title="Exportar lista como CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

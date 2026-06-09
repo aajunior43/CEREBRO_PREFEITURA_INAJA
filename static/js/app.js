@@ -402,6 +402,9 @@ function buildCard(c, done, idx) {
         <button class="btn-print" data-action="print" title="Imprimir">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
+        <button class="btn-print" data-action="download-pdf" title="Baixar PDF">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
         <button class="btn-empenhar ${done ? 'done-btn' : 'pending'}" data-action="toggle">
           ${done ? '✓ Empenhado' : '○ Empenhar'}
         </button>
@@ -965,6 +968,55 @@ async function printCredor(c) {
   win.document.close();
 }
 
+// ── Baixar PDF Credor Individual ──────────────────────────────
+async function downloadPDFCredor(c) {
+  try { await ensureBrasaoB64(); } catch (_) {}
+  const mesNome = MESES[state.month];
+  const ano = state.year;
+
+  const css = _printCSS();
+  const body = _buildDocPage(c, mesNome, ano, true);
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Solicitação – ${c.nome}</title>
+<style>${css}</style>
+</head>
+<body>${body}</body></html>`;
+
+  await autosaveGeneratedText(html, {
+    nome: `solicitacao_${(c.nome || 'credor').replace(/[^a-z0-9]+/gi, '_')}_${ano}_${state.month + 1}.html`,
+    categoria: 'relatorios_html',
+    referencia: `${ano}-${String(state.month + 1).padStart(2, '0')}`,
+    descricao: `Relatório individual gerado para ${c.nome || 'credor'}`,
+    mimeType: 'text/html;charset=utf-8;'
+  });
+
+  showToast('Gerando PDF...', 'info');
+  try {
+    const element = document.createElement('div');
+    element.innerHTML = html;
+    document.body.appendChild(element);
+
+    const opt = {
+      margin:       0,
+      filename:     `solicitacao_empenho_${(c.nome || 'credor').replace(/[^a-z0-9]+/gi, '_')}_${mesNome}_${ano}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    await html2pdf().set(opt).from(element).save();
+    document.body.removeChild(element);
+    showToast('PDF baixado com sucesso', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao gerar PDF', 'error');
+  }
+}
+
 // ── Imprimir em Lote ─────────────────────────────────────────
 async function printLote() {
   const lista = await loadAllCredoresForCurrentFilters();
@@ -1013,6 +1065,61 @@ async function printLote() {
   win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+// ── Baixar PDF em Lote ────────────────────────────────────────
+async function downloadPDFLote() {
+  const lista = await loadAllCredoresForCurrentFilters();
+  if (lista.length === 0) { showToast('Nenhum credor para gerar PDF', 'error'); return; }
+  try { await ensureBrasaoB64(); } catch (_) {}
+
+  const mesNome = MESES[state.month];
+  const ano = state.year;
+
+  const pages = lista.map((c, i) =>
+    _buildDocPage(c, mesNome, ano, i === lista.length - 1)
+  ).join('');
+
+  const css = _printCSS();
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Lote &ndash; ${mesNome} ${ano}</title>
+<style>${css}</style>
+</head>
+<body>${pages}</body></html>`;
+
+  await autosaveGeneratedText(html, {
+    nome: `solicitacoes_lote_${ano}_${state.month + 1}.html`,
+    categoria: 'relatorios_html',
+    referencia: `${ano}-${String(state.month + 1).padStart(2, '0')}`,
+    descricao: `Relatório em lote de ${lista.length} credores para ${mesNome}/${ano}`,
+    mimeType: 'text/html;charset=utf-8;'
+  });
+
+  showToast('Gerando PDF...', 'info');
+  try {
+    const element = document.createElement('div');
+    element.innerHTML = html;
+    document.body.appendChild(element);
+
+    const opt = {
+      margin:       0,
+      filename:     `solicitacoes_empenho_${mesNome}_${ano}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    await html2pdf().set(opt).from(element).save();
+    document.body.removeChild(element);
+    showToast(`PDF baixado: ${lista.length} credores`, 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Erro ao gerar PDF', 'error');
+  }
 }
 
 // ── Toggle Empenho ────────────────────────────────────────────
@@ -1286,6 +1393,7 @@ function attachEvents() {
     else if (action === 'edit') openModal(credor.id);
     else if (action === 'duplicate') duplicateCredor(credor);
     else if (action === 'print') printCredor(credor);
+    else if (action === 'download-pdf') downloadPDFCredor(credor);
   });
 
   document.getElementById('btn-prev-month').addEventListener('click', async () => {
@@ -1386,6 +1494,7 @@ function attachEvents() {
   });
 
   document.getElementById('btn-print-lote').addEventListener('click', printLote);
+  document.getElementById('btn-download-pdf-lote').addEventListener('click', downloadPDFLote);
 
   document.getElementById('btn-add-credor').addEventListener('click', () => openModal(null));
 
