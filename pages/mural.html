@@ -2169,11 +2169,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function applyDestaqueToAllCards() {
-      const currentUser = (sessionStorage.getItem('user_nome') || '').trim();
+      const currentUser = (sessionStorage.getItem('user_nome') || '').trim().toLowerCase();
       document.querySelectorAll('.mural-card').forEach(card => {
         const id = parseInt(card.dataset.id, 10);
         const item = cacheRecados.find(r => r.id === id);
-        const isOwn = item && currentUser && item.autor === currentUser;
+        const isOwn = item && currentUser && (item.autor || '').toLowerCase() === currentUser;
         if (destaqueAtivo && isOwn) {
           card.classList.add('mural-card-destaque');
         } else {
@@ -2382,8 +2382,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const ageChip = cardAgeChip(item.criado_em, item.status);
 
       // Destaque brilhante para tarefas do próprio usuário (quando ativado pelo admin)
-      const currentUserName = (sessionStorage.getItem('user_nome') || '').trim();
-      if (destaqueAtivo && currentUserName && item.autor === currentUserName) {
+      const currentUserName = (sessionStorage.getItem('user_nome') || '').trim().toLowerCase();
+      if (destaqueAtivo && currentUserName && (item.autor || '').toLowerCase() === currentUserName) {
         card.classList.add('mural-card-destaque');
       }
 
