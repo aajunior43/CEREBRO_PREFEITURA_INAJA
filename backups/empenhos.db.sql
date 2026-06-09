@@ -1,4 +1,4 @@
--- Backup: 2026-06-08T21:00:05.870855
+-- Backup: 2026-06-08T21:30:06.057186
 -- Banco: empenhos.db
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
@@ -7180,18 +7180,18 @@ INSERT INTO "mural_recados" VALUES(11,'Pagar Eletromega após a folha de pagamen
 INSERT INTO "mural_recados" VALUES(12,'Pagar Prodasp após a folha de pagamento','Apos a folha','Aleksandro','Maicon','urgente','tarefa','concluido','pink','Aleksandro','01/06/2026 16:41','2026-05-28 08:40:40','2026-06-01 16:41:41',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(13,'FAZER OFICIO','colocar a conta pra fazer a devolução','Luana','Aleksandro','media','tarefa','concluido','yellow','Aleksandro','29/05/2026 15:27','2026-05-28 13:15:50','2026-05-29 15:27:50',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(14,'Pagar Noroeste Medicamento','Abra o Anexo.','Aleksandro','Todos','urgente','tarefa','concluido','pink','Maicon','02/06/2026 15:10','2026-05-28 15:29:37','2026-06-02 15:10:15',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(15,'Enviar Oficio para o Bradesco','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 15:26:50','2026-06-02 09:33:25',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(16,'Checar Resposta do FALECOM BB sobre oficio','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 15:27:26','2026-05-29 15:27:26',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(15,'Enviar Oficio para o Bradesco','.','Aleksandro','Aleksandro','media','tarefa','concluido','yellow','Aleksandro','08/06/2026 21:20','2026-05-29 15:26:50','2026-06-08 21:20:00',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(16,'Checar Resposta do FALECOM BB sobre oficio','.','Aleksandro','Aleksandro','media','tarefa','concluido','yellow','Aleksandro','08/06/2026 21:19','2026-05-29 15:27:26','2026-06-08 21:19:56',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(17,'Checar CIRAU','diz que esta atrazado 3 meses.','Aleksandro','Aleksandro','urgente','tarefa','concluido','pink','Aleksandro','02/06/2026 08:50','2026-05-29 15:29:11','2026-06-02 08:50:51',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(18,'Oficio para controle interno respondendo que nao obtive resposta da educação e caixa da previdencia','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:30:30','2026-05-29 15:30:30',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(18,'Oficio para controle interno respondendo que nao obtive resposta da educação e caixa da previdencia','.','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','08/06/2026 21:19','2026-05-29 15:30:30','2026-06-08 21:19:52',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(19,'Checar com a INGA INFORMATICA se temos dividas','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-05-29 15:31:30','2026-05-29 15:31:30',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(20,'Fazer relação dos pagamentos dos enfermeiros e valores repassados indevidamente cobrados indevidamente.','.','Aleksandro','Aleksandro','media','tarefa','a_fazer','yellow','','','2026-05-29 17:10:50','2026-06-02 09:04:17',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(21,'Calcular novo repasse da camara','.','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','01/06/2026 11:27','2026-06-01 08:38:50','2026-06-01 11:27:09',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(22,'Pagar 4 meses do CIRAU','.','Aleksandro','Maicon','alta','tarefa','concluido','orange','Maicon','02/06/2026 13:38','2026-06-01 09:24:17','2026-06-02 13:38:12',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(23,'Empenhar 2 medição da praça CONSTRUTURA TÉCNICA ANGRA LTDA','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-06-01 11:21:28','2026-06-01 11:21:28',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(23,'Empenhar 2 medição da praça CONSTRUTURA TÉCNICA ANGRA LTDA','.','Aleksandro','Todos','media','tarefa','concluido','yellow','Aleksandro','08/06/2026 21:19','2026-06-01 11:21:28','2026-06-08 21:19:43',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(24,'PAGAR OFICINA DO NEGO','GEISIBEL MANDOU kkk','Aleksandro','Maicon','urgente','tarefa','concluido','pink','Maicon','03/06/2026 11:38','2026-06-02 08:55:39','2026-06-03 11:38:15',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(25,'Pagar Fatura dos Munícipes','.','Aleksandro','Maicon','urgente','tarefa','concluido','pink','Maicon','02/06/2026 14:47','2026-06-02 09:33:08','2026-06-02 14:47:02',0.0,NULL);
-INSERT INTO "mural_recados" VALUES(26,'Empenhar reforma barracão','fazer suplementação de contrapartida','Aleksandro','Todos','alta','tarefa','a_fazer','orange','','','2026-06-02 15:21:13','2026-06-02 15:21:13',0.0,NULL);
+INSERT INTO "mural_recados" VALUES(26,'Empenhar reforma barracão','fazer suplementação de contrapartida','Aleksandro','Todos','alta','tarefa','concluido','orange','Aleksandro','08/06/2026 21:19','2026-06-02 15:21:13','2026-06-08 21:19:32',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(27,'ENVIAR AS AR DAS INTIMAÇÕES EM PARANACITY','.','Aleksandro','Todos','media','tarefa','a_fazer','yellow','','','2026-06-03 16:20:09','2026-06-03 16:20:09',0.0,NULL);
 INSERT INTO "mural_recados" VALUES(28,'Empenhar Hidronoroeste','112 rec 000','Aleksandro','Luana','urgente','tarefa','concluido','pink','Aleksandro','08/06/2026 09:56','2026-06-03 16:44:15','2026-06-08 09:56:33',0.0,NULL);
 CREATE TABLE prazos (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, descricao TEXT DEFAULT '', data_limite TEXT NOT NULL, categoria TEXT DEFAULT 'geral', resolvido INTEGER DEFAULT 0, criado_em TEXT DEFAULT (datetime('now','localtime')));
