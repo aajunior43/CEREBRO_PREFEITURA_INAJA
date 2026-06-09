@@ -581,8 +581,7 @@ function _printCSS() {
       .valor-box { background: #f7f9fc !important; }
       .valor-box.done  { background: #edfaf3 !important; border-color: #2d9e6b !important; }
       .valor-box.pend  { background: #fff8f0 !important; border-color: #c97c30 !important; }
-      .status-badge.done { background: #2d9e6b !important; }
-      .status-badge.pend { background: #c97c30 !important; }
+
     }
     * { margin:0; padding:0; box-sizing:border-box;
         -webkit-print-color-adjust: exact !important;
@@ -676,38 +675,8 @@ function _printCSS() {
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    .status-badge {
-      font-size: 8pt;
-      font-weight: 700;
-      color: #fff;
-      padding: 3px 10px;
-      border-radius: 20px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-    .status-badge.done { background: #2d9e6b; }
-    .status-badge.pend { background: #c97c30; }
-
     /* ── Corpo ── */
     .doc-body { margin-bottom: 22px; position: relative; }
-
-    /* ── Marca D'Água ── */
-    .watermark-done {
-      position: absolute;
-      top: 38%; left: 50%;
-      transform: translate(-50%, -50%) rotate(-28deg);
-      font-size: 72pt;
-      font-weight: 900;
-      color: rgba(45, 158, 107, 0.10);
-      border: 7px solid rgba(45, 158, 107, 0.10);
-      padding: 8px 36px;
-      border-radius: 16px;
-      letter-spacing: 6px;
-      user-select: none;
-      pointer-events: none;
-      z-index: 0;
-      white-space: nowrap;
-    }
 
     /* ── Tabela de Dados ── */
     table.doc-table {
@@ -784,8 +753,6 @@ function _printCSS() {
       color: #14376b;
       letter-spacing: -0.5px;
     }
-    .valor-box.done .vb-value { color: #1e7a50; }
-    .valor-box.pend .vb-value { color: #a05c10; }
 
     /* ── Data e Assinaturas ── */
     .sign-date {
@@ -808,29 +775,14 @@ function _printCSS() {
     }
     .sign-label { font-size: 9.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
     .sign-sub { font-size: 8.5pt; color: #5a6a7e; margin-top: 3px; }
-
-    /* ── Rodapé ── */
-    .doc-footer {
-      text-align: center;
-      font-size: 7.5pt;
-      color: #7a8a9e;
-      margin-top: 28px;
-      border-top: 1px solid #dde6f0;
-      padding-top: 7px;
-    }
-    .doc-footer strong { color: #4a5a6e; }
   `;
 }
 
 // ── Bloco HTML de uma página de credor ───────────────────────
-function _buildDocPage(c, done, mesNome, ano, isLast) {
+function _buildDocPage(c, mesNome, ano, isLast) {
   const isVar = (c.tipo_valor || '').toUpperCase().includes('VAR');
   const valorStr = (isVar && !c.valor) ? 'Valor variável' : formatBRL(c.valor || 0);
   const pb = isLast ? '' : 'page-break-after:always;';
-
-  const watermark = done ? '<div class="watermark-done">EMPENHADO</div>' : '';
-  const statusClass = done ? 'done' : 'pend';
-  const statusLabel = done ? 'Empenhado' : 'Pendente';
 
   const brasaoSrc = typeof BRASAO_B64 !== 'undefined' && BRASAO_B64
     ? BRASAO_B64 : '/static/img/brasao.png';
@@ -840,7 +792,6 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
     ['Credor / Fornecedor', c.nome],
     ['CNPJ / CPF', c.cnpj],
     ['Descrição do Objeto / Serviço', c.descricao],
-    ['Tipo de Valor', c.tipo_valor],
     ['Observações', c.obs],
   ].filter(([, v]) => v && String(v).trim());
 
@@ -849,63 +800,68 @@ function _buildDocPage(c, done, mesNome, ano, isLast) {
   ).join('');
 
   const now = new Date();
-  const geradoEm = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   return `
     <div style="${pb} position: relative;">
       <div class="doc-accent-bar"></div>
       <div class="doc-header">
-        <div class="doc-header-inner">
-          <img class="doc-header-brasao" src="${brasaoSrc}" alt="Brasão" />
-          <div class="doc-header-text">
-            <div class="inst-estado">Estado de Pernambuco</div>
-            <div class="inst-nome">Prefeitura Municipal de Inajá</div>
-            <div class="inst-cnpj">Inajá – PE</div>
-          </div>
-          <div class="doc-header-right">
-            <div class="ref-label">Referência</div>
-            <div class="ref-value">${mesNome} / ${ano}</div>
-          </div>
-        </div>
-        <div class="doc-title-bar">
-          <span class="doc-title">Solicitação de Empenho</span>
-          <span class="status-badge ${statusClass}">${statusLabel}</span>
-        </div>
+    <div class="doc-header-inner">
+      <img class="doc-header-brasao" src="${brasaoSrc}" alt="Brasão" />
+      <div class="doc-header-text">
+        <div class="inst-estado">Estado do Paraná</div>
+        <div class="inst-nome">Prefeitura Municipal de Inajá</div>
+        <div class="inst-cnpj">Inajá – PR</div>
+      </div>
+      <div class="doc-header-right">
+        <div class="ref-label">Referência</div>
+        <div class="ref-value">${mesNome} / ${ano}</div>
+      </div>
+    </div>
+    <div class="doc-title-bar">
+      <span class="doc-title">Solicitação de Empenho</span>
+    </div>
       </div>
 
       <div class="doc-body">
-        ${watermark}
         <table class="doc-table">
           <thead><tr><th>Campo</th><th>Informação</th></tr></thead>
           <tbody>${tableRows}</tbody>
         </table>
 
-        <div class="valor-box ${statusClass}">
+        <div class="valor-box">
           <div class="vb-label">Valor do Empenho</div>
           <div class="vb-value">${valorStr}</div>
         </div>
 
         <div class="sign-date">
-          Inajá / PE, _____ de ___________________ de ${ano}.
+          Inajá / PR, ${now.getDate()} de ${now.toLocaleDateString('pt-BR', { month: 'long' })} de ${ano}.
         </div>
 
         <div class="sign-section">
           <div class="sign-block">
             <div class="sign-line-top"></div>
-            <div class="sign-label">Credor / Fornecedor</div>
-            <div class="sign-sub">${c.nome || ''}</div>
+            <div class="sign-label">Dotação</div>
+            <div class="sign-sub">____________________________________</div>
           </div>
+          <div class="sign-block">
+            <div class="sign-line-top"></div>
+            <div class="sign-label">Fonte Orçamentária</div>
+            <div class="sign-sub">____________________________________</div>
+          </div>
+          <div class="sign-block">
+            <div class="sign-line-top"></div>
+            <div class="sign-label">Desdobramento</div>
+            <div class="sign-sub">____________________________________</div>
+          </div>
+        </div>
+
+        <div class="sign-section" style="margin-top: 24px;">
           <div class="sign-block">
             <div class="sign-line-top"></div>
             <div class="sign-label">Ordenador de Despesa</div>
             <div class="sign-sub">Prefeitura Municipal de Inajá</div>
           </div>
         </div>
-      </div>
-
-      <div class="doc-footer">
-        Documento gerado em <strong>${geradoEm}</strong> pelo Sistema de Gestão Municipal — Prefeitura de Inajá/PE.
-        Este documento é válido somente com assinatura do ordenador de despesa.
       </div>
     </div>`;
 }
@@ -968,12 +924,11 @@ async function batchEmpenhar() {
 // ── Imprimir Credor (individual) ──────────────────────────────
 async function printCredor(c) {
   try { await ensureBrasaoB64(); } catch (_) {}
-  const done = !!state.empenhados[c.id];
   const mesNome = MESES[state.month];
   const ano = state.year;
 
   const css = _printCSS();
-  const body = _buildDocPage(c, done, mesNome, ano, true);
+  const body = _buildDocPage(c, mesNome, ano, true);
 
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1020,7 +975,7 @@ async function printLote() {
   const ano = state.year;
 
   const pages = lista.map((c, i) =>
-    _buildDocPage(c, !!state.empenhados[c.id], mesNome, ano, i === lista.length - 1)
+    _buildDocPage(c, mesNome, ano, i === lista.length - 1)
   ).join('');
 
   const css = _printCSS();
