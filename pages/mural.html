@@ -781,6 +781,60 @@
 
 
     /* Modal Backdrop style upgrade */
+    /* ── Painel de Estatísticas ── */
+    .mural-stats-panel {
+      position: fixed;
+      top: 0; right: -420px;
+      width: 380px; height: 100vh;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+      z-index: 900;
+      display: flex; flex-direction: column;
+      transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+      overflow: hidden;
+    }
+    .mural-stats-panel.active { right: 0; }
+    .mural-stats-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .mural-stats-body {
+      flex: 1; overflow-y: auto; padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      scrollbar-width: thin;
+    }
+    .mural-stats-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .mural-stats-card-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 10px;
+    }
+    .mural-stats-number {
+      font-size: 32px; font-weight: 800; color: var(--text); line-height: 1;
+    }
+    .mural-stats-prog-bar {
+      height: 8px; background: var(--border); border-radius: 99px; overflow: hidden;
+    }
+    .mural-stats-prog-fill {
+      height: 100%; background: linear-gradient(90deg, var(--blue), var(--green));
+      border-radius: 99px; transition: width 0.6s ease;
+    }
+    .mural-stats-stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0; border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .mural-stats-stat-row:last-child { border-bottom: none; }
+    .mural-stats-stat-label { color: var(--text-2); font-weight: 500; }
+    .mural-stats-stat-val { font-weight: 700; color: var(--text); }
+
     .mural-modal-backdrop {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
