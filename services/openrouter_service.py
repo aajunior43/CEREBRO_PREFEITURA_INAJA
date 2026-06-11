@@ -323,8 +323,7 @@ class OpenRouterService:
 
 
 def build_default_model_policies(default_model: str) -> dict[str, ModelPolicy]:
-    # Forçado para utilizar opencode-go/deepseek-v4-flash em todos os procedimentos
-    forced_model = 'opencode-go/deepseek-v4-flash'
+    forced_model = default_model
     go_fallbacks = ('opencode-go/qwen3.6-plus', 'opencode-go/qwen3.5-plus')
     return {
         'default': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=1200),

@@ -822,63 +822,6 @@
                   </div>
                 </section>
               </div>
-
-              <!-- Optional Meta Fields Accordion -->
-              <details class="ea-collapsible-section" style="margin-top: 8px;">
-                <summary class="ea-collapsible-summary">🛠️ Campos e Dados Complementares Opcionais</summary>
-                <div class="ea-collapsible-content">
-                  <div class="ea-grid" style="margin-top: 12px;">
-                    <label class="ea-field">
-                      <span class="ea-label">Secretaria / setor</span>
-                      <input class="ea-input" id="secretaria" placeholder="Secretaria de Saúde" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Fornecedor / credor</span>
-                      <input class="ea-input" id="fornecedor" placeholder="Nome do fornecedor" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Tipo da despesa</span>
-                      <input class="ea-input" id="tipo_despesa" placeholder="Material, serviço, locação..." />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Finalidade</span>
-                      <input class="ea-input" id="finalidade" placeholder="Pagamento de..." />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Valor</span>
-                      <input class="ea-input" id="valor" placeholder="R$ 0,00" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Competência / período</span>
-                      <input class="ea-input" id="competencia" placeholder="03/2026" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Processo</span>
-                      <input class="ea-input" id="processo" placeholder="Processo administrativo" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Pregão / licitação</span>
-                      <input class="ea-input" id="pregao" placeholder="Pregão 012/2026" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Contrato</span>
-                      <input class="ea-input" id="contrato" placeholder="Contrato 123/2026" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Nota fiscal / OS</span>
-                      <input class="ea-input" id="nota_fiscal" placeholder="NF 000123" />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Fonte / origem</span>
-                      <input class="ea-input" id="fonte" placeholder="Empenho, NF, arquivo, etc." />
-                    </label>
-                    <label class="ea-field">
-                      <span class="ea-label">Observações</span>
-                      <input class="ea-input" id="observacoes" placeholder="Pontos de atenção" />
-                    </label>
-                  </div>
-                </div>
-              </details>
             </div>
           </div>
         </article>
@@ -910,50 +853,6 @@
           </div>
         </article>
 
-        <!-- Advanced Controls Drawer -->
-        <details class="ea-collapsible-section">
-          <summary class="ea-collapsible-summary">⚙️ Opções Avançadas e Painel Técnico</summary>
-          <div class="ea-collapsible-content">
-            <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 16px;">
-              <div class="ea-actions" style="margin: 0; display: flex; flex-wrap: wrap; gap: 8px;">
-                <button class="ea-btn" id="btn-read-file" type="button">Ler Arquivo</button>
-                <button class="ea-btn" id="btn-extract" type="button">Extrair Campos</button>
-                <button class="ea-btn" id="btn-checklist" type="button">Gerar Checklist</button>
-                <button class="ea-btn" id="btn-review" type="button">Revisar Tudo</button>
-                <button class="ea-btn" id="btn-improve" type="button">Melhorar Texto</button>
-                <button class="ea-btn" id="btn-download" type="button">💾 Baixar TXT</button>
-              </div>
-
-              <!-- Technical diagnostics areas accessed by static/js/assistente-empenho.js -->
-              <div style="display: grid; grid-template-columns: 1fr; gap: 12px; border-top: 1px solid rgba(40,95,147,.08); padding-top: 14px;">
-                <div>
-                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 0 0 6px 0; letter-spacing: 0.5px;">📋 Campos Extraídos</h4>
-                  <div class="ea-mini-list" id="painel_campos" style="max-height: 140px; overflow-y: auto;">
-                    <div class="ea-mini-item"><strong>Nenhuma extração realizada ainda.</strong></div>
-                  </div>
-                </div>
-                <div>
-                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 12px 0 6px 0; letter-spacing: 0.5px;">☑️ Checklist de Validação</h4>
-                  <div class="ea-mini-list" id="painel_checklist" style="max-height: 140px; overflow-y: auto;">
-                    <div class="ea-mini-item"><strong>Checklist ainda não gerado.</strong></div>
-                  </div>
-                </div>
-                <div>
-                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 12px 0 6px 0; letter-spacing: 0.5px;">⚖️ Comparador de Versões</h4>
-                  <div class="ea-mini-list" id="painel_diff" style="max-height: 140px; overflow-y: auto;">
-                    <div class="ea-mini-item"><strong>Nenhuma revisão gerada para comparação.</strong></div>
-                  </div>
-                </div>
-                <div>
-                  <h4 style="font-size: 11px; text-transform: uppercase; color: var(--ea-accent); margin: 12px 0 6px 0; letter-spacing: 0.5px;">⏳ Histórico Recente</h4>
-                  <div class="ea-mini-list" id="historico_lista" style="max-height: 140px; overflow-y: auto;">
-                    <div class="ea-mini-item"><strong>Carregando histórico do servidor...</strong></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </details>
       </section>
     </div>
   </div>

@@ -96,6 +96,62 @@ def del_fornecimento_dado():
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/api/fornecimento/templates", methods=["GET"])
+@require_login
+def list_templates():
+    try:
+        import json as _json
+        conn = get_db()
+        rows = conn.execute(
+            "SELECT id, nome, dados, criado_em, atualizado_em FROM fornecimento_templates ORDER BY nome ASC"
+        ).fetchall()
+        return jsonify([
+            {"id": r["id"], "nome": r["nome"], "dados": _json.loads(r["dados"] or "{}"),
+             "criado_em": r["criado_em"], "atualizado_em": r["atualizado_em"]}
+            for r in rows
+        ])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/templates", methods=["POST"])
+@require_login
+def save_template():
+    try:
+        import json as _json
+        data = request.get_json() or {}
+        nome = (data.get("nome") or "").strip()
+        if not nome:
+            return jsonify({"error": "nome é obrigatório"}), 400
+        dados = _json.dumps(data.get("dados") or {}, ensure_ascii=False)
+        conn = get_db()
+        conn.execute(
+            """INSERT INTO fornecimento_templates (nome, dados, atualizado_em)
+               VALUES (?, ?, datetime('now','localtime'))
+               ON CONFLICT(nome) DO UPDATE SET dados=excluded.dados, atualizado_em=excluded.atualizado_em""",
+            (nome, dados)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT id FROM fornecimento_templates WHERE nome=?", (nome,)
+        ).fetchone()
+        return jsonify({"ok": True, "id": row["id"]}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/fornecimento/templates/<int:tid>", methods=["DELETE"])
+@require_login
+def delete_template(tid):
+    try:
+        conn = get_db()
+        conn.execute("DELETE FROM fornecimento_templates WHERE id=?", (tid,))
+        conn.commit()
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/api/fornecimento/solicitacoes", methods=["GET"])
 @require_login
 def list_solicitacoes():

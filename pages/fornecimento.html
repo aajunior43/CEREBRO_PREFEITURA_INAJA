@@ -490,11 +490,9 @@
           </div>
           <hr style="border:none;border-top:1px solid var(--shadow-dark);margin:14px 0;" />
           <div class="fg">
-            <label>Carregar Template</label>
-            <div class="upload-area" id="template-upload-area" style="padding:20px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:24px;height:24px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <div style="font-size:12px;">Carregar arquivo JSON</div>
-              <input type="file" id="template-file-input" accept=".json" style="display:none;" />
+            <label>Templates Salvos</label>
+            <div id="templates-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+              <div style="font-size:12px;color:var(--text-3);">Carregando...</div>
             </div>
           </div>
         </div>
@@ -1508,11 +1506,24 @@ function initSavedDataPickers() {
     });
 
     input.addEventListener('focus', () => {
+      closeAllPickers(field);
+      field.classList.add('open');
       renderPickerOptions(field, input.value);
     });
 
+    input.addEventListener('blur', () => {
+      // pequeno delay para permitir clique nas opções antes de fechar
+      setTimeout(() => {
+        if (!field.contains(document.activeElement)) {
+          field.classList.remove('open');
+        }
+      }, 150);
+    });
+
     input.addEventListener('input', () => {
-      if (!field.classList.contains('open')) return;
+      if (!field.classList.contains('open')) {
+        field.classList.add('open');
+      }
       renderPickerOptions(field, input.value);
     });
 
@@ -1640,49 +1651,94 @@ document.getElementById('btn-refresh-saved').addEventListener('click', () => loa
 document.getElementById('saved-request-search').addEventListener('input', () => loadSavedRequests());
 
 /* ═══════════ TEMPLATE MANAGER ═══════════ */
-document.getElementById('btn-save-template').addEventListener('click', () => {
-  const name = document.getElementById('template-name').value.trim() || 'template';
-  const tmpl = {
-    name,
+function applyTemplate(tmpl) {
+  if (tmpl.form) {
+    $sol.value = tmpl.form.solicitante || '';
+    $emp.value = tmpl.form.empresa || '';
+    $dat.value = tmpl.form.data || todayStr();
+    $obs.value = tmpl.form.obs || '';
+    document.getElementById('obs-counter').textContent = $obs.value.length + '/500';
+  }
+  if (tmpl.items && tmpl.items.length) {
+    items = [];
+    itemIdCounter = 0;
+    tmpl.items.forEach(i => addItem(i));
+  }
+  updateTotals();
+  updatePreview();
+  switchFornecimentoTab('tab-form');
+  showToast('✅ Template carregado.', 'success');
+}
+
+async function loadTemplates() {
+  const container = document.getElementById('templates-list');
+  try {
+    const r = await fetch('/api/fornecimento/templates');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const list = await r.json();
+    if (!list.length) {
+      container.innerHTML = '<div style="font-size:12px;color:var(--text-3);">Nenhum template salvo.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    list.forEach(t => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:var(--radius-sm);box-shadow:var(--neo-in-sm);';
+      row.innerHTML = `
+        <span style="flex:1;font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(t.nome)}">${esc(t.nome)}</span>
+        <button class="btn btn-blue btn-sm" style="padding:4px 10px;font-size:11px;" data-tmpl-load="${t.id}">📂 Usar</button>
+        <button class="btn btn-ghost btn-sm" style="padding:4px 8px;font-size:11px;color:var(--red,#ef4444);" data-tmpl-del="${t.id}" title="Excluir template">🗑</button>
+      `;
+      container.appendChild(row);
+    });
+    container.querySelectorAll('[data-tmpl-load]').forEach(btn => {
+      btn.addEvent      btn.addEventListener('click', async () => {
+        const t = list.find(x => x.id == btn.dataset.tmplLoad);
+        if (t) applyTemplate(t.dados);
+      });
+    });
+    container.querySelectorAll('[data-tmpl-del]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const t = list.find(x => x.id == btn.dataset.tmplDel);
+        if (!t || !confirm(`Excluir o template "${t.nome}"?`)) return;
+        const r = await fetch(`/api/fornecimento/templates/${t.id}`, { method: 'DELETE' });
+        if (r.ok) { showToast('✅ Template excluído.', 'success'); loadTemplates(); }
+        else showToast('❌ Erro ao excluir template.', 'error');
+      });
+    });
+  } catch(e) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-3);">Erro ao carregar templates.</div>';
+  }
+}
+
+document.getElementById('btn-save-template').addEventListener('click', async () => {
+  const name = document.getElementById('template-name').value.trim();
+  if (!name) { showToast('⚠️ Informe um nome para o template.', 'error'); return; }
+  const dados = {
     form: { solicitante: $sol.value, empresa: $emp.value, data: $dat.value, obs: $obs.value },
     items: items.map(i => ({ nome: i.nome, desc: i.desc, qtd: i.qtd, preco: i.preco }))
   };
-  download(name.replace(/\s+/g, '_') + '.json', JSON.stringify(tmpl, null, 2), 'application/json');
+  try {
+    const r = await fetch('/api/fornecimento/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: name, dados })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('template-name').value = '';
+    showToast('✅ Template salvo no banco.', 'success');
+    loadTemplates();
+  } catch(e) {
+    showToast('❌ Erro ao salvar template: ' + e.message, 'error');
+  }
 });
 
-const tmplUpload = document.getElementById('template-upload-area');
-const tmplInput = document.getElementById('template-file-input');
-tmplUpload.addEventListener('click', () => tmplInput.click());
-tmplInput.addEventListener('change', () => {
-  const file = tmplInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const tmpl = JSON.parse(e.target.result);
-      if (tmpl.form) {
-        $sol.value = tmpl.form.solicitante || '';
-        $emp.value = tmpl.form.empresa || '';
-        $dat.value = tmpl.form.data || todayStr();
-        $obs.value = tmpl.form.obs || '';
-        document.getElementById('obs-counter').textContent = $obs.value.length + '/500';
-      }
-      if (tmpl.items && tmpl.items.length) {
-        items = [];
-        itemIdCounter = 0;
-        tmpl.items.forEach(i => addItem(i));
-      }
-      updateTotals();
-      updatePreview();
-      // Switch to form tab
-      document.querySelectorAll('.forn-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.forn-panel').forEach(p => p.classList.remove('active'));
-      document.querySelector('[data-panel="tab-form"]').classList.add('active');
-      document.getElementById('tab-form').classList.add('active');
-      alert('Template carregado com sucesso!');
-    } catch { alert('Erro ao ler template.'); }
-  };
-  reader.readAsText(file);
+loadTemplates();
+
+</script>
+</body>
+</html>
+;
   tmplInput.value = '';
 });
 

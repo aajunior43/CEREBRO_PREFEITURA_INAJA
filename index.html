@@ -1435,6 +1435,19 @@
     <span class="progress-label" id="progress-label">0% concluído</span>
   </div>
 
+  <!-- CHIPS DE STATUS RAPIDO -->
+  <div class="status-chips-bar" id="status-chips-bar">
+    <button class="status-chip active" data-status="" title="Mostrar todos os credores">
+      <span class="status-chip-dot"></span>Todos
+    </button>
+    <button class="status-chip" data-status="pendente" title="Mostrar apenas pendentes">
+      <span class="status-chip-dot"></span>Pendentes
+    </button>
+    <button class="status-chip" data-status="empenhado" title="Mostrar apenas empenhados">
+      <span class="status-chip-dot"></span>Empenhados
+    </button>
+  </div>
+
   <!-- TOOLBAR PRINCIPAL -->
   <div class="toolbar toolbar-modern">
     <div class="search-box search-box-modern">
@@ -1446,6 +1459,12 @@
     </div>
 
     <div class="toolbar-actions toolbar-actions-modern">
+      <button class="btn btn-ripple" id="btn-empenhar-todos-tb" title="Empenhar todos os credores pendentes do mês" data-tooltip="Empenhar todos os pendentes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Empenhar Todos
+      </button>
       <button class="btn btn-primary btn-ripple" id="btn-add-credor" title="Adicionar credor" data-tooltip="Adicionar novo credor fixo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="12" y1="5" x2="12" y2="19" />
@@ -2741,7 +2760,7 @@
   </script>
   
   <script src="/static/js/document-autosave.js" defer></script>
-  <script src="/static/js/app.js?v=20260511-0959" defer></script>
+  <script src="/static/js/app.js?v=20260610-1822" defer></script>
   
   <script>
   (function() {

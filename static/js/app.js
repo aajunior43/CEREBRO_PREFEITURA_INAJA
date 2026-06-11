@@ -259,6 +259,17 @@ function render() {
     renderCards();
     renderStats();
     renderPagination();
+    renderStatusChips();
+  });
+}
+
+function renderStatusChips() {
+  const bar = document.getElementById('status-chips-bar');
+  if (!bar) return;
+  const current = state.filterStatus || '';
+  bar.querySelectorAll('.status-chip').forEach(btn => {
+    const val = btn.dataset.status || '';
+    btn.classList.toggle('active', val === current);
   });
 }
 
@@ -367,6 +378,19 @@ function buildCard(c, done, idx) {
   const isVariavel = tipo.toUpperCase().includes('VAR');
   const valorStr = (isVariavel && !valor) ? '— variável' : formatBRL(valor);
 
+  // Data quality badge
+  const missingCnpj = !c.cnpj;
+  const missingEmail = !c.email;
+  const valorZeroFixo = !isVariavel && (!valor || valor === 0);
+  const hasDataIssue = missingCnpj || missingEmail || valorZeroFixo;
+  const dataIssueTitles = [];
+  if (missingCnpj) dataIssueTitles.push('Sem CNPJ');
+  if (missingEmail) dataIssueTitles.push('Sem e-mail');
+  if (valorZeroFixo) dataIssueTitles.push('Valor R$0');
+  const badgeAlerta = hasDataIssue
+    ? `<span class="badge-alerta" title="${dataIssueTitles.join(' · ')}">!</span>`
+    : '';
+
   const deptClass = {
     'ADMINISTRAÇÃO': 'dept-admin',
     'ASSISTÊNCIA SOCIAL': 'dept-social',
@@ -396,15 +420,18 @@ function buildCard(c, done, idx) {
         <button class="btn-edit" data-action="edit" title="Editar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="btn-duplicate" data-action="duplicate" title="Duplicar credor">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="btn-print" data-action="print" title="Imprimir">
+        <button class="btn-print" data-action="print" title="Imprimir solicitação">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
         </button>
         <button class="btn-print" data-action="download-pdf" title="Baixar PDF">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
+        <div style="position:relative;">
+          <button class="btn-more-actions" data-action="more" title="Mais ações">···</button>
+          <div class="actions-dropdown">
+            <button class="actions-dropdown-item" data-action="duplicate">Duplicar</button>
+          </div>
+        </div>
         <button class="btn-empenhar ${done ? 'done-btn' : 'pending'}" data-action="toggle">
           ${done ? '✓ Empenhado' : '○ Empenhar'}
         </button>
@@ -523,13 +550,17 @@ function renderStats() {
   const deptColors = { 'ADMINISTRAÇÃO': 'var(--blue)', 'ASSISTÊNCIA SOCIAL': 'var(--purple)', 'EDUCAÇÃO': 'var(--green)', 'SAÚDE': 'var(--orange)' };
   const deptEl = document.getElementById('dept-stats-row');
   if (deptEl) {
-    deptEl.innerHTML = Object.entries(depts).sort((a,b) => b[1].total - a[1].total).map(([d, s]) =>
-      `<button class="dept-stat-btn" data-dept="${d}" style="--dept-color:${deptColors[d]||'var(--text-3)'}">
-        <span class="dept-stat-name">${d.split(' ')[0]}</span>
-        <span class="dept-stat-count">${s.done}/${s.total}</span>
-        <span class="dept-stat-valor">${s.valor > 0 ? formatBRL(s.valor) : '—'}</span>
-      </button>`
-    ).join('');
+    deptEl.innerHTML = Object.entries(depts).sort((a,b) => b[1].total - a[1].total).map(([d, s]) => {
+      const pctDept = s.total > 0 ? Math.round((s.done / s.total) * 100) : 0;
+      return `<button class="dept-stat-btn" data-dept="${d}" style="--dept-color:${deptColors[d]||'var(--text-3)'}">
+        <div class="dept-stat-btn-top">
+          <span class="dept-stat-name">${d.split(' ')[0]}</span>
+          <span class="dept-stat-count">${s.done}/${s.total}</span>
+          <span class="dept-stat-valor">${s.valor > 0 ? formatBRL(s.valor) : '—'}</span>
+        </div>
+        <div class="dept-stat-bar"><div class="dept-stat-bar-fill" style="width:${pctDept}%"></div></div>
+      </button>`;
+    }).join('');
     deptEl.querySelectorAll('.dept-stat-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         const d = btn.dataset.dept;
@@ -1394,7 +1425,19 @@ function attachEvents() {
     else if (action === 'duplicate') duplicateCredor(credor);
     else if (action === 'print') printCredor(credor);
     else if (action === 'download-pdf') downloadPDFCredor(credor);
+    else if (action === 'more') {
+      const dropdown = actionBtn.nextElementSibling;
+      if (!dropdown) return;
+      const isOpen = dropdown.classList.contains('open');
+      document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+      if (!isOpen) dropdown.classList.add('open');
+    }
   });
+
+  // Fecha dropdowns ao clicar fora
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.actions-dropdown.open').forEach(d => d.classList.remove('open'));
+  }, true);
 
   document.getElementById('btn-prev-month').addEventListener('click', async () => {
     if (state.month === 0) { state.month = 11; state.year--; }
@@ -1493,9 +1536,9 @@ function attachEvents() {
       : `${svgExpand} Expandir`;
   });
 
+
   document.getElementById('btn-print-lote').addEventListener('click', printLote);
   document.getElementById('btn-download-pdf-lote').addEventListener('click', downloadPDFLote);
-
   document.getElementById('btn-add-credor').addEventListener('click', () => openModal(null));
 
   document.getElementById('modal-close').addEventListener('click', closeModal);
@@ -1705,6 +1748,25 @@ function attachEvents() {
 
   document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
   document.getElementById('btn-empenhar-todos')?.addEventListener('click', batchEmpenhar);
+  document.getElementById('btn-empenhar-todos-tb')?.addEventListener('click', batchEmpenhar);
+
+  // Status chips bar
+  const chipsBar = document.getElementById('status-chips-bar');
+  if (chipsBar) {
+    chipsBar.addEventListener('click', async e => {
+      const chip = e.target.closest('.status-chip');
+      if (!chip) return;
+      state.filterStatus = chip.dataset.status || '';
+      state.page = 1;
+      setLoading(true);
+      try {
+        await loadCredores();
+        render();
+      } finally {
+        setLoading(false);
+      }
+    });
+  }
 
   // Lixeira
   document.getElementById('btn-lixeira').addEventListener('click', openLixeira);

@@ -281,14 +281,17 @@ def restaurar_credor(cid):
         ).fetchone()
         if not row:
             return jsonify({"error": "Credor não encontrado na lixeira"}), 404
-        conflito = conn.execute(
-            "SELECT id FROM credores WHERE ativo=1 AND UPPER(nome)=UPPER(?)",
-            (row["nome"],),
-        ).fetchone()
-        if conflito:
-            return jsonify(
-                {"error": f'Já existe um credor ativo com o nome "{row["nome"]}"'}
-            ), 409
+        # Checa duplicata apenas por CNPJ (consistente com a regra de criação).
+        # Não bloqueia por nome pois o sistema permite múltiplos credores com o mesmo nome.
+        if row["cnpj"]:
+            conflito_cnpj = conn.execute(
+                "SELECT id FROM credores WHERE ativo=1 AND cnpj=? AND id<>?",
+                (row["cnpj"], cid),
+            ).fetchone()
+            if conflito_cnpj:
+                return jsonify(
+                    {"error": f'Já existe um credor ativo com o CNPJ "{row["cnpj"]}"'}
+                ), 409
         conn.execute(
             "UPDATE credores SET ativo=1, atualizado_em=datetime('now','localtime') WHERE id=?",
             (cid,),

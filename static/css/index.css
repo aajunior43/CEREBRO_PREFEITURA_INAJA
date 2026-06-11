@@ -6758,3 +6758,196 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+/* ============================================================
+   MELHORIAS UI CREDORES FIXOS
+   ============================================================ */
+
+/* --- Chips de status rapido --- */
+.status-chips-bar {
+  max-width: 1200px;
+  margin: 0 auto 4px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.status-chip:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.status-chip.active[data-status=""] {
+  background: var(--surface-2);
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.status-chip.active[data-status="pendente"] {
+  background: rgba(217,124,58,0.12);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.status-chip.active[data-status="empenhado"] {
+  background: rgba(26,122,73,0.10);
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+.status-chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-chip[data-status="pendente"] .status-chip-dot { background: var(--orange); }
+.status-chip[data-status="empenhado"] .status-chip-dot { background: var(--green); }
+.status-chip[data-status=""] .status-chip-dot { background: var(--text-3); }
+
+/* --- Badge de alerta dados incompletos --- */
+.badge-alerta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(217,124,58,0.15);
+  border: 1.5px solid var(--orange);
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 900;
+  margin-left: 6px;
+  vertical-align: middle;
+  cursor: default;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* --- Menu overflow acoes secundarias --- */
+.btn-more-actions {
+  width: 36px;
+  height: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 200;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.btn-more-actions:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.btn-more-actions > * { pointer-events: none; }
+
+.actions-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 9999;
+  min-width: 155px;
+  padding: 4px;
+  display: none;
+}
+.actions-dropdown.open { display: block; }
+
+.actions-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.actions-dropdown-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.actions-dropdown-item svg { flex-shrink: 0; opacity: 0.7; }
+
+/* --- Mini-barra de progresso nos botoes de departamento --- */
+.dept-stat-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(0,0,0,0.10);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+.dept-stat-bar-fill {
+  height: 100%;
+  background: var(--dept-color, var(--text-3));
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  min-width: 0;
+}
+.dept-stat-btn:hover .dept-stat-bar,
+.dept-stat-btn.active-dept .dept-stat-bar { background: rgba(255,255,255,0.25); }
+.dept-stat-btn:hover .dept-stat-bar-fill,
+.dept-stat-btn.active-dept .dept-stat-bar-fill { background: white; }
+
+/* dept-stat-btn layout atualizado para suportar barra */
+.dept-stat-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.dept-stat-btn-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Reducao da col-action com menos botoes visiveis */
+.card-row {
+  grid-template-columns: 1fr 165px 135px 130px 230px;
+}
+
+/* Botao Empenhar Todos na toolbar */
+#btn-empenhar-todos-tb {
+  background: linear-gradient(135deg, var(--green-dark, #15803d) 0%, #166534 100%);
+  color: white;
+  border: none;
+  gap: 6px;
+}
+#btn-empenhar-todos-tb:hover {
+  box-shadow: 0 4px 14px rgba(22,101,52,0.4);
+  transform: translateY(-1px);
+}
+

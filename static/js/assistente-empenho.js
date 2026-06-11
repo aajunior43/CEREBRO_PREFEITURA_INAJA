@@ -9,6 +9,10 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   }
 
   const $ = id => document.getElementById(id);
+  const addListener = (id, event, callback) => {
+    const el = $(id);
+    if (el) el.addEventListener(event, callback);
+  };
   const esc = value => String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -43,10 +47,10 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   const loader = $('ea-loader');
   const errorBox = $('ea-error');
   const statusBox = $('ea-status');
-  const painelCampos = $('painel_campos');
-  const painelChecklist = $('painel_checklist');
-  const painelDiff = $('painel_diff');
-  const historicoLista = $('historico_lista');
+  const painelCampos = $('painel_campos') || { set innerHTML(val) {}, insertAdjacentHTML() {} };
+  const painelChecklist = $('painel_checklist') || { set innerHTML(val) {} };
+  const painelDiff = $('painel_diff') || { set innerHTML(val) {} };
+  const historicoLista = $('historico_lista') || { set innerHTML(val) {}, querySelectorAll() { return []; } };
 
   let currentFiles = [];
   let currentHistory = [];
@@ -129,20 +133,20 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     const fileNames = currentFiles.map(f => f.name).join(', ');
     const fileTypes = currentFiles.map(f => f.type).join(', ');
     return {
-      secretaria: clean(fields.secretaria.value),
-      fornecedor: clean(fields.fornecedor.value),
-      tipo_despesa: clean(fields.tipo_despesa.value),
-      finalidade: clean(fields.finalidade.value),
-      valor: clean(fields.valor.value),
-      competencia: clean(fields.competencia.value),
-      processo: clean(fields.processo.value),
-      pregao: clean(fields.pregao.value),
-      contrato: clean(fields.contrato.value),
-      nota_fiscal: clean(fields.nota_fiscal.value),
-      fonte: clean(fields.fonte.value),
-      observacoes: clean(fields.observacoes.value),
-      texto_base: clean(fields.texto_base.value),
-      descricao_atual: clean(fields.descricao_resultado.value),
+      secretaria: clean(fields.secretaria?.value),
+      fornecedor: clean(fields.fornecedor?.value),
+      tipo_despesa: clean(fields.tipo_despesa?.value),
+      finalidade: clean(fields.finalidade?.value),
+      valor: clean(fields.valor?.value),
+      competencia: clean(fields.competencia?.value),
+      processo: clean(fields.processo?.value),
+      pregao: clean(fields.pregao?.value),
+      contrato: clean(fields.contrato?.value),
+      nota_fiscal: clean(fields.nota_fiscal?.value),
+      fonte: clean(fields.fonte?.value),
+      observacoes: clean(fields.observacoes?.value),
+      texto_base: clean(fields.texto_base?.value),
+      descricao_atual: clean(fields.descricao_resultado?.value),
       arquivo_nome: fileNames,
       arquivo_tipo: fileTypes,
     };
@@ -379,11 +383,11 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
   });
 
-  $('btn-clear-file').addEventListener('click', () => clearFiles());
-  $('btn-read-file').addEventListener('click', async () => {
+  addListener('btn-clear-file', 'click', () => clearFiles());
+  addListener('btn-read-file', 'click', async () => {
     try { await readCurrentFiles(); } catch (err) { showError(err instanceof Error ? err.message : 'Erro ao ler arquivos.'); }
   });
-  $('btn-extract').addEventListener('click', async () => {
+  addListener('btn-extract', 'click', async () => {
     try {
       await ensureTextBase();
       const data = await callAssistant('extract_fields');
@@ -393,7 +397,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError(err instanceof Error ? err.message : 'Erro ao extrair campos.');
     }
   });
-  $('btn-checklist').addEventListener('click', async () => {
+  addListener('btn-checklist', 'click', async () => {
     try {
       await ensureTextBase();
       const data = await callAssistant('checklist');
@@ -403,7 +407,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError(err instanceof Error ? err.message : 'Erro ao gerar checklist.');
     }
   });
-  $('btn-generate').addEventListener('click', async () => {
+  addListener('btn-generate', 'click', async () => {
     try { await ensureTextBase(); } catch (err) { showError(err instanceof Error ? err.message : 'Erro ao ler arquivos.'); return; }
     if (!clean(fields.texto_base.value)) {
       showError('Cole um texto ou envie arquivos antes de gerar a descricao.');
@@ -420,7 +424,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError(err instanceof Error ? err.message : 'Erro ao gerar descricao.');
     }
   });
-  $('btn-improve').addEventListener('click', async () => {
+  addListener('btn-improve', 'click', async () => {
     if (!clean(fields.descricao_resultado.value)) {
       showError('Gere ou cole uma descricao antes de melhorar.');
       return;
@@ -436,7 +440,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError(err instanceof Error ? err.message : 'Erro ao melhorar descricao.');
     }
   });
-  $('btn-review').addEventListener('click', async () => {
+  addListener('btn-review', 'click', async () => {
     try {
       await ensureTextBase();
       const data = await callAssistant('review_bundle');
@@ -450,15 +454,15 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError(err instanceof Error ? err.message : 'Erro ao revisar empenho.');
     }
   });
-  $('btn-clear').addEventListener('click', () => {
-    Object.values(fields).forEach(el => { el.value = ''; });
+  addListener('btn-clear', 'click', () => {
+    Object.values(fields).forEach(el => { if (el) el.value = ''; });
     clearFiles();
     painelCampos.innerHTML = '<div class="ea-mini-item"><strong>Nenhuma extracao ainda.</strong></div>';
     painelChecklist.innerHTML = '<div class="ea-mini-item"><strong>Checklist ainda nao gerado.</strong></div>';
     painelDiff.innerHTML = '<div class="ea-mini-item"><strong>Use a revisao para gerar o diff.</strong></div>';
     hideMessages();
   });
-  $('btn-copy').addEventListener('click', async () => {
+  addListener('btn-copy', 'click', async () => {
     const text = clean(fields.descricao_resultado.value);
     if (!text) {
       showError('Nao ha descricao para copiar.');
@@ -471,7 +475,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError('Nao foi possivel copiar automaticamente.');
     }
   });
-  $('btn-download').addEventListener('click', () => {
+  addListener('btn-download', 'click', () => {
     const text = clean(fields.descricao_resultado.value);
     if (!text) {
       showError('Nao ha descricao para baixar.');
