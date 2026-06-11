@@ -10,7 +10,7 @@ if os.path.exists(db_path):
     try:
         cursor.execute(
             "UPDATE configuracoes SET valor = ? WHERE chave = ?",
-            ("opencode-go/qwen3.6-plus", "api_openrouter_modelo")
+            ("opencode-go/minimax-m3", "api_openrouter_modelo")
         )
         conn.commit()
         print("Model configuration updated successfully.")
