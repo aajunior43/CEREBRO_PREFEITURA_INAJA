@@ -190,7 +190,7 @@ class OpenRouterService:
                     raise translated from exc
                 self._sleep_before_retry(attempt)
             except ValueError as exc:
-                raise AIServiceError(str(exc), user_message='A IA retornou uma resposta inválida. Tente novamente.', status_code=502, code='invalid_response') from exc
+                raise AIServiceError(str(exc), user_message='A IA retornou uma resposta inválida. Tente novamente.', status_code=422, code='invalid_response') from exc
         raise AIServiceError('Falha inesperada ao chamar modelo.', status_code=500)
 
     def _build_model_chain(self, policy: ModelPolicy) -> list[str]:
@@ -326,12 +326,12 @@ def build_default_model_policies(default_model: str) -> dict[str, ModelPolicy]:
     forced_model = default_model
     go_fallbacks = ('opencode-go/qwen3.6-plus', 'opencode-go/qwen3.5-plus')
     return {
-        'default': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=1200),
-        'chat': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=2000),
-        'empenho': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=14000, max_tokens=1400),
-        'auditoria_documento': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=15000, max_tokens=1800),
-        'extrato': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=600),
-        'renomeacao_arquivo': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=400),
+        'default': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=4096),
+        'chat': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=12000, max_tokens=4096),
+        'empenho': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=14000, max_tokens=4096),
+        'auditoria_documento': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=15000, max_tokens=4096),
+        'extrato': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=2048),
+        'renomeacao_arquivo': ModelPolicy(primary=forced_model, fallbacks=go_fallbacks, max_input_chars=9000, max_tokens=2048),
     }
 
 
