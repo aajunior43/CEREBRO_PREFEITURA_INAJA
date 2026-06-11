@@ -21,6 +21,26 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     .replace(/'/g, '&#39;');
   const clean = value => String(value ?? '').trim();
 
+  const logConsole = (type, message) => {
+    const consoleEl = $('terminal-console');
+    if (!consoleEl) return;
+    const time = new Date().toLocaleTimeString('pt-BR', { hour12: false });
+    const badgeColor = {
+      'INFO': '#38bdf8',
+      'ARQUIVO': '#c084fc',
+      'OCR': '#f97316',
+      'IA': '#34d399',
+      'SISTEMA': '#94a3b8',
+      'ERRO': '#f87171'
+    }[type] || '#fff';
+
+    const line = document.createElement('div');
+    line.className = 'terminal-line';
+    line.innerHTML = `<span style="color: #64748b;">[${time}]</span> <span style="color: ${badgeColor}; font-weight: bold;">[${type}]</span> <span style="color: #cbd5e1;">${esc(message)}</span>`;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  };
+
   const fields = {
     secretaria: $('secretaria'),
     fornecedor: $('fornecedor'),
@@ -68,6 +88,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     statusBox.textContent = '';
     errorBox.style.display = 'block';
     errorBox.textContent = message;
+    logConsole('ERRO', message);
   }
 
   function showStatus(message) {
@@ -75,6 +96,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     errorBox.textContent = '';
     statusBox.style.display = 'block';
     statusBox.textContent = message;
+    logConsole('INFO', message);
   }
 
   function hideMessages() {
@@ -291,20 +313,26 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   }
 
   async function extractTextFromFile(file) {
+    logConsole('ARQUIVO', `Iniciando extração do arquivo: ${file.name} (${file.type || 'tipo desconhecido'})`);
     if (file.type === 'application/pdf') {
       if (!pdfLib?.getDocument) throw new Error('Leitor de PDF indisponivel no momento.');
+      logConsole('OCR', 'Lendo cabeçalho do arquivo PDF...');
       const pdf = await pdfLib.getDocument({ data: await file.arrayBuffer() }).promise;
       let fullText = '';
       const totalPages = Math.min(pdf.numPages, 30);
+      logConsole('OCR', `PDF aberto. Total de páginas: ${pdf.numPages} (lendo no máximo ${totalPages}).`);
       for (let i = 1; i <= totalPages; i++) {
         showStatus(`Lendo PDF: pagina ${i}/${totalPages}...`);
+        logConsole('OCR', `Página ${i}/${totalPages}: Extraindo texto nativo...`);
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         const pageText = textContent.items.map(item => item.str).join(' ');
         if (pageText.trim().length >= 40) {
           fullText += pageText + '\n';
+          logConsole('OCR', `Página ${i}: Sucesso! Extraídos ${pageText.trim().length} caracteres nativos.`);
           continue;
         }
+        logConsole('OCR', `Página ${i}: Texto nativo insuficiente (< 40 caracteres). Iniciando OCR via Tesseract.js...`);
         const viewport = page.getViewport({ scale: 2 });
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -313,14 +341,19 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
         await page.render({ canvasContext: context, viewport }).promise;
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
         const result = await Tesseract.recognize(blob, 'por');
-        fullText += (result?.data?.text || '') + '\n';
+        const ocrText = result?.data?.text || '';
+        fullText += ocrText + '\n';
+        logConsole('OCR', `Página ${i}: OCR concluído. Extraídos ${ocrText.trim().length} caracteres.`);
       }
+      logConsole('OCR', `Fim da leitura do PDF. Total extraído: ${fullText.length} caracteres.`);
       return fullText;
     }
     if (file.type.startsWith('image/')) {
-      showStatus('Executando OCR da imagem...');
+      logConsole('OCR', `Executando OCR diretamente na imagem: ${file.name}...`);
       const result = await Tesseract.recognize(file, 'por');
-      return result?.data?.text || '';
+      const ocrText = result?.data?.text || '';
+      logConsole('OCR', `OCR da imagem concluído. Extraídos ${ocrText.trim().length} caracteres.`);
+      return ocrText;
     }
     throw new Error('Tipo de arquivo nao suportado. Envie PDF ou imagem.');
   }
@@ -354,16 +387,30 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
   async function callAssistant(action) {
     hideMessages();
     setBusy(true);
+    const payload = payloadFromForm();
+    logConsole('IA', `Chamando API: acao='${action}'...`);
+    const startTime = performance.now();
     try {
       const response = await fetch('/api/empenho-assistente', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload: payloadFromForm() }),
+        body: JSON.stringify({ action, payload }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      const duration = (performance.now() - startTime).toFixed(0);
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+      const meta = data.meta || {};
+      const cacheInfo = meta.cached ? ' [CACHE HIT]' : '';
+      const modelInfo = meta.model ? ` (modelo: ${meta.model})` : '';
+      logConsole('IA', `Resposta recebida em ${duration}ms${modelInfo}${cacheInfo}.`);
       if (data.history_id) await loadHistory();
       return data;
+    } catch (err) {
+      const duration = (performance.now() - startTime).toFixed(0);
+      logConsole('ERRO', `Erro na chamada da API após ${duration}ms: ${err.message}`);
+      throw err;
     } finally {
       setBusy(false);
     }
@@ -496,6 +543,13 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
     const pos = fields.descricao_resultado.selectionStart;
     fields.descricao_resultado.value = fields.descricao_resultado.value.toUpperCase();
     fields.descricao_resultado.setSelectionRange(pos, pos);
+  });
+
+  addListener('btn-clear-terminal', 'click', () => {
+    const consoleEl = $('terminal-console');
+    if (consoleEl) {
+      consoleEl.innerHTML = '<div class="terminal-line"><span style="color: #94a3b8;">[SISTEMA] Console de diagnóstico limpo.</span></div>';
+    }
   });
 
   loadHistory();
