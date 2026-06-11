@@ -402,7 +402,7 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
         throw new Error(data.error || `HTTP ${response.status}`);
       }
       const meta = data.meta || {};
-      const cacheInfo = meta.cached ? ' [CACHE HIT]' : '';
+      const cacheInfo = meta.cached ? ' [RESPOSTA DO CACHE]' : '';
       const modelInfo = meta.model ? ` (modelo: ${meta.model})` : '';
       logConsole('IA', `Resposta recebida em ${duration}ms${modelInfo}${cacheInfo}.`);
       if (data.history_id) await loadHistory();
