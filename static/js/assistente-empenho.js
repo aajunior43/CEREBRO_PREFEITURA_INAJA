@@ -515,10 +515,37 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       showError('Nao ha descricao para copiar.');
       return;
     }
-    try {
-      await navigator.clipboard.writeText(text);
+    
+    let success = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        success = true;
+      } catch (e) {
+        success = false;
+      }
+    }
+    
+    if (!success) {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        success = document.execCommand('copy');
+        document.body.removeChild(textArea);
+      } catch (err) {
+        success = false;
+      }
+    }
+
+    if (success) {
       showStatus('Descricao copiada para a area de transferencia.');
-    } catch {
+    } else {
       showError('Nao foi possivel copiar automaticamente.');
     }
   });
