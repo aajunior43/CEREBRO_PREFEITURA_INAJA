@@ -400,8 +400,9 @@ def extract_openrouter_text(payload: dict[str, Any]) -> str:
                 parts.append(item.get('text', ''))
         content = ''.join(parts)
     content = (content or '').strip()
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL | re.IGNORECASE).strip()
     if not content:
-        raise ValueError('A IA retornou conteúdo vazio.')
+        raise ValueError('A IA retornou conteúdo vazio após remoção do bloco de raciocínio.')
     return content
 
 
