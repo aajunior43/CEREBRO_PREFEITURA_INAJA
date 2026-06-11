@@ -111,19 +111,44 @@ window.__ASSISTENTE_EMPENHO_CUSTOM__ = true;
       const file = filesList[i];
       if (!currentFiles.some(f => f.name === file.name && f.size === file.size)) {
         currentFiles.push(file);
+        logConsole('ARQUIVO', `Arquivo selecionado: ${file.name} (${formatSize(file.size)})`);
+        uploadFileToCentro(file);
       }
     }
     updateFilesUI();
   }
 
+  async function uploadFileToCentro(file) {
+    const formData = new FormData();
+    formData.append('arquivo', file);
+    formData.append('categoria', 'empenho-fontes');
+    formData.append('referencia', 'assistente-empenho');
+    formData.append('descricao', 'Arquivo de origem carregado via Gerador de Empenho');
+    logConsole('ARQUIVO', `Salvando ${file.name} no Centro de Documentos...`);
+    try {
+      const response = await fetch('/api/documentos', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      logConsole('SISTEMA', `Documento ${file.name} arquivado com sucesso no Centro de Documentos! (ID: ${data.id})`);
+    } catch (err) {
+      logConsole('ERRO', `Falha ao registrar ${file.name} no Centro de Documentos: ${err.message}`);
+    }
+  }
+
   function removeFile(index) {
+    const file = currentFiles[index];
     currentFiles.splice(index, 1);
+    logConsole('ARQUIVO', `Arquivo removido da fila: ${file ? file.name : ''}`);
     updateFilesUI();
   }
 
   function clearFiles() {
     currentFiles = [];
     fileInput.value = '';
+    logConsole('ARQUIVO', 'Fila de arquivos limpa.');
     updateFilesUI();
   }
 

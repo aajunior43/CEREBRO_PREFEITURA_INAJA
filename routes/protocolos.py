@@ -227,6 +227,21 @@ def protocolo_anexos_upload(prot_id):
             "INSERT INTO protocolo_anexo_contents (anexo_id, content) VALUES (?, ?)",
             (anexo_id, content),
         )
+        
+        # Salva também no Centro de Documentos para unificação
+        try:
+            from routes.documentos import persist_document_file
+            persist_document_file(
+                original_name=file.filename,
+                content=content,
+                categoria=f"protocolo-{prot_id}",
+                referencia=f"PROT-{prot_id}",
+                descricao=f"Anexo enviado para o Protocolo ID {prot_id}",
+                mime_type=file.mimetype or "application/octet-stream"
+            )
+        except Exception as doc_err:
+            print(f"Erro ao salvar anexo de protocolo no Centro de Documentos: {doc_err}")
+            
         conn.commit()
         return jsonify(
             dict(
