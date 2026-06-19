@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - traefik-public
+      - internal
+    # Para projetos com banco de dados, adicione volumes aqui:
+    # volumes:
+    #   - db-data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.NOME_PROJETO.rule=Host(`DOMINIO.srv1767486.hstgr.cloud`)"
+      - "traefik.http.routers.NOME_PROJETO.entrypoints=websecure"
+      - "traefik.http.routers.NOME_PROJETO.tls.certresolver=letsencrypt"
+      - "traefik.http.services.NOME_PROJETO.loadbalancer.server.port=PORTA_APP"
+
+# volumes:
+#   db-data:
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    driver: bridge

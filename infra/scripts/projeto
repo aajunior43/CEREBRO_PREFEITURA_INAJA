@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+# Gerenciador de projetos Docker no VPS
+# Uso: projeto <comando> [nome-do-projeto]
+
+set -euo pipefail
+
+DOCKER_DIR="/docker"
+TRAEFIK_DIR="$DOCKER_DIR/traefik"
+
+_cor_verde='\033[0;32m'
+_cor_amarelo='\033[0;33m'
+_cor_vermelho='\033[0;31m'
+_cor_azul='\033[0;34m'
+_sem_cor='\033[0m'
+
+info()  { echo -e "${_cor_azul}[INFO]${_sem_cor} $*"; }
+ok()    { echo -e "${_cor_verde}[OK]${_sem_cor} $*"; }
+aviso() { echo -e "${_cor_amarelo}[AVISO]${_sem_cor} $*"; }
+erro()  { echo -e "${_cor_vermelho}[ERRO]${_sem_cor} $*" >&2; exit 1; }
+
+_lista_projetos() {
+    find "$DOCKER_DIR" -mindepth 1 -maxdepth 1 -type d \
+        ! -name 'traefik' ! -name '_*' \
+        -exec basename {} \; | sort
+}
+
+_projeto_existe() {
+    [[ -d "$DOCKER_DIR/$1" ]]
+}
+
+_checar_projeto() {
+    local nome="$1"
+    _projeto_existe "$nome" || erro "Projeto '$nome' não encontrado em $DOCKER_DIR/"
+}
+
+cmd_listar() {
+    echo ""
+    echo "Projetos disponíveis:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    printf "%-20s %-12s %s\n" "PROJETO" "STATUS" "IMAGEM"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    while IFS= read -r nome; do
+        local dir="$DOCKER_DIR/$nome"
+        local status imagem
+        status=$(cd "$dir" && docker compose ps --format "{{.Status}}" 2>/dev/null | head -1 || echo "parado")
+        imagem=$(cd "$dir" && docker compose ps --format "{{.Image}}" 2>/dev/null | head -1 || echo "-")
+        [[ -z "$status" ]] && status="parado"
+        printf "%-20s %-12s %s\n" "$nome" "$status" "$imagem"
+    done < <(_lista_projetos)
+    echo ""
+    # recursos
+    echo "Recursos do servidor:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    free -h | grep -E "Mem|Swap"
+    df -h / | tail -1 | awk '{print "Disco: " $3 " usado / " $2 " total (" $5 " cheio)"}'
+    echo ""
+}
+
+cmd_subir() {
+    local nome="$1"
+    _checar_projeto "$nome"
+    info "Subindo projeto '$nome'..."
+    cd "$DOCKER_DIR/$nome"
+    docker compose up -d --build
+    ok "Projeto '$nome' iniciado."
+}
+
+cmd_parar() {
+    local nome="$1"
+    _checar_projeto "$nome"
+    info "Parando projeto '$nome'..."
+    cd "$DOCKER_DIR/$nome"
+    docker compose down
+    ok "Projeto '$nome' parado."
+}
+
+cmd_reiniciar() {
+    local nome="$1"
+    _checar_projeto "$nome"
+    info "Reiniciando projeto '$nome'..."
+    cd "$DOCKER_DIR/$nome"
+    docker compose down
+    docker compose up -d --build
+    ok "Projeto '$nome' reiniciado."
+}
+
+cmd_logs() {
+    local nome="$1"
+    local linhas="${2:-100}"
+    _checar_projeto "$nome"
+    cd "$DOCKER_DIR/$nome"
+    docker compose logs --tail="$linhas" -f
+}
+
+cmd_status() {
+    local nome="$1"
+    _checar_projeto "$nome"
+    cd "$DOCKER_DIR/$nome"
+    docker compose ps
+}
+
+cmd_novo() {
+    local nome="$1"
+    local dominio="${2:-}"
+    local porta="${3:-5000}"
+    local destino="$DOCKER_DIR/$nome"
+
+    _projeto_existe "$nome" && erro "Projeto '$nome' já existe em $destino"
+    [[ "$nome" =~ ^[a-z0-9_-]+$ ]] || erro "Nome deve conter apenas letras minúsculas, números, - e _"
+
+    info "Criando projeto '$nome'..."
+    mkdir -p "$destino"
+    cp "$DOCKER_DIR/_template/docker-compose.yml" "$destino/docker-compose.yml"
+    cp "$DOCKER_DIR/_template/.env.example" "$destino/.env.example"
+    cp "$DOCKER_DIR/_template/.env.example" "$destino/.env"
+
+    # substituir placeholders
+    local host="${dominio:-${nome}.srv1767486.hstgr.cloud}"
+    sed -i \
+        -e "s/NOME_PROJETO/$nome/g" \
+        -e "s/DOMINIO\.srv1767486\.hstgr\.cloud/$host/g" \
+        -e "s/PORTA_APP/$porta/g" \
+        "$destino/docker-compose.yml"
+
+    ok "Projeto criado em $destino"
+    echo ""
+    echo "Próximos passos:"
+    echo "  1. Coloque o código em $destino/"
+    echo "  2. Edite $destino/.env com suas variáveis"
+    echo "  3. Execute: projeto subir $nome"
+    echo ""
+    aviso "Domínio configurado: https://$host"
+}
+
+cmd_deploy() {
+    local nome="$1"
+    _checar_projeto "$nome"
+    info "Deploy de '$nome'..."
+    cd "$DOCKER_DIR/$nome"
+    if [[ -d .git ]]; then
+        git pull
+    fi
+    docker compose build --no-cache
+    docker compose up -d
+    ok "Deploy de '$nome' concluído."
+}
+
+cmd_limpar() {
+    info "Limpando imagens e volumes Docker não usados..."
+    docker system prune -f
+    docker volume prune -f
+    ok "Limpeza concluída."
+}
+
+cmd_ajuda() {
+    cat <<EOF
+
+${_cor_azul}projeto${_sem_cor} — Gerenciador de projetos Docker
+
+Uso: projeto <comando> [args]
+
+Comandos:
+  ${_cor_verde}listar${_sem_cor}                     Lista todos os projetos e status
+  ${_cor_verde}novo${_sem_cor} <nome> [dominio] [porta]  Cria estrutura para novo projeto
+  ${_cor_verde}subir${_sem_cor} <nome>               Inicia (ou reinicia) um projeto
+  ${_cor_verde}parar${_sem_cor} <nome>               Para um projeto
+  ${_cor_verde}reiniciar${_sem_cor} <nome>           Para e reinicia (com rebuild)
+  ${_cor_verde}deploy${_sem_cor} <nome>              git pull + rebuild + restart
+  ${_cor_verde}logs${_sem_cor} <nome> [linhas]       Acompanha os logs (padrão: 100)
+  ${_cor_verde}status${_sem_cor} <nome>              Status detalhado dos containers
+  ${_cor_verde}limpar${_sem_cor}                     Remove imagens/volumes não usados
+
+Exemplos:
+  projeto listar
+  projeto novo meu-app meu-app.srv1767486.hstgr.cloud 8080
+  projeto subir meu-app
+  projeto logs cerebro-inaja 200
+  projeto deploy cerebro-inaja
+
+Projetos ficam em: $DOCKER_DIR/
+EOF
+}
+
+# ── dispatcher ────────────────────────────────────────────────
+COMANDO="${1:-ajuda}"
+shift || true
+
+case "$COMANDO" in
+    listar|ls)      cmd_listar ;;
+    novo|new)       cmd_novo "${1:-}" "${2:-}" "${3:-5000}" ;;
+    subir|up|start) cmd_subir "${1:-}" ;;
+    parar|down|stop) cmd_parar "${1:-}" ;;
+    reiniciar|restart) cmd_reiniciar "${1:-}" ;;
+    deploy)         cmd_deploy "${1:-}" ;;
+    logs|log)       cmd_logs "${1:-}" "${2:-100}" ;;
+    status|ps)      cmd_status "${1:-}" ;;
+    limpar|prune)   cmd_limpar ;;
+    ajuda|help|-h|--help) cmd_ajuda ;;
+    *) erro "Comando desconhecido: '$COMANDO'. Use: projeto ajuda" ;;
+esac
