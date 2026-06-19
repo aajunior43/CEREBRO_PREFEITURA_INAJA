@@ -154,7 +154,7 @@
       { href: '/pages/fornecimento.html',         name: 'Gerador de Solicitação de Compra ou Serviço',    desc: 'Pedidos e fluxo de compras' },
       { href: '/pages/despesa-prefeitura.html',   name: 'Dotação Orçamentária',        desc: 'Consulta de despesas e dotações' },
       { href: '/pages/despesa-relatorios.html',   name: 'Comparativo Orçamentário',     desc: 'Comparar períodos e histórico' },
-      { href: '/pages/expertmoney.html',          name: 'ExpertMoney — Extratos',       desc: 'Análise de extratos bancários OFX/TXT com detecção de fraudes' },
+      { href: '/pages/expertmoney.html',          name: 'Análise de Extratos',          desc: 'Análise de extratos bancários OFX/TXT com detecção de fraudes' },
     ],
     ferramentas: [
       { href: '/pages/cnpj.html',       name: 'Consulta de CNPJ',       desc: 'Consultar dados de empresas' },
