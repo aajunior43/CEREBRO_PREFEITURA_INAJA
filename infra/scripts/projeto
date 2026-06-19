@@ -1,200 +1,362 @@
 #!/usr/bin/env bash
-# Gerenciador de projetos Docker no VPS
-# Uso: projeto <comando> [nome-do-projeto]
+# projeto — Gerenciador de projetos Docker no VPS
+# Uso: projeto <comando> [args]
 
 set -euo pipefail
 
 DOCKER_DIR="/docker"
-TRAEFIK_DIR="$DOCKER_DIR/traefik"
+SCRIPTS_DIR="$DOCKER_DIR/scripts"
+LOG_FILE="/var/log/backup-projetos.log"
 
-_cor_verde='\033[0;32m'
-_cor_amarelo='\033[0;33m'
-_cor_vermelho='\033[0;31m'
-_cor_azul='\033[0;34m'
-_sem_cor='\033[0m'
+G='\033[0;32m'; Y='\033[0;33m'; R='\033[0;31m'; B='\033[0;34m'; C='\033[0;36m'; N='\033[0m'
+info()  { echo -e "${B}[INFO]${N} $*"; }
+ok()    { echo -e "${G}[OK]${N} $*"; }
+aviso() { echo -e "${Y}[AVISO]${N} $*"; }
+erro()  { echo -e "${R}[ERRO]${N} $*" >&2; exit 1; }
+titulo(){ echo -e "\n${C}━━━ $* ━━━${N}"; }
 
-info()  { echo -e "${_cor_azul}[INFO]${_sem_cor} $*"; }
-ok()    { echo -e "${_cor_verde}[OK]${_sem_cor} $*"; }
-aviso() { echo -e "${_cor_amarelo}[AVISO]${_sem_cor} $*"; }
-erro()  { echo -e "${_cor_vermelho}[ERRO]${_sem_cor} $*" >&2; exit 1; }
-
-_lista_projetos() {
+_projetos() {
     find "$DOCKER_DIR" -mindepth 1 -maxdepth 1 -type d \
-        ! -name 'traefik' ! -name '_*' \
+        ! -name 'traefik' ! -name 'portainer' ! -name '_*' \
         -exec basename {} \; | sort
 }
 
-_projeto_existe() {
-    [[ -d "$DOCKER_DIR/$1" ]]
-}
+_existe()  { [[ -d "$DOCKER_DIR/$1" ]]; }
+_checar()  { _existe "$1" || erro "Projeto '$1' não encontrado em $DOCKER_DIR/"; }
+_compose() { cd "$DOCKER_DIR/$1" && docker compose "$@"; }
 
-_checar_projeto() {
-    local nome="$1"
-    _projeto_existe "$nome" || erro "Projeto '$nome' não encontrado em $DOCKER_DIR/"
-}
-
+# ── listar ─────────────────────────────────────────────────────────────────────
 cmd_listar() {
-    echo ""
-    echo "Projetos disponíveis:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    printf "%-20s %-12s %s\n" "PROJETO" "STATUS" "IMAGEM"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    titulo "Projetos"
+    printf "%-22s %-14s %-8s %s\n" "PROJETO" "STATUS" "BACKUP" "URL"
+    echo "────────────────────────────────────────────────────────────────"
     while IFS= read -r nome; do
-        local dir="$DOCKER_DIR/$nome"
-        local status imagem
-        status=$(cd "$dir" && docker compose ps --format "{{.Status}}" 2>/dev/null | head -1 || echo "parado")
-        imagem=$(cd "$dir" && docker compose ps --format "{{.Image}}" 2>/dev/null | head -1 || echo "-")
+        dir="$DOCKER_DIR/$nome"
+        status=$(cd "$dir" && docker compose ps --format "{{.Status}}" 2>/dev/null | head -1 || echo "—")
         [[ -z "$status" ]] && status="parado"
-        printf "%-20s %-12s %s\n" "$nome" "$status" "$imagem"
-    done < <(_lista_projetos)
-    echo ""
-    # recursos
-    echo "Recursos do servidor:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    free -h | grep -E "Mem|Swap"
+        has_backup="—"
+        [[ -f "$dir/.backup.conf" ]] && has_backup="✅"
+        [[ -f "$dir/.backup.conf.example" && ! -f "$dir/.backup.conf" ]] && has_backup="⚙️"
+        # tentar pegar domínio do compose
+        url=$(grep -oP "Host\(\`\K[^\`]+" "$dir/docker-compose.yml" 2>/dev/null | head -1 || echo "—")
+        printf "%-22s %-14s %-8s %s\n" "$nome" "$status" "$has_backup" "$url"
+    done < <(_projetos)
+
+    titulo "Infra"
+    for svc in traefik portainer; do
+        [[ -d "$DOCKER_DIR/$svc" ]] || continue
+        status=$(cd "$DOCKER_DIR/$svc" && docker compose ps --format "{{.Status}}" 2>/dev/null | head -1 || echo "parado")
+        [[ -z "$status" ]] && status="parado"
+        printf "%-22s %s\n" "$svc" "$status"
+    done
+
+    titulo "Recursos"
+    free -h | grep -E "Mem|Swap" | awk '{printf "%-6s total:%-8s usado:%-8s livre:%s\n", $1, $2, $3, $4}'
     df -h / | tail -1 | awk '{print "Disco: " $3 " usado / " $2 " total (" $5 " cheio)"}'
     echo ""
 }
 
-cmd_subir() {
-    local nome="$1"
-    _checar_projeto "$nome"
-    info "Subindo projeto '$nome'..."
-    cd "$DOCKER_DIR/$nome"
-    docker compose up -d --build
-    ok "Projeto '$nome' iniciado."
-}
-
-cmd_parar() {
-    local nome="$1"
-    _checar_projeto "$nome"
-    info "Parando projeto '$nome'..."
-    cd "$DOCKER_DIR/$nome"
-    docker compose down
-    ok "Projeto '$nome' parado."
-}
-
-cmd_reiniciar() {
-    local nome="$1"
-    _checar_projeto "$nome"
-    info "Reiniciando projeto '$nome'..."
-    cd "$DOCKER_DIR/$nome"
-    docker compose down
-    docker compose up -d --build
-    ok "Projeto '$nome' reiniciado."
-}
-
-cmd_logs() {
-    local nome="$1"
-    local linhas="${2:-100}"
-    _checar_projeto "$nome"
-    cd "$DOCKER_DIR/$nome"
-    docker compose logs --tail="$linhas" -f
-}
-
-cmd_status() {
-    local nome="$1"
-    _checar_projeto "$nome"
-    cd "$DOCKER_DIR/$nome"
-    docker compose ps
-}
-
+# ── novo ───────────────────────────────────────────────────────────────────────
 cmd_novo() {
-    local nome="$1"
-    local dominio="${2:-}"
-    local porta="${3:-5000}"
-    local destino="$DOCKER_DIR/$nome"
-
-    _projeto_existe "$nome" && erro "Projeto '$nome' já existe em $destino"
+    local nome="${1:-}" dominio="${2:-}" porta="${3:-5000}"
+    [[ -z "$nome" ]] && erro "Informe o nome do projeto."
     [[ "$nome" =~ ^[a-z0-9_-]+$ ]] || erro "Nome deve conter apenas letras minúsculas, números, - e _"
+    _existe "$nome" && erro "Projeto '$nome' já existe."
+
+    local dir="$DOCKER_DIR/$nome"
+    local host="${dominio:-${nome}.srv1767486.hstgr.cloud}"
 
     info "Criando projeto '$nome'..."
-    mkdir -p "$destino"
-    cp "$DOCKER_DIR/_template/docker-compose.yml" "$destino/docker-compose.yml"
-    cp "$DOCKER_DIR/_template/.env.example" "$destino/.env.example"
-    cp "$DOCKER_DIR/_template/.env.example" "$destino/.env"
+    mkdir -p "$dir"
+    cp "$DOCKER_DIR/_template/docker-compose.yml"   "$dir/docker-compose.yml"
+    cp "$DOCKER_DIR/_template/.env.example"         "$dir/.env.example"
+    cp "$DOCKER_DIR/_template/.env.example"         "$dir/.env"
+    cp "$DOCKER_DIR/_template/.backup.conf.example" "$dir/.backup.conf.example" 2>/dev/null || true
 
-    # substituir placeholders
-    local host="${dominio:-${nome}.srv1767486.hstgr.cloud}"
     sed -i \
         -e "s/NOME_PROJETO/$nome/g" \
-        -e "s/DOMINIO\.srv1767486\.hstgr\.cloud/$host/g" \
+        -e "s|DOMINIO\.srv1767486\.hstgr\.cloud|$host|g" \
         -e "s/PORTA_APP/$porta/g" \
-        "$destino/docker-compose.yml"
+        "$dir/docker-compose.yml"
 
-    ok "Projeto criado em $destino"
+    # Inicializa git no projeto
+    cd "$dir" && git init -q && git checkout -q -b main 2>/dev/null || true
+    cat > .gitignore <<'EOF'
+.env
+.backup.conf
+*.pyc
+__pycache__/
+*.db-shm
+*.db-wal
+node_modules/
+EOF
+    git add -A && git commit -q -m "chore: projeto $nome criado" 2>/dev/null || true
+
+    ok "Projeto '$nome' criado em $dir"
     echo ""
-    echo "Próximos passos:"
-    echo "  1. Coloque o código em $destino/"
-    echo "  2. Edite $destino/.env com suas variáveis"
-    echo "  3. Execute: projeto subir $nome"
+    echo "  Próximos passos:"
+    echo "  1. Coloque o código em $dir/"
+    echo "  2. Edite $dir/.env"
+    echo "  3. Configure o backup: projeto setup-backup $nome"
+    echo "  4. Execute: projeto subir $nome"
     echo ""
-    aviso "Domínio configurado: https://$host"
+    aviso "Domínio: https://$host"
 }
 
+# ── subir ──────────────────────────────────────────────────────────────────────
+cmd_subir() {
+    local nome="${1:-}"; _checar "$nome"
+    info "Subindo '$nome'..."
+    cd "$DOCKER_DIR/$nome" && docker compose up -d --build
+    ok "'$nome' iniciado."
+}
+
+# ── parar ──────────────────────────────────────────────────────────────────────
+cmd_parar() {
+    local nome="${1:-}"; _checar "$nome"
+    info "Parando '$nome'..."
+    cd "$DOCKER_DIR/$nome" && docker compose down
+    ok "'$nome' parado."
+}
+
+# ── reiniciar ──────────────────────────────────────────────────────────────────
+cmd_reiniciar() {
+    local nome="${1:-}"; _checar "$nome"
+    info "Reiniciando '$nome'..."
+    cd "$DOCKER_DIR/$nome" && docker compose down && docker compose up -d --build
+    ok "'$nome' reiniciado."
+}
+
+# ── deploy ─────────────────────────────────────────────────────────────────────
 cmd_deploy() {
-    local nome="$1"
-    _checar_projeto "$nome"
+    local nome="${1:-}"; _checar "$nome"
     info "Deploy de '$nome'..."
     cd "$DOCKER_DIR/$nome"
-    if [[ -d .git ]]; then
-        git pull
-    fi
+    [[ -d .git ]] && git pull --ff-only 2>/dev/null || true
     docker compose build --no-cache
     docker compose up -d
     ok "Deploy de '$nome' concluído."
 }
 
+# ── logs ───────────────────────────────────────────────────────────────────────
+cmd_logs() {
+    local nome="${1:-}" linhas="${2:-100}"; _checar "$nome"
+    cd "$DOCKER_DIR/$nome" && docker compose logs --tail="$linhas" -f
+}
+
+# ── status ─────────────────────────────────────────────────────────────────────
+cmd_status() {
+    local nome="${1:-}"; _checar "$nome"
+    titulo "Status: $nome"
+    cd "$DOCKER_DIR/$nome" && docker compose ps
+    echo ""
+    titulo "Uso de recursos"
+    docker stats --no-stream $(cd "$DOCKER_DIR/$nome" && docker compose ps -q 2>/dev/null) 2>/dev/null || true
+}
+
+# ── shell ──────────────────────────────────────────────────────────────────────
+cmd_shell() {
+    local nome="${1:-}" svc="${2:-}"; _checar "$nome"
+    cd "$DOCKER_DIR/$nome"
+    if [[ -z "$svc" ]]; then
+        svc=$(docker compose ps --services 2>/dev/null | head -1)
+    fi
+    info "Abrindo shell em '$nome/$svc'..."
+    docker compose exec "$svc" /bin/bash 2>/dev/null || \
+    docker compose exec "$svc" /bin/sh
+}
+
+# ── setup-backup ───────────────────────────────────────────────────────────────
+cmd_setup_backup() {
+    local nome="${1:-}"; _checar "$nome"
+    local conf="$DOCKER_DIR/$nome/.backup.conf"
+    local example="$DOCKER_DIR/$nome/.backup.conf.example"
+
+    if [[ -f "$conf" ]]; then
+        aviso "Backup já configurado em $conf"
+        grep -v "TOKEN" "$conf" || true
+        return 0
+    fi
+
+    if [[ ! -f "$example" ]]; then
+        cp "$DOCKER_DIR/_template/.backup.conf.example" "$conf.example"
+    else
+        cp "$example" "$conf"
+    fi
+
+    echo ""
+    echo "  ┌─────────────────────────────────────────────────────────┐"
+    echo "  │  Configure o backup editando:                           │"
+    echo "  │  $conf"
+    echo "  │                                                         │"
+    echo "  │  Campos obrigatórios:                                   │"
+    echo "  │  GITHUB_TOKEN  — token com permissão 'repo'             │"
+    echo "  │  GITHUB_REPO   — usuario/nome-do-repo                   │"
+    echo "  │  BACKUP_BRANCH — branch de backups (padrão: backups)    │"
+    echo "  │  BACKUP_PATHS  — arquivos a copiar (ex: \"*.db\")        │"
+    echo "  └─────────────────────────────────────────────────────────┘"
+    echo ""
+    echo "  Após configurar, ative o backup automático:"
+    echo "  projeto ativar-backup $nome [horario]"
+    echo "  Exemplo: projeto ativar-backup $nome 02:00"
+    echo ""
+
+    aviso "O arquivo .backup.conf foi criado. Edite antes de usar."
+}
+
+# ── backup ─────────────────────────────────────────────────────────────────────
+cmd_backup() {
+    local nome="${1:-}"; _checar "$nome"
+    local conf="$DOCKER_DIR/$nome/.backup.conf"
+    [[ -f "$conf" ]] || erro "Backup não configurado. Execute: projeto setup-backup $nome"
+    info "Executando backup de '$nome'..."
+    bash "$SCRIPTS_DIR/backup-projeto.sh" "$nome"
+}
+
+# ── ativar-backup ──────────────────────────────────────────────────────────────
+cmd_ativar_backup() {
+    local nome="${1:-}" horario="${2:-03:00}"; _checar "$nome"
+    local conf="$DOCKER_DIR/$nome/.backup.conf"
+    [[ -f "$conf" ]] || erro "Configure o backup primeiro: projeto setup-backup $nome"
+
+    local hora=${horario%%:*}
+    local minuto=${horario##*:}
+    local cron_entry="$minuto $hora * * * root bash $SCRIPTS_DIR/backup-projeto.sh $nome >> $LOG_FILE 2>&1"
+    local cron_file="/etc/cron.d/backup-$nome"
+
+    echo "$cron_entry" > "$cron_file"
+    chmod 644 "$cron_file"
+
+    ok "Backup automático de '$nome' ativado às $horario diariamente."
+    ok "Cron registrado em $cron_file"
+    info "Próximo backup: amanhã às $horario"
+}
+
+# ── desativar-backup ───────────────────────────────────────────────────────────
+cmd_desativar_backup() {
+    local nome="${1:-}"; _checar "$nome"
+    local cron_file="/etc/cron.d/backup-$nome"
+    if [[ -f "$cron_file" ]]; then
+        rm "$cron_file"
+        ok "Backup automático de '$nome' desativado."
+    else
+        aviso "Nenhum backup automático ativo para '$nome'."
+    fi
+}
+
+# ── backups ────────────────────────────────────────────────────────────────────
+cmd_backups() {
+    titulo "Status dos Backups"
+    printf "%-22s %-12s %-20s %s\n" "PROJETO" "CONF" "CRON" "REPO"
+    echo "────────────────────────────────────────────────────────────────────"
+    while IFS= read -r nome; do
+        dir="$DOCKER_DIR/$nome"
+        conf="—"; cron="—"; repo="—"
+        [[ -f "$dir/.backup.conf" ]] && conf="✅ OK" && \
+            repo=$(grep "^GITHUB_REPO=" "$dir/.backup.conf" 2>/dev/null | cut -d= -f2 || echo "?")
+        [[ -f "/etc/cron.d/backup-$nome" ]] && \
+            cron=$(awk '{print $2":"$1}' "/etc/cron.d/backup-$nome" 2>/dev/null | head -1)
+        printf "%-22s %-12s %-20s %s\n" "$nome" "$conf" "$cron" "$repo"
+    done < <(_projetos)
+    echo ""
+    [[ -f "$LOG_FILE" ]] && echo "Últimas entradas do log:" && tail -5 "$LOG_FILE" || true
+}
+
+# ── limpar ─────────────────────────────────────────────────────────────────────
 cmd_limpar() {
-    info "Limpando imagens e volumes Docker não usados..."
+    info "Limpando Docker (imagens e volumes órfãos)..."
     docker system prune -f
     docker volume prune -f
     ok "Limpeza concluída."
 }
 
+# ── painel ─────────────────────────────────────────────────────────────────────
+cmd_painel() {
+    local acao="${1:-status}"
+    case "$acao" in
+        subir|up)
+            info "Subindo Portainer..."
+            cd "$DOCKER_DIR/portainer" && docker compose up -d
+            ok "Portainer disponível em https://painel.srv1767486.hstgr.cloud"
+            ;;
+        parar|down)
+            cd "$DOCKER_DIR/portainer" && docker compose down
+            ok "Portainer parado."
+            ;;
+        *)
+            cd "$DOCKER_DIR/portainer" && docker compose ps 2>/dev/null || echo "Portainer não está rodando."
+            echo "URL: https://painel.srv1767486.hstgr.cloud"
+            ;;
+    esac
+}
+
+# ── ajuda ──────────────────────────────────────────────────────────────────────
 cmd_ajuda() {
     cat <<EOF
 
-${_cor_azul}projeto${_sem_cor} — Gerenciador de projetos Docker
+${B}projeto${N} — Gerenciador de projetos Docker no VPS
 
-Uso: projeto <comando> [args]
+${G}Uso:${N} projeto <comando> [args]
 
-Comandos:
-  ${_cor_verde}listar${_sem_cor}                     Lista todos os projetos e status
-  ${_cor_verde}novo${_sem_cor} <nome> [dominio] [porta]  Cria estrutura para novo projeto
-  ${_cor_verde}subir${_sem_cor} <nome>               Inicia (ou reinicia) um projeto
-  ${_cor_verde}parar${_sem_cor} <nome>               Para um projeto
-  ${_cor_verde}reiniciar${_sem_cor} <nome>           Para e reinicia (com rebuild)
-  ${_cor_verde}deploy${_sem_cor} <nome>              git pull + rebuild + restart
-  ${_cor_verde}logs${_sem_cor} <nome> [linhas]       Acompanha os logs (padrão: 100)
-  ${_cor_verde}status${_sem_cor} <nome>              Status detalhado dos containers
-  ${_cor_verde}limpar${_sem_cor}                     Remove imagens/volumes não usados
+${C}Gerenciamento de projetos:${N}
+  ${G}listar${N}                         Lista todos os projetos e status
+  ${G}novo${N} <nome> [dominio] [porta]  Cria estrutura para novo projeto
+  ${G}subir${N} <nome>                   Inicia/reconstrói um projeto
+  ${G}parar${N} <nome>                   Para um projeto
+  ${G}reiniciar${N} <nome>               Para e reinicia com rebuild
+  ${G}deploy${N} <nome>                  git pull + rebuild + restart
+  ${G}logs${N} <nome> [linhas]           Logs em tempo real
+  ${G}status${N} <nome>                  Status e uso de recursos
+  ${G}shell${N} <nome> [servico]         Shell dentro do container
 
-Exemplos:
-  projeto listar
+${C}Backup para GitHub:${N}
+  ${G}setup-backup${N} <nome>            Configura backup de um projeto
+  ${G}ativar-backup${N} <nome> [HH:MM]  Ativa backup automático diário
+  ${G}desativar-backup${N} <nome>        Desativa backup automático
+  ${G}backup${N} <nome>                  Executa backup agora
+  ${G}backups${N}                        Lista status de todos os backups
+
+${C}Painel:${N}
+  ${G}painel subir${N}                   Inicia Portainer (painel web)
+  ${G}painel parar${N}                   Para Portainer
+  ${G}painel${N}                         Status do Portainer
+
+${C}Manutenção:${N}
+  ${G}limpar${N}                         Remove imagens/volumes não usados
+
+${C}Exemplos:${N}
   projeto novo meu-app meu-app.srv1767486.hstgr.cloud 8080
   projeto subir meu-app
+  projeto setup-backup meu-app
+  projeto ativar-backup meu-app 02:30
+  projeto backup meu-app
   projeto logs cerebro-inaja 200
-  projeto deploy cerebro-inaja
+  projeto painel subir
 
-Projetos ficam em: $DOCKER_DIR/
+${Y}Projetos ficam em: $DOCKER_DIR/${N}
+${Y}Logs de backup:    $LOG_FILE${N}
 EOF
 }
 
-# ── dispatcher ────────────────────────────────────────────────
-COMANDO="${1:-ajuda}"
-shift || true
-
-case "$COMANDO" in
-    listar|ls)      cmd_listar ;;
-    novo|new)       cmd_novo "${1:-}" "${2:-}" "${3:-5000}" ;;
-    subir|up|start) cmd_subir "${1:-}" ;;
-    parar|down|stop) cmd_parar "${1:-}" ;;
-    reiniciar|restart) cmd_reiniciar "${1:-}" ;;
-    deploy)         cmd_deploy "${1:-}" ;;
-    logs|log)       cmd_logs "${1:-}" "${2:-100}" ;;
-    status|ps)      cmd_status "${1:-}" ;;
-    limpar|prune)   cmd_limpar ;;
-    ajuda|help|-h|--help) cmd_ajuda ;;
-    *) erro "Comando desconhecido: '$COMANDO'. Use: projeto ajuda" ;;
+# ── dispatcher ─────────────────────────────────────────────────────────────────
+CMD="${1:-ajuda}"; shift || true
+case "$CMD" in
+    listar|ls|list)             cmd_listar ;;
+    novo|new|criar)             cmd_novo "$@" ;;
+    subir|up|start)             cmd_subir "$@" ;;
+    parar|down|stop)            cmd_parar "$@" ;;
+    reiniciar|restart)          cmd_reiniciar "$@" ;;
+    deploy)                     cmd_deploy "$@" ;;
+    logs|log)                   cmd_logs "$@" ;;
+    status|ps|info)             cmd_status "$@" ;;
+    shell|bash|exec)            cmd_shell "$@" ;;
+    setup-backup|configurar-backup) cmd_setup_backup "$@" ;;
+    ativar-backup|auto-backup)  cmd_ativar_backup "$@" ;;
+    desativar-backup)           cmd_desativar_backup "$@" ;;
+    backup)                     cmd_backup "$@" ;;
+    backups|backup-status)      cmd_backups ;;
+    painel|portainer|panel)     cmd_painel "$@" ;;
+    limpar|prune|clean)         cmd_limpar ;;
+    ajuda|help|-h|--help)       cmd_ajuda ;;
+    *) erro "Comando desconhecido: '$CMD'. Use: projeto ajuda" ;;
 esac

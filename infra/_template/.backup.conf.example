@@ -1,0 +1,17 @@
+# Configuração de backup automático para GitHub
+# Copie para .backup.conf e preencha os valores
+# IMPORTANTE: nunca commite este arquivo (está no .gitignore)
+
+# Token do GitHub com permissão 'repo'
+# Gere em: github.com → Settings → Developer settings → Personal access tokens
+GITHUB_TOKEN=ghp_seu_token_aqui
+
+# Repositório de destino do backup (usuario/nome-repo)
+GITHUB_REPO=seu-usuario/nome-do-projeto-backup
+
+# Branch onde os backups serão commitados
+BACKUP_BRANCH=backups
+
+# Arquivos/diretórios a incluir no backup (separados por espaço)
+# Exemplo: "*.db uploads/ static/uploads"
+BACKUP_PATHS="*.db"

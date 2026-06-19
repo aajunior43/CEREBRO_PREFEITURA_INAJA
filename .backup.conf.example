@@ -1,0 +1,7 @@
+# Backup do CEREBRO Prefeitura de Inajá
+# cp .backup.conf.example .backup.conf e preencha os valores
+
+GITHUB_TOKEN=ghp_seu_token_aqui
+GITHUB_REPO=aajunior43/CEREBRO_PREFEITURA_INAJA
+BACKUP_BRANCH=backups
+BACKUP_PATHS="empenhos.db"
