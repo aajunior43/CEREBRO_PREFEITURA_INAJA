@@ -161,8 +161,8 @@ def search_transactions(filters: Dict[str, Any] = None) -> Dict[str, Any]:
           acc.number AS account_number,
           acc.bank   AS account_bank,
           acc.agency AS account_agency
-        FROM transactions_log tl
-        LEFT JOIN accounts acc ON acc.id = tl.account_id
+        FROM em_transactions_log tl
+        LEFT JOIN em_accounts acc ON acc.id = tl.account_id
         {where_clause}
         ORDER BY {safe_sort} {safe_dir}
         LIMIT ?
