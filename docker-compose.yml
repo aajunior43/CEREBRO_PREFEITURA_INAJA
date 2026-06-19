@@ -13,6 +13,17 @@ services:
       - "traefik.http.routers.cerebro.tls.certresolver=letsencrypt"
       - "traefik.http.services.cerebro.loadbalancer.server.port=5000"
 
+  bot:
+    build: ./bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - API_BASE_URL=http://cerebro:5000
+    networks:
+      - internal
+    depends_on:
+      - cerebro
+
 networks:
   traefik-public:
     external: true
