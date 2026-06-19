@@ -180,6 +180,10 @@
       .doc-cover { align-self:center; }
       .docs-list.grid-view { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     }
+    @media (max-width: 480px) {
+      .docs-toolbar { grid-template-columns: 1fr; }
+      .docs-toolbar > *:last-child { grid-column: 1; }
+    }
   </style>
 </head>
 <body>
