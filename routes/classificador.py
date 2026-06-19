@@ -97,6 +97,7 @@ def classificador_despesa():
 
 
 @bp.route("/api/classificador-despesa/historico", methods=["GET"])
+@require_login
 def classificador_historico():
     try:
         conn = get_db()
@@ -140,6 +141,7 @@ def classificador_historico():
 @bp.route(
     "/api/classificador-despesa/historico/<int:hid>", methods=["DELETE"]
 )
+@require_login
 def classificador_historico_delete(hid):
     try:
         conn = get_db()
@@ -151,6 +153,7 @@ def classificador_historico_delete(hid):
 
 
 @bp.route("/api/classificador-despesa/historico", methods=["DELETE"])
+@require_login
 def classificador_historico_limpar():
     try:
         conn = get_db()

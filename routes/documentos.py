@@ -1060,6 +1060,24 @@ def autentique_sincronizar_envio(envio_id):
 
 @bp_autentique.route("/api/autentique/webhook", methods=["POST"])
 def autentique_webhook():
+    import hmac as _hmac
+    conn = get_db()
+    _secret_row = conn.execute(
+        "SELECT valor FROM configuracoes WHERE chave='api_autentique_webhook_secret'"
+    ).fetchone()
+    _webhook_secret = (
+        (_secret_row["valor"] or "").strip()
+        if _secret_row
+        else (os.environ.get("AUTENTIQUE_WEBHOOK_SECRET") or "").strip()
+    )
+    if _webhook_secret:
+        _token = (
+            request.headers.get("X-Autentique-Token")
+            or request.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        )
+        if not _token or not _hmac.compare_digest(_token, _webhook_secret):
+            return jsonify({"error": "Nao autorizado"}), 401
+
     payload = request.get_json(silent=True) or {}
     extracted = _autentique_extract_webhook(payload)
     if not extracted["document_id"] and not extracted["signature_public_id"]:

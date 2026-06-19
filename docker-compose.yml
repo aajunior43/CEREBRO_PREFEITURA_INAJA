@@ -1,0 +1,11 @@
+services:
+  cerebro:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cerebro.rule=Host(`inaja.srv1767486.hstgr.cloud`)"
+      - "traefik.http.routers.cerebro.entrypoints=websecure"
+      - "traefik.http.routers.cerebro.tls.certresolver=letsencrypt"
+      - "traefik.http.services.cerebro.loadbalancer.server.port=5000"

@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+dist
+build
+venv
+.venv
+env
+
+# Environment
+.env
+
+# Database files (will be created at runtime)
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+stdout.log
+stderr.log
+
+# Temporary files
+tmp/
+*.tmp
+
+# Excel files
+*.xlsx
+*.xls
+*.csv
+
+# IDEs
+.vscode
+.idea
+.commandcode
+.claude
+.kilo
+.qwen
+
+# Windows scripts
+*.bat
+*.ps1
+*.exe
+
+# Documentation
+*.md
+DEBUG_GUIDE.md
+GUIA_MODULOS.md
+MANUAL_DO_PROJETO.md
+
+# Other
+.DS_Store
+Thumbs.db
+documentos_centro/relatorios_html/
+.backup_worktree/
+PARA IMPLEMENTAR TODO ESSE PROJETO NO PROJETO PRINCIPAL/

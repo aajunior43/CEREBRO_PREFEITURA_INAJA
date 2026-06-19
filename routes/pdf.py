@@ -2,11 +2,13 @@
 
 import io as _io
 from flask import Blueprint, request, send_file
+from routes._shared import require_login
 
 bp = Blueprint("pdf", __name__)
 
 
 @bp.route("/api/pdf/mesclar", methods=["POST"])
+@require_login
 def pdf_mesclar():
     from PyPDF2 import PdfReader as _PdfReader, PdfWriter as _PdfWriter
 
@@ -29,6 +31,7 @@ def pdf_mesclar():
 
 
 @bp.route("/api/pdf/dividir", methods=["POST"])
+@require_login
 def pdf_dividir():
     import zipfile as _zipfile
     from PyPDF2 import PdfReader as _PdfReader, PdfWriter as _PdfWriter
@@ -88,6 +91,7 @@ def pdf_dividir():
 
 
 @bp.route("/api/pdf/proteger", methods=["POST"])
+@require_login
 def pdf_proteger():
     from PyPDF2 import PdfReader as _PdfReader, PdfWriter as _PdfWriter
 

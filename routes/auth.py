@@ -101,24 +101,29 @@ def _seed_admin(admin_password, app):
         conn.commit()
 
     # Garantir usuário Maicon como padrão
+    import secrets as _sec
     row_maicon = conn.execute("SELECT id FROM usuarios WHERE login='maicon'").fetchone()
     if row_maicon:
         conn.execute("UPDATE usuarios SET nivel='padrao' WHERE login='maicon'")
     else:
+        _senha_maicon = _sec.token_urlsafe(12)
         conn.execute(
             "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-            ("Maicon", "maicon@inaja.pr.gov.br", "maicon", _hash("Inaja@2025!"), "padrao"),
+            ("Maicon", "maicon@inaja.pr.gov.br", "maicon", _hash(_senha_maicon), "padrao"),
         )
+        print(f"[AVISO] Usuário 'maicon' criado. Senha inicial: {_senha_maicon} — troque pelo painel de administração.")
 
     # Garantir usuário Luana como padrão
     row_luana = conn.execute("SELECT id FROM usuarios WHERE login='luana'").fetchone()
     if row_luana:
         conn.execute("UPDATE usuarios SET nivel='padrao' WHERE login='luana'")
     else:
+        _senha_luana = _sec.token_urlsafe(12)
         conn.execute(
             "INSERT INTO usuarios (nome,email,login,senha_hash,nivel,ativo) VALUES (?,?,?,?,?,1)",
-            ("Luana", "luana@inaja.pr.gov.br", "luana", _hash("Inaja@2025!"), "padrao"),
+            ("Luana", "luana@inaja.pr.gov.br", "luana", _hash(_senha_luana), "padrao"),
         )
+        print(f"[AVISO] Usuário 'luana' criado. Senha inicial: {_senha_luana} — troque pelo painel de administração.")
     conn.commit()
 
 
