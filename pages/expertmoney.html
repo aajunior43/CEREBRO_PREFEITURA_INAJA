@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>ExpertMoney — Análise de Extratos</title>
+  <link rel="stylesheet" href="/static/css/index.css"/>
+  <link rel="stylesheet" href="/static/css/fonts.css"/>
+  <link rel="stylesheet" href="/static/css/expertmoney.css"/>
+  <script>(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);}());</script>
+  <script>
+    document.documentElement.style.visibility = 'hidden';
+    (function checkAuth() {
+      fetch('/api/auth/verificar').then(function(r){return r.json()}).then(function(d){
+        if (d.autenticado) {
+          sessionStorage.setItem('adm_auth', '1');
+          sessionStorage.setItem('user_nome', d.nome || '');
+          sessionStorage.setItem('user_nivel', d.nivel || '');
+          document.documentElement.style.visibility = '';
+        } else {
+          sessionStorage.clear();
+          window.location.replace('/login.html');
+        }
+      }).catch(function(){ window.location.replace('/login.html'); });
+    })();
+  </script>
+  <script defer src="/static/js/shared-header.js"></script>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-brand">
+    <div class="brand-icon">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+        <path d="M14 2L26 8V20L14 26L2 20V8L14 2Z" fill="url(#gh)"/>
+        <path d="M9 14h10M14 9v10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <defs><linearGradient id="gh" x1="2" y1="2" x2="26" y2="26" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#8b5cf6"/>
+        </linearGradient></defs>
+      </svg>
+    </div>
+    <div><span class="brand-name">ExpertMoney</span><span class="brand-tag">v2.0</span></div>
+  </div>
+  <div class="header-center">
+    <button class="account-switcher-trigger" id="account-switcher-trigger" onclick="toggleAccountSwitcher(event)" title="Clique para trocar de conta">
+      <span id="header-account-info"><span class="account-switcher-placeholder">Nenhuma conta carregada</span></span>
+      <svg class="switcher-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="account-switcher-popover" id="account-switcher-popover">
+      <input type="text" class="sidebar-search" id="switcher-search-input"
+        placeholder="Buscar por nome, número ou banco…"
+        oninput="filterSwitcherList(this.value)" onclick="event.stopPropagation()"/>
+      <div class="account-switcher-list" id="account-switcher-list"></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span id="header-status" class="status-badge status-idle">Aguardando</span>
+    <button class="btn-ghost" onclick="clearAll()" id="btn-clear" style="display:none">↺ Limpar</button>
+    <button class="nav-toggle" id="nav-toggle" onclick="toggleSidebar()" title="Abrir/fechar menu" aria-label="Abrir/fechar menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section-label">Análise</div>
+    <ul class="nav-list">
+      <li><a href="#section-upload" class="nav-item active" id="nav-upload" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload
+      </a></li>
+      <li><a href="#section-dashboard" class="nav-item" id="nav-dashboard" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a></li>
+      <li><a href="#section-alerts" class="nav-item" id="nav-alerts" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Divergências <span class="nav-badge" id="alerts-badge" style="display:none">0</span>
+      </a></li>
+      <li><a href="#section-transactions" class="nav-item" id="nav-transactions" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Transações
+      </a></li>
+      <li><a href="#section-investment" class="nav-item" id="nav-investment" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Aplicação
+      </a></li>
+      <li><a href="#section-beneficiaries" class="nav-item" id="nav-beneficiaries" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Beneficiários
+      </a></li>
+      <li><a href="#section-cross" class="nav-item" id="nav-cross" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M14 3h7v7h-7zM3 14h7v7H3z"/></svg>
+        Análise Cruzada
+      </a></li>
+      <li><a href="#section-compare" class="nav-item" id="nav-compare" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Comparar Períodos
+      </a></li>
+    </ul>
+    <div class="sidebar-section-label" style="margin-top:1.5rem;display:flex;align-items:center;justify-content:space-between">
+      <span>Contas Ativas</span>
+      <span id="accounts-menu-count" style="font-size:.65rem;color:var(--text-3)"></span>
+    </div>
+    <div class="sidebar-accounts-tools">
+      <input type="text" class="sidebar-search" id="sidebar-account-search"
+        placeholder="Filtrar contas…"
+        oninput="filterSidebarAccounts(this.value)"/>
+      <select class="sidebar-sort" id="sidebar-account-sort" title="Ordenar contas" onchange="setSidebarAccountSort(this.value)">
+        <option value="recent">Recentes</option>
+        <option value="name">Nome A-Z</option>
+        <option value="number">Número</option>
+      </select>
+    </div>
+    <div class="sidebar-accounts-scroll">
+      <ul class="nav-list" id="dynamic-accounts-menu">
+        <li style="padding: 6px 11px; font-size: 0.75rem; color: var(--text-3); font-style: italic;">Nenhuma conta carregada</li>
+      </ul>
+    </div>
+
+    <div class="sidebar-section-label" style="margin-top:1.5rem">Gestão</div>
+    <ul class="nav-list">
+      <li><a href="#section-accounts" class="nav-item" id="nav-accounts" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Contas
+      </a></li>
+      <li><a href="#section-history" class="nav-item" id="nav-history" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Histórico
+      </a></li>
+      <li><a href="#section-audit" class="nav-item" id="nav-audit" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Trilha de Auditoria
+      </a></li>
+      <li><a href="#section-export" class="nav-item" id="nav-export" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar
+      </a></li>
+      <li><a href="#section-search" class="nav-item" id="nav-search" onclick="setNav(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Busca Global
+      </a></li>
+    </ul>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+      <!-- UPLOAD -->
+      <section id="section-upload" class="section active">
+        <h1 class="section-title">Upload de Arquivos</h1>
+        <p class="section-sub">Carregue extratos OFX (conta corrente), TXT (aplicação) ou o ZIP completo.</p>
+        <div class="account-focus-panel">
+          <div>
+            <span class="account-focus-label">Conta em foco</span>
+            <p id="account-focus-summary" class="account-focus-summary">Selecione uma conta para ver somente os dados dela.</p>
+          </div>
+          <div class="account-focus-controls">
+            <select id="account-focus-select" class="select-filter" onchange="handleAccountFocusChange(this.value)">
+              <option value="">Escolha uma conta...</option>
+            </select>
+            <button class="btn-primary btn-sm" onclick="openFocusedAccount()">Abrir conta</button>
+            <button class="btn-ghost btn-sm" onclick="clearFocusedAccount()">Limpar</button>
+          </div>
+        </div>
+        <div class="drop-zone" id="drop-zone"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleDrop(event)">
+        <div class="drop-icon">📂</div>
+        <p class="drop-title">Arraste e solte os arquivos aqui</p>
+        <p class="drop-sub">Suporta <strong>.OFX</strong> <strong>.TXT</strong> <strong>.PDF</strong> <strong>.ZIP</strong></p>
+        <label class="btn-primary upload-btn">
+          <input type="file" id="file-input" multiple accept=".ofx,.txt,.pdf,.zip" style="display:none" onchange="handleFiles(this.files)"/>
+          Selecionar Arquivos
+        </label>
+      </div>
+
+      <!-- Contas Locais no Diretório Uploads -->
+      <div id="local-folders-section" style="margin-top: 2rem;">
+        <h2 class="sub-heading" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          📂 <span>Contas Detectadas na Pasta 'uploads'</span>
+          <button class="btn-ghost btn-sm" onclick="scanLocalFolders()" style="margin-left: auto; padding: 4px 8px; font-size: 0.75rem;">🔄 Atualizar Lista</button>
+          <button class="btn-primary btn-sm" onclick="runBatchAnalysis()" style="padding: 4px 10px; font-size: 0.75rem; box-shadow: none;">⚡ Analisar Todas em Lote</button>
+        </h2>
+        <div id="local-folders-list" class="local-zips-grid" style="max-height: 380px; overflow-y: auto; padding-right: 4px;">
+          <p style="color: var(--text-3); font-size: 0.875rem;">Buscando pastas de contas em uploads...</p>
+        </div>
+      </div>
+
+      <!-- ZIPs Locais do Projeto -->
+      <div id="local-zips-section" style="margin-top: 2rem;">
+        <h2 class="sub-heading" style="margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+          📦 <span>ZIPs Detectados na Pasta do Projeto</span>
+          <button class="btn-ghost btn-sm" onclick="scanLocalZips()" style="margin-left: auto; padding: 4px 8px; font-size: 0.75rem;">🔄 Atualizar Lista</button>
+        </h2>
+        <div id="local-zips-list" class="local-zips-grid">
+          <p style="color: var(--text-3); font-size: 0.875rem;">Buscando arquivos ZIP na pasta do projeto...</p>
+        </div>
+      </div>
+
+      <div id="file-list-container" style="display:none">
+        <h2 class="sub-heading">Arquivos Carregados</h2>
+        <div id="file-list" class="file-list"></div>
+        <div style="margin-top:1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
+          <button class="btn-primary" onclick="runAnalysis()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Analisar Agora
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="section-dashboard" class="section">
+      <div class="dashboard-title-row">
+        <div>
+          <h1 class="section-title">Dashboard</h1>
+          <p class="section-sub" id="dashboard-account-summary">Selecione uma conta para ver o dashboard dela.</p>
+        </div>
+        <div class="dashboard-account-controls">
+          <select id="dashboard-account-select" class="select-filter" onchange="handleAccountFocusChange(this.value, true)">
+            <option value="">Escolha uma conta...</option>
+          </select>
+          <button class="btn-primary btn-sm" onclick="openFocusedAccount('dashboard-account-select')">Trocar conta</button>
+        </div>
+      </div>
+      <div class="active-context-grid" id="active-context-grid" style="display:none"></div>
+      <div class="kpi-grid" id="kpi-grid"></div>
+      <!-- Risk Score Bar -->
+      <div id="risk-score-bar" style="display:none;margin-bottom:1.5rem"></div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Saldo da Aplicação vs Rendimento</h3>
+          </div>
+          <div class="chart-empty" id="chart-balance-empty">
+            <span class="chart-empty-icon">📈</span>
+            <span>Carregue extratos TXT para ver o saldo do fundo</span>
+          </div>
+          <canvas id="chart-balance" height="200" style="display:none"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Fluxo C-C por Mês</h3>
+          </div>
+          <div class="chart-empty" id="chart-flow-empty">
+            <span class="chart-empty-icon">📊</span>
+            <span>Execute uma análise para ver o fluxo mensal</span>
+          </div>
+          <canvas id="chart-flow" height="200" style="display:none"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Rentabilidade Mensal vs CDI</h3>
+          </div>
+          <div class="chart-empty" id="chart-cdi-empty">
+            <span class="chart-empty-icon">📉</span>
+            <span>Disponível após análise com extratos TXT</span>
+          </div>
+          <canvas id="chart-cdi" height="200" style="display:none"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Composição das Saídas</h3>
+          </div>
+          <div class="chart-empty" id="chart-pie-empty">
+            <span class="chart-empty-icon">🥧</span>
+            <span>Execute uma análise para ver os maiores beneficiários</span>
+          </div>
+          <canvas id="chart-pie" height="200" style="display:none"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Saldo Diário Acumulado</h3>
+          </div>
+          <div class="chart-empty" id="chart-daily-balance-empty">
+            <span class="chart-empty-icon">📅</span>
+            <span>Disponível após análise de transações</span>
+          </div>
+          <canvas id="chart-daily-balance" height="200" style="display:none"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3 class="chart-title">Mapa de Calor — Saídas por Dia da Semana</h3>
+          </div>
+          <div class="chart-empty" id="weekday-heatmap-empty">
+            <span class="chart-empty-icon">🔥</span>
+            <span>Disponível após análise de transações</span>
+          </div>
+          <div id="weekday-heatmap" style="padding:1rem 0;display:none"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIVERGÊNCIAS -->
+    <section id="section-alerts" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+        <h1 class="section-title" style="margin:0">Divergências Detectadas</h1>
+        <div style="display:flex;gap:.5rem">
+          <select id="alert-filter" class="select-filter" onchange="filterAlerts()">
+            <option value="">Todas</option>
+            <option value="critical">🔴 Críticas</option>
+            <option value="warning">🟡 Atenção</option>
+            <option value="info">🔵 Informativas</option>
+            <option value="unresolved">Não Resolvidas</option>
+            <option value="resolved">Resolvidas</option>
+          </select>
+        </div>
+      </div>
+      <div id="alerts-container"><p class="empty-state">Nenhuma análise executada.</p></div>
+    </section>
+
+    <!-- TRANSAÇÕES -->
+    <section id="section-transactions" class="section">
+      <h1 class="section-title">Transações da Conta Corrente</h1>
+      <div class="table-toolbar">
+        <input type="text" id="tx-search" placeholder="Buscar…" class="search-input" oninput="filterTransactions()"/>
+        <select id="tx-type-filter" class="select-filter" onchange="filterTransactions()">
+          <option value="">Todos os tipos</option>
+          <option value="DEP">Depósitos</option>
+          <option value="DEBIT">Débitos</option>
+          <option value="XFER">Transferências</option>
+        </select>
+        <select id="tx-month-filter" class="select-filter" onchange="filterTransactions()">
+          <option value="">Todos os meses</option>
+        </select>
+        <select id="tx-flag-filter" class="select-filter" onchange="filterTransactions()">
+          <option value="">Todos</option>
+          <option value="flagged">⚠️ Sinalizadas</option>
+          <option value="duplicate">Duplicado</option>
+          <option value="atypical">Atípico</option>
+          <option value="smurfing">Smurfing</option>
+          <option value="round_amount">Valor Redondo</option>
+          <option value="weekend_payment">Fim de Semana</option>
+          <option value="holiday_payment">Feriado Nacional</option>
+          <option value="price_creep">Aumento de Preços</option>
+          <option value="threshold_skirting">Abaixo de Limite</option>
+          <option value="dormant_burst">Rajada pós Dormência</option>
+        </select>
+      </div>
+      <div class="table-toolbar" style="margin-top:-0.5rem">
+        <input type="number" id="tx-min-value" placeholder="Valor mín. (R$)" class="search-input" style="max-width:160px" oninput="filterTransactions()"/>
+        <input type="number" id="tx-max-value" placeholder="Valor máx. (R$)" class="search-input" style="max-width:160px" oninput="filterTransactions()"/>
+        <select id="tx-direction-filter" class="select-filter" onchange="filterTransactions()">
+          <option value="">Entradas e Saídas</option>
+          <option value="credit">Apenas Entradas</option>
+          <option value="debit">Apenas Saídas</option>
+        </select>
+        <button class="btn-ghost btn-sm" onclick="clearTxFilters()">✕ Limpar Filtros</button>
+      </div>
+      <div class="tx-summary-grid" id="tx-summary-grid" style="display:none"></div>
+      <div id="transactions-table-container"><p class="empty-state">Nenhuma transação.</p></div>
+      <div class="pagination" id="tx-pagination"></div>
+    </section>
+
+    <!-- APLICAÇÃO -->
+    <section id="section-investment" class="section">
+      <h1 class="section-title">BB RF Curto Prazo Automático</h1>
+      <!-- Fund Evolution Chart (#16) -->
+      <div class="chart-card" id="fund-chart-card" style="display:none;margin-bottom:1.5rem">
+        <div class="chart-header">
+          <h3 class="chart-title">Evolução do Saldo do Fundo</h3>
+        </div>
+        <canvas id="chart-fund-evolution" height="180"></canvas>
+      </div>
+      <div id="investment-container"><p class="empty-state">Carregue extratos TXT.</p></div>
+    </section>
+
+    <!-- BENEFICIÁRIOS -->
+    <section id="section-beneficiaries" class="section">
+      <h1 class="section-title">Top 10 Beneficiários</h1>
+      <p class="section-sub">Maiores destinatários de débitos (excluindo aplicações e resgates automáticos).</p>
+      <div id="beneficiaries-container"><p class="empty-state">Execute uma análise primeiro.</p></div>
+    </section>
+
+    <!-- ANÁLISE CRUZADA -->
+    <section id="section-cross" class="section">
+      <h1 class="section-title">Análise Cruzada entre Contas</h1>
+      <p class="section-sub">Cruzamento de dados de todas as sessões ativas no SQLite para identificação de fluxos internos e duplicidades.</p>
+      <div class="table-toolbar">
+        <select id="cross-scope" class="select-filter" onchange="loadCrossAnalysis()">
+          <option value="all">Todas as contas</option>
+          <option value="active">Conta atual contra todas</option>
+        </select>
+        <span id="cross-scope-label" class="muted-inline">Usando a última sessão de cada conta.</span>
+      </div>
+      
+      <!-- Stats / KPI Grid -->
+      <div class="kpi-grid" id="cross-kpi-grid">
+        <div class="kpi-card" style="--kpi-color:var(--primary)">
+          <span class="kpi-label">Contas Mapeadas</span>
+          <span class="kpi-value" id="cross-stat-accounts">0</span>
+          <span class="kpi-sub">Total de fontes de dados</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <span class="kpi-label">Conciliações Mapeadas</span>
+          <span class="kpi-value" id="cross-stat-reconciled">0</span>
+          <span class="kpi-sub">Transferências casadas</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--yellow)">
+          <span class="kpi-label">Divergências de Fluxo</span>
+          <span class="kpi-value" id="cross-stat-discrepancies">0</span>
+          <span class="kpi-sub">Órfãs entre contas próprias</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--red)">
+          <span class="kpi-label">Pagos em Duplicidade</span>
+          <span class="kpi-value" id="cross-stat-duplicates">0</span>
+          <span class="kpi-sub">Múltiplas contas/mesmo valor</span>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--red)">
+          <span class="kpi-label">Fracionamento Entre Contas</span>
+          <span class="kpi-value" id="cross-stat-smurfing">0</span>
+          <span class="kpi-sub">Mesmo beneficiário/contas dif.</span>
+        </div>
+      </div>
+
+      <!-- Tabs or Subsections -->
+      <div style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; flex-wrap: wrap;">
+        <button class="page-btn active" id="tab-btn-reconciled" onclick="setCrossTab('reconciled')">🔄 Transf. Conciliadas</button>
+        <button class="page-btn" id="tab-btn-discrepancies" onclick="setCrossTab('discrepancies')">⚠️ Divergências de Fluxo</button>
+        <button class="page-btn" id="tab-btn-duplicates" onclick="setCrossTab('duplicates')">🔴 Duplicados (Contas Dif.)</button>
+        <button class="page-btn" id="tab-btn-smurfing" onclick="setCrossTab('smurfing')">🧩 Fracionamento</button>
+      </div>
+
+      <!-- Content Panels -->
+      <div id="cross-panel-reconciled" class="cross-panel">
+        <div id="cross-reconciled-container">
+          <p class="empty-state">Carregando análise cruzada...</p>
+        </div>
+      </div>
+      <div id="cross-panel-discrepancies" class="cross-panel" style="display:none">
+        <div id="cross-discrepancies-container">
+          <p class="empty-state">Carregando análise cruzada...</p>
+        </div>
+      </div>
+      <div id="cross-panel-duplicates" class="cross-panel" style="display:none">
+        <div id="cross-duplicates-container">
+          <p class="empty-state">Carregando análise cruzada...</p>
+        </div>
+      </div>
+      <div id="cross-panel-smurfing" class="cross-panel" style="display:none">
+        <div id="cross-smurfing-container">
+          <p class="empty-state">Carregando análise cruzada...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTAS -->
+    <section id="section-accounts" class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap">
+        <h1 class="section-title" style="margin:0">Contas Cadastradas <span id="accounts-total-count" style="font-size:.8rem;font-weight:600;color:var(--text-3)"></span></h1>
+        <button class="btn-primary" onclick="openAccountModal()">+ Nova Conta</button>
+      </div>
+      <div class="table-toolbar">
+        <input type="text" class="search-input" id="accounts-search" placeholder="🔎 Buscar por nome, número, agência ou banco…" oninput="renderAccounts()"/>
+        <select class="select-filter" id="accounts-sort" onchange="renderAccounts()">
+          <option value="recent">Mais recentes</option>
+          <option value="name">Nome (A-Z)</option>
+          <option value="number">Número</option>
+          <option value="bank">Banco</option>
+        </select>
+      </div>
+      <div id="accounts-container"><p class="empty-state">Nenhuma conta cadastrada.</p></div>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section id="section-history" class="section">
+      <h1 class="section-title">Histórico de Análises</h1>
+      <p class="section-sub">Todas as análises realizadas, salvas no banco de dados local.</p>
+      <div class="table-toolbar">
+        <select id="history-scope" class="select-filter" onchange="loadHistory()">
+          <option value="active">Conta atual</option>
+          <option value="all">Todas as contas</option>
+        </select>
+        <button class="btn-ghost btn-sm" onclick="loadHistory()">Atualizar</button>
+      </div>
+      <div id="history-container"><p class="empty-state">Nenhum histórico disponível.</p></div>
+    </section>
+
+    <!-- COMPARAR PERÍODOS (#8) -->
+    <section id="section-compare" class="section">
+      <h1 class="section-title">Comparar Períodos de Análise</h1>
+      <p class="section-sub">Compare duas sessões de análise para identificar novos alertas, variações no risco e diferenças financeiras.</p>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1.5rem">
+        <div class="form-group" style="margin:0;min-width:260px">
+          <label>Sessão A (Base)</label>
+          <select id="compare-session-1" class="select-filter" style="width:100%">
+            <option value="">Selecione a sessão base…</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;min-width:260px">
+          <label>Sessão B (Comparar com)</label>
+          <select id="compare-session-2" class="select-filter" style="width:100%">
+            <option value="">Selecione a sessão atual…</option>
+          </select>
+        </div>
+        <button class="btn-primary" onclick="runComparison()">🔍 Comparar</button>
+        <button class="btn-ghost btn-sm" onclick="loadCompareCurrentDelta()">⚡ Comparar com Análise Anterior</button>
+      </div>
+      <div id="compare-result-container"><p class="empty-state">Selecione duas sessões para comparar.</p></div>
+    </section>
+
+    <!-- TRILHA DE AUDITORIA (#14) -->
+    <section id="section-audit" class="section">
+      <h1 class="section-title">Trilha de Auditoria</h1>
+      <p class="section-sub">Histórico de análises e resoluções de alertas para a conta ativa.</p>
+      <div style="margin-bottom:1rem">
+        <select id="audit-account-select" class="select-filter" onchange="loadAuditTrail(this.value)" style="min-width:260px">
+          <option value="">Selecione uma conta…</option>
+        </select>
+      </div>
+      <div id="audit-container"><p class="empty-state">Selecione uma conta para ver a trilha de auditoria.</p></div>
+    </section>
+
+    <!-- EXPORTAR -->
+    <section id="section-export" class="section">
+      <h1 class="section-title">Exportar Relatórios</h1>
+      <div class="export-context" id="export-context"><p class="empty-state">Nenhuma conta carregada para exportação.</p></div>
+      <!-- Email summary action -->
+      <div style="margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+        <div>
+          <p style="font-size:.875rem;font-weight:600">Resumo para E-mail</p>
+          <p style="font-size:.78rem;color:var(--text-3)">Gera um resumo formatado da análise pronto para copiar e enviar.</p>
+        </div>
+        <button class="btn-ghost" onclick="generateEmailSummary()">📧 Gerar Resumo</button>
+      </div>
+      <div class="export-grid">
+        <div class="export-card">
+          <div class="export-icon export-icon-excel">📊</div>
+          <h3>Excel (.xlsx)</h3>
+          <p>4 abas: Resumo, Transações, Divergências, Aplicação.</p>
+          <button class="btn-primary" onclick="exportExcel()">Baixar Excel</button>
+        </div>
+        <div class="export-card">
+          <div class="export-icon export-icon-pdf">📋</div>
+          <h3>PDF (.pdf)</h3>
+          <p>Relatório completo com alertas, tabelas e KPIs.</p>
+          <button class="btn-primary btn-pdf" onclick="exportPDF()">Baixar PDF</button>
+        </div>
+        <div class="export-card">
+          <div class="export-icon">📄</div>
+          <h3>CSV (.csv)</h3>
+          <p>Todas as transações em formato CSV compatível com Excel/LibreOffice.</p>
+          <button class="btn-primary" style="background:linear-gradient(135deg,var(--green),#059669)" onclick="exportCSV()">Baixar CSV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== BUSCA GLOBAL ===== -->
+    <section id="section-search" class="section">
+      <h1 class="section-title">Busca Global de Transações</h1>
+      <p class="section-sub">Pesquise débitos e créditos em <strong>todas as contas</strong> por valor, data, intervalo ou texto. &nbsp;<kbd class="kbd-hint">Enter</kbd>&nbsp;para buscar.</p>
+
+      <!-- Filtros Rápidos -->
+      <div class="srch-presets">
+        <span class="srch-preset-label">Filtros rápidos:</span>
+        <button class="preset-chip" onclick="applyPreset('last30')">&#128197; Últimos 30 dias</button>
+        <button class="preset-chip" onclick="applyPreset('flagged')">&#9888;&#65039; Suspeitas</button>
+        <button class="preset-chip" onclick="applyPreset('highValue')">&#128176; Acima R$1.000</button>
+        <button class="preset-chip" onclick="applyPreset('veryHigh')">&#128308; Acima R$10.000</button>
+        <button class="preset-chip" onclick="applyPreset('debits')">&#8595; Só Débitos</button>
+        <button class="preset-chip" onclick="applyPreset('credits')">&#8593; Só Créditos</button>
+        <button class="preset-chip" onclick="applyPreset('duplicates')">&#128257; Duplicados</button>
+        <button class="preset-chip" onclick="applyPreset('weekend')">&#127774; Fim de Semana</button>
+        <button class="preset-chip" onclick="applyPreset('skirting')">&#9878;&#65039; Limite Licitatório</button>
+        <button class="preset-chip" onclick="applyPreset('dormant')">&#128564; Rajada p&oacute;s Dorm&ecirc;ncia</button>
+      </div>
+
+      <div class="search-panel">
+        <div class="search-row">
+          <div class="search-field">
+            <label class="search-label" for="srch-type">Tipo</label>
+            <select id="srch-type" class="select-filter">
+              <option value="both">Débito + Crédito</option>
+              <option value="debit">Somente Débitos</option>
+              <option value="credit">Somente Créditos</option>
+            </select>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-amount">Valor exato (R$)</label>
+            <input type="number" id="srch-amount" placeholder="ex: 1500.00" step="0.01" min="0" class="search-input"/>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-tolerance">Tolerância ± (R$)</label>
+            <input type="number" id="srch-tolerance" placeholder="ex: 0.02" step="0.01" min="0" value="0.02" class="search-input"/>
+          </div>
+        </div>
+        <div class="search-row">
+          <div class="search-field">
+            <label class="search-label" for="srch-min">Valor mínimo (R$)</label>
+            <input type="number" id="srch-min" placeholder="ex: 500" step="0.01" min="0" class="search-input"/>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-max">Valor máximo (R$)</label>
+            <input type="number" id="srch-max" placeholder="ex: 9999" step="0.01" min="0" class="search-input"/>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-memo">Texto no memo / beneficiário</label>
+            <input type="text" id="srch-memo" placeholder="ex: FORNECEDOR, PIX, FNAS…" class="search-input" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="search-row">
+          <div class="search-field">
+            <label class="search-label" for="srch-date">Data exata</label>
+            <input type="text" id="srch-date" placeholder="DD/MM/AAAA" maxlength="10" class="search-input srch-date-input"/>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-from">Data início</label>
+            <input type="text" id="srch-from" placeholder="DD/MM/AAAA" maxlength="10" class="search-input srch-date-input"/>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-to">Data fim</label>
+            <input type="text" id="srch-to" placeholder="DD/MM/AAAA" maxlength="10" class="search-input srch-date-input"/>
+          </div>
+        </div>
+        <div class="search-row">
+          <div class="search-field">
+            <label class="search-label" for="srch-flag">Flag de alerta</label>
+            <select id="srch-flag" class="select-filter">
+              <option value="">Qualquer</option>
+              <option value="duplicate">Duplicado</option>
+              <option value="atypical">Atípico</option>
+              <option value="smurfing">Smurfing</option>
+              <option value="batch_pix">PIX em Lote</option>
+              <option value="circular_transfer">Transf. Circular</option>
+              <option value="round_amount">Valor Redondo</option>
+              <option value="after_hours">Fora do Horário</option>
+              <option value="vendor_concentration">Concentração</option>
+              <option value="weekend_payment">Fim de Semana</option>
+              <option value="holiday_payment">Feriado Nacional</option>
+              <option value="price_creep">Aumento Gradual de Preços</option>
+              <option value="threshold_skirting">Abaixo de Limite Licitatório</option>
+              <option value="dormant_burst">Rajada após Dormência</option>
+              <option value="new_high_value_bene">Novo Beneficiário Alto Valor</option>
+              <option value="fee_anomaly">Tarifa Atípica</option>
+              <option value="alternating">Beneficiário Alternado</option>
+              <option value="returned_no_resend">Devolvido sem Re-envio</option>
+              <option value="not_applied">Recurso Não Aplicado</option>
+            </select>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-flagged">Marcada como suspeita</label>
+            <select id="srch-flagged" class="select-filter">
+              <option value="">Todas</option>
+              <option value="true">Somente flagged</option>
+              <option value="false">Somente não-flagged</option>
+            </select>
+          </div>
+          <div class="search-field">
+            <label class="search-label" for="srch-sort">Ordenar por</label>
+            <select id="srch-sort" class="select-filter">
+              <option value="date|desc">Data (mais recente)</option>
+              <option value="date|asc">Data (mais antiga)</option>
+              <option value="amount|desc">Valor (maior)</option>
+              <option value="amount|asc">Valor (menor)</option>
+              <option value="account|asc">Conta A-Z</option>
+            </select>
+          </div>
+        </div>
+        <div class="search-actions">
+          <button class="btn-primary" id="btn-search" onclick="runSearch()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Buscar
+          </button>
+          <button class="btn-ghost" id="btn-cancel-search" onclick="cancelSearch()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Cancelar
+          </button>
+          <button class="btn-ghost" onclick="clearSearch()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Limpar
+          </button>
+          <button class="btn-ghost" id="btn-export-csv" onclick="exportSearchCSV()" style="margin-left:auto" disabled>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="search-summary" style="display:none" class="search-summary-bar"></div>
+      <div id="search-results-container"><p class="empty-state">Use um <strong>filtro rápido</strong> ou preencha os campos acima e clique <kbd class="kbd-hint">Buscar</kbd>.</p></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL: Account Form -->
+<div class="modal-overlay" id="account-modal" style="display:none" onclick="if(event.target===this)closeAccountModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Nova Conta</h3>
+      <button class="modal-close" onclick="closeAccountModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nome / Titular *</label><input id="acc-name" class="form-input" placeholder="Ex: INAJABL GBF FNAS"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Agência</label><input id="acc-agency" class="form-input" placeholder="676-9"/></div>
+        <div class="form-group"><label>Conta *</label><input id="acc-number" class="form-input" placeholder="24787-1"/></div>
+      </div>
+      <div class="form-group"><label>Banco</label><input id="acc-bank" class="form-input" value="Banco do Brasil"/></div>
+      <div class="form-group"><label>Observações</label><textarea id="acc-notes" class="form-input" rows="2" placeholder="Notas opcionais..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeAccountModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveAccount()">Salvar Conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Detector Config (limiares por conta) -->
+<div class="modal-overlay" id="config-modal" style="display:none" onclick="if(event.target===this)closeConfigModal()">
+  <div class="modal-box" style="max-width:680px">
+    <div class="modal-header">
+      <h3>⚙️ Configurar Detectores</h3>
+      <button class="modal-close" onclick="closeConfigModal()">✕</button>
+    </div>
+    <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+      <p id="config-account-name" style="font-size:.82rem;color:var(--text-2);margin-bottom:1rem"></p>
+      <p style="font-size:.74rem;color:var(--text-3);margin-bottom:1rem">
+        Ajuste os limiares dos detectores <strong>somente para esta conta</strong>.
+        Valores personalizados aparecem destacados; use ↺ para restaurar o padrão.
+      </p>
+      <div id="config-list-container"><p class="empty-state">Carregando configuração…</p></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeConfigModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Resolve Alert -->
+<div class="modal-overlay" id="resolve-modal" style="display:none" onclick="if(event.target===this)closeResolveModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Resolver Alerta</h3>
+      <button class="modal-close" onclick="closeResolveModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="resolve-alert-title" style="color:var(--text-2);font-size:.875rem;margin-bottom:1rem"></p>
+      <div class="form-group"><label>Responsável pela resolução</label><input id="resolve-by" class="form-input" placeholder="Nome do responsável"/></div>
+      <div class="form-group"><label>Nota de resolução *</label><textarea id="resolve-note" class="form-input" rows="4" placeholder="Descreva como o problema foi verificado ou resolvido..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeResolveModal()">Cancelar</button>
+      <button class="btn-primary" style="background:var(--green)" onclick="confirmResolve()">✓ Marcar como Resolvido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Email Summary (#18) -->
+<div class="modal-overlay" id="email-modal" style="display:none" onclick="if(event.target===this)closeEmailModal()">
+  <div class="modal-box" style="max-width:620px">
+    <div class="modal-header">
+      <h3>Resumo para E-mail</h3>
+      <button class="modal-close" onclick="closeEmailModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.8rem;color:var(--text-3);margin-bottom:.75rem">Assunto sugerido:</p>
+      <input id="email-subject" class="form-input" style="margin-bottom:1rem" readonly/>
+      <textarea id="email-body" class="form-input" rows="14" readonly style="font-family:monospace;font-size:.75rem;white-space:pre"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeEmailModal()">Fechar</button>
+      <button class="btn-primary" onclick="copyEmailBody()">📋 Copiar Corpo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Alert Attachment (#10) -->
+<div class="modal-overlay" id="attach-modal" style="display:none" onclick="if(event.target===this)closeAttachModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Anexar Justificativa</h3>
+      <button class="modal-close" onclick="closeAttachModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="attach-alert-title" style="font-size:.82rem;color:var(--text-2);margin-bottom:1rem"></p>
+      <div class="form-group">
+        <label>Arquivo (PDF, imagem, DOC, etc.)</label>
+        <input type="file" id="attach-file-input" class="form-input" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"/>
+      </div>
+      <div class="form-group">
+        <label>Nota explicativa</label>
+        <textarea id="attach-note" class="form-input" rows="3" placeholder="Descreva a justificativa para este alerta…"></textarea>
+      </div>
+      <div id="attach-list-container" style="margin-top:1rem"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeAttachModal()">Fechar</button>
+      <button class="btn-primary" onclick="uploadAttachment()">📎 Anexar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-overlay" style="display:none">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <p id="loader-msg">Processando…</p>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+    <div class="loader-steps" id="loader-steps" style="display:none">
+      <div class="loader-step" id="lstep-1" title="Parsing dos arquivos"></div>
+      <div class="loader-step" id="lstep-2" title="Carregando resultados"></div>
+      <div class="loader-step" id="lstep-3" title="Construindo dashboard"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/chart.umd.min.js"></script>
+<script src="/static/js/expertmoney-app.js" charset="UTF-8"></script>
+
+</body>
+</html>

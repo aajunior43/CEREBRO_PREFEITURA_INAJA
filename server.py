@@ -1385,7 +1385,15 @@ def create_app() -> Flask:
     app.register_blueprint(bp_extratos)
     app.register_blueprint(bp_empenho_assistente)
     app.register_blueprint(bp_classificador)
-    _log_startup("Todos os 21 blueprints registrados com sucesso.")
+
+    # ExpertMoney
+    from routes.expertmoney import bp as bp_expertmoney
+    app.register_blueprint(bp_expertmoney)
+    _log_startup("Todos os blueprints registrados com sucesso (incluindo ExpertMoney).")
+
+    # Cria tabelas do ExpertMoney no banco do Cerebro
+    from routes.expertmoney_db import init_expertmoney_tables
+    init_expertmoney_tables(app)
 
     # Init auth hash (compat) + multi-user auth
     _log_startup("Inicializando hashes e sistema de autenticação multiusuário...")
