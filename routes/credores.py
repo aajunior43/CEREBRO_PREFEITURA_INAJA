@@ -131,7 +131,7 @@ def add_credor():
                 payload.get("tipo_valor", "FIXO"),
                 payload.get("solicitacao", ""),
                 payload.get("pagamento", ""),
-                payload.get("validade", ""),
+                payload.get("validade") or None,
                 payload.get("departamento", ""),
                 payload.get("obs", ""),
             ),
@@ -190,7 +190,7 @@ def update_credor(cid):
                 payload.get("tipo_valor", "FIXO"),
                 payload.get("solicitacao", ""),
                 payload.get("pagamento", ""),
-                payload.get("validade", ""),
+                payload.get("validade") or None,
                 payload.get("departamento", ""),
                 payload.get("obs", ""),
                 cid,
@@ -264,7 +264,7 @@ def listar_deletados():
     try:
         conn = get_db()
         rows = conn.execute(
-            "SELECT * FROM credores WHERE ativo=0 ORDER BY atualizado_em DESC"
+            "SELECT * FROM credores WHERE ativo=0 ORDER BY id DESC"
         ).fetchall()
         return jsonify([row_to_dict(r) for r in rows])
     except Exception as e:
@@ -290,7 +290,7 @@ def restaurar_credor(cid):
                 {"error": f'Já existe um credor ativo com o nome "{row["nome"]}"'}
             ), 409
         conn.execute(
-            "UPDATE credores SET ativo=1, atualizado_em=datetime('now','localtime') WHERE id=?",
+            "UPDATE credores SET ativo=1 WHERE id=?",
             (cid,),
         )
         _invalidate_summary_cache()
@@ -344,7 +344,7 @@ def duplicate_credor(cid):
                 orig["tipo_valor"] or "FIXO",
                 orig["solicitacao"] or "",
                 orig["pagamento"] or "",
-                orig["validade"] or "",
+                orig["validade"] if orig["validade"] else None,
                 orig["departamento"] or "",
                 orig["obs"] or "",
             ),

@@ -488,6 +488,8 @@ def create_app() -> Flask:
             "ALTER TABLE mural_recados ADD COLUMN valor REAL DEFAULT 0.0",
             "ALTER TABLE mural_recados ADD COLUMN credor_id INTEGER REFERENCES credores(id) ON DELETE SET NULL",
             "ALTER TABLE mural_recados ADD COLUMN vencimento TEXT DEFAULT ''",
+            "ALTER TABLE mural_comentarios ADD COLUMN parent_id INTEGER REFERENCES mural_comentarios(id) ON DELETE SET NULL",
+            "ALTER TABLE credores ADD COLUMN atualizado_em TEXT DEFAULT (datetime('now','localtime'))",
         ]:
             try:
                 cur.execute(alter)
