@@ -1,0 +1,2 @@
+NAME                      IMAGE                   COMMAND              SERVICE   CREATED        STATUS                  PORTS
+cerebro-inaja-cerebro-1   cerebro-inaja-cerebro   "python server.py"   cerebro   11 hours ago   Up 11 hours (healthy)   5000/tcp
