@@ -1,13 +1,17 @@
 """Blueprint: Kanban (tarefas, IA, anexos)"""
 
 import json
-import re
 import time as _time
 from collections import defaultdict
 from flask import Blueprint, request, jsonify, send_file
 import io as _io
 
-from routes._shared import require_login
+from routes._shared import (
+    require_login,
+    _build_ai_service,
+    _extract_json_block,
+    _get_openrouter_config,
+)
 
 bp = Blueprint("kanban", __name__)
 
@@ -64,87 +68,10 @@ def _sanitize_task(task: dict) -> dict:
     }
 
 
-def _get_openrouter_config(conn, api_key_override: str = "", model_override: str = ""):
-    from config import settings
-
-    rows = conn.execute(
-        "SELECT chave, valor FROM configuracoes WHERE chave IN (?,?,?)",
-        ("api_openrouter_key", "api_openrouter_modelo", "api_opencode_go_key"),
-    ).fetchall()
-    cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
-    raw_model = (
-        (model_override or "").strip()
-        or cfg.get("api_openrouter_modelo", "")
-        or (os.environ.get("OPENROUTER_MODEL") or "").strip()
-        or settings.openrouter_default_model
-    )
-    model = (
-        raw_model.strip()
-        if not raw_model.endswith(":free") and raw_model != "openrouter/free"
-        else raw_model.strip()
-    )
-    if model.startswith("opencode-go/"):
-        api_key = (
-            (api_key_override or "").strip()
-            or cfg.get("api_opencode_go_key", "")
-            or (os.environ.get("OPENCODE_GO_API_KEY") or "").strip()
-        )
-    else:
-        api_key = (
-            (api_key_override or "").strip()
-            or cfg.get("api_openrouter_key", "")
-            or (os.environ.get("OPENROUTER_API_KEY") or "").strip()
-        )
-    return api_key, model
-
-
-import os
-
-
-def _build_ai_service(api_key: str, model: str):
-    from config import settings
-    from services.openrouter_service import build_openrouter_service
-
-    return build_openrouter_service(
-        api_key=api_key,
-        default_model=model or settings.openrouter_default_model,
-        referer=settings.openrouter_referer,
-        title=settings.openrouter_title,
-        logger=None,
-        timeout_seconds=settings.openrouter_timeout_seconds,
-        max_retries=settings.openrouter_max_retries,
-        backoff_base=settings.openrouter_backoff_base,
-        cache_ttl_seconds=settings.openrouter_cache_ttl_seconds,
-    )
-
-
-def _extract_json_block(text: str):
-    text = (text or "").strip()
-    try:
-        return json.loads(text)
-    except Exception:
-        pass
-    match = re.search(r"```json\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
-    if match:
-        return json.loads(match.group(1))
-    start_obj, end_obj = text.find("{"), text.rfind("}")
-    if start_obj != -1 and end_obj != -1 and end_obj > start_obj:
-        try:
-            return json.loads(text[start_obj : end_obj + 1])
-        except Exception:
-            pass
-    start_arr, end_arr = text.find("["), text.rfind("]")
-    if start_arr != -1 and end_arr != -1 and end_arr > start_arr:
-        return json.loads(text[start_arr : end_arr + 1])
-    raise ValueError("Formato inválido")
-
-
 def _kanban_ai_completion(
     action: str,
     user_prompt: str,
     task: dict | None = None,
-    api_key_override: str = "",
-    model_override: str = "",
     status_hint: str = "",
     priority_hint: str = "",
 ):
@@ -152,7 +79,7 @@ def _kanban_ai_completion(
     import datetime
 
     conn = get_db()
-    api_key, model = _get_openrouter_config(conn, api_key_override, model_override)
+    api_key, model = _get_openrouter_config(conn)
     if not api_key:
         return None, ("Chave do OpenRouter não configurada.", 400)
     today = datetime.date.today().strftime("%d/%m/%Y")
@@ -409,8 +336,6 @@ def kanban_ai_create():
         parsed, error = _kanban_ai_completion(
             "create",
             prompt,
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
             status_hint=(data.get("status_hint") or "").strip(),
             priority_hint=(data.get("priority_hint") or "").strip(),
         )
@@ -431,8 +356,6 @@ def kanban_ai_improve():
             "improve",
             (data.get("prompt") or "").strip(),
             _sanitize_task(task),
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
         )
         return _handle_ai_result(parsed, error, _sanitize_task)
     except Exception as e:
@@ -451,8 +374,6 @@ def kanban_ai_breakdown():
             "breakdown",
             (data.get("prompt") or "").strip(),
             _sanitize_task(task),
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
         )
         if error:
             return jsonify({"error": error[0]}), error[1]
@@ -489,8 +410,6 @@ def kanban_ai_plan():
                 "data_vencimento": (task.get("data_vencimento") or "").strip(),
                 "responsavel": (task.get("responsavel") or "").strip(),
             },
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
         )
         if error:
             return jsonify({"error": error[0]}), error[1]
@@ -533,8 +452,6 @@ def kanban_ai_classify():
                 "data_vencimento": (task.get("data_vencimento") or "").strip(),
                 "responsavel": (task.get("responsavel") or "").strip(),
             },
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
         )
         if error:
             return jsonify({"error": error[0]}), error[1]
@@ -577,8 +494,6 @@ def kanban_ai_stale():
                 "criado_em": (task.get("criado_em") or "").strip(),
                 "atualizado_em": (task.get("atualizado_em") or "").strip(),
             },
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
         )
         if error:
             return jsonify({"error": error[0]}), error[1]
@@ -618,8 +533,6 @@ def kanban_ai_professional_rewrite():
             "professional_rewrite",
             (data.get("prompt") or "Reescreva em tom profissional.").strip(),
             _sanitize_task(task),
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
         )
         return _handle_ai_result(parsed, error, _sanitize_task)
     except Exception as e:

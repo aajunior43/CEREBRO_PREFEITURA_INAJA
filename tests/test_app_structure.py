@@ -296,6 +296,48 @@ def test_mural_api_guards():
                 pass
 
 
+def test_ai_uses_admin_model():
+    """Toda chamada de IA deve ignorar overrides enviados pelo navegador."""
+    import sqlite3
+    from routes._shared import _get_openrouter_config
+    import routes.kanban as kanban
+    import routes._shared as shared
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("CREATE TABLE configuracoes (chave TEXT PRIMARY KEY, valor TEXT)")
+    conn.executemany(
+        "INSERT INTO configuracoes (chave, valor) VALUES (?, ?)",
+        [
+            ("api_openrouter_modelo", "opencode-go/modelo-adm"),
+            ("api_opencode_go_key", "chave-adm-opencode"),
+            ("api_openrouter_key", "chave-adm-openrouter"),
+        ],
+    )
+
+    key, model = _get_openrouter_config(
+        conn,
+        api_key_override="chave-do-navegador",
+        model_override="modelo-do-navegador",
+    )
+    assert model == "opencode-go/modelo-adm"
+    assert key == "chave-adm-opencode"
+    assert kanban._get_openrouter_config is shared._get_openrouter_config
+
+    conn.execute(
+        "UPDATE configuracoes SET valor=? WHERE chave='api_openrouter_modelo'",
+        ("openai/modelo-adm",),
+    )
+    key, model = _get_openrouter_config(
+        conn,
+        api_key_override="outra-chave",
+        model_override="outro-modelo",
+    )
+    assert model == "openai/modelo-adm"
+    assert key == "chave-adm-openrouter"
+    conn.close()
+
+
 def test_protocolos_api():
     """Testa cadastro de protocolos, upload de anexos (PDFs) e download."""
     if os.path.exists(TEST_DB_PATH):
@@ -554,6 +596,7 @@ def run_all_tests():
         ("App Factory",  test_app_factory),
         ("Banco de Dados", test_db_connection),
         ("Mural API",    test_mural_api_guards),
+        ("Modelo IA centralizado", test_ai_uses_admin_model),
         ("Protocolos API", test_protocolos_api),
         ("Fornecimento API", test_fornecimento_solicitacoes_api),
         ("Empenho Assistente Histórico", test_empenho_assistente_historico_guard),
@@ -603,6 +646,7 @@ def load_tests(loader, tests, pattern):
         test_app_factory,
         test_db_connection,
         test_mural_api_guards,
+        test_ai_uses_admin_model,
         test_protocolos_api,
         test_fornecimento_solicitacoes_api,
         test_empenho_assistente_historico_guard,

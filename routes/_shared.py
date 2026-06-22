@@ -53,14 +53,19 @@ def row_to_dict(row):
 
 
 def _get_openrouter_config(conn, api_key_override: str = "", model_override: str = ""):
+    """Resolve a configuracao global de IA definida exclusivamente no ADM.
+
+    Os argumentos de override permanecem apenas por compatibilidade com clientes
+    antigos. Eles sao deliberadamente ignorados para impedir que uma pagina use
+    modelo ou credencial diferente da configuracao central.
+    """
     rows = conn.execute(
         "SELECT chave,valor FROM configuracoes WHERE chave IN (?,?,?)",
         ("api_openrouter_key", "api_openrouter_modelo", "api_opencode_go_key"),
     ).fetchall()
     cfg = {row["chave"]: (row["valor"] or "").strip() for row in rows}
     raw_model = (
-        (model_override or "").strip()
-        or cfg.get("api_openrouter_modelo", "")
+        cfg.get("api_openrouter_modelo", "")
         or (os.environ.get("OPENROUTER_MODEL") or "").strip()
         or settings.openrouter_default_model
     )
@@ -71,14 +76,12 @@ def _get_openrouter_config(conn, api_key_override: str = "", model_override: str
     )
     if model.startswith("opencode-go/"):
         api_key = (
-            (api_key_override or "").strip()
-            or cfg.get("api_opencode_go_key", "")
+            cfg.get("api_opencode_go_key", "")
             or (os.environ.get("OPENCODE_GO_API_KEY") or "").strip()
         )
     else:
         api_key = (
-            (api_key_override or "").strip()
-            or cfg.get("api_openrouter_key", "")
+            cfg.get("api_openrouter_key", "")
             or (os.environ.get("OPENROUTER_API_KEY") or "").strip()
         )
     return api_key, model
