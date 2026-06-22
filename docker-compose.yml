@@ -5,6 +5,10 @@ services:
     env_file: .env
     volumes:
       - ./empenhos.db:/app/empenhos.db
+      - ./documentos_centro:/app/documentos_centro
+      - ./uploads:/app/uploads
+      - ./uploads_zip:/app/uploads_zip
+      - ./data/attachments:/app/data/attachments
       - ./logs:/app/logs
       - ./.session_secret:/app/.session_secret
     networks:

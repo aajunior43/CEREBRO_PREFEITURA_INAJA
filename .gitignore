@@ -65,3 +65,12 @@ stderr.log
 
 # Worktree do backup automático (gerenciado pelo backup_db.py)
 .backup_worktree/
+
+# Dados persistentes e backups locais (nunca enviar ao repositório)
+.session_secret
+.backup.conf
+backups_local/
+uploads/
+uploads_zip/
+data/attachments/
+docker-compose.yml.bak-*
