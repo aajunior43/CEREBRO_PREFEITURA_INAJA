@@ -112,6 +112,7 @@ svg {
 
 :root {
   /* TEMA CLARO — institucional, limpo, alto contraste */
+  color-scheme: light;
   --bg-gradient:
     radial-gradient(ellipse at 18% 12%, rgba(59, 130, 246, 0.07) 0%, transparent 50%),
     radial-gradient(ellipse at 82% 88%, rgba(99, 102, 241, 0.05) 0%, transparent 45%),
@@ -119,6 +120,8 @@ svg {
   --bg: #f0f4f8;
   --surface: #ffffff;
   --surface-2: #f5f8fc;
+  --surface-3: #eaf0f7;
+  --surface-rgb: 255, 255, 255;
   --border: rgba(15, 23, 42, 0.10);
   --border-hover: rgba(15, 23, 42, 0.22);
   --scrollbar-track: transparent;
@@ -171,12 +174,15 @@ svg {
 
 [data-theme="dark"] {
   /* TEMA ESCURO — azul noturno profundo com acentos vibrantes */
+  color-scheme: dark;
   --bg-gradient:
     radial-gradient(ellipse at 10% 20%, rgba(99, 102, 241, 0.18) 0%, rgba(37, 99, 235, 0.08) 40%, #090c1c 80%),
     radial-gradient(ellipse at 85% 80%, rgba(124, 58, 237, 0.12) 0%, transparent 45%);
   --bg: #090c1c;
   --surface: #111426;
   --surface-2: #1a1e35;
+  --surface-3: #222842;
+  --surface-rgb: 17, 20, 38;
   --border: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.18);
   --scrollbar-track: transparent;
@@ -219,6 +225,7 @@ svg {
 
 [data-theme="cosmos"] {
   /* TEMA COSMOS — espaço profundo com nebulosas índigo-violeta */
+  color-scheme: dark;
   --bg-gradient:
     radial-gradient(ellipse at 20% 30%, rgba(88, 28, 220, 0.22) 0%, transparent 42%),
     radial-gradient(ellipse at 76% 62%, rgba(29, 78, 216, 0.16) 0%, transparent 38%),
@@ -228,6 +235,8 @@ svg {
   --bg: #03050c;
   --surface: #070a18;
   --surface-2: #0c1024;
+  --surface-3: #11172e;
+  --surface-rgb: 7, 10, 24;
   --border: rgba(167, 139, 250, 0.10);
   --border-hover: rgba(167, 139, 250, 0.26);
   --scrollbar-track: transparent;
@@ -357,6 +366,7 @@ svg {
    ============================================================ */
 [data-theme="diamante"] {
   /* TEMA DIAMANTE — glassmorphism cristalino, sky-blue, platina e luz */
+  color-scheme: light;
   --bg-gradient:
     radial-gradient(ellipse at 20% 15%, rgba(186, 230, 255, 0.70) 0%, transparent 45%),
     radial-gradient(ellipse at 80% 85%, rgba(216, 230, 254, 0.60) 0%, transparent 42%),
@@ -365,6 +375,8 @@ svg {
   --bg: #eaf4ff;
   --surface: rgba(255, 255, 255, 0.82);
   --surface-2: rgba(248, 253, 255, 0.90);
+  --surface-3: rgba(232, 246, 255, 0.94);
+  --surface-rgb: 255, 255, 255;
   --border: rgba(14, 116, 163, 0.14);
   --border-hover: rgba(14, 116, 163, 0.32);
   --scrollbar-track: transparent;

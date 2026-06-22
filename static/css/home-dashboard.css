@@ -1905,3 +1905,129 @@ html[data-theme="light"] body.home-page .dash-panel-link {
 [data-theme="dark"] body.home-page .today-footer {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* ============================================================
+   DIAMANTE HOME — cristal, safira e luz
+   Dashboard claro com profundidade, sem reutilizar o hero noturno.
+   ============================================================ */
+[data-theme="diamante"] body.home-page {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(129, 212, 250, 0.34), transparent 30rem),
+    radial-gradient(circle at 18% 26%, rgba(206, 147, 216, 0.20), transparent 34rem),
+    linear-gradient(145deg, #edf8ff 0%, #e9f1ff 52%, #f4efff 100%) !important;
+}
+
+[data-theme="diamante"] body.home-page .header {
+  background: rgba(247, 252, 255, 0.78) !important;
+  border-bottom-color: rgba(2, 119, 189, 0.14) !important;
+  box-shadow: 0 10px 34px rgba(12, 74, 110, 0.09) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+}
+
+[data-theme="diamante"] body.home-page .app-sidebar {
+  background: rgba(244, 251, 255, 0.82) !important;
+  border-right-color: rgba(2, 119, 189, 0.14) !important;
+  box-shadow: 12px 0 34px rgba(12, 74, 110, 0.07) !important;
+  backdrop-filter: blur(22px) saturate(160%);
+}
+
+[data-theme="diamante"] body.home-page .sidebar-brand {
+  background: linear-gradient(135deg, rgba(129, 212, 250, 0.18), rgba(206, 147, 216, 0.12)) !important;
+  border-bottom-color: rgba(2, 119, 189, 0.12) !important;
+}
+
+[data-theme="diamante"] body.home-page .dashboard-greeting-title {
+  background: linear-gradient(120deg, #073b5c 0%, #0277bd 55%, #6a1b9a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.72), transparent 16rem),
+    linear-gradient(125deg, rgba(224, 247, 255, 0.92), rgba(207, 233, 255, 0.88) 58%, rgba(232, 213, 249, 0.88)) !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 22px 52px rgba(12, 74, 110, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card:hover {
+  border-color: rgba(3, 169, 244, 0.34) !important;
+  box-shadow: 0 26px 60px rgba(3, 119, 189, 0.18), inset 0 1px 0 #ffffff !important;
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-badge {
+  color: #01579b;
+  background: rgba(255, 255, 255, 0.52);
+  border-color: rgba(2, 119, 189, 0.20);
+}
+
+[data-theme="diamante"] body.home-page .pulse-dot {
+  background: #03a9f4;
+  box-shadow: 0 0 0 5px rgba(3, 169, 244, 0.12);
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card h2 {
+  background: linear-gradient(120deg, #073b5c, #0277bd 62%, #6a1b9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card p {
+  color: #34566f;
+}
+
+[data-theme="diamante"] body.home-page .stat-num {
+  background: linear-gradient(135deg, #0277bd, #6a1b9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="diamante"] body.home-page .stat-lbl {
+  color: #4a6882;
+}
+
+[data-theme="diamante"] body.home-page .glow-ring {
+  border-color: rgba(3, 169, 244, 0.26);
+}
+
+[data-theme="diamante"] body.home-page .ring-2 {
+  border-color: rgba(171, 71, 188, 0.24);
+}
+
+[data-theme="diamante"] body.home-page .ring-3 {
+  background: radial-gradient(circle, rgba(129, 212, 250, 0.30), transparent 62%);
+}
+
+[data-theme="diamante"] body.home-page .dash-kpi-card,
+[data-theme="diamante"] body.home-page .cal-card,
+[data-theme="diamante"] body.home-page .today-panel,
+[data-theme="diamante"] body.home-page .dash-panel,
+[data-theme="diamante"] body.home-page .dash-module-card {
+  background: rgba(255, 255, 255, 0.70) !important;
+  border-color: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 10px 30px rgba(12, 74, 110, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(16px) saturate(155%);
+}
+
+[data-theme="diamante"] body.home-page .dash-kpi-card:hover,
+[data-theme="diamante"] body.home-page .cal-card:hover,
+[data-theme="diamante"] body.home-page .today-panel:hover,
+[data-theme="diamante"] body.home-page .dash-panel:hover,
+[data-theme="diamante"] body.home-page .dash-module-card:hover {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(3, 169, 244, 0.28) !important;
+  box-shadow: 0 18px 38px rgba(3, 119, 189, 0.13) !important;
+}
+
+[data-theme="diamante"] body.home-page .dash-module-card.featured {
+  background: linear-gradient(145deg, rgba(255,255,255,0.90), rgba(224,247,255,0.78)) !important;
+  border-color: rgba(3, 169, 244, 0.28) !important;
+}
+
+[data-theme="diamante"] body.home-page .dash-module-card.featured::after {
+  background: linear-gradient(90deg, #03a9f4, #7c4dff);
+}
