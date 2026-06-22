@@ -70,6 +70,7 @@ stderr.log
 .session_secret
 .backup.conf
 backups_local/
+sqlite-data/
 uploads/
 uploads_zip/
 data/attachments/

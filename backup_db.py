@@ -24,7 +24,8 @@ from datetime import datetime
 
 # ─── Configuração ────────────────────────────────────────────────────────────
 BASE_DIR      = Path(__file__).resolve().parent
-DATABASES     = [BASE_DIR / "empenhos.db"]
+DEFAULT_DATABASE = BASE_DIR / "sqlite-data" / "empenhos.db"
+DATABASES     = [Path(os.environ.get("DB_PATH", str(DEFAULT_DATABASE)))]
 BACKUP_BRANCH = "backups"
 WORKTREE_DIR  = BASE_DIR / ".backup_worktree"
 LOG_FILE      = BASE_DIR / "backup_db.log"

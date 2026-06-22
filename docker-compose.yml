@@ -3,8 +3,10 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    environment:
+      DB_PATH: /app/sqlite-data/empenhos.db
     volumes:
-      - ./empenhos.db:/app/empenhos.db
+      - ./sqlite-data:/app/sqlite-data
       - ./documentos_centro:/app/documentos_centro
       - ./uploads:/app/uploads
       - ./uploads_zip:/app/uploads_zip
