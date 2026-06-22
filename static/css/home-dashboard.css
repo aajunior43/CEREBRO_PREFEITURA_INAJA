@@ -1797,3 +1797,111 @@ html[data-theme="light"] body.home-page .dash-panel-link {
     border-radius: 20px;
   }
 }
+
+/* ============================================================
+   DARK HOME — superfícies realmente escuras
+   Regras explícitas evitam que estilos claros posteriores vazem.
+   ============================================================ */
+[data-theme="dark"] body.home-page {
+  background:
+    radial-gradient(circle at 82% 10%, rgba(79, 142, 224, 0.12), transparent 30rem),
+    radial-gradient(circle at 18% 30%, rgba(176, 138, 248, 0.08), transparent 34rem),
+    #090c1c !important;
+  color: #f0f6ff;
+}
+
+[data-theme="dark"] body.home-page .header {
+  background: rgba(12, 16, 31, 0.94) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32) !important;
+}
+
+[data-theme="dark"] body.home-page .app-sidebar {
+  background: linear-gradient(180deg, #111626 0%, #0b0f1d 100%) !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] body.home-page .sidebar-brand {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] body.home-page .dashboard-greeting-title {
+  background: none;
+  color: #f0f6ff;
+  -webkit-text-fill-color: currentColor;
+}
+
+[data-theme="dark"] body.home-page .hero-welcome-card {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(111, 174, 255, 0.18), transparent 18rem),
+    linear-gradient(130deg, #11182d 0%, #172442 58%, #1b2d50 100%) !important;
+  border-color: rgba(111, 174, 255, 0.16) !important;
+}
+
+[data-theme="dark"] body.home-page .hero-welcome-card p {
+  color: #aebed8;
+}
+
+[data-theme="dark"] body.home-page .dash-kpi-card,
+[data-theme="dark"] body.home-page .cal-card,
+[data-theme="dark"] body.home-page .today-panel,
+[data-theme="dark"] body.home-page .dash-panel,
+[data-theme="dark"] body.home-page .dash-module-card,
+[data-theme="dark"] body.home-page .day-detail {
+  background: #111426 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30) !important;
+}
+
+[data-theme="dark"] body.home-page .dash-kpi-card:hover,
+[data-theme="dark"] body.home-page .cal-card:hover,
+[data-theme="dark"] body.home-page .today-panel:hover,
+[data-theme="dark"] body.home-page .dash-panel:hover,
+[data-theme="dark"] body.home-page .dash-module-card:hover {
+  background: #171c31 !important;
+  border-color: rgba(111, 174, 255, 0.22) !important;
+}
+
+[data-theme="dark"] body.home-page .dash-module-card.featured {
+  background: linear-gradient(145deg, #12182b, #172442) !important;
+  border-color: rgba(111, 174, 255, 0.26) !important;
+}
+
+[data-theme="dark"] body.home-page .dash-qa-btn,
+[data-theme="dark"] body.home-page .cal-nav-btn,
+[data-theme="dark"] body.home-page .task,
+[data-theme="dark"] body.home-page .day-detail li,
+[data-theme="dark"] body.home-page .day-detail .h-num {
+  background: #1a1e35 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #c0cfea;
+}
+
+[data-theme="dark"] body.home-page .dash-qa-btn:hover,
+[data-theme="dark"] body.home-page .cal-nav-btn:hover,
+[data-theme="dark"] body.home-page .task:hover {
+  background: #222842 !important;
+  border-color: rgba(111, 174, 255, 0.24) !important;
+  color: #f0f6ff;
+}
+
+[data-theme="dark"] body.home-page .dash-qa-btn kbd,
+[data-theme="dark"] body.home-page .tag,
+[data-theme="dark"] body.home-page .dash-module-icon,
+[data-theme="dark"] body.home-page .cal-cell,
+[data-theme="dark"] body.home-page .cal-evt {
+  background-color: #1a1e35 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #c0cfea;
+}
+
+[data-theme="dark"] body.home-page .cal-cell.muted {
+  background: transparent !important;
+}
+
+[data-theme="dark"] body.home-page .dash-module-card-foot,
+[data-theme="dark"] body.home-page .today-head,
+[data-theme="dark"] body.home-page .today-footer {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
