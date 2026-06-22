@@ -18,15 +18,25 @@ import shutil
 import sys
 import os
 import tempfile
+import tarfile
 from pathlib import Path
 from datetime import datetime
 
 # ─── Configuração ────────────────────────────────────────────────────────────
 BASE_DIR      = Path(__file__).resolve().parent
-DATABASES     = [BASE_DIR / "empenhos.db"]
+DEFAULT_DATABASE = BASE_DIR / "sqlite-data" / "empenhos.db"
+DATABASES     = [Path(os.environ.get("DB_PATH", str(DEFAULT_DATABASE)))]
 BACKUP_BRANCH = "backups"
 WORKTREE_DIR  = BASE_DIR / ".backup_worktree"
 LOG_FILE      = BASE_DIR / "backup_db.log"
+LOCAL_BACKUP_DIR = BASE_DIR / "backups_local"
+PERSISTENT_DIRS = [
+    BASE_DIR / "documentos_centro",
+    BASE_DIR / "uploads",
+    BASE_DIR / "uploads_zip",
+    BASE_DIR / "data" / "attachments",
+]
+LOCAL_BACKUP_RETENTION = 7
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -187,6 +197,48 @@ def sql_dump(db_path: Path, dest_path: Path):
     log(f"  Dump: {db_path.name} -> {dest_path.name} ({size:.0f} KB)")
 
 
+def local_snapshot():
+    """Cria um snapshot local consistente do banco e dos arquivos persistentes."""
+    LOCAL_BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    archive_path = LOCAL_BACKUP_DIR / f"cerebro-completo-{stamp}.tar.gz"
+
+    with tempfile.TemporaryDirectory(prefix="cerebro-backup-") as tmp:
+        tmp_dir = Path(tmp)
+        snapshot_dbs = []
+        for db_path in DATABASES:
+            if not db_path.exists():
+                continue
+            snapshot_path = tmp_dir / db_path.name
+            source = sqlite3.connect(str(db_path), timeout=30)
+            destination = sqlite3.connect(str(snapshot_path))
+            try:
+                source.backup(destination)
+            finally:
+                destination.close()
+                source.close()
+            snapshot_dbs.append(snapshot_path)
+
+        with tarfile.open(archive_path, "w:gz") as archive:
+            for snapshot_path in snapshot_dbs:
+                archive.add(snapshot_path, arcname=snapshot_path.name)
+            for directory in PERSISTENT_DIRS:
+                if directory.exists():
+                    archive.add(directory, arcname=str(directory.relative_to(BASE_DIR)))
+
+    size_mb = archive_path.stat().st_size / (1024 * 1024)
+    log(f"  Snapshot completo: {archive_path.name} ({size_mb:.1f} MB)")
+
+    snapshots = sorted(
+        LOCAL_BACKUP_DIR.glob("cerebro-completo-*.tar.gz"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    for old_snapshot in snapshots[LOCAL_BACKUP_RETENTION:]:
+        old_snapshot.unlink(missing_ok=True)
+        log(f"  Snapshot antigo removido: {old_snapshot.name}")
+
+
 def backup():
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log("=" * 52)
@@ -200,6 +252,8 @@ def backup():
     for db in DATABASES:
         if db.exists():
             wal_checkpoint(db)
+
+    local_snapshot()
 
     ensure_backup_branch()
     setup_worktree()
@@ -253,7 +307,10 @@ def backup():
 
 if __name__ == "__main__":
     try:
-        backup()
+        if "--local-only" in sys.argv:
+            local_snapshot()
+        else:
+            backup()
     except Exception as exc:
         log(f"ERRO inesperado: {exc}")
         sys.exit(1)

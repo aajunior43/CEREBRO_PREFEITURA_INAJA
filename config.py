@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent
 @dataclass(frozen=True)
 class Settings:
     base_dir: Path = BASE_DIR
-    db_path: Path = BASE_DIR / "empenhos.db"
+    db_path: Path = Path(os.environ.get("DB_PATH", str(BASE_DIR / "empenhos.db")))
     data_js_path: Path = BASE_DIR / "data.js"
     log_dir: Path = BASE_DIR / "logs"
     log_file: Path = BASE_DIR / "logs" / "server.log"

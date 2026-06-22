@@ -15,15 +15,7 @@ def extratos_modelos_openrouter():
     try:
         data = request.get_json(silent=True) or {}
         conn = get_db()
-        api_key, selected_model = _get_openrouter_config(
-            conn,
-            api_key_override=(
-                data.get("api_key") or request.args.get("api_key") or ""
-            ).strip(),
-            model_override=(
-                data.get("model") or request.args.get("model") or ""
-            ).strip(),
-        )
+        api_key, selected_model = _get_openrouter_config(conn)
         if not api_key:
             return jsonify(
                 {

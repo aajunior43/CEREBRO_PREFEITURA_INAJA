@@ -5,10 +5,16 @@ import io
 import queue
 import json
 import threading
+from datetime import date, datetime
 from functools import wraps
 from flask import Blueprint, request, jsonify, session, send_file, Response, stream_with_context
 from werkzeug.utils import secure_filename
-from routes._shared import get_db
+from routes._shared import (
+    get_db,
+    _build_ai_service,
+    _extract_json_block,
+    _get_openrouter_config,
+)
 
 bp = Blueprint("mural", __name__)
 
@@ -210,6 +216,113 @@ def mural_criar():
         return jsonify(res), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/mural/ia/criar", methods=["POST"])
+@_require_auth
+def mural_criar_com_ia():
+    """Interpreta um pedido em linguagem natural e cria um afazer no mural."""
+    from services.openrouter_service import AIServiceError
+
+    try:
+        data = request.get_json(force=True) or {}
+        pedido = str(data.get("pedido") or "").strip()
+        if len(pedido) < 3:
+            return jsonify({"error": "Descreva o afazer que deseja criar."}), 400
+        if len(pedido) > 2000:
+            return jsonify({"error": "O pedido deve ter no maximo 2.000 caracteres."}), 400
+
+        conn = get_db()
+        api_key, model = _get_openrouter_config(conn)
+        if not api_key:
+            return jsonify({"error": "Chave de IA nao configurada no sistema."}), 400
+
+        hoje = date.today().isoformat()
+        response = _build_ai_service(api_key, model).chat_by_task(
+            task_type="mural_afazer",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Voce transforma pedidos em afazeres objetivos para o mural de uma prefeitura. "
+                        f"A data de hoje e {hoje}. Interprete datas relativas com base nela. "
+                        "Responda somente com JSON valido, sem markdown, no formato: "
+                        '{"titulo":"...","conteudo":"...","prioridade":"baixa|media|alta|urgente",'
+                        '"destinatario":"Todos ou nome citado","vencimento":"YYYY-MM-DD ou vazio"}. '
+                        "Crie um titulo curto e uma descricao acionavel. Nao invente nomes, valores ou prazos. "
+                        "Quando prioridade, destinatario ou prazo nao forem informados, use media, Todos e vazio."
+                    ),
+                },
+                {"role": "user", "content": pedido},
+            ],
+            temperature=0.1,
+            max_tokens=500,
+            use_cache=False,
+            response_format={"type": "json_object"},
+            metadata={"feature": "mural_criar_afazer_ia"},
+        )
+
+        task = _extract_json_block(response.text)
+        if not isinstance(task, dict):
+            raise ValueError("A IA nao retornou um afazer valido.")
+
+        titulo = str(task.get("titulo") or "").strip()[:120]
+        conteudo = str(task.get("conteudo") or "").strip()[:4000]
+        if not titulo:
+            titulo = pedido.splitlines()[0].strip()[:120]
+        if not conteudo:
+            conteudo = pedido
+
+        prioridade = _normalize_choice(
+            str(task.get("prioridade") or "media"), VALID_PRIORIDADES, "media"
+        )
+        destinatario = str(task.get("destinatario") or "Todos").strip()[:80] or "Todos"
+        vencimento = str(task.get("vencimento") or "").strip()[:10]
+        if vencimento:
+            try:
+                datetime.strptime(vencimento, "%Y-%m-%d")
+            except ValueError:
+                vencimento = ""
+
+        color_by_priority = {
+            "baixa": "blue",
+            "media": "yellow",
+            "alta": "orange",
+            "urgente": "pink",
+        }
+        autor = (session.get("usuario_nome") or "Servidor").strip()
+        cur = conn.execute(
+            "INSERT INTO mural_recados "
+            "(titulo, conteudo, autor, destinatario, prioridade, categoria, cor, status, valor, vencimento) "
+            "VALUES (?, ?, ?, ?, ?, 'tarefa', ?, 'a_fazer', 0, ?)",
+            (
+                titulo,
+                conteudo,
+                autor,
+                destinatario,
+                prioridade,
+                color_by_priority[prioridade],
+                vencimento or None,
+            ),
+        )
+        conn.commit()
+
+        row = conn.execute(
+            "SELECT m.*, c.nome AS credor_nome, c.valor AS credor_valor, c.tipo_valor AS credor_tipo_valor, "
+            "(SELECT COUNT(*) FROM mural_comentarios mc WHERE mc.recado_id = m.id) AS comment_count "
+            "FROM mural_recados m LEFT JOIN credores c ON m.credor_id=c.id WHERE m.id=?",
+            (cur.lastrowid,),
+        ).fetchone()
+        recado = dict(row)
+        recado["attachments"] = []
+        broadcast_mural_event("create", recado)
+        return jsonify({"recado": recado, "model": response.model}), 201
+    except AIServiceError as err:
+        return jsonify(err.to_response()), err.status_code
+    except (ValueError, json.JSONDecodeError) as err:
+        return jsonify({"error": str(err)}), 422
+    except Exception as err:
+        return jsonify({"error": str(err)}), 500
 
 
 @bp.route("/api/mural/<int:recado_id>", methods=["PUT"])

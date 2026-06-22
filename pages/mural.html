@@ -109,6 +109,49 @@
       gap: 16px;
       flex-wrap: wrap;
     }
+    .mural-ai-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+      padding: 16px;
+      border: 1px solid color-mix(in srgb, var(--blue) 35%, var(--border));
+      border-radius: 18px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--blue) 10%, var(--surface)), color-mix(in srgb, var(--purple, #7c3aed) 8%, var(--surface)));
+      box-shadow: var(--shadow-sm);
+    }
+    .mural-ai-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border-radius: 13px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--blue), #7c3aed);
+      font-size: 20px;
+    }
+    .mural-ai-content { flex: 1; min-width: 0; }
+    .mural-ai-title { margin: 0 0 3px; color: var(--text); font-size: 13px; font-weight: 800; }
+    .mural-ai-hint { margin: 0 0 9px; color: var(--text-3); font-size: 11px; }
+    .mural-ai-form { display: flex; align-items: stretch; gap: 10px; }
+    .mural-ai-input {
+      min-height: 44px;
+      max-height: 110px;
+      resize: vertical;
+      padding: 11px 13px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      outline: none;
+      flex: 1;
+    }
+    .mural-ai-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 15%, transparent); }
+    .mural-ai-status { min-height: 15px; margin-top: 6px; color: var(--text-3); font-size: 11px; }
+    .mural-ai-button[disabled] { cursor: wait; opacity: 0.7; transform: none; }
     .mural-filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1; }
     .mural-search-wrap {
       display: flex;
@@ -1074,6 +1117,9 @@
         flex-direction: column;
         align-items: stretch;
       }
+      .mural-ai-box { align-items: flex-start; padding: 14px; }
+      .mural-ai-form { flex-direction: column; }
+      .mural-ai-button { width: 100%; }
       .mural-filters {
         flex-direction: column;
         align-items: stretch;
@@ -1585,6 +1631,20 @@
         </div>
       </div>
 
+      <!-- CRIAR AFAZER COM IA -->
+      <section class="mural-ai-box" aria-labelledby="mural-ai-title">
+        <div class="mural-ai-icon" aria-hidden="true">✦</div>
+        <div class="mural-ai-content">
+          <h3 class="mural-ai-title" id="mural-ai-title">Criar afazer com IA</h3>
+          <p class="mural-ai-hint">Descreva o que precisa ser feito. A IA organiza título, detalhes, prioridade, responsável e prazo.</p>
+          <div class="mural-ai-form">
+            <textarea id="mural-ai-prompt" class="mural-ai-input" maxlength="2000" rows="1" placeholder="Ex.: Criar tarefa urgente para João enviar o relatório da saúde até sexta-feira"></textarea>
+            <button type="button" id="btn-mural-ai-create" class="mural-btn mural-btn-primary mural-ai-button">✦ Criar afazer</button>
+          </div>
+          <div id="mural-ai-status" class="mural-ai-status" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+
       <!-- TOOLBAR -->
       <div class="mural-toolbar" style="justify-content:flex-end;">
         <div id="mural-assignee-filters" style="display: flex; gap: 8px; align-items: center; margin-right: auto; overflow-x: auto; padding: 2px 0;"></div>
@@ -1852,6 +1912,47 @@
     // Tracks in-flight Kanban moves: id -> novoStatus
     // Prevents carregarMural() from reverting optimistic updates while PUT is still in-flight
     const _pendingMoves = new Map();
+
+    async function criarAfazerComIA() {
+      const input = document.getElementById('mural-ai-prompt');
+      const button = document.getElementById('btn-mural-ai-create');
+      const status = document.getElementById('mural-ai-status');
+      const pedido = input.value.trim();
+      if (pedido.length < 3) {
+        showMuralToast('Descreva o afazer que deseja criar.', 'warn');
+        input.focus();
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = 'Organizando...';
+      status.textContent = 'A IA está transformando seu pedido em um afazer.';
+      try {
+        const response = await fetch('/api/mural/ia/criar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pedido })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Não foi possível criar o afazer.');
+
+        const recado = data.recado;
+        if (recado && !cacheRecados.some(item => item.id === recado.id)) {
+          cacheRecados.unshift(recado);
+          muralLoaded = true;
+          renderMural();
+        }
+        input.value = '';
+        status.textContent = `Afazer criado: ${recado.titulo}`;
+        showMuralToast('Afazer criado com IA e adicionado em A Fazer.', 'success');
+      } catch (error) {
+        status.textContent = error.message;
+        showMuralToast(error.message, 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = '✦ Criar afazer';
+      }
+    }
 
     function showMuralToast(msg, type) {
       let container = document.getElementById('mural-toast-container');
@@ -3185,6 +3286,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Modal Control
     const backdrop = document.getElementById('modal-backdrop');
+
+    document.getElementById('btn-mural-ai-create').addEventListener('click', criarAfazerComIA);
+    document.getElementById('mural-ai-prompt').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        criarAfazerComIA();
+      }
+    });
     
     document.getElementById('btn-novo-recado').addEventListener('click', () => {
       document.getElementById('mural-form').reset();

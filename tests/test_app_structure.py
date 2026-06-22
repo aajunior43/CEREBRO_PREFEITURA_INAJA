@@ -5,6 +5,8 @@ tests/test_app_structure.py - Testes da estrutura modular (Atualizado para serve
 import os
 import sys
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
@@ -236,6 +238,7 @@ def test_mural_api_guards():
         # era obter status 403 (ou 401 devido ao middleware de autenticação).
         # Vamos atualizar a asserção para permitir status_code == 401.
         assert client.get("/api/mural").status_code == 401
+        assert client.post("/api/mural/ia/criar", json={"pedido": "Criar tarefa"}).status_code in (401, 403)
 
         # Agora cria uma sessão autenticada para o restante das requisições do teste
         with client.session_transaction() as sess:
@@ -255,6 +258,31 @@ def test_mural_api_guards():
         assert created.status_code == 201
         recado_id = created.get_json()["id"]
 
+        ai_payload = {
+            "titulo": "Enviar relatorio",
+            "conteudo": "Preparar e enviar o relatorio da saude.",
+            "prioridade": "alta",
+            "destinatario": "Joao",
+            "vencimento": "2026-06-26",
+        }
+        fake_ai_response = SimpleNamespace(
+            text=__import__("json").dumps(ai_payload),
+            model="modelo-teste",
+        )
+        with patch("routes.mural._get_openrouter_config", return_value=("chave", "modelo-teste")), \
+             patch("routes.mural._build_ai_service") as build_service:
+            build_service.return_value.chat_by_task.return_value = fake_ai_response
+            ai_created = client.post(
+                "/api/mural/ia/criar",
+                json={"pedido": "Criar tarefa para Joao enviar o relatorio ate sexta"},
+            )
+        assert ai_created.status_code == 201
+        ai_recado = ai_created.get_json()["recado"]
+        assert ai_recado["titulo"] == "Enviar relatorio"
+        assert ai_recado["status"] == "a_fazer"
+        assert ai_recado["categoria"] == "tarefa"
+        assert ai_recado["prioridade"] == "alta"
+
         invalid = client.put(f"/api/mural/{recado_id}", json={"status": "perdido"})
         assert invalid.status_code == 400
 
@@ -266,6 +294,48 @@ def test_mural_api_guards():
                 os.remove(TEST_DB_PATH)
             except Exception:
                 pass
+
+
+def test_ai_uses_admin_model():
+    """Toda chamada de IA deve ignorar overrides enviados pelo navegador."""
+    import sqlite3
+    from routes._shared import _get_openrouter_config
+    import routes.kanban as kanban
+    import routes._shared as shared
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("CREATE TABLE configuracoes (chave TEXT PRIMARY KEY, valor TEXT)")
+    conn.executemany(
+        "INSERT INTO configuracoes (chave, valor) VALUES (?, ?)",
+        [
+            ("api_openrouter_modelo", "opencode-go/modelo-adm"),
+            ("api_opencode_go_key", "chave-adm-opencode"),
+            ("api_openrouter_key", "chave-adm-openrouter"),
+        ],
+    )
+
+    key, model = _get_openrouter_config(
+        conn,
+        api_key_override="chave-do-navegador",
+        model_override="modelo-do-navegador",
+    )
+    assert model == "opencode-go/modelo-adm"
+    assert key == "chave-adm-opencode"
+    assert kanban._get_openrouter_config is shared._get_openrouter_config
+
+    conn.execute(
+        "UPDATE configuracoes SET valor=? WHERE chave='api_openrouter_modelo'",
+        ("openai/modelo-adm",),
+    )
+    key, model = _get_openrouter_config(
+        conn,
+        api_key_override="outra-chave",
+        model_override="outro-modelo",
+    )
+    assert model == "openai/modelo-adm"
+    assert key == "chave-adm-openrouter"
+    conn.close()
 
 
 def test_protocolos_api():
@@ -526,6 +596,7 @@ def run_all_tests():
         ("App Factory",  test_app_factory),
         ("Banco de Dados", test_db_connection),
         ("Mural API",    test_mural_api_guards),
+        ("Modelo IA centralizado", test_ai_uses_admin_model),
         ("Protocolos API", test_protocolos_api),
         ("Fornecimento API", test_fornecimento_solicitacoes_api),
         ("Empenho Assistente Histórico", test_empenho_assistente_historico_guard),
@@ -575,6 +646,7 @@ def load_tests(loader, tests, pattern):
         test_app_factory,
         test_db_connection,
         test_mural_api_guards,
+        test_ai_uses_admin_model,
         test_protocolos_api,
         test_fornecimento_solicitacoes_api,
         test_empenho_assistente_historico_guard,

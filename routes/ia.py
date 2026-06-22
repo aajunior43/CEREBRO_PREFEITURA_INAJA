@@ -14,11 +14,7 @@ def proxy_ia_chat():
     try:
         data = request.get_json(force=True) or {}
         conn = get_db()
-        api_key, model = _get_openrouter_config(
-            conn,
-            api_key_override=(data.get("api_key") or "").strip(),
-            model_override=(data.get("model") or "").strip(),
-        )
+        api_key, model = _get_openrouter_config(conn)
         if not api_key:
             return jsonify({"error": "Chave API OpenRouter não configurada."}), 400
         response = _build_ai_service(api_key, model).chat_by_task(

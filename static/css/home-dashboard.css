@@ -1549,3 +1549,485 @@
     display: none;
   }
 }
+
+/* ============================================================
+   LIGHT HOME — identidade institucional de Inaja
+   Mantem os demais temas intactos e evita o contraste branco/navy.
+   ============================================================ */
+html:not([data-theme]) body.home-page,
+html[data-theme="light"] body.home-page {
+  background:
+    radial-gradient(circle at 84% 8%, rgba(196, 154, 62, 0.14), transparent 28rem),
+    radial-gradient(circle at 18% 24%, rgba(38, 105, 79, 0.10), transparent 34rem),
+    #f5f3eb;
+}
+
+html:not([data-theme]) body.home-page .header,
+html[data-theme="light"] body.home-page .header {
+  background: rgba(250, 249, 244, 0.92);
+  border-bottom-color: rgba(31, 78, 62, 0.13);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85), 0 8px 28px rgba(31, 78, 62, 0.06);
+}
+
+html:not([data-theme]) body.home-page .app-sidebar,
+html[data-theme="light"] body.home-page .app-sidebar {
+  background: rgba(249, 248, 242, 0.96);
+  border-right-color: rgba(31, 78, 62, 0.12);
+  box-shadow: 12px 0 32px rgba(31, 78, 62, 0.04);
+}
+
+html:not([data-theme]) body.home-page .sidebar-brand,
+html[data-theme="light"] body.home-page .sidebar-brand {
+  background: linear-gradient(135deg, rgba(31, 78, 62, 0.09), rgba(196, 154, 62, 0.08));
+  border-bottom-color: rgba(31, 78, 62, 0.11);
+}
+
+html:not([data-theme]) body.home-page .nav-home-btn.active,
+html:not([data-theme]) body.home-page .nav-home-btn:hover,
+html[data-theme="light"] body.home-page .nav-home-btn.active,
+html[data-theme="light"] body.home-page .nav-home-btn:hover {
+  color: #1f4e3e;
+  background: rgba(31, 78, 62, 0.10);
+}
+
+html:not([data-theme]) body.home-page .dashboard-area,
+html[data-theme="light"] body.home-page .dashboard-area {
+  gap: 24px;
+}
+
+html:not([data-theme]) body.home-page .dashboard-greeting-title,
+html[data-theme="light"] body.home-page .dashboard-greeting-title {
+  background: none;
+  color: #173d31;
+  -webkit-text-fill-color: currentColor;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.8px;
+}
+
+html:not([data-theme]) body.home-page .dashboard-greeting-subtitle,
+html[data-theme="light"] body.home-page .dashboard-greeting-subtitle {
+  color: #64756e;
+}
+
+html:not([data-theme]) body.home-page .hero-welcome-card,
+html[data-theme="light"] body.home-page .hero-welcome-card {
+  background:
+    radial-gradient(circle at 88% 20%, rgba(222, 187, 105, 0.22), transparent 17rem),
+    linear-gradient(125deg, #173d31 0%, #245e49 58%, #2e7358 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 26px;
+  box-shadow: 0 20px 48px rgba(23, 61, 49, 0.20);
+}
+
+html:not([data-theme]) body.home-page .hero-welcome-card:hover,
+html[data-theme="light"] body.home-page .hero-welcome-card:hover {
+  border-color: rgba(222, 187, 105, 0.48);
+  box-shadow: 0 24px 56px rgba(23, 61, 49, 0.25);
+}
+
+html:not([data-theme]) body.home-page .hero-welcome-badge,
+html[data-theme="light"] body.home-page .hero-welcome-badge {
+  color: #f3d99b;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(243, 217, 155, 0.30);
+}
+
+html:not([data-theme]) body.home-page .pulse-dot,
+html[data-theme="light"] body.home-page .pulse-dot {
+  background: #e7c46f;
+  box-shadow: 0 0 0 5px rgba(231, 196, 111, 0.12);
+  animation: none;
+}
+
+html:not([data-theme]) body.home-page .hero-welcome-card h2,
+html[data-theme="light"] body.home-page .hero-welcome-card h2 {
+  background: none;
+  color: #fffdf7;
+  -webkit-text-fill-color: currentColor;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(25px, 3vw, 35px);
+  font-weight: 700;
+}
+
+html:not([data-theme]) body.home-page .hero-welcome-card p,
+html[data-theme="light"] body.home-page .hero-welcome-card p {
+  color: rgba(255, 255, 255, 0.76);
+  max-width: 720px;
+  font-size: 15px;
+}
+
+html:not([data-theme]) body.home-page .stat-num,
+html[data-theme="light"] body.home-page .stat-num {
+  background: none;
+  color: #f0cf82;
+  -webkit-text-fill-color: currentColor;
+}
+
+html:not([data-theme]) body.home-page .stat-lbl,
+html[data-theme="light"] body.home-page .stat-lbl {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+html:not([data-theme]) body.home-page .hero-emblem-logo,
+html[data-theme="light"] body.home-page .hero-emblem-logo {
+  width: 92px;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.28));
+}
+
+html:not([data-theme]) body.home-page .glow-ring,
+html[data-theme="light"] body.home-page .glow-ring {
+  border-color: rgba(240, 207, 130, 0.30);
+}
+
+html:not([data-theme]) body.home-page .ring-3,
+html[data-theme="light"] body.home-page .ring-3 {
+  background: radial-gradient(circle, rgba(240, 207, 130, 0.22), transparent 65%);
+}
+
+html:not([data-theme]) body.home-page .dash-kpi-card,
+html:not([data-theme]) body.home-page .cal-card,
+html:not([data-theme]) body.home-page .today-panel,
+html:not([data-theme]) body.home-page .dash-panel,
+html:not([data-theme]) body.home-page .dash-module-card,
+html[data-theme="light"] body.home-page .dash-kpi-card,
+html[data-theme="light"] body.home-page .cal-card,
+html[data-theme="light"] body.home-page .today-panel,
+html[data-theme="light"] body.home-page .dash-panel,
+html[data-theme="light"] body.home-page .dash-module-card {
+  background: rgba(255, 254, 249, 0.88);
+  border-color: rgba(31, 78, 62, 0.12);
+  box-shadow: 0 8px 24px rgba(31, 78, 62, 0.07);
+}
+
+html:not([data-theme]) body.home-page .dash-kpi-card,
+html[data-theme="light"] body.home-page .dash-kpi-card {
+  border-top: 3px solid #c49a3e;
+}
+
+html:not([data-theme]) body.home-page .dash-kpi-card:hover,
+html:not([data-theme]) body.home-page .cal-card:hover,
+html:not([data-theme]) body.home-page .today-panel:hover,
+html:not([data-theme]) body.home-page .dash-panel:hover,
+html:not([data-theme]) body.home-page .dash-module-card:hover,
+html[data-theme="light"] body.home-page .dash-kpi-card:hover,
+html[data-theme="light"] body.home-page .cal-card:hover,
+html[data-theme="light"] body.home-page .today-panel:hover,
+html[data-theme="light"] body.home-page .dash-panel:hover,
+html[data-theme="light"] body.home-page .dash-module-card:hover {
+  border-color: rgba(31, 78, 62, 0.26);
+  box-shadow: 0 16px 34px rgba(31, 78, 62, 0.11);
+}
+
+html:not([data-theme]) body.home-page .dash-section-title,
+html:not([data-theme]) body.home-page .cal-title,
+html:not([data-theme]) body.home-page .today-eyebrow,
+html[data-theme="light"] body.home-page .dash-section-title,
+html[data-theme="light"] body.home-page .cal-title,
+html[data-theme="light"] body.home-page .today-eyebrow {
+  color: #2b604c;
+  letter-spacing: 1.5px;
+}
+
+html:not([data-theme]) body.home-page .dash-qa-btn,
+html[data-theme="light"] body.home-page .dash-qa-btn {
+  background: rgba(255, 254, 249, 0.86);
+  border-color: rgba(31, 78, 62, 0.14);
+  color: #294b3f;
+  box-shadow: 0 5px 16px rgba(31, 78, 62, 0.06);
+}
+
+html:not([data-theme]) body.home-page .dash-qa-btn svg,
+html[data-theme="light"] body.home-page .dash-qa-btn svg {
+  color: #2d6b52;
+}
+
+html:not([data-theme]) body.home-page .dash-qa-btn:hover,
+html[data-theme="light"] body.home-page .dash-qa-btn:hover {
+  background: #1f4e3e;
+  border-color: #1f4e3e;
+  color: #ffffff;
+}
+
+html:not([data-theme]) body.home-page .dash-qa-btn:hover svg,
+html[data-theme="light"] body.home-page .dash-qa-btn:hover svg {
+  color: #f0cf82;
+}
+
+html:not([data-theme]) body.home-page .dash-module-card::before,
+html[data-theme="light"] body.home-page .dash-module-card::before {
+  background: linear-gradient(135deg, rgba(31, 78, 62, 0.08), transparent 62%);
+}
+
+html:not([data-theme]) body.home-page .dash-module-card.featured,
+html[data-theme="light"] body.home-page .dash-module-card.featured {
+  border-color: rgba(31, 78, 62, 0.28);
+  background: linear-gradient(145deg, #fffef9, #f0f5ef);
+}
+
+html:not([data-theme]) body.home-page .dash-module-card.featured::after,
+html[data-theme="light"] body.home-page .dash-module-card.featured::after {
+  background: linear-gradient(90deg, #1f4e3e, #c49a3e);
+}
+
+html:not([data-theme]) body.home-page .dash-module-card.featured .dash-module-icon,
+html[data-theme="light"] body.home-page .dash-module-card.featured .dash-module-icon {
+  background: rgba(31, 78, 62, 0.10);
+  border-color: rgba(31, 78, 62, 0.20);
+}
+
+html:not([data-theme]) body.home-page .dash-pill,
+html[data-theme="light"] body.home-page .dash-pill {
+  background: rgba(196, 154, 62, 0.12);
+  border-color: rgba(196, 154, 62, 0.25);
+  color: #8a651d;
+}
+
+html:not([data-theme]) body.home-page .today-footer a,
+html:not([data-theme]) body.home-page .dash-panel-link,
+html[data-theme="light"] body.home-page .today-footer a,
+html[data-theme="light"] body.home-page .dash-panel-link {
+  color: #256047;
+}
+
+@media (max-width: 600px) {
+  html:not([data-theme]) body.home-page .hero-welcome-card,
+  html[data-theme="light"] body.home-page .hero-welcome-card {
+    border-radius: 20px;
+  }
+}
+
+/* ============================================================
+   DARK HOME — superfícies realmente escuras
+   Regras explícitas evitam que estilos claros posteriores vazem.
+   ============================================================ */
+[data-theme="dark"] body.home-page {
+  background:
+    radial-gradient(circle at 82% 10%, rgba(79, 142, 224, 0.12), transparent 30rem),
+    radial-gradient(circle at 18% 30%, rgba(176, 138, 248, 0.08), transparent 34rem),
+    #090c1c !important;
+  color: #f0f6ff;
+}
+
+[data-theme="dark"] body.home-page .header {
+  background: rgba(12, 16, 31, 0.94) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32) !important;
+}
+
+[data-theme="dark"] body.home-page .app-sidebar {
+  background: linear-gradient(180deg, #111626 0%, #0b0f1d 100%) !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] body.home-page .sidebar-brand {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] body.home-page .dashboard-greeting-title {
+  background: none;
+  color: #f0f6ff;
+  -webkit-text-fill-color: currentColor;
+}
+
+[data-theme="dark"] body.home-page .hero-welcome-card {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(111, 174, 255, 0.18), transparent 18rem),
+    linear-gradient(130deg, #11182d 0%, #172442 58%, #1b2d50 100%) !important;
+  border-color: rgba(111, 174, 255, 0.16) !important;
+}
+
+[data-theme="dark"] body.home-page .hero-welcome-card p {
+  color: #aebed8;
+}
+
+[data-theme="dark"] body.home-page .dash-kpi-card,
+[data-theme="dark"] body.home-page .cal-card,
+[data-theme="dark"] body.home-page .today-panel,
+[data-theme="dark"] body.home-page .dash-panel,
+[data-theme="dark"] body.home-page .dash-module-card,
+[data-theme="dark"] body.home-page .day-detail {
+  background: #111426 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.30) !important;
+}
+
+[data-theme="dark"] body.home-page .dash-kpi-card:hover,
+[data-theme="dark"] body.home-page .cal-card:hover,
+[data-theme="dark"] body.home-page .today-panel:hover,
+[data-theme="dark"] body.home-page .dash-panel:hover,
+[data-theme="dark"] body.home-page .dash-module-card:hover {
+  background: #171c31 !important;
+  border-color: rgba(111, 174, 255, 0.22) !important;
+}
+
+[data-theme="dark"] body.home-page .dash-module-card.featured {
+  background: linear-gradient(145deg, #12182b, #172442) !important;
+  border-color: rgba(111, 174, 255, 0.26) !important;
+}
+
+[data-theme="dark"] body.home-page .dash-qa-btn,
+[data-theme="dark"] body.home-page .cal-nav-btn,
+[data-theme="dark"] body.home-page .task,
+[data-theme="dark"] body.home-page .day-detail li,
+[data-theme="dark"] body.home-page .day-detail .h-num {
+  background: #1a1e35 !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: #c0cfea;
+}
+
+[data-theme="dark"] body.home-page .dash-qa-btn:hover,
+[data-theme="dark"] body.home-page .cal-nav-btn:hover,
+[data-theme="dark"] body.home-page .task:hover {
+  background: #222842 !important;
+  border-color: rgba(111, 174, 255, 0.24) !important;
+  color: #f0f6ff;
+}
+
+[data-theme="dark"] body.home-page .dash-qa-btn kbd,
+[data-theme="dark"] body.home-page .tag,
+[data-theme="dark"] body.home-page .dash-module-icon,
+[data-theme="dark"] body.home-page .cal-cell,
+[data-theme="dark"] body.home-page .cal-evt {
+  background-color: #1a1e35 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #c0cfea;
+}
+
+[data-theme="dark"] body.home-page .cal-cell.muted {
+  background: transparent !important;
+}
+
+[data-theme="dark"] body.home-page .dash-module-card-foot,
+[data-theme="dark"] body.home-page .today-head,
+[data-theme="dark"] body.home-page .today-footer {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ============================================================
+   DIAMANTE HOME — cristal, safira e luz
+   Dashboard claro com profundidade, sem reutilizar o hero noturno.
+   ============================================================ */
+[data-theme="diamante"] body.home-page {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(129, 212, 250, 0.34), transparent 30rem),
+    radial-gradient(circle at 18% 26%, rgba(206, 147, 216, 0.20), transparent 34rem),
+    linear-gradient(145deg, #edf8ff 0%, #e9f1ff 52%, #f4efff 100%) !important;
+}
+
+[data-theme="diamante"] body.home-page .header {
+  background: rgba(247, 252, 255, 0.78) !important;
+  border-bottom-color: rgba(2, 119, 189, 0.14) !important;
+  box-shadow: 0 10px 34px rgba(12, 74, 110, 0.09) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+}
+
+[data-theme="diamante"] body.home-page .app-sidebar {
+  background: rgba(244, 251, 255, 0.82) !important;
+  border-right-color: rgba(2, 119, 189, 0.14) !important;
+  box-shadow: 12px 0 34px rgba(12, 74, 110, 0.07) !important;
+  backdrop-filter: blur(22px) saturate(160%);
+}
+
+[data-theme="diamante"] body.home-page .sidebar-brand {
+  background: linear-gradient(135deg, rgba(129, 212, 250, 0.18), rgba(206, 147, 216, 0.12)) !important;
+  border-bottom-color: rgba(2, 119, 189, 0.12) !important;
+}
+
+[data-theme="diamante"] body.home-page .dashboard-greeting-title {
+  background: linear-gradient(120deg, #073b5c 0%, #0277bd 55%, #6a1b9a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card {
+  background:
+    radial-gradient(circle at 86% 18%, rgba(255, 255, 255, 0.72), transparent 16rem),
+    linear-gradient(125deg, rgba(224, 247, 255, 0.92), rgba(207, 233, 255, 0.88) 58%, rgba(232, 213, 249, 0.88)) !important;
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 22px 52px rgba(12, 74, 110, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(22px) saturate(170%);
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card:hover {
+  border-color: rgba(3, 169, 244, 0.34) !important;
+  box-shadow: 0 26px 60px rgba(3, 119, 189, 0.18), inset 0 1px 0 #ffffff !important;
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-badge {
+  color: #01579b;
+  background: rgba(255, 255, 255, 0.52);
+  border-color: rgba(2, 119, 189, 0.20);
+}
+
+[data-theme="diamante"] body.home-page .pulse-dot {
+  background: #03a9f4;
+  box-shadow: 0 0 0 5px rgba(3, 169, 244, 0.12);
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card h2 {
+  background: linear-gradient(120deg, #073b5c, #0277bd 62%, #6a1b9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="diamante"] body.home-page .hero-welcome-card p {
+  color: #34566f;
+}
+
+[data-theme="diamante"] body.home-page .stat-num {
+  background: linear-gradient(135deg, #0277bd, #6a1b9a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="diamante"] body.home-page .stat-lbl {
+  color: #4a6882;
+}
+
+[data-theme="diamante"] body.home-page .glow-ring {
+  border-color: rgba(3, 169, 244, 0.26);
+}
+
+[data-theme="diamante"] body.home-page .ring-2 {
+  border-color: rgba(171, 71, 188, 0.24);
+}
+
+[data-theme="diamante"] body.home-page .ring-3 {
+  background: radial-gradient(circle, rgba(129, 212, 250, 0.30), transparent 62%);
+}
+
+[data-theme="diamante"] body.home-page .dash-kpi-card,
+[data-theme="diamante"] body.home-page .cal-card,
+[data-theme="diamante"] body.home-page .today-panel,
+[data-theme="diamante"] body.home-page .dash-panel,
+[data-theme="diamante"] body.home-page .dash-module-card {
+  background: rgba(255, 255, 255, 0.70) !important;
+  border-color: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 10px 30px rgba(12, 74, 110, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(16px) saturate(155%);
+}
+
+[data-theme="diamante"] body.home-page .dash-kpi-card:hover,
+[data-theme="diamante"] body.home-page .cal-card:hover,
+[data-theme="diamante"] body.home-page .today-panel:hover,
+[data-theme="diamante"] body.home-page .dash-panel:hover,
+[data-theme="diamante"] body.home-page .dash-module-card:hover {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(3, 169, 244, 0.28) !important;
+  box-shadow: 0 18px 38px rgba(3, 119, 189, 0.13) !important;
+}
+
+[data-theme="diamante"] body.home-page .dash-module-card.featured {
+  background: linear-gradient(145deg, rgba(255,255,255,0.90), rgba(224,247,255,0.78)) !important;
+  border-color: rgba(3, 169, 244, 0.28) !important;
+}
+
+[data-theme="diamante"] body.home-page .dash-module-card.featured::after {
+  background: linear-gradient(90deg, #03a9f4, #7c4dff);
+}
