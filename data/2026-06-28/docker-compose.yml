@@ -1,0 +1,39 @@
+services:
+  cerebro:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_PATH: /app/sqlite-data/empenhos.db
+    volumes:
+      - ./sqlite-data:/app/sqlite-data
+      - ./documentos_centro:/app/documentos_centro
+      - ./uploads:/app/uploads
+      - ./uploads_zip:/app/uploads_zip
+      - ./data/attachments:/app/data/attachments
+      - ./logs:/app/logs
+      - ./.session_secret:/app/.session_secret
+    networks:
+      - traefik-public
+      - internal
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cerebro.rule=Host(`inaja.srv1767486.hstgr.cloud`)"
+      - "traefik.http.routers.cerebro.entrypoints=websecure"
+      - "traefik.http.routers.cerebro.tls.certresolver=letsencrypt"
+      - "traefik.http.services.cerebro.loadbalancer.server.port=5000"
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    driver: bridge
